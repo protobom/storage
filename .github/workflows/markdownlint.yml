@@ -1,6 +1,6 @@
 # ------------------------------------------------------------------------
 # SPDX-FileCopyrightText: Copyright © 2024 The Protobom Authors
-# SPDX-FileName: .commitlint.yaml
+# SPDX-FileName: .github/workflows/markdownlint.yml
 # SPDX-FileType: SOURCE
 # SPDX-License-Identifier: Apache-2.0
 # ------------------------------------------------------------------------
@@ -17,39 +17,23 @@
 # limitations under the License.
 # ------------------------------------------------------------------------
 ---
-version: v0.10.1
+name: markdownlint
 
-rules:
-  - body-max-line-length
-  - footer-max-line-length
-  - header-max-length
-  - header-min-length
-  - type-enum
+on:
+  push:
+    branches:
+      - "**"
 
-settings:
-  body-max-line-length:
-    argument: 72
+jobs:
+  markdownlint:
+    runs-on: ubuntu-latest
 
-  footer-max-line-length:
-    argument: 72
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4.1.2
 
-  header-max-length:
-    argument: 72
-
-  header-min-length:
-    argument: 10
-
-  type-enum:
-    argument:
-      - bug
-      - build
-      - chore
-      - ci
-      - docs
-      - feat
-      - fix
-      - perf
-      - refactor
-      - revert
-      - style
-      - test
+      - name: Run markdownlint
+        uses: DavidAnson/markdownlint-cli2-action@b4c9feab76d8025d1e83c653fa3990936df0e6c8 # v16.0.0
+        with:
+          config: .markdownlint.yml
+          globs: "**/*.md"

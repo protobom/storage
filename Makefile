@@ -21,7 +21,7 @@ help: # Display this help
 
 include backends/ent/Makefile
 
-#@ Tools
+#@ Development Tools
 lint: # Lint Golang code files
 	golangci-lint run --verbose
 

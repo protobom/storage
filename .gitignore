@@ -2,7 +2,6 @@
 *
 
 # Whitelist patterns anchored to project root
-!/.commitlint.yaml
 !/.editorconfig
 !/.gitattributes
 !/.golangci.yml

@@ -21,6 +21,7 @@ ENT_ROOT_DIR := ${abspath ${patsubst %/,%,${dir ${lastword ${MAKEFILE_LIST}}}}}
 .PHONY: generate-ent describe-schemas
 .SILENT: generate-ent describe-schemas
 
+#@ Ent Utilities
 generate-ent: # Generate ent database types from schema
 	printf "Generating ${CYAN}ent${RESET} database types with ${CYAN}go generate${RESET}..."
 	go generate ${ENT_ROOT_DIR}
