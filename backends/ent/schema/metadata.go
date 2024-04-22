@@ -23,10 +23,17 @@ import (
 	"entgo.io/ent/schema"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
+	protobom "github.com/bom-squad/protobom/pkg/sbom"
 )
 
 type Metadata struct {
 	ent.Schema
+}
+
+func (Metadata) Mixin() []ent.Mixin {
+	return []ent.Mixin{
+		SourceDataMixin[protobom.Metadata]{},
+	}
 }
 
 func (Metadata) Fields() []ent.Field {

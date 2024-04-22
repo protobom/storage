@@ -24,10 +24,17 @@ import (
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
+	protobom "github.com/bom-squad/protobom/pkg/sbom"
 )
 
 type IdentifiersEntry struct {
 	ent.Schema
+}
+
+func (IdentifiersEntry) Mixin() []ent.Mixin {
+	return []ent.Mixin{
+		SourceDataMixin[map[protobom.SoftwareIdentifierType]string]{},
+	}
 }
 
 func (IdentifiersEntry) Fields() []ent.Field {

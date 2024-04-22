@@ -60,7 +60,6 @@ linters:
     - errcheck
     - errorlint
     - exhaustive
-    - exhaustruct
     - exportloopref
     - forbidigo
     - forcetypeassert

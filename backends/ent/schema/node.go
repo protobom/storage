@@ -23,10 +23,17 @@ import (
 	"entgo.io/ent/schema"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
+	protobom "github.com/bom-squad/protobom/pkg/sbom"
 )
 
 type Node struct {
 	ent.Schema
+}
+
+func (Node) Mixin() []ent.Mixin {
+	return []ent.Mixin{
+		SourceDataMixin[protobom.Node]{},
+	}
 }
 
 func (Node) Fields() []ent.Field {

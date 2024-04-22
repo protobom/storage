@@ -1,6 +1,6 @@
 // ------------------------------------------------------------------------
 // SPDX-FileCopyrightText: Copyright © 2024 The Protobom Authors
-// SPDX-FileName: ent/schema/document_type.go
+// SPDX-FileName: backends/ent/schema/extra_data.go
 // SPDX-FileType: SOURCE
 // SPDX-License-Identifier: Apache-2.0
 // ------------------------------------------------------------------------
@@ -20,44 +20,37 @@ package schema
 
 import (
 	"entgo.io/ent"
-	"entgo.io/ent/schema"
-	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
+	"entgo.io/ent/schema/mixin"
 	protobom "github.com/bom-squad/protobom/pkg/sbom"
 )
 
-type DocumentType struct {
-	ent.Schema
-}
-
-func (DocumentType) Mixin() []ent.Mixin {
-	return []ent.Mixin{
-		SourceDataMixin[protobom.DocumentType]{},
+type (
+	protobomGenericType interface {
+		protobom.Document |
+			protobom.DocumentType |
+			protobom.Edge |
+			protobom.ExternalReference |
+			protobom.Metadata |
+			protobom.Node |
+			protobom.NodeList |
+			protobom.Person |
+			protobom.Purpose |
+			protobom.Tool |
+			map[protobom.HashAlgorithm]string |
+			map[protobom.SoftwareIdentifierType]string
 	}
-}
 
-func (DocumentType) Fields() []ent.Field {
+	SourceDataMixin[T protobomGenericType] struct {
+		mixin.Schema
+		protobomType *T
+	}
+)
+
+func (sdm SourceDataMixin[protobomGenericType]) Fields() []ent.Field {
 	return []ent.Field{
-		field.Enum("type").Values(
-			"OTHER",
-			"DESIGN",
-			"SOURCE",
-			"BUILD",
-			"ANALYZED",
-			"DEPLOYED",
-			"RUNTIME",
-			"DISCOVERY",
-			"DECOMISSION",
-		).Optional().Nillable(),
-		field.String("name").Optional().Nillable(),
-		field.String("description").Optional().Nillable(),
+		field.JSON("original_data", sdm.protobomType).Immutable().Optional(),
+		field.Any("CDX_extra").Annotations().Immutable().Optional(),
+		field.Any("SPDX_extra").Immutable().Optional(),
 	}
 }
-
-func (DocumentType) Edges() []ent.Edge {
-	return []ent.Edge{
-		edge.From("metadata", Metadata.Type).Ref("document_types").Unique(),
-	}
-}
-
-func (DocumentType) Annotations() []schema.Annotation { return nil }
