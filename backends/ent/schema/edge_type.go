@@ -24,7 +24,6 @@ import (
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
-	protobom "github.com/bom-squad/protobom/pkg/sbom"
 )
 
 type EdgeType struct {
@@ -33,7 +32,7 @@ type EdgeType struct {
 
 func (EdgeType) Mixin() []ent.Mixin {
 	return []ent.Mixin{
-		SourceDataMixin[protobom.Edge]{},
+		SourceDataMixin{},
 	}
 }
 

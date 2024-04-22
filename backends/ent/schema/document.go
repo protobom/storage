@@ -23,7 +23,6 @@ import (
 	"entgo.io/ent/schema"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/index"
-	protobom "github.com/bom-squad/protobom/pkg/sbom"
 )
 
 type Document struct {
@@ -32,7 +31,7 @@ type Document struct {
 
 func (Document) Mixin() []ent.Mixin {
 	return []ent.Mixin{
-		SourceDataMixin[protobom.Document]{},
+		SourceDataMixin{},
 	}
 }
 

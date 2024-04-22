@@ -1,6 +1,6 @@
 // ------------------------------------------------------------------------
 // SPDX-FileCopyrightText: Copyright © 2024 The Protobom Authors
-// SPDX-FileName: backends/ent/schema/extra_data.go
+// SPDX-FileName: backends/ent/schema/mixin.go
 // SPDX-FileType: SOURCE
 // SPDX-License-Identifier: Apache-2.0
 // ------------------------------------------------------------------------
@@ -22,35 +22,17 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/mixin"
-	protobom "github.com/bom-squad/protobom/pkg/sbom"
 )
 
-type (
-	protobomGenericType interface {
-		protobom.Document |
-			protobom.DocumentType |
-			protobom.Edge |
-			protobom.ExternalReference |
-			protobom.Metadata |
-			protobom.Node |
-			protobom.NodeList |
-			protobom.Person |
-			protobom.Purpose |
-			protobom.Tool |
-			map[protobom.HashAlgorithm]string |
-			map[protobom.SoftwareIdentifierType]string
-	}
+type SourceDataMixin struct {
+	mixin.Schema
+}
 
-	SourceDataMixin[T protobomGenericType] struct {
-		mixin.Schema
-		protobomType *T
-	}
-)
-
-func (sdm SourceDataMixin[protobomGenericType]) Fields() []ent.Field {
+func (sdm SourceDataMixin) Fields() []ent.Field {
 	return []ent.Field{
-		field.JSON("original_data", sdm.protobomType).Immutable().Optional(),
-		field.Any("CDX_extra").Annotations().Immutable().Optional(),
+		field.Enum("source_format").Values("cdx", "spdx").Immutable().Optional(),
+		field.Any("source_data").Immutable().Optional(),
+		field.Any("CDX_extra").Immutable().Optional(),
 		field.Any("SPDX_extra").Immutable().Optional(),
 	}
 }

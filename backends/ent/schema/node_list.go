@@ -23,7 +23,6 @@ import (
 	"entgo.io/ent/schema"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
-	protobom "github.com/bom-squad/protobom/pkg/sbom"
 )
 
 type NodeList struct {
@@ -32,7 +31,7 @@ type NodeList struct {
 
 func (NodeList) Mixin() []ent.Mixin {
 	return []ent.Mixin{
-		SourceDataMixin[protobom.NodeList]{},
+		SourceDataMixin{},
 	}
 }
 
