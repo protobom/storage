@@ -16,12 +16,6 @@ type Tool struct {
 	ent.Schema
 }
 
-func (Tool) Mixin() []ent.Mixin {
-	return []ent.Mixin{
-		SourceDataMixin{},
-	}
-}
-
 func (Tool) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("name"),

@@ -16,12 +16,6 @@ type NodeList struct {
 	ent.Schema
 }
 
-func (NodeList) Mixin() []ent.Mixin {
-	return []ent.Mixin{
-		SourceDataMixin{},
-	}
-}
-
 func (NodeList) Fields() []ent.Field {
 	return []ent.Field{
 		field.Strings("root_elements"),

@@ -17,4 +17,5 @@ require (
 	github.com/zclconf/go-cty v1.8.0 // indirect
 	golang.org/x/mod v0.15.0 // indirect
 	golang.org/x/text v0.13.0 // indirect
+	golang.org/x/tools v0.18.0 // indirect
 )

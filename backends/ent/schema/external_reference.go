@@ -16,12 +16,6 @@ type ExternalReference struct {
 	ent.Schema
 }
 
-func (ExternalReference) Mixin() []ent.Mixin {
-	return []ent.Mixin{
-		SourceDataMixin{},
-	}
-}
-
 func (ExternalReference) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("url"),

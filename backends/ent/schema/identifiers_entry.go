@@ -17,12 +17,6 @@ type IdentifiersEntry struct {
 	ent.Schema
 }
 
-func (IdentifiersEntry) Mixin() []ent.Mixin {
-	return []ent.Mixin{
-		SourceDataMixin{},
-	}
-}
-
 func (IdentifiersEntry) Fields() []ent.Field {
 	return []ent.Field{
 		field.Enum("software_identifier_type").Values(

@@ -17,12 +17,6 @@ type EdgeType struct {
 	ent.Schema
 }
 
-func (EdgeType) Mixin() []ent.Mixin {
-	return []ent.Mixin{
-		SourceDataMixin{},
-	}
-}
-
 func (EdgeType) Fields() []ent.Field {
 	return []ent.Field{
 		field.Enum("type").Values(

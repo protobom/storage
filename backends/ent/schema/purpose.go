@@ -16,12 +16,6 @@ type Purpose struct {
 	ent.Schema
 }
 
-func (Purpose) Mixin() []ent.Mixin {
-	return []ent.Mixin{
-		SourceDataMixin{},
-	}
-}
-
 func (Purpose) Fields() []ent.Field {
 	return []ent.Field{
 		field.Enum("primary_purpose").Values(

@@ -16,12 +16,6 @@ type Metadata struct {
 	ent.Schema
 }
 
-func (Metadata) Mixin() []ent.Mixin {
-	return []ent.Mixin{
-		SourceDataMixin{},
-	}
-}
-
 func (Metadata) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("id").Unique().Immutable(),

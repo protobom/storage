@@ -16,12 +16,6 @@ type Document struct {
 	ent.Schema
 }
 
-func (Document) Mixin() []ent.Mixin {
-	return []ent.Mixin{
-		SourceDataMixin{},
-	}
-}
-
 func (Document) Fields() []ent.Field { return nil }
 
 func (Document) Edges() []ent.Edge {

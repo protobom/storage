@@ -17,12 +17,6 @@ type HashesEntry struct {
 	ent.Schema
 }
 
-func (HashesEntry) Mixin() []ent.Mixin {
-	return []ent.Mixin{
-		SourceDataMixin{},
-	}
-}
-
 func (HashesEntry) Fields() []ent.Field {
 	return []ent.Field{
 		field.Enum("hash_algorithm_type").Values(

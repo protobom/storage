@@ -16,12 +16,6 @@ type Person struct {
 	ent.Schema
 }
 
-func (Person) Mixin() []ent.Mixin {
-	return []ent.Mixin{
-		SourceDataMixin{},
-	}
-}
-
 func (Person) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("name"),

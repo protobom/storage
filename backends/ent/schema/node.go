@@ -16,12 +16,6 @@ type Node struct {
 	ent.Schema
 }
 
-func (Node) Mixin() []ent.Mixin {
-	return []ent.Mixin{
-		SourceDataMixin{},
-	}
-}
-
 func (Node) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("id").NotEmpty().Unique().Immutable(),

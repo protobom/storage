@@ -16,12 +16,6 @@ type DocumentType struct {
 	ent.Schema
 }
 
-func (DocumentType) Mixin() []ent.Mixin {
-	return []ent.Mixin{
-		SourceDataMixin{},
-	}
-}
-
 func (DocumentType) Fields() []ent.Field {
 	return []ent.Field{
 		field.Enum("type").Values(
