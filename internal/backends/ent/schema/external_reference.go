@@ -16,7 +16,7 @@ type ExternalReference struct {
 	ent.Schema
 }
 
-func (ExternalReference) Fields() []ent.Field {
+func (ExternalReference) Fields() []ent.Field { //nolint: funlen
 	return []ent.Field{
 		field.String("url"),
 		field.String("comment"),
