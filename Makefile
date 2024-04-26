@@ -18,7 +18,7 @@ help: # Display this help
 	  /^[a-zA-Z_0-9-]+:.*?#/ { printf "  ${CYAN}%-20s${RESET} %s\n", $$1, $$2 } \
 	  /^#@/ { printf "\n${BOLD}%s${RESET}\n", substr($$0, 4) }' ${MAKEFILE_LIST} && echo
 
-include backends/ent/Makefile
+include internal/backends/ent/Makefile
 
 #@ Development Tools
 lint: # Lint Golang code files
