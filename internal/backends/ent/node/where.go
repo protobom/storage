@@ -1185,7 +1185,7 @@ func HasPrimaryPurpose() predicate.Node {
 	return predicate.Node(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, false, PrimaryPurposeTable, PrimaryPurposePrimaryKey...),
+			sqlgraph.Edge(sqlgraph.O2M, false, PrimaryPurposeTable, PrimaryPurposeColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})

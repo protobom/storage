@@ -13,7 +13,6 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/metadata"
 )
 
@@ -45,7 +44,7 @@ type MetadataEdges struct {
 	// DocumentTypes holds the value of the document_types edge.
 	DocumentTypes []*DocumentType `json:"document_types,omitempty"`
 	// Document holds the value of the document edge.
-	Document *Document `json:"document,omitempty"`
+	Document []*Document `json:"document,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [4]bool
@@ -79,12 +78,10 @@ func (e MetadataEdges) DocumentTypesOrErr() ([]*DocumentType, error) {
 }
 
 // DocumentOrErr returns the Document value or an error if the edge
-// was not loaded in eager-loading, or loaded but was not found.
-func (e MetadataEdges) DocumentOrErr() (*Document, error) {
-	if e.Document != nil {
+// was not loaded in eager-loading.
+func (e MetadataEdges) DocumentOrErr() ([]*Document, error) {
+	if e.loadedTypes[3] {
 		return e.Document, nil
-	} else if e.loadedTypes[3] {
-		return nil, &NotFoundError{label: document.Label}
 	}
 	return nil, &NotLoadedError{edge: "document"}
 }

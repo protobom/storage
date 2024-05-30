@@ -7,9 +7,9 @@ package schema
 
 import (
 	"entgo.io/ent"
-	"entgo.io/ent/schema"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
+	"entgo.io/ent/schema/index"
 )
 
 type Tool struct {
@@ -30,4 +30,9 @@ func (Tool) Edges() []ent.Edge {
 	}
 }
 
-func (Tool) Annotations() []schema.Annotation { return nil }
+func (Tool) Indexes() []ent.Index {
+	return []ent.Index{
+		index.Fields("name", "version", "vendor").Unique(),
+		index.Edges("metadata").Fields("id").Unique(),
+	}
+}

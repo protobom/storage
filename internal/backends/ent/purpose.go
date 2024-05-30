@@ -12,6 +12,7 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/protobom/storage/internal/backends/ent/node"
 	"github.com/protobom/storage/internal/backends/ent/purpose"
 )
 
@@ -24,24 +25,27 @@ type Purpose struct {
 	PrimaryPurpose purpose.PrimaryPurpose `json:"primary_purpose,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the PurposeQuery when eager-loading is set.
-	Edges        PurposeEdges `json:"edges"`
-	selectValues sql.SelectValues
+	Edges                PurposeEdges `json:"edges"`
+	node_primary_purpose *string
+	selectValues         sql.SelectValues
 }
 
 // PurposeEdges holds the relations/edges for other nodes in the graph.
 type PurposeEdges struct {
 	// Node holds the value of the node edge.
-	Node []*Node `json:"node,omitempty"`
+	Node *Node `json:"node,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [1]bool
 }
 
 // NodeOrErr returns the Node value or an error if the edge
-// was not loaded in eager-loading.
-func (e PurposeEdges) NodeOrErr() ([]*Node, error) {
-	if e.loadedTypes[0] {
+// was not loaded in eager-loading, or loaded but was not found.
+func (e PurposeEdges) NodeOrErr() (*Node, error) {
+	if e.Node != nil {
 		return e.Node, nil
+	} else if e.loadedTypes[0] {
+		return nil, &NotFoundError{label: node.Label}
 	}
 	return nil, &NotLoadedError{edge: "node"}
 }
@@ -54,6 +58,8 @@ func (*Purpose) scanValues(columns []string) ([]any, error) {
 		case purpose.FieldID:
 			values[i] = new(sql.NullInt64)
 		case purpose.FieldPrimaryPurpose:
+			values[i] = new(sql.NullString)
+		case purpose.ForeignKeys[0]: // node_primary_purpose
 			values[i] = new(sql.NullString)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -81,6 +87,13 @@ func (pu *Purpose) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field primary_purpose", values[i])
 			} else if value.Valid {
 				pu.PrimaryPurpose = purpose.PrimaryPurpose(value.String)
+			}
+		case purpose.ForeignKeys[0]:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field node_primary_purpose", values[i])
+			} else if value.Valid {
+				pu.node_primary_purpose = new(string)
+				*pu.node_primary_purpose = value.String
 			}
 		default:
 			pu.selectValues.Set(columns[i], values[i])

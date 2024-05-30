@@ -112,11 +112,13 @@ const (
 	HashesInverseTable = "hashes_entries"
 	// HashesColumn is the table column denoting the hashes relation/edge.
 	HashesColumn = "node_hashes"
-	// PrimaryPurposeTable is the table that holds the primary_purpose relation/edge. The primary key declared below.
-	PrimaryPurposeTable = "node_primary_purpose"
+	// PrimaryPurposeTable is the table that holds the primary_purpose relation/edge.
+	PrimaryPurposeTable = "purposes"
 	// PrimaryPurposeInverseTable is the table name for the Purpose entity.
 	// It exists in this package in order to avoid circular dependency with the "purpose" package.
 	PrimaryPurposeInverseTable = "purposes"
+	// PrimaryPurposeColumn is the table column denoting the primary_purpose relation/edge.
+	PrimaryPurposeColumn = "node_primary_purpose"
 	// NodesTable is the table that holds the nodes relation/edge. The primary key declared below.
 	NodesTable = "edge_types"
 	// NodeListTable is the table that holds the node_list relation/edge.
@@ -166,9 +168,6 @@ var ForeignKeys = []string{
 }
 
 var (
-	// PrimaryPurposePrimaryKey and PrimaryPurposeColumn2 are the table columns denoting the
-	// primary key for the primary_purpose relation (M2M).
-	PrimaryPurposePrimaryKey = []string{"node_id", "purpose_id"}
 	// NodesPrimaryKey and NodesColumn2 are the table columns denoting the
 	// primary key for the nodes relation (M2M).
 	NodesPrimaryKey = []string{"node_id", "node_id"}
@@ -462,7 +461,7 @@ func newPrimaryPurposeStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(PrimaryPurposeInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.M2M, false, PrimaryPurposeTable, PrimaryPurposePrimaryKey...),
+		sqlgraph.Edge(sqlgraph.O2M, false, PrimaryPurposeTable, PrimaryPurposeColumn),
 	)
 }
 func newNodesStep() *sqlgraph.Step {

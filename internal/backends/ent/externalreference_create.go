@@ -80,6 +80,14 @@ func (erc *ExternalReferenceCreate) SetNodeID(id string) *ExternalReferenceCreat
 	return erc
 }
 
+// SetNillableNodeID sets the "node" edge to the Node entity by ID if the given value is not nil.
+func (erc *ExternalReferenceCreate) SetNillableNodeID(id *string) *ExternalReferenceCreate {
+	if id != nil {
+		erc = erc.SetNodeID(*id)
+	}
+	return erc
+}
+
 // SetNode sets the "node" edge to the Node entity.
 func (erc *ExternalReferenceCreate) SetNode(n *Node) *ExternalReferenceCreate {
 	return erc.SetNodeID(n.ID)
@@ -132,9 +140,6 @@ func (erc *ExternalReferenceCreate) check() error {
 		if err := externalreference.TypeValidator(v); err != nil {
 			return &ValidationError{Name: "type", err: fmt.Errorf(`ent: validator failed for field "ExternalReference.type": %w`, err)}
 		}
-	}
-	if _, ok := erc.mutation.NodeID(); !ok {
-		return &ValidationError{Name: "node", err: errors.New(`ent: missing required edge "ExternalReference.node"`)}
 	}
 	return nil
 }

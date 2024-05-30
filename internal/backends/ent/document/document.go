@@ -91,7 +91,7 @@ func newMetadataStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(MetadataInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2O, true, MetadataTable, MetadataColumn),
+		sqlgraph.Edge(sqlgraph.M2O, true, MetadataTable, MetadataColumn),
 	)
 }
 func newNodeListStep() *sqlgraph.Step {

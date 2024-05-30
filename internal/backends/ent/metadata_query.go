@@ -150,7 +150,7 @@ func (mq *MetadataQuery) QueryDocument() *DocumentQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(metadata.Table, metadata.FieldID, selector),
 			sqlgraph.To(document.Table, document.FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, false, metadata.DocumentTable, metadata.DocumentColumn),
+			sqlgraph.Edge(sqlgraph.O2M, false, metadata.DocumentTable, metadata.DocumentColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(mq.driver.Dialect(), step)
 		return fromU, nil
@@ -529,8 +529,9 @@ func (mq *MetadataQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Met
 		}
 	}
 	if query := mq.withDocument; query != nil {
-		if err := mq.loadDocument(ctx, query, nodes, nil,
-			func(n *Metadata, e *Document) { n.Edges.Document = e }); err != nil {
+		if err := mq.loadDocument(ctx, query, nodes,
+			func(n *Metadata) { n.Edges.Document = []*Document{} },
+			func(n *Metadata, e *Document) { n.Edges.Document = append(n.Edges.Document, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -636,6 +637,9 @@ func (mq *MetadataQuery) loadDocument(ctx context.Context, query *DocumentQuery,
 	for i := range nodes {
 		fks = append(fks, nodes[i].ID)
 		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
 	}
 	query.withFKs = true
 	query.Where(predicate.Document(func(s *sql.Selector) {

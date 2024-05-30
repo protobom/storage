@@ -106,23 +106,19 @@ func (mc *MetadataCreate) AddDocumentTypes(d ...*DocumentType) *MetadataCreate {
 	return mc.AddDocumentTypeIDs(ids...)
 }
 
-// SetDocumentID sets the "document" edge to the Document entity by ID.
-func (mc *MetadataCreate) SetDocumentID(id int) *MetadataCreate {
-	mc.mutation.SetDocumentID(id)
+// AddDocumentIDs adds the "document" edge to the Document entity by IDs.
+func (mc *MetadataCreate) AddDocumentIDs(ids ...int) *MetadataCreate {
+	mc.mutation.AddDocumentIDs(ids...)
 	return mc
 }
 
-// SetNillableDocumentID sets the "document" edge to the Document entity by ID if the given value is not nil.
-func (mc *MetadataCreate) SetNillableDocumentID(id *int) *MetadataCreate {
-	if id != nil {
-		mc = mc.SetDocumentID(*id)
+// AddDocument adds the "document" edges to the Document entity.
+func (mc *MetadataCreate) AddDocument(d ...*Document) *MetadataCreate {
+	ids := make([]int, len(d))
+	for i := range d {
+		ids[i] = d[i].ID
 	}
-	return mc
-}
-
-// SetDocument sets the "document" edge to the Document entity.
-func (mc *MetadataCreate) SetDocument(d *Document) *MetadataCreate {
-	return mc.SetDocumentID(d.ID)
+	return mc.AddDocumentIDs(ids...)
 }
 
 // Mutation returns the MetadataMutation object of the builder.
@@ -170,6 +166,11 @@ func (mc *MetadataCreate) check() error {
 	}
 	if _, ok := mc.mutation.Comment(); !ok {
 		return &ValidationError{Name: "comment", err: errors.New(`ent: missing required field "Metadata.comment"`)}
+	}
+	if v, ok := mc.mutation.ID(); ok {
+		if err := metadata.IDValidator(v); err != nil {
+			return &ValidationError{Name: "id", err: fmt.Errorf(`ent: validator failed for field "Metadata.id": %w`, err)}
+		}
 	}
 	return nil
 }
@@ -273,7 +274,7 @@ func (mc *MetadataCreate) createSpec() (*Metadata, *sqlgraph.CreateSpec) {
 	}
 	if nodes := mc.mutation.DocumentIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2O,
+			Rel:     sqlgraph.O2M,
 			Inverse: false,
 			Table:   metadata.DocumentTable,
 			Columns: []string{metadata.DocumentColumn},

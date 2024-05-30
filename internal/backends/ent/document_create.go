@@ -118,7 +118,7 @@ func (dc *DocumentCreate) createSpec() (*Document, *sqlgraph.CreateSpec) {
 	_spec.OnConflict = dc.conflict
 	if nodes := dc.mutation.MetadataIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2O,
+			Rel:     sqlgraph.M2O,
 			Inverse: true,
 			Table:   document.MetadataTable,
 			Columns: []string{document.MetadataColumn},

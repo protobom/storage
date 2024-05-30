@@ -7,7 +7,6 @@ package schema
 
 import (
 	"entgo.io/ent"
-	"entgo.io/ent/schema"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/index"
 )
@@ -15,8 +14,6 @@ import (
 type Document struct {
 	ent.Schema
 }
-
-func (Document) Fields() []ent.Field { return nil }
 
 func (Document) Edges() []ent.Edge {
 	return []ent.Edge{
@@ -30,5 +27,3 @@ func (Document) Indexes() []ent.Index {
 		index.Edges("metadata", "node_list").Unique(),
 	}
 }
-
-func (Document) Annotations() []schema.Annotation { return nil }

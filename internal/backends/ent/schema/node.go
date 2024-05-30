@@ -7,9 +7,9 @@ package schema
 
 import (
 	"entgo.io/ent"
-	"entgo.io/ent/schema"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
+	"entgo.io/ent/schema/index"
 )
 
 type Node struct {
@@ -50,8 +50,12 @@ func (Node) Edges() []ent.Edge {
 		edge.To("hashes", HashesEntry.Type),
 		edge.To("primary_purpose", Purpose.Type),
 		edge.To("nodes", Node.Type).Through("edge_types", EdgeType.Type),
-		edge.From("node_list", NodeList.Type).Ref("nodes").Required().Unique(),
+		edge.From("node_list", NodeList.Type).Ref("nodes").Unique(),
 	}
 }
 
-func (Node) Annotations() []schema.Annotation { return nil }
+func (Node) Indexes() []ent.Index {
+	return []ent.Index{
+		index.Edges("node_list").Fields("id").Unique(),
+	}
+}

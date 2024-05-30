@@ -7,7 +7,6 @@ package schema
 
 import (
 	"entgo.io/ent"
-	"entgo.io/ent/schema"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
@@ -83,5 +82,3 @@ func (EdgeType) Indexes() []ent.Index {
 		index.Fields("type").Edges("from", "to").Unique(),
 	}
 }
-
-func (EdgeType) Annotations() []schema.Annotation { return nil }

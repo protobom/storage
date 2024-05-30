@@ -23,17 +23,17 @@ const (
 	FieldSoftwareIdentifierType = "software_identifier_type"
 	// FieldSoftwareIdentifierValue holds the string denoting the software_identifier_value field in the database.
 	FieldSoftwareIdentifierValue = "software_identifier_value"
-	// EdgeNodes holds the string denoting the nodes edge name in mutations.
-	EdgeNodes = "nodes"
+	// EdgeNode holds the string denoting the node edge name in mutations.
+	EdgeNode = "node"
 	// Table holds the table name of the identifiersentry in the database.
 	Table = "identifiers_entries"
-	// NodesTable is the table that holds the nodes relation/edge.
-	NodesTable = "identifiers_entries"
-	// NodesInverseTable is the table name for the Node entity.
+	// NodeTable is the table that holds the node relation/edge.
+	NodeTable = "identifiers_entries"
+	// NodeInverseTable is the table name for the Node entity.
 	// It exists in this package in order to avoid circular dependency with the "node" package.
-	NodesInverseTable = "nodes"
-	// NodesColumn is the table column denoting the nodes relation/edge.
-	NodesColumn = "node_identifiers"
+	NodeInverseTable = "nodes"
+	// NodeColumn is the table column denoting the node relation/edge.
+	NodeColumn = "node_identifiers"
 )
 
 // Columns holds all SQL columns for identifiersentry fields.
@@ -108,16 +108,16 @@ func BySoftwareIdentifierValue(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldSoftwareIdentifierValue, opts...).ToFunc()
 }
 
-// ByNodesField orders the results by nodes field.
-func ByNodesField(field string, opts ...sql.OrderTermOption) OrderOption {
+// ByNodeField orders the results by node field.
+func ByNodeField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newNodesStep(), sql.OrderByField(field, opts...))
+		sqlgraph.OrderByNeighborTerms(s, newNodeStep(), sql.OrderByField(field, opts...))
 	}
 }
-func newNodesStep() *sqlgraph.Step {
+func newNodeStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(NodesInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.M2O, true, NodesTable, NodesColumn),
+		sqlgraph.To(NodeInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, true, NodeTable, NodeColumn),
 	)
 }

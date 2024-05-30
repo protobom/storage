@@ -124,7 +124,7 @@ func (du *DocumentUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if du.mutation.MetadataCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2O,
+			Rel:     sqlgraph.M2O,
 			Inverse: true,
 			Table:   document.MetadataTable,
 			Columns: []string{document.MetadataColumn},
@@ -137,7 +137,7 @@ func (du *DocumentUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if nodes := du.mutation.MetadataIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2O,
+			Rel:     sqlgraph.M2O,
 			Inverse: true,
 			Table:   document.MetadataTable,
 			Columns: []string{document.MetadataColumn},
@@ -321,7 +321,7 @@ func (duo *DocumentUpdateOne) sqlSave(ctx context.Context) (_node *Document, err
 	}
 	if duo.mutation.MetadataCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2O,
+			Rel:     sqlgraph.M2O,
 			Inverse: true,
 			Table:   document.MetadataTable,
 			Columns: []string{document.MetadataColumn},
@@ -334,7 +334,7 @@ func (duo *DocumentUpdateOne) sqlSave(ctx context.Context) (_node *Document, err
 	}
 	if nodes := duo.mutation.MetadataIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2O,
+			Rel:     sqlgraph.M2O,
 			Inverse: true,
 			Table:   document.MetadataTable,
 			Columns: []string{document.MetadataColumn},

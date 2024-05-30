@@ -7,9 +7,9 @@ package schema
 
 import (
 	"entgo.io/ent"
-	"entgo.io/ent/schema"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
+	"entgo.io/ent/schema/index"
 )
 
 type Person struct {
@@ -34,4 +34,10 @@ func (Person) Edges() []ent.Edge {
 	}
 }
 
-func (Person) Annotations() []schema.Annotation { return nil }
+func (Person) Indexes() []ent.Index {
+	return []ent.Index{
+		index.Fields("name", "is_org", "email", "url", "phone").Unique(),
+		index.Edges("metadata").Fields("id").Unique(),
+		index.Edges("node").Fields("id").Unique(),
+	}
+}

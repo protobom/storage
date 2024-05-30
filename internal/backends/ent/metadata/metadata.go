@@ -84,6 +84,11 @@ func ValidColumn(column string) bool {
 	return false
 }
 
+var (
+	// IDValidator is a validator for the "id" field. It is called by the builders before save.
+	IDValidator func(string) error
+)
+
 // OrderOption defines the ordering options for the Metadata queries.
 type OrderOption func(*sql.Selector)
 
@@ -154,10 +159,17 @@ func ByDocumentTypes(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	}
 }
 
-// ByDocumentField orders the results by document field.
-func ByDocumentField(field string, opts ...sql.OrderTermOption) OrderOption {
+// ByDocumentCount orders the results by document count.
+func ByDocumentCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newDocumentStep(), sql.OrderByField(field, opts...))
+		sqlgraph.OrderByNeighborsCount(s, newDocumentStep(), opts...)
+	}
+}
+
+// ByDocument orders the results by document terms.
+func ByDocument(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newDocumentStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
 func newToolsStep() *sqlgraph.Step {
@@ -185,6 +197,6 @@ func newDocumentStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(DocumentInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2O, false, DocumentTable, DocumentColumn),
+		sqlgraph.Edge(sqlgraph.O2M, false, DocumentTable, DocumentColumn),
 	)
 }

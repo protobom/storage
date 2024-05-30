@@ -411,6 +411,14 @@ func (nu *NodeUpdate) SetNodeListID(id int) *NodeUpdate {
 	return nu
 }
 
+// SetNillableNodeListID sets the "node_list" edge to the NodeList entity by ID if the given value is not nil.
+func (nu *NodeUpdate) SetNillableNodeListID(id *int) *NodeUpdate {
+	if id != nil {
+		nu = nu.SetNodeListID(*id)
+	}
+	return nu
+}
+
 // SetNodeList sets the "node_list" edge to the NodeList entity.
 func (nu *NodeUpdate) SetNodeList(n *NodeList) *NodeUpdate {
 	return nu.SetNodeListID(n.ID)
@@ -643,9 +651,6 @@ func (nu *NodeUpdate) check() error {
 		if err := node.TypeValidator(v); err != nil {
 			return &ValidationError{Name: "type", err: fmt.Errorf(`ent: validator failed for field "Node.type": %w`, err)}
 		}
-	}
-	if _, ok := nu.mutation.NodeListID(); nu.mutation.NodeListCleared() && !ok {
-		return errors.New(`ent: clearing a required unique edge "Node.node_list"`)
 	}
 	return nil
 }
@@ -961,10 +966,10 @@ func (nu *NodeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if nu.mutation.PrimaryPurposeCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.O2M,
 			Inverse: false,
 			Table:   node.PrimaryPurposeTable,
-			Columns: node.PrimaryPurposePrimaryKey,
+			Columns: []string{node.PrimaryPurposeColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(purpose.FieldID, field.TypeInt),
@@ -974,10 +979,10 @@ func (nu *NodeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if nodes := nu.mutation.RemovedPrimaryPurposeIDs(); len(nodes) > 0 && !nu.mutation.PrimaryPurposeCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.O2M,
 			Inverse: false,
 			Table:   node.PrimaryPurposeTable,
-			Columns: node.PrimaryPurposePrimaryKey,
+			Columns: []string{node.PrimaryPurposeColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(purpose.FieldID, field.TypeInt),
@@ -990,10 +995,10 @@ func (nu *NodeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if nodes := nu.mutation.PrimaryPurposeIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.O2M,
 			Inverse: false,
 			Table:   node.PrimaryPurposeTable,
-			Columns: node.PrimaryPurposePrimaryKey,
+			Columns: []string{node.PrimaryPurposeColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(purpose.FieldID, field.TypeInt),
@@ -1514,6 +1519,14 @@ func (nuo *NodeUpdateOne) SetNodeListID(id int) *NodeUpdateOne {
 	return nuo
 }
 
+// SetNillableNodeListID sets the "node_list" edge to the NodeList entity by ID if the given value is not nil.
+func (nuo *NodeUpdateOne) SetNillableNodeListID(id *int) *NodeUpdateOne {
+	if id != nil {
+		nuo = nuo.SetNodeListID(*id)
+	}
+	return nuo
+}
+
 // SetNodeList sets the "node_list" edge to the NodeList entity.
 func (nuo *NodeUpdateOne) SetNodeList(n *NodeList) *NodeUpdateOne {
 	return nuo.SetNodeListID(n.ID)
@@ -1759,9 +1772,6 @@ func (nuo *NodeUpdateOne) check() error {
 		if err := node.TypeValidator(v); err != nil {
 			return &ValidationError{Name: "type", err: fmt.Errorf(`ent: validator failed for field "Node.type": %w`, err)}
 		}
-	}
-	if _, ok := nuo.mutation.NodeListID(); nuo.mutation.NodeListCleared() && !ok {
-		return errors.New(`ent: clearing a required unique edge "Node.node_list"`)
 	}
 	return nil
 }
@@ -2094,10 +2104,10 @@ func (nuo *NodeUpdateOne) sqlSave(ctx context.Context) (_node *Node, err error) 
 	}
 	if nuo.mutation.PrimaryPurposeCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.O2M,
 			Inverse: false,
 			Table:   node.PrimaryPurposeTable,
-			Columns: node.PrimaryPurposePrimaryKey,
+			Columns: []string{node.PrimaryPurposeColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(purpose.FieldID, field.TypeInt),
@@ -2107,10 +2117,10 @@ func (nuo *NodeUpdateOne) sqlSave(ctx context.Context) (_node *Node, err error) 
 	}
 	if nodes := nuo.mutation.RemovedPrimaryPurposeIDs(); len(nodes) > 0 && !nuo.mutation.PrimaryPurposeCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.O2M,
 			Inverse: false,
 			Table:   node.PrimaryPurposeTable,
-			Columns: node.PrimaryPurposePrimaryKey,
+			Columns: []string{node.PrimaryPurposeColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(purpose.FieldID, field.TypeInt),
@@ -2123,10 +2133,10 @@ func (nuo *NodeUpdateOne) sqlSave(ctx context.Context) (_node *Node, err error) 
 	}
 	if nodes := nuo.mutation.PrimaryPurposeIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.O2M,
 			Inverse: false,
 			Table:   node.PrimaryPurposeTable,
-			Columns: node.PrimaryPurposePrimaryKey,
+			Columns: []string{node.PrimaryPurposeColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(purpose.FieldID, field.TypeInt),

@@ -7,9 +7,9 @@ package schema
 
 import (
 	"entgo.io/ent"
-	"entgo.io/ent/schema"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
+	"entgo.io/ent/schema/index"
 )
 
 type Purpose struct {
@@ -54,8 +54,12 @@ func (Purpose) Fields() []ent.Field {
 
 func (Purpose) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("node", Node.Type).Ref("primary_purpose"),
+		edge.From("node", Node.Type).Ref("primary_purpose").Unique(),
 	}
 }
 
-func (Purpose) Annotations() []schema.Annotation { return nil }
+func (Purpose) Indexes() []ent.Index {
+	return []ent.Index{
+		index.Edges("node").Fields("id").Unique(),
+	}
+}

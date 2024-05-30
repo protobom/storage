@@ -25,11 +25,13 @@ const (
 	EdgeNode = "node"
 	// Table holds the table name of the purpose in the database.
 	Table = "purposes"
-	// NodeTable is the table that holds the node relation/edge. The primary key declared below.
-	NodeTable = "node_primary_purpose"
+	// NodeTable is the table that holds the node relation/edge.
+	NodeTable = "purposes"
 	// NodeInverseTable is the table name for the Node entity.
 	// It exists in this package in order to avoid circular dependency with the "node" package.
 	NodeInverseTable = "nodes"
+	// NodeColumn is the table column denoting the node relation/edge.
+	NodeColumn = "node_primary_purpose"
 )
 
 // Columns holds all SQL columns for purpose fields.
@@ -38,16 +40,21 @@ var Columns = []string{
 	FieldPrimaryPurpose,
 }
 
-var (
-	// NodePrimaryKey and NodeColumn2 are the table columns denoting the
-	// primary key for the node relation (M2M).
-	NodePrimaryKey = []string{"node_id", "purpose_id"}
-)
+// ForeignKeys holds the SQL foreign-keys that are owned by the "purposes"
+// table and are not defined as standalone fields in the schema.
+var ForeignKeys = []string{
+	"node_primary_purpose",
+}
 
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {
 	for i := range Columns {
 		if column == Columns[i] {
+			return true
+		}
+	}
+	for i := range ForeignKeys {
+		if column == ForeignKeys[i] {
 			return true
 		}
 	}
@@ -117,23 +124,16 @@ func ByPrimaryPurpose(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldPrimaryPurpose, opts...).ToFunc()
 }
 
-// ByNodeCount orders the results by node count.
-func ByNodeCount(opts ...sql.OrderTermOption) OrderOption {
+// ByNodeField orders the results by node field.
+func ByNodeField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborsCount(s, newNodeStep(), opts...)
-	}
-}
-
-// ByNode orders the results by node terms.
-func ByNode(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newNodeStep(), append([]sql.OrderTerm{term}, terms...)...)
+		sqlgraph.OrderByNeighborTerms(s, newNodeStep(), sql.OrderByField(field, opts...))
 	}
 }
 func newNodeStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(NodeInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.M2M, true, NodeTable, NodePrimaryKey...),
+		sqlgraph.Edge(sqlgraph.M2O, true, NodeTable, NodeColumn),
 	)
 }

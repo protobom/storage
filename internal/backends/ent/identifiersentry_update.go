@@ -60,23 +60,23 @@ func (ieu *IdentifiersEntryUpdate) SetNillableSoftwareIdentifierValue(s *string)
 	return ieu
 }
 
-// SetNodesID sets the "nodes" edge to the Node entity by ID.
-func (ieu *IdentifiersEntryUpdate) SetNodesID(id string) *IdentifiersEntryUpdate {
-	ieu.mutation.SetNodesID(id)
+// SetNodeID sets the "node" edge to the Node entity by ID.
+func (ieu *IdentifiersEntryUpdate) SetNodeID(id string) *IdentifiersEntryUpdate {
+	ieu.mutation.SetNodeID(id)
 	return ieu
 }
 
-// SetNillableNodesID sets the "nodes" edge to the Node entity by ID if the given value is not nil.
-func (ieu *IdentifiersEntryUpdate) SetNillableNodesID(id *string) *IdentifiersEntryUpdate {
+// SetNillableNodeID sets the "node" edge to the Node entity by ID if the given value is not nil.
+func (ieu *IdentifiersEntryUpdate) SetNillableNodeID(id *string) *IdentifiersEntryUpdate {
 	if id != nil {
-		ieu = ieu.SetNodesID(*id)
+		ieu = ieu.SetNodeID(*id)
 	}
 	return ieu
 }
 
-// SetNodes sets the "nodes" edge to the Node entity.
-func (ieu *IdentifiersEntryUpdate) SetNodes(n *Node) *IdentifiersEntryUpdate {
-	return ieu.SetNodesID(n.ID)
+// SetNode sets the "node" edge to the Node entity.
+func (ieu *IdentifiersEntryUpdate) SetNode(n *Node) *IdentifiersEntryUpdate {
+	return ieu.SetNodeID(n.ID)
 }
 
 // Mutation returns the IdentifiersEntryMutation object of the builder.
@@ -84,9 +84,9 @@ func (ieu *IdentifiersEntryUpdate) Mutation() *IdentifiersEntryMutation {
 	return ieu.mutation
 }
 
-// ClearNodes clears the "nodes" edge to the Node entity.
-func (ieu *IdentifiersEntryUpdate) ClearNodes() *IdentifiersEntryUpdate {
-	ieu.mutation.ClearNodes()
+// ClearNode clears the "node" edge to the Node entity.
+func (ieu *IdentifiersEntryUpdate) ClearNode() *IdentifiersEntryUpdate {
+	ieu.mutation.ClearNode()
 	return ieu
 }
 
@@ -145,12 +145,12 @@ func (ieu *IdentifiersEntryUpdate) sqlSave(ctx context.Context) (n int, err erro
 	if value, ok := ieu.mutation.SoftwareIdentifierValue(); ok {
 		_spec.SetField(identifiersentry.FieldSoftwareIdentifierValue, field.TypeString, value)
 	}
-	if ieu.mutation.NodesCleared() {
+	if ieu.mutation.NodeCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
-			Table:   identifiersentry.NodesTable,
-			Columns: []string{identifiersentry.NodesColumn},
+			Table:   identifiersentry.NodeTable,
+			Columns: []string{identifiersentry.NodeColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeString),
@@ -158,12 +158,12 @@ func (ieu *IdentifiersEntryUpdate) sqlSave(ctx context.Context) (n int, err erro
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := ieu.mutation.NodesIDs(); len(nodes) > 0 {
+	if nodes := ieu.mutation.NodeIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
-			Table:   identifiersentry.NodesTable,
-			Columns: []string{identifiersentry.NodesColumn},
+			Table:   identifiersentry.NodeTable,
+			Columns: []string{identifiersentry.NodeColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeString),
@@ -222,23 +222,23 @@ func (ieuo *IdentifiersEntryUpdateOne) SetNillableSoftwareIdentifierValue(s *str
 	return ieuo
 }
 
-// SetNodesID sets the "nodes" edge to the Node entity by ID.
-func (ieuo *IdentifiersEntryUpdateOne) SetNodesID(id string) *IdentifiersEntryUpdateOne {
-	ieuo.mutation.SetNodesID(id)
+// SetNodeID sets the "node" edge to the Node entity by ID.
+func (ieuo *IdentifiersEntryUpdateOne) SetNodeID(id string) *IdentifiersEntryUpdateOne {
+	ieuo.mutation.SetNodeID(id)
 	return ieuo
 }
 
-// SetNillableNodesID sets the "nodes" edge to the Node entity by ID if the given value is not nil.
-func (ieuo *IdentifiersEntryUpdateOne) SetNillableNodesID(id *string) *IdentifiersEntryUpdateOne {
+// SetNillableNodeID sets the "node" edge to the Node entity by ID if the given value is not nil.
+func (ieuo *IdentifiersEntryUpdateOne) SetNillableNodeID(id *string) *IdentifiersEntryUpdateOne {
 	if id != nil {
-		ieuo = ieuo.SetNodesID(*id)
+		ieuo = ieuo.SetNodeID(*id)
 	}
 	return ieuo
 }
 
-// SetNodes sets the "nodes" edge to the Node entity.
-func (ieuo *IdentifiersEntryUpdateOne) SetNodes(n *Node) *IdentifiersEntryUpdateOne {
-	return ieuo.SetNodesID(n.ID)
+// SetNode sets the "node" edge to the Node entity.
+func (ieuo *IdentifiersEntryUpdateOne) SetNode(n *Node) *IdentifiersEntryUpdateOne {
+	return ieuo.SetNodeID(n.ID)
 }
 
 // Mutation returns the IdentifiersEntryMutation object of the builder.
@@ -246,9 +246,9 @@ func (ieuo *IdentifiersEntryUpdateOne) Mutation() *IdentifiersEntryMutation {
 	return ieuo.mutation
 }
 
-// ClearNodes clears the "nodes" edge to the Node entity.
-func (ieuo *IdentifiersEntryUpdateOne) ClearNodes() *IdentifiersEntryUpdateOne {
-	ieuo.mutation.ClearNodes()
+// ClearNode clears the "node" edge to the Node entity.
+func (ieuo *IdentifiersEntryUpdateOne) ClearNode() *IdentifiersEntryUpdateOne {
+	ieuo.mutation.ClearNode()
 	return ieuo
 }
 
@@ -337,12 +337,12 @@ func (ieuo *IdentifiersEntryUpdateOne) sqlSave(ctx context.Context) (_node *Iden
 	if value, ok := ieuo.mutation.SoftwareIdentifierValue(); ok {
 		_spec.SetField(identifiersentry.FieldSoftwareIdentifierValue, field.TypeString, value)
 	}
-	if ieuo.mutation.NodesCleared() {
+	if ieuo.mutation.NodeCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
-			Table:   identifiersentry.NodesTable,
-			Columns: []string{identifiersentry.NodesColumn},
+			Table:   identifiersentry.NodeTable,
+			Columns: []string{identifiersentry.NodeColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeString),
@@ -350,12 +350,12 @@ func (ieuo *IdentifiersEntryUpdateOne) sqlSave(ctx context.Context) (_node *Iden
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := ieuo.mutation.NodesIDs(); len(nodes) > 0 {
+	if nodes := ieuo.mutation.NodeIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
-			Table:   identifiersentry.NodesTable,
-			Columns: []string{identifiersentry.NodesColumn},
+			Table:   identifiersentry.NodeTable,
+			Columns: []string{identifiersentry.NodeColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeString),

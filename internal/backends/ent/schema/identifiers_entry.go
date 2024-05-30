@@ -7,7 +7,6 @@ package schema
 
 import (
 	"entgo.io/ent"
-	"entgo.io/ent/schema"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
@@ -32,7 +31,7 @@ func (IdentifiersEntry) Fields() []ent.Field {
 
 func (IdentifiersEntry) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("nodes", Node.Type).Ref("identifiers").Unique(),
+		edge.From("node", Node.Type).Ref("identifiers").Unique(),
 	}
 }
 
@@ -41,5 +40,3 @@ func (IdentifiersEntry) Indexes() []ent.Index {
 		index.Fields("software_identifier_type", "software_identifier_value").Unique(),
 	}
 }
-
-func (IdentifiersEntry) Annotations() []schema.Annotation { return nil }

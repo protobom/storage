@@ -7,6 +7,7 @@
 package ent
 
 import (
+	"github.com/protobom/storage/internal/backends/ent/metadata"
 	"github.com/protobom/storage/internal/backends/ent/node"
 	"github.com/protobom/storage/internal/backends/ent/schema"
 )
@@ -15,6 +16,12 @@ import (
 // (default values, validators, hooks and policies) and stitches it
 // to their package variables.
 func init() {
+	metadataFields := schema.Metadata{}.Fields()
+	_ = metadataFields
+	// metadataDescID is the schema descriptor for id field.
+	metadataDescID := metadataFields[0].Descriptor()
+	// metadata.IDValidator is a validator for the "id" field. It is called by the builders before save.
+	metadata.IDValidator = metadataDescID.Validators[0].(func(string) error)
 	nodeFields := schema.Node{}.Fields()
 	_ = nodeFields
 	// nodeDescID is the schema descriptor for id field.

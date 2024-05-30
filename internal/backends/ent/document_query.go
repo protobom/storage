@@ -80,7 +80,7 @@ func (dq *DocumentQuery) QueryMetadata() *MetadataQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(document.Table, document.FieldID, selector),
 			sqlgraph.To(metadata.Table, metadata.FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, true, document.MetadataTable, document.MetadataColumn),
+			sqlgraph.Edge(sqlgraph.M2O, true, document.MetadataTable, document.MetadataColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(dq.driver.Dialect(), step)
 		return fromU, nil

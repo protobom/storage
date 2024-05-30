@@ -265,6 +265,14 @@ func (nc *NodeCreate) SetNodeListID(id int) *NodeCreate {
 	return nc
 }
 
+// SetNillableNodeListID sets the "node_list" edge to the NodeList entity by ID if the given value is not nil.
+func (nc *NodeCreate) SetNillableNodeListID(id *int) *NodeCreate {
+	if id != nil {
+		nc = nc.SetNodeListID(*id)
+	}
+	return nc
+}
+
 // SetNodeList sets the "node_list" edge to the NodeList entity.
 func (nc *NodeCreate) SetNodeList(n *NodeList) *NodeCreate {
 	return nc.SetNodeListID(n.ID)
@@ -385,9 +393,6 @@ func (nc *NodeCreate) check() error {
 		if err := node.IDValidator(v); err != nil {
 			return &ValidationError{Name: "id", err: fmt.Errorf(`ent: validator failed for field "Node.id": %w`, err)}
 		}
-	}
-	if _, ok := nc.mutation.NodeListID(); !ok {
-		return &ValidationError{Name: "node_list", err: errors.New(`ent: missing required edge "Node.node_list"`)}
 	}
 	return nil
 }
@@ -583,10 +588,10 @@ func (nc *NodeCreate) createSpec() (*Node, *sqlgraph.CreateSpec) {
 	}
 	if nodes := nc.mutation.PrimaryPurposeIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.O2M,
 			Inverse: false,
 			Table:   node.PrimaryPurposeTable,
-			Columns: node.PrimaryPurposePrimaryKey,
+			Columns: []string{node.PrimaryPurposeColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(purpose.FieldID, field.TypeInt),

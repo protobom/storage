@@ -16,7 +16,7 @@ var (
 	// DocumentsColumns holds the columns for the "documents" table.
 	DocumentsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
-		{Name: "metadata_document", Type: field.TypeString, Unique: true},
+		{Name: "metadata_document", Type: field.TypeString},
 		{Name: "node_list_document", Type: field.TypeInt, Unique: true},
 	}
 	// DocumentsTable holds the schema information for the "documents" table.
@@ -67,6 +67,18 @@ var (
 				OnDelete:   schema.SetNull,
 			},
 		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "documenttype_type_name_description",
+				Unique:  true,
+				Columns: []*schema.Column{DocumentTypesColumns[1], DocumentTypesColumns[2], DocumentTypesColumns[3]},
+			},
+			{
+				Name:    "documenttype_id_metadata_document_types",
+				Unique:  true,
+				Columns: []*schema.Column{DocumentTypesColumns[0], DocumentTypesColumns[4]},
+			},
+		},
 	}
 	// EdgeTypesColumns holds the columns for the "edge_types" table.
 	EdgeTypesColumns = []*schema.Column{
@@ -114,7 +126,7 @@ var (
 		{Name: "comment", Type: field.TypeString},
 		{Name: "authority", Type: field.TypeString, Nullable: true},
 		{Name: "type", Type: field.TypeEnum, Enums: []string{"UNKNOWN", "ATTESTATION", "BINARY", "BOM", "BOWER", "BUILD_META", "BUILD_SYSTEM", "CERTIFICATION_REPORT", "CHAT", "CODIFIED_INFRASTRUCTURE", "COMPONENT_ANALYSIS_REPORT", "CONFIGURATION", "DISTRIBUTION_INTAKE", "DOCUMENTATION", "DOWNLOAD", "DYNAMIC_ANALYSIS_REPORT", "EOL_NOTICE", "EVIDENCE", "EXPORT_CONTROL_ASSESSMENT", "FORMULATION", "FUNDING", "ISSUE_TRACKER", "LICENSE", "LOG", "MAILING_LIST", "MATURITY_REPORT", "MAVEN_CENTRAL", "METRICS", "MODEL_CARD", "NPM", "NUGET", "OTHER", "POAM", "PRIVACY_ASSESSMENT", "PRODUCT_METADATA", "PURCHASE_ORDER", "QUALITY_ASSESSMENT_REPORT", "QUALITY_METRICS", "RELEASE_HISTORY", "RELEASE_NOTES", "RISK_ASSESSMENT", "RUNTIME_ANALYSIS_REPORT", "SECURE_SOFTWARE_ATTESTATION", "SECURITY_ADVERSARY_MODEL", "SECURITY_ADVISORY", "SECURITY_CONTACT", "SECURITY_FIX", "SECURITY_OTHER", "SECURITY_PENTEST_REPORT", "SECURITY_POLICY", "SECURITY_SWID", "SECURITY_THREAT_MODEL", "SOCIAL", "SOURCE_ARTIFACT", "STATIC_ANALYSIS_REPORT", "SUPPORT", "VCS", "VULNERABILITY_ASSERTION", "VULNERABILITY_DISCLOSURE_REPORT", "VULNERABILITY_EXPLOITABILITY_ASSESSMENT", "WEBSITE"}},
-		{Name: "node_external_references", Type: field.TypeString},
+		{Name: "node_external_references", Type: field.TypeString, Nullable: true},
 	}
 	// ExternalReferencesTable holds the schema information for the "external_references" table.
 	ExternalReferencesTable = &schema.Table{
@@ -126,7 +138,7 @@ var (
 				Symbol:     "external_references_nodes_external_references",
 				Columns:    []*schema.Column{ExternalReferencesColumns[5]},
 				RefColumns: []*schema.Column{NodesColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.SetNull,
 			},
 		},
 	}
@@ -195,7 +207,7 @@ var (
 	}
 	// MetadataColumns holds the columns for the "metadata" table.
 	MetadataColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeString, Unique: true},
+		{Name: "id", Type: field.TypeString},
 		{Name: "version", Type: field.TypeString},
 		{Name: "name", Type: field.TypeString},
 		{Name: "date", Type: field.TypeTime},
@@ -206,6 +218,13 @@ var (
 		Name:       "metadata",
 		Columns:    MetadataColumns,
 		PrimaryKey: []*schema.Column{MetadataColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "metadata_id_version_name",
+				Unique:  true,
+				Columns: []*schema.Column{MetadataColumns[0], MetadataColumns[1], MetadataColumns[2]},
+			},
+		},
 	}
 	// NodesColumns holds the columns for the "nodes" table.
 	NodesColumns = []*schema.Column{
@@ -229,7 +248,7 @@ var (
 		{Name: "valid_until_date", Type: field.TypeTime},
 		{Name: "attribution", Type: field.TypeJSON},
 		{Name: "file_types", Type: field.TypeJSON},
-		{Name: "node_list_nodes", Type: field.TypeInt},
+		{Name: "node_list_nodes", Type: field.TypeInt, Nullable: true},
 	}
 	// NodesTable holds the schema information for the "nodes" table.
 	NodesTable = &schema.Table{
@@ -241,7 +260,14 @@ var (
 				Symbol:     "nodes_node_lists_nodes",
 				Columns:    []*schema.Column{NodesColumns[20]},
 				RefColumns: []*schema.Column{NodeListsColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.SetNull,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "node_id_node_list_nodes",
+				Unique:  true,
+				Columns: []*schema.Column{NodesColumns[0], NodesColumns[20]},
 			},
 		},
 	}
@@ -255,6 +281,13 @@ var (
 		Name:       "node_lists",
 		Columns:    NodeListsColumns,
 		PrimaryKey: []*schema.Column{NodeListsColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "nodelist_root_elements",
+				Unique:  true,
+				Columns: []*schema.Column{NodeListsColumns[1]},
+			},
+		},
 	}
 	// PersonsColumns holds the columns for the "persons" table.
 	PersonsColumns = []*schema.Column{
@@ -300,17 +333,50 @@ var (
 				OnDelete:   schema.SetNull,
 			},
 		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "person_name_is_org_email_url_phone",
+				Unique:  true,
+				Columns: []*schema.Column{PersonsColumns[1], PersonsColumns[2], PersonsColumns[3], PersonsColumns[4], PersonsColumns[5]},
+			},
+			{
+				Name:    "person_id_metadata_authors",
+				Unique:  true,
+				Columns: []*schema.Column{PersonsColumns[0], PersonsColumns[6]},
+			},
+			{
+				Name:    "person_id_node_originators",
+				Unique:  true,
+				Columns: []*schema.Column{PersonsColumns[0], PersonsColumns[8]},
+			},
+		},
 	}
 	// PurposesColumns holds the columns for the "purposes" table.
 	PurposesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "primary_purpose", Type: field.TypeEnum, Enums: []string{"UNKNOWN_PURPOSE", "APPLICATION", "ARCHIVE", "BOM", "CONFIGURATION", "CONTAINER", "DATA", "DEVICE", "DEVICE_DRIVER", "DOCUMENTATION", "EVIDENCE", "EXECUTABLE", "FILE", "FIRMWARE", "FRAMEWORK", "INSTALL", "LIBRARY", "MACHINE_LEARNING_MODEL", "MANIFEST", "MODEL", "MODULE", "OPERATING_SYSTEM", "OTHER", "PATCH", "PLATFORM", "REQUIREMENT", "SOURCE", "SPECIFICATION", "TEST"}},
+		{Name: "node_primary_purpose", Type: field.TypeString, Nullable: true},
 	}
 	// PurposesTable holds the schema information for the "purposes" table.
 	PurposesTable = &schema.Table{
 		Name:       "purposes",
 		Columns:    PurposesColumns,
 		PrimaryKey: []*schema.Column{PurposesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "purposes_nodes_primary_purpose",
+				Columns:    []*schema.Column{PurposesColumns[2]},
+				RefColumns: []*schema.Column{NodesColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "purpose_id_node_primary_purpose",
+				Unique:  true,
+				Columns: []*schema.Column{PurposesColumns[0], PurposesColumns[2]},
+			},
+		},
 	}
 	// ToolsColumns holds the columns for the "tools" table.
 	ToolsColumns = []*schema.Column{
@@ -333,29 +399,16 @@ var (
 				OnDelete:   schema.SetNull,
 			},
 		},
-	}
-	// NodePrimaryPurposeColumns holds the columns for the "node_primary_purpose" table.
-	NodePrimaryPurposeColumns = []*schema.Column{
-		{Name: "node_id", Type: field.TypeString},
-		{Name: "purpose_id", Type: field.TypeInt},
-	}
-	// NodePrimaryPurposeTable holds the schema information for the "node_primary_purpose" table.
-	NodePrimaryPurposeTable = &schema.Table{
-		Name:       "node_primary_purpose",
-		Columns:    NodePrimaryPurposeColumns,
-		PrimaryKey: []*schema.Column{NodePrimaryPurposeColumns[0], NodePrimaryPurposeColumns[1]},
-		ForeignKeys: []*schema.ForeignKey{
+		Indexes: []*schema.Index{
 			{
-				Symbol:     "node_primary_purpose_node_id",
-				Columns:    []*schema.Column{NodePrimaryPurposeColumns[0]},
-				RefColumns: []*schema.Column{NodesColumns[0]},
-				OnDelete:   schema.Cascade,
+				Name:    "tool_name_version_vendor",
+				Unique:  true,
+				Columns: []*schema.Column{ToolsColumns[1], ToolsColumns[2], ToolsColumns[3]},
 			},
 			{
-				Symbol:     "node_primary_purpose_purpose_id",
-				Columns:    []*schema.Column{NodePrimaryPurposeColumns[1]},
-				RefColumns: []*schema.Column{PurposesColumns[0]},
-				OnDelete:   schema.Cascade,
+				Name:    "tool_id_metadata_tools",
+				Unique:  true,
+				Columns: []*schema.Column{ToolsColumns[0], ToolsColumns[4]},
 			},
 		},
 	}
@@ -373,7 +426,6 @@ var (
 		PersonsTable,
 		PurposesTable,
 		ToolsTable,
-		NodePrimaryPurposeTable,
 	}
 )
 
@@ -392,7 +444,6 @@ func init() {
 	PersonsTable.ForeignKeys[1].RefTable = NodesTable
 	PersonsTable.ForeignKeys[2].RefTable = NodesTable
 	PersonsTable.ForeignKeys[3].RefTable = PersonsTable
+	PurposesTable.ForeignKeys[0].RefTable = NodesTable
 	ToolsTable.ForeignKeys[0].RefTable = MetadataTable
-	NodePrimaryPurposeTable.ForeignKeys[0].RefTable = NodesTable
-	NodePrimaryPurposeTable.ForeignKeys[1].RefTable = PurposesTable
 }

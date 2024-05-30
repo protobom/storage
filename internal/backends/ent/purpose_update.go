@@ -46,19 +46,23 @@ func (pu *PurposeUpdate) SetNillablePrimaryPurpose(pp *purpose.PrimaryPurpose) *
 	return pu
 }
 
-// AddNodeIDs adds the "node" edge to the Node entity by IDs.
-func (pu *PurposeUpdate) AddNodeIDs(ids ...string) *PurposeUpdate {
-	pu.mutation.AddNodeIDs(ids...)
+// SetNodeID sets the "node" edge to the Node entity by ID.
+func (pu *PurposeUpdate) SetNodeID(id string) *PurposeUpdate {
+	pu.mutation.SetNodeID(id)
 	return pu
 }
 
-// AddNode adds the "node" edges to the Node entity.
-func (pu *PurposeUpdate) AddNode(n ...*Node) *PurposeUpdate {
-	ids := make([]string, len(n))
-	for i := range n {
-		ids[i] = n[i].ID
+// SetNillableNodeID sets the "node" edge to the Node entity by ID if the given value is not nil.
+func (pu *PurposeUpdate) SetNillableNodeID(id *string) *PurposeUpdate {
+	if id != nil {
+		pu = pu.SetNodeID(*id)
 	}
-	return pu.AddNodeIDs(ids...)
+	return pu
+}
+
+// SetNode sets the "node" edge to the Node entity.
+func (pu *PurposeUpdate) SetNode(n *Node) *PurposeUpdate {
+	return pu.SetNodeID(n.ID)
 }
 
 // Mutation returns the PurposeMutation object of the builder.
@@ -66,25 +70,10 @@ func (pu *PurposeUpdate) Mutation() *PurposeMutation {
 	return pu.mutation
 }
 
-// ClearNode clears all "node" edges to the Node entity.
+// ClearNode clears the "node" edge to the Node entity.
 func (pu *PurposeUpdate) ClearNode() *PurposeUpdate {
 	pu.mutation.ClearNode()
 	return pu
-}
-
-// RemoveNodeIDs removes the "node" edge to Node entities by IDs.
-func (pu *PurposeUpdate) RemoveNodeIDs(ids ...string) *PurposeUpdate {
-	pu.mutation.RemoveNodeIDs(ids...)
-	return pu
-}
-
-// RemoveNode removes "node" edges to Node entities.
-func (pu *PurposeUpdate) RemoveNode(n ...*Node) *PurposeUpdate {
-	ids := make([]string, len(n))
-	for i := range n {
-		ids[i] = n[i].ID
-	}
-	return pu.RemoveNodeIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -141,39 +130,23 @@ func (pu *PurposeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if pu.mutation.NodeCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.M2O,
 			Inverse: true,
 			Table:   purpose.NodeTable,
-			Columns: purpose.NodePrimaryKey,
+			Columns: []string{purpose.NodeColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeString),
 			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := pu.mutation.RemovedNodeIDs(); len(nodes) > 0 && !pu.mutation.NodeCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: true,
-			Table:   purpose.NodeTable,
-			Columns: purpose.NodePrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
 	if nodes := pu.mutation.NodeIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.M2O,
 			Inverse: true,
 			Table:   purpose.NodeTable,
-			Columns: purpose.NodePrimaryKey,
+			Columns: []string{purpose.NodeColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeString),
@@ -218,19 +191,23 @@ func (puo *PurposeUpdateOne) SetNillablePrimaryPurpose(pp *purpose.PrimaryPurpos
 	return puo
 }
 
-// AddNodeIDs adds the "node" edge to the Node entity by IDs.
-func (puo *PurposeUpdateOne) AddNodeIDs(ids ...string) *PurposeUpdateOne {
-	puo.mutation.AddNodeIDs(ids...)
+// SetNodeID sets the "node" edge to the Node entity by ID.
+func (puo *PurposeUpdateOne) SetNodeID(id string) *PurposeUpdateOne {
+	puo.mutation.SetNodeID(id)
 	return puo
 }
 
-// AddNode adds the "node" edges to the Node entity.
-func (puo *PurposeUpdateOne) AddNode(n ...*Node) *PurposeUpdateOne {
-	ids := make([]string, len(n))
-	for i := range n {
-		ids[i] = n[i].ID
+// SetNillableNodeID sets the "node" edge to the Node entity by ID if the given value is not nil.
+func (puo *PurposeUpdateOne) SetNillableNodeID(id *string) *PurposeUpdateOne {
+	if id != nil {
+		puo = puo.SetNodeID(*id)
 	}
-	return puo.AddNodeIDs(ids...)
+	return puo
+}
+
+// SetNode sets the "node" edge to the Node entity.
+func (puo *PurposeUpdateOne) SetNode(n *Node) *PurposeUpdateOne {
+	return puo.SetNodeID(n.ID)
 }
 
 // Mutation returns the PurposeMutation object of the builder.
@@ -238,25 +215,10 @@ func (puo *PurposeUpdateOne) Mutation() *PurposeMutation {
 	return puo.mutation
 }
 
-// ClearNode clears all "node" edges to the Node entity.
+// ClearNode clears the "node" edge to the Node entity.
 func (puo *PurposeUpdateOne) ClearNode() *PurposeUpdateOne {
 	puo.mutation.ClearNode()
 	return puo
-}
-
-// RemoveNodeIDs removes the "node" edge to Node entities by IDs.
-func (puo *PurposeUpdateOne) RemoveNodeIDs(ids ...string) *PurposeUpdateOne {
-	puo.mutation.RemoveNodeIDs(ids...)
-	return puo
-}
-
-// RemoveNode removes "node" edges to Node entities.
-func (puo *PurposeUpdateOne) RemoveNode(n ...*Node) *PurposeUpdateOne {
-	ids := make([]string, len(n))
-	for i := range n {
-		ids[i] = n[i].ID
-	}
-	return puo.RemoveNodeIDs(ids...)
 }
 
 // Where appends a list predicates to the PurposeUpdate builder.
@@ -343,39 +305,23 @@ func (puo *PurposeUpdateOne) sqlSave(ctx context.Context) (_node *Purpose, err e
 	}
 	if puo.mutation.NodeCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.M2O,
 			Inverse: true,
 			Table:   purpose.NodeTable,
-			Columns: purpose.NodePrimaryKey,
+			Columns: []string{purpose.NodeColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeString),
 			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := puo.mutation.RemovedNodeIDs(); len(nodes) > 0 && !puo.mutation.NodeCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: true,
-			Table:   purpose.NodeTable,
-			Columns: purpose.NodePrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
 	if nodes := puo.mutation.NodeIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.M2O,
 			Inverse: true,
 			Table:   purpose.NodeTable,
-			Columns: purpose.NodePrimaryKey,
+			Columns: []string{purpose.NodeColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeString),

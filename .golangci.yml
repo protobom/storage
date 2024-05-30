@@ -16,6 +16,7 @@ issues:
     - path: _test\.go
       linters:
         - funlen
+        - gochecknoglobals
         - goconst
         - gocyclo
 
@@ -168,3 +169,13 @@ linters-settings:
   nolintlint:
     allow-unused: false
     require-specific: true
+
+  revive:
+    rules:
+      - name: unused-parameter
+        severity: warning
+        disabled: false
+        exclude: [""]
+        arguments:
+          # Ignore all parameters beginning with "_"
+          - allowRegex: "^_"

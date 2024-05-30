@@ -5,10 +5,19 @@
 # --------------------------------------------------------------
 ENT_ROOT_DIR := ${abspath ${patsubst %/,%,${dir ${lastword ${MAKEFILE_LIST}}}}}
 
-.PHONY: generate-ent describe-schemas
-.SILENT: generate-ent describe-schemas
+.PHONY: generate-ent describe-schemas clean-ent
+.SILENT: generate-ent describe-schemas clean-ent
 
 #@ Ent Utilities
+clean-ent: # Clean generated ent code
+	cd ${ENT_ROOT_DIR} && find . -type d -mindepth 1 -maxdepth 1 \
+	  -not "(" -path "./schema*" -or -path "./template*" ")" \
+	  -exec ${RM} -r {} \;
+
+	cd ${ENT_ROOT_DIR} && find . -maxdepth 1 -name "*.go" \
+	  -not "(" -name entc.go -or -name generate.go ")" \
+	  -exec ${RM} {} \;
+
 generate-ent: # Generate ent database types from schema
 	printf "Generating ${CYAN}ent${RESET} database types with ${CYAN}go generate${RESET}..."
 	go generate ${ENT_ROOT_DIR}

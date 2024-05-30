@@ -32,19 +32,23 @@ func (pc *PurposeCreate) SetPrimaryPurpose(pp purpose.PrimaryPurpose) *PurposeCr
 	return pc
 }
 
-// AddNodeIDs adds the "node" edge to the Node entity by IDs.
-func (pc *PurposeCreate) AddNodeIDs(ids ...string) *PurposeCreate {
-	pc.mutation.AddNodeIDs(ids...)
+// SetNodeID sets the "node" edge to the Node entity by ID.
+func (pc *PurposeCreate) SetNodeID(id string) *PurposeCreate {
+	pc.mutation.SetNodeID(id)
 	return pc
 }
 
-// AddNode adds the "node" edges to the Node entity.
-func (pc *PurposeCreate) AddNode(n ...*Node) *PurposeCreate {
-	ids := make([]string, len(n))
-	for i := range n {
-		ids[i] = n[i].ID
+// SetNillableNodeID sets the "node" edge to the Node entity by ID if the given value is not nil.
+func (pc *PurposeCreate) SetNillableNodeID(id *string) *PurposeCreate {
+	if id != nil {
+		pc = pc.SetNodeID(*id)
 	}
-	return pc.AddNodeIDs(ids...)
+	return pc
+}
+
+// SetNode sets the "node" edge to the Node entity.
+func (pc *PurposeCreate) SetNode(n *Node) *PurposeCreate {
+	return pc.SetNodeID(n.ID)
 }
 
 // Mutation returns the PurposeMutation object of the builder.
@@ -122,10 +126,10 @@ func (pc *PurposeCreate) createSpec() (*Purpose, *sqlgraph.CreateSpec) {
 	}
 	if nodes := pc.mutation.NodeIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.M2O,
 			Inverse: true,
 			Table:   purpose.NodeTable,
-			Columns: purpose.NodePrimaryKey,
+			Columns: []string{purpose.NodeColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeString),
@@ -134,6 +138,7 @@ func (pc *PurposeCreate) createSpec() (*Purpose, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
+		_node.node_primary_purpose = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

@@ -116,6 +116,14 @@ func (eru *ExternalReferenceUpdate) SetNodeID(id string) *ExternalReferenceUpdat
 	return eru
 }
 
+// SetNillableNodeID sets the "node" edge to the Node entity by ID if the given value is not nil.
+func (eru *ExternalReferenceUpdate) SetNillableNodeID(id *string) *ExternalReferenceUpdate {
+	if id != nil {
+		eru = eru.SetNodeID(*id)
+	}
+	return eru
+}
+
 // SetNode sets the "node" edge to the Node entity.
 func (eru *ExternalReferenceUpdate) SetNode(n *Node) *ExternalReferenceUpdate {
 	return eru.SetNodeID(n.ID)
@@ -186,9 +194,6 @@ func (eru *ExternalReferenceUpdate) check() error {
 		if err := externalreference.TypeValidator(v); err != nil {
 			return &ValidationError{Name: "type", err: fmt.Errorf(`ent: validator failed for field "ExternalReference.type": %w`, err)}
 		}
-	}
-	if _, ok := eru.mutation.NodeID(); eru.mutation.NodeCleared() && !ok {
-		return errors.New(`ent: clearing a required unique edge "ExternalReference.node"`)
 	}
 	return nil
 }
@@ -397,6 +402,14 @@ func (eruo *ExternalReferenceUpdateOne) SetNodeID(id string) *ExternalReferenceU
 	return eruo
 }
 
+// SetNillableNodeID sets the "node" edge to the Node entity by ID if the given value is not nil.
+func (eruo *ExternalReferenceUpdateOne) SetNillableNodeID(id *string) *ExternalReferenceUpdateOne {
+	if id != nil {
+		eruo = eruo.SetNodeID(*id)
+	}
+	return eruo
+}
+
 // SetNode sets the "node" edge to the Node entity.
 func (eruo *ExternalReferenceUpdateOne) SetNode(n *Node) *ExternalReferenceUpdateOne {
 	return eruo.SetNodeID(n.ID)
@@ -480,9 +493,6 @@ func (eruo *ExternalReferenceUpdateOne) check() error {
 		if err := externalreference.TypeValidator(v); err != nil {
 			return &ValidationError{Name: "type", err: fmt.Errorf(`ent: validator failed for field "ExternalReference.type": %w`, err)}
 		}
-	}
-	if _, ok := eruo.mutation.NodeID(); eruo.mutation.NodeCleared() && !ok {
-		return errors.New(`ent: clearing a required unique edge "ExternalReference.node"`)
 	}
 	return nil
 }
