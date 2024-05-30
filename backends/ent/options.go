@@ -15,16 +15,17 @@ import (
 const dsnParams string = "?_pragma=foreign_keys(1)"
 
 type (
-	config struct {
-		client *ent.Client
-		ctx    context.Context
-		debug  bool
-	}
-
 	// BackendOptions contains options specific to the protobom ent backend.
 	BackendOptions struct {
-		*config
-		DatabaseFile string
+		client              *ent.Client
+		ctx                 context.Context
+		DatabaseFile        string
+		metadataID          string
+		nodeID              string
+		debug               bool
+		contactOwnerID      int
+		externalReferenceID int
+		nodeListID          int
 	}
 
 	// Option represents a single configuration option for the ent backend.
@@ -34,7 +35,7 @@ type (
 // NewBackendOptions creates a new BackendOptions for the backend.
 func NewBackendOptions() *BackendOptions {
 	return &BackendOptions{
-		config:       &config{},
+		ctx:          context.Background(),
 		DatabaseFile: ":memory:",
 	}
 }

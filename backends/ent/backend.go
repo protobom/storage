@@ -8,6 +8,7 @@ package ent
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"slices"
 
@@ -21,6 +22,8 @@ type Backend struct {
 	// BackendOptions is the set of options common to all ent Backends.
 	*BackendOptions
 }
+
+var errInvalidEntOptions = errors.New("invalid ent backend options")
 
 func NewBackend(opts ...Option) *Backend {
 	backend := &Backend{
