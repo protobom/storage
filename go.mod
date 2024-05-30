@@ -6,6 +6,7 @@ require (
 	entgo.io/ent v0.13.1
 	github.com/glebarez/go-sqlite v1.22.0
 	github.com/protobom/protobom v0.4.2
+	google.golang.org/protobuf v1.34.1
 )
 
 require (
@@ -28,7 +29,6 @@ require (
 	golang.org/x/mod v0.17.0 // indirect
 	golang.org/x/sys v0.20.0 // indirect
 	golang.org/x/text v0.15.0 // indirect
-	google.golang.org/protobuf v1.34.1 // indirect
 	modernc.org/libc v1.37.6 // indirect
 	modernc.org/mathutil v1.6.0 // indirect
 	modernc.org/memory v1.7.2 // indirect

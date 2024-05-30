@@ -8,11 +8,11 @@ package ent
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"fmt"
 	"slices"
 
 	sqlite "github.com/glebarez/go-sqlite"
+	"github.com/protobom/protobom/pkg/storage"
 
 	"github.com/protobom/storage/internal/backends/ent"
 )
@@ -23,7 +23,7 @@ type Backend struct {
 	*BackendOptions
 }
 
-var errInvalidEntOptions = errors.New("invalid ent backend options")
+var _ storage.Backend = (*Backend)(nil)
 
 func NewBackend(opts ...Option) *Backend {
 	backend := &Backend{

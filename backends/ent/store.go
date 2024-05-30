@@ -6,6 +6,7 @@
 package ent
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/protobom/protobom/pkg/sbom"
@@ -22,6 +23,8 @@ import (
 	"github.com/protobom/storage/internal/backends/ent/nodelist"
 	"github.com/protobom/storage/internal/backends/ent/purpose"
 )
+
+var errInvalidEntOptions = errors.New("invalid ent backend options")
 
 // Store implements the storage.Storer interface.
 func (backend *Backend) Store(doc *sbom.Document, opts *storage.StoreOptions) error {
