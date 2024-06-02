@@ -21,13 +21,14 @@ type Purpose struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID int `json:"id,omitempty"`
+	// NodeID holds the value of the "node_id" field.
+	NodeID string `json:"node_id,omitempty"`
 	// PrimaryPurpose holds the value of the "primary_purpose" field.
 	PrimaryPurpose purpose.PrimaryPurpose `json:"primary_purpose,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the PurposeQuery when eager-loading is set.
-	Edges                PurposeEdges `json:"edges"`
-	node_primary_purpose *string
-	selectValues         sql.SelectValues
+	Edges        PurposeEdges `json:"edges"`
+	selectValues sql.SelectValues
 }
 
 // PurposeEdges holds the relations/edges for other nodes in the graph.
@@ -57,9 +58,7 @@ func (*Purpose) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case purpose.FieldID:
 			values[i] = new(sql.NullInt64)
-		case purpose.FieldPrimaryPurpose:
-			values[i] = new(sql.NullString)
-		case purpose.ForeignKeys[0]: // node_primary_purpose
+		case purpose.FieldNodeID, purpose.FieldPrimaryPurpose:
 			values[i] = new(sql.NullString)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -82,18 +81,17 @@ func (pu *Purpose) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", value)
 			}
 			pu.ID = int(value.Int64)
+		case purpose.FieldNodeID:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field node_id", values[i])
+			} else if value.Valid {
+				pu.NodeID = value.String
+			}
 		case purpose.FieldPrimaryPurpose:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field primary_purpose", values[i])
 			} else if value.Valid {
 				pu.PrimaryPurpose = purpose.PrimaryPurpose(value.String)
-			}
-		case purpose.ForeignKeys[0]:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field node_primary_purpose", values[i])
-			} else if value.Valid {
-				pu.node_primary_purpose = new(string)
-				*pu.node_primary_purpose = value.String
 			}
 		default:
 			pu.selectValues.Set(columns[i], values[i])
@@ -136,6 +134,9 @@ func (pu *Purpose) String() string {
 	var builder strings.Builder
 	builder.WriteString("Purpose(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", pu.ID))
+	builder.WriteString("node_id=")
+	builder.WriteString(pu.NodeID)
+	builder.WriteString(", ")
 	builder.WriteString("primary_purpose=")
 	builder.WriteString(fmt.Sprintf("%v", pu.PrimaryPurpose))
 	builder.WriteByte(')')

@@ -33,6 +33,26 @@ func (eru *ExternalReferenceUpdate) Where(ps ...predicate.ExternalReference) *Ex
 	return eru
 }
 
+// SetNodeID sets the "node_id" field.
+func (eru *ExternalReferenceUpdate) SetNodeID(s string) *ExternalReferenceUpdate {
+	eru.mutation.SetNodeID(s)
+	return eru
+}
+
+// SetNillableNodeID sets the "node_id" field if the given value is not nil.
+func (eru *ExternalReferenceUpdate) SetNillableNodeID(s *string) *ExternalReferenceUpdate {
+	if s != nil {
+		eru.SetNodeID(*s)
+	}
+	return eru
+}
+
+// ClearNodeID clears the value of the "node_id" field.
+func (eru *ExternalReferenceUpdate) ClearNodeID() *ExternalReferenceUpdate {
+	eru.mutation.ClearNodeID()
+	return eru
+}
+
 // SetURL sets the "url" field.
 func (eru *ExternalReferenceUpdate) SetURL(s string) *ExternalReferenceUpdate {
 	eru.mutation.SetURL(s)
@@ -108,20 +128,6 @@ func (eru *ExternalReferenceUpdate) AddHashes(h ...*HashesEntry) *ExternalRefere
 		ids[i] = h[i].ID
 	}
 	return eru.AddHashIDs(ids...)
-}
-
-// SetNodeID sets the "node" edge to the Node entity by ID.
-func (eru *ExternalReferenceUpdate) SetNodeID(id string) *ExternalReferenceUpdate {
-	eru.mutation.SetNodeID(id)
-	return eru
-}
-
-// SetNillableNodeID sets the "node" edge to the Node entity by ID if the given value is not nil.
-func (eru *ExternalReferenceUpdate) SetNillableNodeID(id *string) *ExternalReferenceUpdate {
-	if id != nil {
-		eru = eru.SetNodeID(*id)
-	}
-	return eru
 }
 
 // SetNode sets the "node" edge to the Node entity.
@@ -319,6 +325,26 @@ type ExternalReferenceUpdateOne struct {
 	mutation *ExternalReferenceMutation
 }
 
+// SetNodeID sets the "node_id" field.
+func (eruo *ExternalReferenceUpdateOne) SetNodeID(s string) *ExternalReferenceUpdateOne {
+	eruo.mutation.SetNodeID(s)
+	return eruo
+}
+
+// SetNillableNodeID sets the "node_id" field if the given value is not nil.
+func (eruo *ExternalReferenceUpdateOne) SetNillableNodeID(s *string) *ExternalReferenceUpdateOne {
+	if s != nil {
+		eruo.SetNodeID(*s)
+	}
+	return eruo
+}
+
+// ClearNodeID clears the value of the "node_id" field.
+func (eruo *ExternalReferenceUpdateOne) ClearNodeID() *ExternalReferenceUpdateOne {
+	eruo.mutation.ClearNodeID()
+	return eruo
+}
+
 // SetURL sets the "url" field.
 func (eruo *ExternalReferenceUpdateOne) SetURL(s string) *ExternalReferenceUpdateOne {
 	eruo.mutation.SetURL(s)
@@ -394,20 +420,6 @@ func (eruo *ExternalReferenceUpdateOne) AddHashes(h ...*HashesEntry) *ExternalRe
 		ids[i] = h[i].ID
 	}
 	return eruo.AddHashIDs(ids...)
-}
-
-// SetNodeID sets the "node" edge to the Node entity by ID.
-func (eruo *ExternalReferenceUpdateOne) SetNodeID(id string) *ExternalReferenceUpdateOne {
-	eruo.mutation.SetNodeID(id)
-	return eruo
-}
-
-// SetNillableNodeID sets the "node" edge to the Node entity by ID if the given value is not nil.
-func (eruo *ExternalReferenceUpdateOne) SetNillableNodeID(id *string) *ExternalReferenceUpdateOne {
-	if id != nil {
-		eruo = eruo.SetNodeID(*id)
-	}
-	return eruo
 }
 
 // SetNode sets the "node" edge to the Node entity.

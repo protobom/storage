@@ -17,6 +17,10 @@ const (
 	Label = "person"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
+	// FieldMetadataID holds the string denoting the metadata_id field in the database.
+	FieldMetadataID = "metadata_id"
+	// FieldNodeID holds the string denoting the node_id field in the database.
+	FieldNodeID = "node_id"
 	// FieldName holds the string denoting the name field in the database.
 	FieldName = "name"
 	// FieldIsOrg holds the string denoting the is_org field in the database.
@@ -51,19 +55,21 @@ const (
 	// It exists in this package in order to avoid circular dependency with the "metadata" package.
 	MetadataInverseTable = "metadata"
 	// MetadataColumn is the table column denoting the metadata relation/edge.
-	MetadataColumn = "metadata_authors"
+	MetadataColumn = "metadata_id"
 	// NodeTable is the table that holds the node relation/edge.
 	NodeTable = "persons"
 	// NodeInverseTable is the table name for the Node entity.
 	// It exists in this package in order to avoid circular dependency with the "node" package.
 	NodeInverseTable = "nodes"
 	// NodeColumn is the table column denoting the node relation/edge.
-	NodeColumn = "node_originators"
+	NodeColumn = "node_id"
 )
 
 // Columns holds all SQL columns for person fields.
 var Columns = []string{
 	FieldID,
+	FieldMetadataID,
+	FieldNodeID,
 	FieldName,
 	FieldIsOrg,
 	FieldEmail,
@@ -74,9 +80,7 @@ var Columns = []string{
 // ForeignKeys holds the SQL foreign-keys that are owned by the "persons"
 // table and are not defined as standalone fields in the schema.
 var ForeignKeys = []string{
-	"metadata_authors",
 	"node_suppliers",
-	"node_originators",
 	"person_contacts",
 }
 
@@ -101,6 +105,16 @@ type OrderOption func(*sql.Selector)
 // ByID orders the results by the id field.
 func ByID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldID, opts...).ToFunc()
+}
+
+// ByMetadataID orders the results by the metadata_id field.
+func ByMetadataID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldMetadataID, opts...).ToFunc()
+}
+
+// ByNodeID orders the results by the node_id field.
+func ByNodeID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldNodeID, opts...).ToFunc()
 }
 
 // ByName orders the results by the name field.

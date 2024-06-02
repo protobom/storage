@@ -26,6 +26,20 @@ type ToolCreate struct {
 	conflict []sql.ConflictOption
 }
 
+// SetMetadataID sets the "metadata_id" field.
+func (tc *ToolCreate) SetMetadataID(s string) *ToolCreate {
+	tc.mutation.SetMetadataID(s)
+	return tc
+}
+
+// SetNillableMetadataID sets the "metadata_id" field if the given value is not nil.
+func (tc *ToolCreate) SetNillableMetadataID(s *string) *ToolCreate {
+	if s != nil {
+		tc.SetMetadataID(*s)
+	}
+	return tc
+}
+
 // SetName sets the "name" field.
 func (tc *ToolCreate) SetName(s string) *ToolCreate {
 	tc.mutation.SetName(s)
@@ -41,20 +55,6 @@ func (tc *ToolCreate) SetVersion(s string) *ToolCreate {
 // SetVendor sets the "vendor" field.
 func (tc *ToolCreate) SetVendor(s string) *ToolCreate {
 	tc.mutation.SetVendor(s)
-	return tc
-}
-
-// SetMetadataID sets the "metadata" edge to the Metadata entity by ID.
-func (tc *ToolCreate) SetMetadataID(id string) *ToolCreate {
-	tc.mutation.SetMetadataID(id)
-	return tc
-}
-
-// SetNillableMetadataID sets the "metadata" edge to the Metadata entity by ID if the given value is not nil.
-func (tc *ToolCreate) SetNillableMetadataID(id *string) *ToolCreate {
-	if id != nil {
-		tc = tc.SetMetadataID(*id)
-	}
 	return tc
 }
 
@@ -159,7 +159,7 @@ func (tc *ToolCreate) createSpec() (*Tool, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.metadata_tools = &nodes[0]
+		_node.MetadataID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
@@ -169,7 +169,7 @@ func (tc *ToolCreate) createSpec() (*Tool, *sqlgraph.CreateSpec) {
 // of the `INSERT` statement. For example:
 //
 //	client.Tool.Create().
-//		SetName(v).
+//		SetMetadataID(v).
 //		OnConflict(
 //			// Update the row with the new values
 //			// the was proposed for insertion.
@@ -178,7 +178,7 @@ func (tc *ToolCreate) createSpec() (*Tool, *sqlgraph.CreateSpec) {
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.ToolUpsert) {
-//			SetName(v+v).
+//			SetMetadataID(v+v).
 //		}).
 //		Exec(ctx)
 func (tc *ToolCreate) OnConflict(opts ...sql.ConflictOption) *ToolUpsertOne {
@@ -213,6 +213,24 @@ type (
 		*sql.UpdateSet
 	}
 )
+
+// SetMetadataID sets the "metadata_id" field.
+func (u *ToolUpsert) SetMetadataID(v string) *ToolUpsert {
+	u.Set(tool.FieldMetadataID, v)
+	return u
+}
+
+// UpdateMetadataID sets the "metadata_id" field to the value that was provided on create.
+func (u *ToolUpsert) UpdateMetadataID() *ToolUpsert {
+	u.SetExcluded(tool.FieldMetadataID)
+	return u
+}
+
+// ClearMetadataID clears the value of the "metadata_id" field.
+func (u *ToolUpsert) ClearMetadataID() *ToolUpsert {
+	u.SetNull(tool.FieldMetadataID)
+	return u
+}
 
 // SetName sets the "name" field.
 func (u *ToolUpsert) SetName(v string) *ToolUpsert {
@@ -288,6 +306,27 @@ func (u *ToolUpsertOne) Update(set func(*ToolUpsert)) *ToolUpsertOne {
 		set(&ToolUpsert{UpdateSet: update})
 	}))
 	return u
+}
+
+// SetMetadataID sets the "metadata_id" field.
+func (u *ToolUpsertOne) SetMetadataID(v string) *ToolUpsertOne {
+	return u.Update(func(s *ToolUpsert) {
+		s.SetMetadataID(v)
+	})
+}
+
+// UpdateMetadataID sets the "metadata_id" field to the value that was provided on create.
+func (u *ToolUpsertOne) UpdateMetadataID() *ToolUpsertOne {
+	return u.Update(func(s *ToolUpsert) {
+		s.UpdateMetadataID()
+	})
+}
+
+// ClearMetadataID clears the value of the "metadata_id" field.
+func (u *ToolUpsertOne) ClearMetadataID() *ToolUpsertOne {
+	return u.Update(func(s *ToolUpsert) {
+		s.ClearMetadataID()
+	})
 }
 
 // SetName sets the "name" field.
@@ -466,7 +505,7 @@ func (tcb *ToolCreateBulk) ExecX(ctx context.Context) {
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.ToolUpsert) {
-//			SetName(v+v).
+//			SetMetadataID(v+v).
 //		}).
 //		Exec(ctx)
 func (tcb *ToolCreateBulk) OnConflict(opts ...sql.ConflictOption) *ToolUpsertBulk {
@@ -533,6 +572,27 @@ func (u *ToolUpsertBulk) Update(set func(*ToolUpsert)) *ToolUpsertBulk {
 		set(&ToolUpsert{UpdateSet: update})
 	}))
 	return u
+}
+
+// SetMetadataID sets the "metadata_id" field.
+func (u *ToolUpsertBulk) SetMetadataID(v string) *ToolUpsertBulk {
+	return u.Update(func(s *ToolUpsert) {
+		s.SetMetadataID(v)
+	})
+}
+
+// UpdateMetadataID sets the "metadata_id" field to the value that was provided on create.
+func (u *ToolUpsertBulk) UpdateMetadataID() *ToolUpsertBulk {
+	return u.Update(func(s *ToolUpsert) {
+		s.UpdateMetadataID()
+	})
+}
+
+// ClearMetadataID clears the value of the "metadata_id" field.
+func (u *ToolUpsertBulk) ClearMetadataID() *ToolUpsertBulk {
+	return u.Update(func(s *ToolUpsert) {
+		s.ClearMetadataID()
+	})
 }
 
 // SetName sets the "name" field.

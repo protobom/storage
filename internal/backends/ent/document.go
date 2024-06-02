@@ -19,15 +19,17 @@ import (
 
 // Document is the model entity for the Document schema.
 type Document struct {
-	config
+	config `json:"-"`
 	// ID of the ent.
 	ID int `json:"id,omitempty"`
+	// MetadataID holds the value of the "metadata_id" field.
+	MetadataID string `json:"metadata_id,omitempty"`
+	// NodeListID holds the value of the "node_list_id" field.
+	NodeListID int `json:"node_list_id,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the DocumentQuery when eager-loading is set.
-	Edges              DocumentEdges `json:"edges"`
-	metadata_document  *string
-	node_list_document *int
-	selectValues       sql.SelectValues
+	Edges        DocumentEdges `json:"edges"`
+	selectValues sql.SelectValues
 }
 
 // DocumentEdges holds the relations/edges for other nodes in the graph.
@@ -68,12 +70,10 @@ func (*Document) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case document.FieldID:
+		case document.FieldID, document.FieldNodeListID:
 			values[i] = new(sql.NullInt64)
-		case document.ForeignKeys[0]: // metadata_document
+		case document.FieldMetadataID:
 			values[i] = new(sql.NullString)
-		case document.ForeignKeys[1]: // node_list_document
-			values[i] = new(sql.NullInt64)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -95,19 +95,17 @@ func (d *Document) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", value)
 			}
 			d.ID = int(value.Int64)
-		case document.ForeignKeys[0]:
+		case document.FieldMetadataID:
 			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field metadata_document", values[i])
+				return fmt.Errorf("unexpected type %T for field metadata_id", values[i])
 			} else if value.Valid {
-				d.metadata_document = new(string)
-				*d.metadata_document = value.String
+				d.MetadataID = value.String
 			}
-		case document.ForeignKeys[1]:
+		case document.FieldNodeListID:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
-				return fmt.Errorf("unexpected type %T for edge-field node_list_document", value)
+				return fmt.Errorf("unexpected type %T for field node_list_id", values[i])
 			} else if value.Valid {
-				d.node_list_document = new(int)
-				*d.node_list_document = int(value.Int64)
+				d.NodeListID = int(value.Int64)
 			}
 		default:
 			d.selectValues.Set(columns[i], values[i])
@@ -154,7 +152,12 @@ func (d *Document) Unwrap() *Document {
 func (d *Document) String() string {
 	var builder strings.Builder
 	builder.WriteString("Document(")
-	builder.WriteString(fmt.Sprintf("id=%v", d.ID))
+	builder.WriteString(fmt.Sprintf("id=%v, ", d.ID))
+	builder.WriteString("metadata_id=")
+	builder.WriteString(d.MetadataID)
+	builder.WriteString(", ")
+	builder.WriteString("node_list_id=")
+	builder.WriteString(fmt.Sprintf("%v", d.NodeListID))
 	builder.WriteByte(')')
 	return builder.String()
 }

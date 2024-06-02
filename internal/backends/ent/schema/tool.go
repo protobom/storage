@@ -18,6 +18,7 @@ type Tool struct {
 
 func (Tool) Fields() []ent.Field {
 	return []ent.Field{
+		field.String("metadata_id").Optional(),
 		field.String("name"),
 		field.String("version"),
 		field.String("vendor"),
@@ -26,13 +27,12 @@ func (Tool) Fields() []ent.Field {
 
 func (Tool) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("metadata", Metadata.Type).Ref("tools").Unique(),
+		edge.From("metadata", Metadata.Type).Ref("tools").Unique().Field("metadata_id"),
 	}
 }
 
 func (Tool) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("name", "version", "vendor").Unique(),
-		index.Edges("metadata").Fields("id").Unique(),
+		index.Fields("metadata_id", "name", "version", "vendor").Unique(),
 	}
 }

@@ -30,7 +30,6 @@ type ExternalReferenceQuery struct {
 	predicates []predicate.ExternalReference
 	withHashes *HashesEntryQuery
 	withNode   *NodeQuery
-	withFKs    bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -339,12 +338,12 @@ func (erq *ExternalReferenceQuery) WithNode(opts ...func(*NodeQuery)) *ExternalR
 // Example:
 //
 //	var v []struct {
-//		URL string `json:"url,omitempty"`
+//		NodeID string `json:"node_id,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.ExternalReference.Query().
-//		GroupBy(externalreference.FieldURL).
+//		GroupBy(externalreference.FieldNodeID).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (erq *ExternalReferenceQuery) GroupBy(field string, fields ...string) *ExternalReferenceGroupBy {
@@ -362,11 +361,11 @@ func (erq *ExternalReferenceQuery) GroupBy(field string, fields ...string) *Exte
 // Example:
 //
 //	var v []struct {
-//		URL string `json:"url,omitempty"`
+//		NodeID string `json:"node_id,omitempty"`
 //	}
 //
 //	client.ExternalReference.Query().
-//		Select(externalreference.FieldURL).
+//		Select(externalreference.FieldNodeID).
 //		Scan(ctx, &v)
 func (erq *ExternalReferenceQuery) Select(fields ...string) *ExternalReferenceSelect {
 	erq.ctx.Fields = append(erq.ctx.Fields, fields...)
@@ -410,19 +409,12 @@ func (erq *ExternalReferenceQuery) prepareQuery(ctx context.Context) error {
 func (erq *ExternalReferenceQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*ExternalReference, error) {
 	var (
 		nodes       = []*ExternalReference{}
-		withFKs     = erq.withFKs
 		_spec       = erq.querySpec()
 		loadedTypes = [2]bool{
 			erq.withHashes != nil,
 			erq.withNode != nil,
 		}
 	)
-	if erq.withNode != nil {
-		withFKs = true
-	}
-	if withFKs {
-		_spec.Node.Columns = append(_spec.Node.Columns, externalreference.ForeignKeys...)
-	}
 	_spec.ScanValues = func(columns []string) ([]any, error) {
 		return (*ExternalReference).scanValues(nil, columns)
 	}
@@ -492,10 +484,7 @@ func (erq *ExternalReferenceQuery) loadNode(ctx context.Context, query *NodeQuer
 	ids := make([]string, 0, len(nodes))
 	nodeids := make(map[string][]*ExternalReference)
 	for i := range nodes {
-		if nodes[i].node_external_references == nil {
-			continue
-		}
-		fk := *nodes[i].node_external_references
+		fk := nodes[i].NodeID
 		if _, ok := nodeids[fk]; !ok {
 			ids = append(ids, fk)
 		}
@@ -512,7 +501,7 @@ func (erq *ExternalReferenceQuery) loadNode(ctx context.Context, query *NodeQuer
 	for _, n := range neighbors {
 		nodes, ok := nodeids[n.ID]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "node_external_references" returned %v`, n.ID)
+			return fmt.Errorf(`unexpected foreign-key "node_id" returned %v`, n.ID)
 		}
 		for i := range nodes {
 			assign(nodes[i], n)
@@ -545,6 +534,9 @@ func (erq *ExternalReferenceQuery) querySpec() *sqlgraph.QuerySpec {
 			if fields[i] != externalreference.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
+		}
+		if erq.withNode != nil {
+			_spec.Node.AddColumnOnce(externalreference.FieldNodeID)
 		}
 	}
 	if ps := erq.predicates; len(ps) > 0 {

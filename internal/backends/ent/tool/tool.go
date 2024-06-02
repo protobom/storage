@@ -17,6 +17,8 @@ const (
 	Label = "tool"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
+	// FieldMetadataID holds the string denoting the metadata_id field in the database.
+	FieldMetadataID = "metadata_id"
 	// FieldName holds the string denoting the name field in the database.
 	FieldName = "name"
 	// FieldVersion holds the string denoting the version field in the database.
@@ -33,32 +35,22 @@ const (
 	// It exists in this package in order to avoid circular dependency with the "metadata" package.
 	MetadataInverseTable = "metadata"
 	// MetadataColumn is the table column denoting the metadata relation/edge.
-	MetadataColumn = "metadata_tools"
+	MetadataColumn = "metadata_id"
 )
 
 // Columns holds all SQL columns for tool fields.
 var Columns = []string{
 	FieldID,
+	FieldMetadataID,
 	FieldName,
 	FieldVersion,
 	FieldVendor,
-}
-
-// ForeignKeys holds the SQL foreign-keys that are owned by the "tools"
-// table and are not defined as standalone fields in the schema.
-var ForeignKeys = []string{
-	"metadata_tools",
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {
 	for i := range Columns {
 		if column == Columns[i] {
-			return true
-		}
-	}
-	for i := range ForeignKeys {
-		if column == ForeignKeys[i] {
 			return true
 		}
 	}
@@ -71,6 +63,11 @@ type OrderOption func(*sql.Selector)
 // ByID orders the results by the id field.
 func ByID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldID, opts...).ToFunc()
+}
+
+// ByMetadataID orders the results by the metadata_id field.
+func ByMetadataID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldMetadataID, opts...).ToFunc()
 }
 
 // ByName orders the results by the name field.

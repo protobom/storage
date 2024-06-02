@@ -409,12 +409,12 @@ func (pq *PersonQuery) WithNode(opts ...func(*NodeQuery)) *PersonQuery {
 // Example:
 //
 //	var v []struct {
-//		Name string `json:"name,omitempty"`
+//		MetadataID string `json:"metadata_id,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.Person.Query().
-//		GroupBy(person.FieldName).
+//		GroupBy(person.FieldMetadataID).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (pq *PersonQuery) GroupBy(field string, fields ...string) *PersonGroupBy {
@@ -432,11 +432,11 @@ func (pq *PersonQuery) GroupBy(field string, fields ...string) *PersonGroupBy {
 // Example:
 //
 //	var v []struct {
-//		Name string `json:"name,omitempty"`
+//		MetadataID string `json:"metadata_id,omitempty"`
 //	}
 //
 //	client.Person.Query().
-//		Select(person.FieldName).
+//		Select(person.FieldMetadataID).
 //		Scan(ctx, &v)
 func (pq *PersonQuery) Select(fields ...string) *PersonSelect {
 	pq.ctx.Fields = append(pq.ctx.Fields, fields...)
@@ -489,7 +489,7 @@ func (pq *PersonQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Perso
 			pq.withNode != nil,
 		}
 	)
-	if pq.withContactOwner != nil || pq.withMetadata != nil || pq.withNode != nil {
+	if pq.withContactOwner != nil {
 		withFKs = true
 	}
 	if withFKs {
@@ -608,10 +608,7 @@ func (pq *PersonQuery) loadMetadata(ctx context.Context, query *MetadataQuery, n
 	ids := make([]string, 0, len(nodes))
 	nodeids := make(map[string][]*Person)
 	for i := range nodes {
-		if nodes[i].metadata_authors == nil {
-			continue
-		}
-		fk := *nodes[i].metadata_authors
+		fk := nodes[i].MetadataID
 		if _, ok := nodeids[fk]; !ok {
 			ids = append(ids, fk)
 		}
@@ -628,7 +625,7 @@ func (pq *PersonQuery) loadMetadata(ctx context.Context, query *MetadataQuery, n
 	for _, n := range neighbors {
 		nodes, ok := nodeids[n.ID]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "metadata_authors" returned %v`, n.ID)
+			return fmt.Errorf(`unexpected foreign-key "metadata_id" returned %v`, n.ID)
 		}
 		for i := range nodes {
 			assign(nodes[i], n)
@@ -640,10 +637,7 @@ func (pq *PersonQuery) loadNode(ctx context.Context, query *NodeQuery, nodes []*
 	ids := make([]string, 0, len(nodes))
 	nodeids := make(map[string][]*Person)
 	for i := range nodes {
-		if nodes[i].node_originators == nil {
-			continue
-		}
-		fk := *nodes[i].node_originators
+		fk := nodes[i].NodeID
 		if _, ok := nodeids[fk]; !ok {
 			ids = append(ids, fk)
 		}
@@ -660,7 +654,7 @@ func (pq *PersonQuery) loadNode(ctx context.Context, query *NodeQuery, nodes []*
 	for _, n := range neighbors {
 		nodes, ok := nodeids[n.ID]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "node_originators" returned %v`, n.ID)
+			return fmt.Errorf(`unexpected foreign-key "node_id" returned %v`, n.ID)
 		}
 		for i := range nodes {
 			assign(nodes[i], n)
@@ -693,6 +687,12 @@ func (pq *PersonQuery) querySpec() *sqlgraph.QuerySpec {
 			if fields[i] != person.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
+		}
+		if pq.withMetadata != nil {
+			_spec.Node.AddColumnOnce(person.FieldMetadataID)
+		}
+		if pq.withNode != nil {
+			_spec.Node.AddColumnOnce(person.FieldNodeID)
 		}
 	}
 	if ps := pq.predicates; len(ps) > 0 {

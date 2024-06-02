@@ -17,6 +17,10 @@ const (
 	Label = "document"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
+	// FieldMetadataID holds the string denoting the metadata_id field in the database.
+	FieldMetadataID = "metadata_id"
+	// FieldNodeListID holds the string denoting the node_list_id field in the database.
+	FieldNodeListID = "node_list_id"
 	// EdgeMetadata holds the string denoting the metadata edge name in mutations.
 	EdgeMetadata = "metadata"
 	// EdgeNodeList holds the string denoting the node_list edge name in mutations.
@@ -29,37 +33,27 @@ const (
 	// It exists in this package in order to avoid circular dependency with the "metadata" package.
 	MetadataInverseTable = "metadata"
 	// MetadataColumn is the table column denoting the metadata relation/edge.
-	MetadataColumn = "metadata_document"
+	MetadataColumn = "metadata_id"
 	// NodeListTable is the table that holds the node_list relation/edge.
 	NodeListTable = "documents"
 	// NodeListInverseTable is the table name for the NodeList entity.
 	// It exists in this package in order to avoid circular dependency with the "nodelist" package.
 	NodeListInverseTable = "node_lists"
 	// NodeListColumn is the table column denoting the node_list relation/edge.
-	NodeListColumn = "node_list_document"
+	NodeListColumn = "node_list_id"
 )
 
 // Columns holds all SQL columns for document fields.
 var Columns = []string{
 	FieldID,
-}
-
-// ForeignKeys holds the SQL foreign-keys that are owned by the "documents"
-// table and are not defined as standalone fields in the schema.
-var ForeignKeys = []string{
-	"metadata_document",
-	"node_list_document",
+	FieldMetadataID,
+	FieldNodeListID,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {
 	for i := range Columns {
 		if column == Columns[i] {
-			return true
-		}
-	}
-	for i := range ForeignKeys {
-		if column == ForeignKeys[i] {
 			return true
 		}
 	}
@@ -72,6 +66,16 @@ type OrderOption func(*sql.Selector)
 // ByID orders the results by the id field.
 func ByID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldID, opts...).ToFunc()
+}
+
+// ByMetadataID orders the results by the metadata_id field.
+func ByMetadataID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldMetadataID, opts...).ToFunc()
+}
+
+// ByNodeListID orders the results by the node_list_id field.
+func ByNodeListID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldNodeListID, opts...).ToFunc()
 }
 
 // ByMetadataField orders the results by metadata field.

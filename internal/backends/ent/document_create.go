@@ -27,21 +27,21 @@ type DocumentCreate struct {
 	conflict []sql.ConflictOption
 }
 
-// SetMetadataID sets the "metadata" edge to the Metadata entity by ID.
-func (dc *DocumentCreate) SetMetadataID(id string) *DocumentCreate {
-	dc.mutation.SetMetadataID(id)
+// SetMetadataID sets the "metadata_id" field.
+func (dc *DocumentCreate) SetMetadataID(s string) *DocumentCreate {
+	dc.mutation.SetMetadataID(s)
+	return dc
+}
+
+// SetNodeListID sets the "node_list_id" field.
+func (dc *DocumentCreate) SetNodeListID(i int) *DocumentCreate {
+	dc.mutation.SetNodeListID(i)
 	return dc
 }
 
 // SetMetadata sets the "metadata" edge to the Metadata entity.
 func (dc *DocumentCreate) SetMetadata(m *Metadata) *DocumentCreate {
 	return dc.SetMetadataID(m.ID)
-}
-
-// SetNodeListID sets the "node_list" edge to the NodeList entity by ID.
-func (dc *DocumentCreate) SetNodeListID(id int) *DocumentCreate {
-	dc.mutation.SetNodeListID(id)
-	return dc
 }
 
 // SetNodeList sets the "node_list" edge to the NodeList entity.
@@ -83,6 +83,12 @@ func (dc *DocumentCreate) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (dc *DocumentCreate) check() error {
+	if _, ok := dc.mutation.MetadataID(); !ok {
+		return &ValidationError{Name: "metadata_id", err: errors.New(`ent: missing required field "Document.metadata_id"`)}
+	}
+	if _, ok := dc.mutation.NodeListID(); !ok {
+		return &ValidationError{Name: "node_list_id", err: errors.New(`ent: missing required field "Document.node_list_id"`)}
+	}
 	if _, ok := dc.mutation.MetadataID(); !ok {
 		return &ValidationError{Name: "metadata", err: errors.New(`ent: missing required edge "Document.metadata"`)}
 	}
@@ -130,7 +136,7 @@ func (dc *DocumentCreate) createSpec() (*Document, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.metadata_document = &nodes[0]
+		_node.MetadataID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := dc.mutation.NodeListIDs(); len(nodes) > 0 {
@@ -147,7 +153,7 @@ func (dc *DocumentCreate) createSpec() (*Document, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.node_list_document = &nodes[0]
+		_node.NodeListID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
@@ -157,11 +163,17 @@ func (dc *DocumentCreate) createSpec() (*Document, *sqlgraph.CreateSpec) {
 // of the `INSERT` statement. For example:
 //
 //	client.Document.Create().
+//		SetMetadataID(v).
 //		OnConflict(
 //			// Update the row with the new values
 //			// the was proposed for insertion.
 //			sql.ResolveWithNewValues(),
 //		).
+//		// Override some of the fields with custom
+//		// update values.
+//		Update(func(u *ent.DocumentUpsert) {
+//			SetMetadataID(v+v).
+//		}).
 //		Exec(ctx)
 func (dc *DocumentCreate) OnConflict(opts ...sql.ConflictOption) *DocumentUpsertOne {
 	dc.conflict = opts
@@ -206,6 +218,14 @@ type (
 //		Exec(ctx)
 func (u *DocumentUpsertOne) UpdateNewValues() *DocumentUpsertOne {
 	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
+		if _, exists := u.create.mutation.MetadataID(); exists {
+			s.SetIgnore(document.FieldMetadataID)
+		}
+		if _, exists := u.create.mutation.NodeListID(); exists {
+			s.SetIgnore(document.FieldNodeListID)
+		}
+	}))
 	return u
 }
 
@@ -367,6 +387,11 @@ func (dcb *DocumentCreateBulk) ExecX(ctx context.Context) {
 //			// the was proposed for insertion.
 //			sql.ResolveWithNewValues(),
 //		).
+//		// Override some of the fields with custom
+//		// update values.
+//		Update(func(u *ent.DocumentUpsert) {
+//			SetMetadataID(v+v).
+//		}).
 //		Exec(ctx)
 func (dcb *DocumentCreateBulk) OnConflict(opts ...sql.ConflictOption) *DocumentUpsertBulk {
 	dcb.conflict = opts
@@ -404,6 +429,16 @@ type DocumentUpsertBulk struct {
 //		Exec(ctx)
 func (u *DocumentUpsertBulk) UpdateNewValues() *DocumentUpsertBulk {
 	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
+		for _, b := range u.create.builders {
+			if _, exists := b.mutation.MetadataID(); exists {
+				s.SetIgnore(document.FieldMetadataID)
+			}
+			if _, exists := b.mutation.NodeListID(); exists {
+				s.SetIgnore(document.FieldNodeListID)
+			}
+		}
+	}))
 	return u
 }
 

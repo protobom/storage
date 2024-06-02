@@ -16,7 +16,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/protobom/storage/internal/backends/ent/edgetype"
 	"github.com/protobom/storage/internal/backends/ent/externalreference"
 	"github.com/protobom/storage/internal/backends/ent/hashesentry"
 	"github.com/protobom/storage/internal/backends/ent/identifiersentry"
@@ -32,6 +31,34 @@ type NodeCreate struct {
 	mutation *NodeMutation
 	hooks    []Hook
 	conflict []sql.ConflictOption
+}
+
+// SetFromNodeID sets the "from_node_id" field.
+func (nc *NodeCreate) SetFromNodeID(s string) *NodeCreate {
+	nc.mutation.SetFromNodeID(s)
+	return nc
+}
+
+// SetNillableFromNodeID sets the "from_node_id" field if the given value is not nil.
+func (nc *NodeCreate) SetNillableFromNodeID(s *string) *NodeCreate {
+	if s != nil {
+		nc.SetFromNodeID(*s)
+	}
+	return nc
+}
+
+// SetNodeListID sets the "node_list_id" field.
+func (nc *NodeCreate) SetNodeListID(i int) *NodeCreate {
+	nc.mutation.SetNodeListID(i)
+	return nc
+}
+
+// SetNillableNodeListID sets the "node_list_id" field if the given value is not nil.
+func (nc *NodeCreate) SetNillableNodeListID(i *int) *NodeCreate {
+	if i != nil {
+		nc.SetNodeListID(*i)
+	}
+	return nc
 }
 
 // SetType sets the "type" field.
@@ -148,6 +175,20 @@ func (nc *NodeCreate) SetFileTypes(s []string) *NodeCreate {
 	return nc
 }
 
+// SetEdgeType sets the "edge_type" field.
+func (nc *NodeCreate) SetEdgeType(nt node.EdgeType) *NodeCreate {
+	nc.mutation.SetEdgeType(nt)
+	return nc
+}
+
+// SetNillableEdgeType sets the "edge_type" field if the given value is not nil.
+func (nc *NodeCreate) SetNillableEdgeType(nt *node.EdgeType) *NodeCreate {
+	if nt != nil {
+		nc.SetEdgeType(*nt)
+	}
+	return nc
+}
+
 // SetID sets the "id" field.
 func (nc *NodeCreate) SetID(s string) *NodeCreate {
 	nc.mutation.SetID(s)
@@ -244,6 +285,11 @@ func (nc *NodeCreate) AddPrimaryPurpose(p ...*Purpose) *NodeCreate {
 	return nc.AddPrimaryPurposeIDs(ids...)
 }
 
+// SetFromNode sets the "from_node" edge to the Node entity.
+func (nc *NodeCreate) SetFromNode(n *Node) *NodeCreate {
+	return nc.SetFromNodeID(n.ID)
+}
+
 // AddNodeIDs adds the "nodes" edge to the Node entity by IDs.
 func (nc *NodeCreate) AddNodeIDs(ids ...string) *NodeCreate {
 	nc.mutation.AddNodeIDs(ids...)
@@ -259,38 +305,9 @@ func (nc *NodeCreate) AddNodes(n ...*Node) *NodeCreate {
 	return nc.AddNodeIDs(ids...)
 }
 
-// SetNodeListID sets the "node_list" edge to the NodeList entity by ID.
-func (nc *NodeCreate) SetNodeListID(id int) *NodeCreate {
-	nc.mutation.SetNodeListID(id)
-	return nc
-}
-
-// SetNillableNodeListID sets the "node_list" edge to the NodeList entity by ID if the given value is not nil.
-func (nc *NodeCreate) SetNillableNodeListID(id *int) *NodeCreate {
-	if id != nil {
-		nc = nc.SetNodeListID(*id)
-	}
-	return nc
-}
-
 // SetNodeList sets the "node_list" edge to the NodeList entity.
 func (nc *NodeCreate) SetNodeList(n *NodeList) *NodeCreate {
 	return nc.SetNodeListID(n.ID)
-}
-
-// AddEdgeTypeIDs adds the "edge_types" edge to the EdgeType entity by IDs.
-func (nc *NodeCreate) AddEdgeTypeIDs(ids ...int) *NodeCreate {
-	nc.mutation.AddEdgeTypeIDs(ids...)
-	return nc
-}
-
-// AddEdgeTypes adds the "edge_types" edges to the EdgeType entity.
-func (nc *NodeCreate) AddEdgeTypes(e ...*EdgeType) *NodeCreate {
-	ids := make([]int, len(e))
-	for i := range e {
-		ids[i] = e[i].ID
-	}
-	return nc.AddEdgeTypeIDs(ids...)
 }
 
 // Mutation returns the NodeMutation object of the builder.
@@ -388,6 +405,11 @@ func (nc *NodeCreate) check() error {
 	}
 	if _, ok := nc.mutation.FileTypes(); !ok {
 		return &ValidationError{Name: "file_types", err: errors.New(`ent: missing required field "Node.file_types"`)}
+	}
+	if v, ok := nc.mutation.EdgeType(); ok {
+		if err := node.EdgeTypeValidator(v); err != nil {
+			return &ValidationError{Name: "edge_type", err: fmt.Errorf(`ent: validator failed for field "Node.edge_type": %w`, err)}
+		}
 	}
 	if v, ok := nc.mutation.ID(); ok {
 		if err := node.IDValidator(v); err != nil {
@@ -506,6 +528,10 @@ func (nc *NodeCreate) createSpec() (*Node, *sqlgraph.CreateSpec) {
 		_spec.SetField(node.FieldFileTypes, field.TypeJSON, value)
 		_node.FileTypes = value
 	}
+	if value, ok := nc.mutation.EdgeType(); ok {
+		_spec.SetField(node.FieldEdgeType, field.TypeEnum, value)
+		_node.EdgeType = value
+	}
 	if nodes := nc.mutation.SuppliersIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
@@ -602,13 +628,30 @@ func (nc *NodeCreate) createSpec() (*Node, *sqlgraph.CreateSpec) {
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
+	if nodes := nc.mutation.FromNodeIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   node.FromNodeTable,
+			Columns: []string{node.FromNodeColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.FromNodeID = nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
 	if nodes := nc.mutation.NodesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.O2M,
 			Inverse: false,
 			Table:   node.NodesTable,
-			Columns: node.NodesPrimaryKey,
-			Bidi:    true,
+			Columns: []string{node.NodesColumn},
+			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeString),
 			},
@@ -632,23 +675,7 @@ func (nc *NodeCreate) createSpec() (*Node, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.node_list_nodes = &nodes[0]
-		_spec.Edges = append(_spec.Edges, edge)
-	}
-	if nodes := nc.mutation.EdgeTypesIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: true,
-			Table:   node.EdgeTypesTable,
-			Columns: []string{node.EdgeTypesColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(edgetype.FieldID, field.TypeInt),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
+		_node.NodeListID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
@@ -658,7 +685,7 @@ func (nc *NodeCreate) createSpec() (*Node, *sqlgraph.CreateSpec) {
 // of the `INSERT` statement. For example:
 //
 //	client.Node.Create().
-//		SetType(v).
+//		SetFromNodeID(v).
 //		OnConflict(
 //			// Update the row with the new values
 //			// the was proposed for insertion.
@@ -667,7 +694,7 @@ func (nc *NodeCreate) createSpec() (*Node, *sqlgraph.CreateSpec) {
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.NodeUpsert) {
-//			SetType(v+v).
+//			SetFromNodeID(v+v).
 //		}).
 //		Exec(ctx)
 func (nc *NodeCreate) OnConflict(opts ...sql.ConflictOption) *NodeUpsertOne {
@@ -702,6 +729,42 @@ type (
 		*sql.UpdateSet
 	}
 )
+
+// SetFromNodeID sets the "from_node_id" field.
+func (u *NodeUpsert) SetFromNodeID(v string) *NodeUpsert {
+	u.Set(node.FieldFromNodeID, v)
+	return u
+}
+
+// UpdateFromNodeID sets the "from_node_id" field to the value that was provided on create.
+func (u *NodeUpsert) UpdateFromNodeID() *NodeUpsert {
+	u.SetExcluded(node.FieldFromNodeID)
+	return u
+}
+
+// ClearFromNodeID clears the value of the "from_node_id" field.
+func (u *NodeUpsert) ClearFromNodeID() *NodeUpsert {
+	u.SetNull(node.FieldFromNodeID)
+	return u
+}
+
+// SetNodeListID sets the "node_list_id" field.
+func (u *NodeUpsert) SetNodeListID(v int) *NodeUpsert {
+	u.Set(node.FieldNodeListID, v)
+	return u
+}
+
+// UpdateNodeListID sets the "node_list_id" field to the value that was provided on create.
+func (u *NodeUpsert) UpdateNodeListID() *NodeUpsert {
+	u.SetExcluded(node.FieldNodeListID)
+	return u
+}
+
+// ClearNodeListID clears the value of the "node_list_id" field.
+func (u *NodeUpsert) ClearNodeListID() *NodeUpsert {
+	u.SetNull(node.FieldNodeListID)
+	return u
+}
 
 // SetType sets the "type" field.
 func (u *NodeUpsert) SetType(v node.Type) *NodeUpsert {
@@ -931,6 +994,24 @@ func (u *NodeUpsert) UpdateFileTypes() *NodeUpsert {
 	return u
 }
 
+// SetEdgeType sets the "edge_type" field.
+func (u *NodeUpsert) SetEdgeType(v node.EdgeType) *NodeUpsert {
+	u.Set(node.FieldEdgeType, v)
+	return u
+}
+
+// UpdateEdgeType sets the "edge_type" field to the value that was provided on create.
+func (u *NodeUpsert) UpdateEdgeType() *NodeUpsert {
+	u.SetExcluded(node.FieldEdgeType)
+	return u
+}
+
+// ClearEdgeType clears the value of the "edge_type" field.
+func (u *NodeUpsert) ClearEdgeType() *NodeUpsert {
+	u.SetNull(node.FieldEdgeType)
+	return u
+}
+
 // UpdateNewValues updates the mutable fields using the new values that were set on create except the ID field.
 // Using this option is equivalent to using:
 //
@@ -977,6 +1058,48 @@ func (u *NodeUpsertOne) Update(set func(*NodeUpsert)) *NodeUpsertOne {
 		set(&NodeUpsert{UpdateSet: update})
 	}))
 	return u
+}
+
+// SetFromNodeID sets the "from_node_id" field.
+func (u *NodeUpsertOne) SetFromNodeID(v string) *NodeUpsertOne {
+	return u.Update(func(s *NodeUpsert) {
+		s.SetFromNodeID(v)
+	})
+}
+
+// UpdateFromNodeID sets the "from_node_id" field to the value that was provided on create.
+func (u *NodeUpsertOne) UpdateFromNodeID() *NodeUpsertOne {
+	return u.Update(func(s *NodeUpsert) {
+		s.UpdateFromNodeID()
+	})
+}
+
+// ClearFromNodeID clears the value of the "from_node_id" field.
+func (u *NodeUpsertOne) ClearFromNodeID() *NodeUpsertOne {
+	return u.Update(func(s *NodeUpsert) {
+		s.ClearFromNodeID()
+	})
+}
+
+// SetNodeListID sets the "node_list_id" field.
+func (u *NodeUpsertOne) SetNodeListID(v int) *NodeUpsertOne {
+	return u.Update(func(s *NodeUpsert) {
+		s.SetNodeListID(v)
+	})
+}
+
+// UpdateNodeListID sets the "node_list_id" field to the value that was provided on create.
+func (u *NodeUpsertOne) UpdateNodeListID() *NodeUpsertOne {
+	return u.Update(func(s *NodeUpsert) {
+		s.UpdateNodeListID()
+	})
+}
+
+// ClearNodeListID clears the value of the "node_list_id" field.
+func (u *NodeUpsertOne) ClearNodeListID() *NodeUpsertOne {
+	return u.Update(func(s *NodeUpsert) {
+		s.ClearNodeListID()
+	})
 }
 
 // SetType sets the "type" field.
@@ -1245,6 +1368,27 @@ func (u *NodeUpsertOne) UpdateFileTypes() *NodeUpsertOne {
 	})
 }
 
+// SetEdgeType sets the "edge_type" field.
+func (u *NodeUpsertOne) SetEdgeType(v node.EdgeType) *NodeUpsertOne {
+	return u.Update(func(s *NodeUpsert) {
+		s.SetEdgeType(v)
+	})
+}
+
+// UpdateEdgeType sets the "edge_type" field to the value that was provided on create.
+func (u *NodeUpsertOne) UpdateEdgeType() *NodeUpsertOne {
+	return u.Update(func(s *NodeUpsert) {
+		s.UpdateEdgeType()
+	})
+}
+
+// ClearEdgeType clears the value of the "edge_type" field.
+func (u *NodeUpsertOne) ClearEdgeType() *NodeUpsertOne {
+	return u.Update(func(s *NodeUpsert) {
+		s.ClearEdgeType()
+	})
+}
+
 // Exec executes the query.
 func (u *NodeUpsertOne) Exec(ctx context.Context) error {
 	if len(u.create.conflict) == 0 {
@@ -1380,7 +1524,7 @@ func (ncb *NodeCreateBulk) ExecX(ctx context.Context) {
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.NodeUpsert) {
-//			SetType(v+v).
+//			SetFromNodeID(v+v).
 //		}).
 //		Exec(ctx)
 func (ncb *NodeCreateBulk) OnConflict(opts ...sql.ConflictOption) *NodeUpsertBulk {
@@ -1457,6 +1601,48 @@ func (u *NodeUpsertBulk) Update(set func(*NodeUpsert)) *NodeUpsertBulk {
 		set(&NodeUpsert{UpdateSet: update})
 	}))
 	return u
+}
+
+// SetFromNodeID sets the "from_node_id" field.
+func (u *NodeUpsertBulk) SetFromNodeID(v string) *NodeUpsertBulk {
+	return u.Update(func(s *NodeUpsert) {
+		s.SetFromNodeID(v)
+	})
+}
+
+// UpdateFromNodeID sets the "from_node_id" field to the value that was provided on create.
+func (u *NodeUpsertBulk) UpdateFromNodeID() *NodeUpsertBulk {
+	return u.Update(func(s *NodeUpsert) {
+		s.UpdateFromNodeID()
+	})
+}
+
+// ClearFromNodeID clears the value of the "from_node_id" field.
+func (u *NodeUpsertBulk) ClearFromNodeID() *NodeUpsertBulk {
+	return u.Update(func(s *NodeUpsert) {
+		s.ClearFromNodeID()
+	})
+}
+
+// SetNodeListID sets the "node_list_id" field.
+func (u *NodeUpsertBulk) SetNodeListID(v int) *NodeUpsertBulk {
+	return u.Update(func(s *NodeUpsert) {
+		s.SetNodeListID(v)
+	})
+}
+
+// UpdateNodeListID sets the "node_list_id" field to the value that was provided on create.
+func (u *NodeUpsertBulk) UpdateNodeListID() *NodeUpsertBulk {
+	return u.Update(func(s *NodeUpsert) {
+		s.UpdateNodeListID()
+	})
+}
+
+// ClearNodeListID clears the value of the "node_list_id" field.
+func (u *NodeUpsertBulk) ClearNodeListID() *NodeUpsertBulk {
+	return u.Update(func(s *NodeUpsert) {
+		s.ClearNodeListID()
+	})
 }
 
 // SetType sets the "type" field.
@@ -1722,6 +1908,27 @@ func (u *NodeUpsertBulk) SetFileTypes(v []string) *NodeUpsertBulk {
 func (u *NodeUpsertBulk) UpdateFileTypes() *NodeUpsertBulk {
 	return u.Update(func(s *NodeUpsert) {
 		s.UpdateFileTypes()
+	})
+}
+
+// SetEdgeType sets the "edge_type" field.
+func (u *NodeUpsertBulk) SetEdgeType(v node.EdgeType) *NodeUpsertBulk {
+	return u.Update(func(s *NodeUpsert) {
+		s.SetEdgeType(v)
+	})
+}
+
+// UpdateEdgeType sets the "edge_type" field to the value that was provided on create.
+func (u *NodeUpsertBulk) UpdateEdgeType() *NodeUpsertBulk {
+	return u.Update(func(s *NodeUpsert) {
+		s.UpdateEdgeType()
+	})
+}
+
+// ClearEdgeType clears the value of the "edge_type" field.
+func (u *NodeUpsertBulk) ClearEdgeType() *NodeUpsertBulk {
+	return u.Update(func(s *NodeUpsert) {
+		s.ClearEdgeType()
 	})
 }
 

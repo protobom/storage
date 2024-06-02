@@ -27,7 +27,6 @@ type PurposeQuery struct {
 	inters     []Interceptor
 	predicates []predicate.Purpose
 	withNode   *NodeQuery
-	withFKs    bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -302,12 +301,12 @@ func (pq *PurposeQuery) WithNode(opts ...func(*NodeQuery)) *PurposeQuery {
 // Example:
 //
 //	var v []struct {
-//		PrimaryPurpose purpose.PrimaryPurpose `json:"primary_purpose,omitempty"`
+//		NodeID string `json:"node_id,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.Purpose.Query().
-//		GroupBy(purpose.FieldPrimaryPurpose).
+//		GroupBy(purpose.FieldNodeID).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (pq *PurposeQuery) GroupBy(field string, fields ...string) *PurposeGroupBy {
@@ -325,11 +324,11 @@ func (pq *PurposeQuery) GroupBy(field string, fields ...string) *PurposeGroupBy 
 // Example:
 //
 //	var v []struct {
-//		PrimaryPurpose purpose.PrimaryPurpose `json:"primary_purpose,omitempty"`
+//		NodeID string `json:"node_id,omitempty"`
 //	}
 //
 //	client.Purpose.Query().
-//		Select(purpose.FieldPrimaryPurpose).
+//		Select(purpose.FieldNodeID).
 //		Scan(ctx, &v)
 func (pq *PurposeQuery) Select(fields ...string) *PurposeSelect {
 	pq.ctx.Fields = append(pq.ctx.Fields, fields...)
@@ -373,18 +372,11 @@ func (pq *PurposeQuery) prepareQuery(ctx context.Context) error {
 func (pq *PurposeQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Purpose, error) {
 	var (
 		nodes       = []*Purpose{}
-		withFKs     = pq.withFKs
 		_spec       = pq.querySpec()
 		loadedTypes = [1]bool{
 			pq.withNode != nil,
 		}
 	)
-	if pq.withNode != nil {
-		withFKs = true
-	}
-	if withFKs {
-		_spec.Node.Columns = append(_spec.Node.Columns, purpose.ForeignKeys...)
-	}
 	_spec.ScanValues = func(columns []string) ([]any, error) {
 		return (*Purpose).scanValues(nil, columns)
 	}
@@ -416,10 +408,7 @@ func (pq *PurposeQuery) loadNode(ctx context.Context, query *NodeQuery, nodes []
 	ids := make([]string, 0, len(nodes))
 	nodeids := make(map[string][]*Purpose)
 	for i := range nodes {
-		if nodes[i].node_primary_purpose == nil {
-			continue
-		}
-		fk := *nodes[i].node_primary_purpose
+		fk := nodes[i].NodeID
 		if _, ok := nodeids[fk]; !ok {
 			ids = append(ids, fk)
 		}
@@ -436,7 +425,7 @@ func (pq *PurposeQuery) loadNode(ctx context.Context, query *NodeQuery, nodes []
 	for _, n := range neighbors {
 		nodes, ok := nodeids[n.ID]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "node_primary_purpose" returned %v`, n.ID)
+			return fmt.Errorf(`unexpected foreign-key "node_id" returned %v`, n.ID)
 		}
 		for i := range nodes {
 			assign(nodes[i], n)
@@ -469,6 +458,9 @@ func (pq *PurposeQuery) querySpec() *sqlgraph.QuerySpec {
 			if fields[i] != purpose.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
+		}
+		if pq.withNode != nil {
+			_spec.Node.AddColumnOnce(purpose.FieldNodeID)
 		}
 	}
 	if ps := pq.predicates; len(ps) > 0 {

@@ -58,6 +58,16 @@ func IDLTE(id int) predicate.Person {
 	return predicate.Person(sql.FieldLTE(FieldID, id))
 }
 
+// MetadataID applies equality check predicate on the "metadata_id" field. It's identical to MetadataIDEQ.
+func MetadataID(v string) predicate.Person {
+	return predicate.Person(sql.FieldEQ(FieldMetadataID, v))
+}
+
+// NodeID applies equality check predicate on the "node_id" field. It's identical to NodeIDEQ.
+func NodeID(v string) predicate.Person {
+	return predicate.Person(sql.FieldEQ(FieldNodeID, v))
+}
+
 // Name applies equality check predicate on the "name" field. It's identical to NameEQ.
 func Name(v string) predicate.Person {
 	return predicate.Person(sql.FieldEQ(FieldName, v))
@@ -81,6 +91,156 @@ func URL(v string) predicate.Person {
 // Phone applies equality check predicate on the "phone" field. It's identical to PhoneEQ.
 func Phone(v string) predicate.Person {
 	return predicate.Person(sql.FieldEQ(FieldPhone, v))
+}
+
+// MetadataIDEQ applies the EQ predicate on the "metadata_id" field.
+func MetadataIDEQ(v string) predicate.Person {
+	return predicate.Person(sql.FieldEQ(FieldMetadataID, v))
+}
+
+// MetadataIDNEQ applies the NEQ predicate on the "metadata_id" field.
+func MetadataIDNEQ(v string) predicate.Person {
+	return predicate.Person(sql.FieldNEQ(FieldMetadataID, v))
+}
+
+// MetadataIDIn applies the In predicate on the "metadata_id" field.
+func MetadataIDIn(vs ...string) predicate.Person {
+	return predicate.Person(sql.FieldIn(FieldMetadataID, vs...))
+}
+
+// MetadataIDNotIn applies the NotIn predicate on the "metadata_id" field.
+func MetadataIDNotIn(vs ...string) predicate.Person {
+	return predicate.Person(sql.FieldNotIn(FieldMetadataID, vs...))
+}
+
+// MetadataIDGT applies the GT predicate on the "metadata_id" field.
+func MetadataIDGT(v string) predicate.Person {
+	return predicate.Person(sql.FieldGT(FieldMetadataID, v))
+}
+
+// MetadataIDGTE applies the GTE predicate on the "metadata_id" field.
+func MetadataIDGTE(v string) predicate.Person {
+	return predicate.Person(sql.FieldGTE(FieldMetadataID, v))
+}
+
+// MetadataIDLT applies the LT predicate on the "metadata_id" field.
+func MetadataIDLT(v string) predicate.Person {
+	return predicate.Person(sql.FieldLT(FieldMetadataID, v))
+}
+
+// MetadataIDLTE applies the LTE predicate on the "metadata_id" field.
+func MetadataIDLTE(v string) predicate.Person {
+	return predicate.Person(sql.FieldLTE(FieldMetadataID, v))
+}
+
+// MetadataIDContains applies the Contains predicate on the "metadata_id" field.
+func MetadataIDContains(v string) predicate.Person {
+	return predicate.Person(sql.FieldContains(FieldMetadataID, v))
+}
+
+// MetadataIDHasPrefix applies the HasPrefix predicate on the "metadata_id" field.
+func MetadataIDHasPrefix(v string) predicate.Person {
+	return predicate.Person(sql.FieldHasPrefix(FieldMetadataID, v))
+}
+
+// MetadataIDHasSuffix applies the HasSuffix predicate on the "metadata_id" field.
+func MetadataIDHasSuffix(v string) predicate.Person {
+	return predicate.Person(sql.FieldHasSuffix(FieldMetadataID, v))
+}
+
+// MetadataIDIsNil applies the IsNil predicate on the "metadata_id" field.
+func MetadataIDIsNil() predicate.Person {
+	return predicate.Person(sql.FieldIsNull(FieldMetadataID))
+}
+
+// MetadataIDNotNil applies the NotNil predicate on the "metadata_id" field.
+func MetadataIDNotNil() predicate.Person {
+	return predicate.Person(sql.FieldNotNull(FieldMetadataID))
+}
+
+// MetadataIDEqualFold applies the EqualFold predicate on the "metadata_id" field.
+func MetadataIDEqualFold(v string) predicate.Person {
+	return predicate.Person(sql.FieldEqualFold(FieldMetadataID, v))
+}
+
+// MetadataIDContainsFold applies the ContainsFold predicate on the "metadata_id" field.
+func MetadataIDContainsFold(v string) predicate.Person {
+	return predicate.Person(sql.FieldContainsFold(FieldMetadataID, v))
+}
+
+// NodeIDEQ applies the EQ predicate on the "node_id" field.
+func NodeIDEQ(v string) predicate.Person {
+	return predicate.Person(sql.FieldEQ(FieldNodeID, v))
+}
+
+// NodeIDNEQ applies the NEQ predicate on the "node_id" field.
+func NodeIDNEQ(v string) predicate.Person {
+	return predicate.Person(sql.FieldNEQ(FieldNodeID, v))
+}
+
+// NodeIDIn applies the In predicate on the "node_id" field.
+func NodeIDIn(vs ...string) predicate.Person {
+	return predicate.Person(sql.FieldIn(FieldNodeID, vs...))
+}
+
+// NodeIDNotIn applies the NotIn predicate on the "node_id" field.
+func NodeIDNotIn(vs ...string) predicate.Person {
+	return predicate.Person(sql.FieldNotIn(FieldNodeID, vs...))
+}
+
+// NodeIDGT applies the GT predicate on the "node_id" field.
+func NodeIDGT(v string) predicate.Person {
+	return predicate.Person(sql.FieldGT(FieldNodeID, v))
+}
+
+// NodeIDGTE applies the GTE predicate on the "node_id" field.
+func NodeIDGTE(v string) predicate.Person {
+	return predicate.Person(sql.FieldGTE(FieldNodeID, v))
+}
+
+// NodeIDLT applies the LT predicate on the "node_id" field.
+func NodeIDLT(v string) predicate.Person {
+	return predicate.Person(sql.FieldLT(FieldNodeID, v))
+}
+
+// NodeIDLTE applies the LTE predicate on the "node_id" field.
+func NodeIDLTE(v string) predicate.Person {
+	return predicate.Person(sql.FieldLTE(FieldNodeID, v))
+}
+
+// NodeIDContains applies the Contains predicate on the "node_id" field.
+func NodeIDContains(v string) predicate.Person {
+	return predicate.Person(sql.FieldContains(FieldNodeID, v))
+}
+
+// NodeIDHasPrefix applies the HasPrefix predicate on the "node_id" field.
+func NodeIDHasPrefix(v string) predicate.Person {
+	return predicate.Person(sql.FieldHasPrefix(FieldNodeID, v))
+}
+
+// NodeIDHasSuffix applies the HasSuffix predicate on the "node_id" field.
+func NodeIDHasSuffix(v string) predicate.Person {
+	return predicate.Person(sql.FieldHasSuffix(FieldNodeID, v))
+}
+
+// NodeIDIsNil applies the IsNil predicate on the "node_id" field.
+func NodeIDIsNil() predicate.Person {
+	return predicate.Person(sql.FieldIsNull(FieldNodeID))
+}
+
+// NodeIDNotNil applies the NotNil predicate on the "node_id" field.
+func NodeIDNotNil() predicate.Person {
+	return predicate.Person(sql.FieldNotNull(FieldNodeID))
+}
+
+// NodeIDEqualFold applies the EqualFold predicate on the "node_id" field.
+func NodeIDEqualFold(v string) predicate.Person {
+	return predicate.Person(sql.FieldEqualFold(FieldNodeID, v))
+}
+
+// NodeIDContainsFold applies the ContainsFold predicate on the "node_id" field.
+func NodeIDContainsFold(v string) predicate.Person {
+	return predicate.Person(sql.FieldContainsFold(FieldNodeID, v))
 }
 
 // NameEQ applies the EQ predicate on the "name" field.

@@ -32,6 +32,26 @@ func (pu *PurposeUpdate) Where(ps ...predicate.Purpose) *PurposeUpdate {
 	return pu
 }
 
+// SetNodeID sets the "node_id" field.
+func (pu *PurposeUpdate) SetNodeID(s string) *PurposeUpdate {
+	pu.mutation.SetNodeID(s)
+	return pu
+}
+
+// SetNillableNodeID sets the "node_id" field if the given value is not nil.
+func (pu *PurposeUpdate) SetNillableNodeID(s *string) *PurposeUpdate {
+	if s != nil {
+		pu.SetNodeID(*s)
+	}
+	return pu
+}
+
+// ClearNodeID clears the value of the "node_id" field.
+func (pu *PurposeUpdate) ClearNodeID() *PurposeUpdate {
+	pu.mutation.ClearNodeID()
+	return pu
+}
+
 // SetPrimaryPurpose sets the "primary_purpose" field.
 func (pu *PurposeUpdate) SetPrimaryPurpose(pp purpose.PrimaryPurpose) *PurposeUpdate {
 	pu.mutation.SetPrimaryPurpose(pp)
@@ -42,20 +62,6 @@ func (pu *PurposeUpdate) SetPrimaryPurpose(pp purpose.PrimaryPurpose) *PurposeUp
 func (pu *PurposeUpdate) SetNillablePrimaryPurpose(pp *purpose.PrimaryPurpose) *PurposeUpdate {
 	if pp != nil {
 		pu.SetPrimaryPurpose(*pp)
-	}
-	return pu
-}
-
-// SetNodeID sets the "node" edge to the Node entity by ID.
-func (pu *PurposeUpdate) SetNodeID(id string) *PurposeUpdate {
-	pu.mutation.SetNodeID(id)
-	return pu
-}
-
-// SetNillableNodeID sets the "node" edge to the Node entity by ID if the given value is not nil.
-func (pu *PurposeUpdate) SetNillableNodeID(id *string) *PurposeUpdate {
-	if id != nil {
-		pu = pu.SetNodeID(*id)
 	}
 	return pu
 }
@@ -177,6 +183,26 @@ type PurposeUpdateOne struct {
 	mutation *PurposeMutation
 }
 
+// SetNodeID sets the "node_id" field.
+func (puo *PurposeUpdateOne) SetNodeID(s string) *PurposeUpdateOne {
+	puo.mutation.SetNodeID(s)
+	return puo
+}
+
+// SetNillableNodeID sets the "node_id" field if the given value is not nil.
+func (puo *PurposeUpdateOne) SetNillableNodeID(s *string) *PurposeUpdateOne {
+	if s != nil {
+		puo.SetNodeID(*s)
+	}
+	return puo
+}
+
+// ClearNodeID clears the value of the "node_id" field.
+func (puo *PurposeUpdateOne) ClearNodeID() *PurposeUpdateOne {
+	puo.mutation.ClearNodeID()
+	return puo
+}
+
 // SetPrimaryPurpose sets the "primary_purpose" field.
 func (puo *PurposeUpdateOne) SetPrimaryPurpose(pp purpose.PrimaryPurpose) *PurposeUpdateOne {
 	puo.mutation.SetPrimaryPurpose(pp)
@@ -187,20 +213,6 @@ func (puo *PurposeUpdateOne) SetPrimaryPurpose(pp purpose.PrimaryPurpose) *Purpo
 func (puo *PurposeUpdateOne) SetNillablePrimaryPurpose(pp *purpose.PrimaryPurpose) *PurposeUpdateOne {
 	if pp != nil {
 		puo.SetPrimaryPurpose(*pp)
-	}
-	return puo
-}
-
-// SetNodeID sets the "node" edge to the Node entity by ID.
-func (puo *PurposeUpdateOne) SetNodeID(id string) *PurposeUpdateOne {
-	puo.mutation.SetNodeID(id)
-	return puo
-}
-
-// SetNillableNodeID sets the "node" edge to the Node entity by ID if the given value is not nil.
-func (puo *PurposeUpdateOne) SetNillableNodeID(id *string) *PurposeUpdateOne {
-	if id != nil {
-		puo = puo.SetNodeID(*id)
 	}
 	return puo
 }

@@ -32,10 +32,6 @@ func (backend *Backend) Store(doc *sbom.Document, opts *storage.StoreOptions) er
 		backend.BackendOptions = NewBackendOptions()
 	}
 
-	backend.init(backend.BackendOptions)
-
-	defer backend.client.Close()
-
 	if opts == nil {
 		opts = &storage.StoreOptions{
 			BackendOptions: backend.BackendOptions,
@@ -45,6 +41,10 @@ func (backend *Backend) Store(doc *sbom.Document, opts *storage.StoreOptions) er
 	if _, ok := opts.BackendOptions.(*BackendOptions); !ok {
 		return fmt.Errorf("%w", errInvalidEntOptions)
 	}
+
+	backend.init(backend.BackendOptions)
+
+	defer backend.client.Close()
 
 	if err := backend.StoreMetadata(doc.Metadata); err != nil {
 		return fmt.Errorf("%w", err)
@@ -272,6 +272,18 @@ func (backend *Backend) StoreNodeList(nodeList *sbom.NodeList) error {
 
 	if err := backend.StoreNodes(nodeList.Nodes); err != nil {
 		return fmt.Errorf("%w", err)
+	}
+
+	// Update nodes of this node list with their typed edges.
+	for _, edge := range nodeList.Edges {
+		err := backend.client.Node.Update().
+			Where(node.IDIn(edge.To...)).
+			SetFromNodeID(edge.From).
+			SetEdgeType(node.EdgeType(edge.Type.String())).
+			Exec(backend.ctx)
+		if err != nil {
+			return fmt.Errorf("%w", err)
+		}
 	}
 
 	return nil

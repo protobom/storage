@@ -7,6 +7,7 @@ package ent
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/protobom/protobom/pkg/sbom"
 	"github.com/protobom/protobom/pkg/storage"
@@ -52,11 +53,25 @@ func (backend *Backend) Retrieve(id string, _opts *storage.RetrieveOptions) (*sb
 		return nil, fmt.Errorf("%w", err)
 	}
 
-	doc := sbom.NewDocument()
-	doc.Metadata = entMetadataToProtobom(entDoc.Edges.Metadata)
-	doc.NodeList = entNodeListToProtobom(entDoc.Edges.NodeList)
+	// Eager-load the nodes edges of the node list.
+	entDoc.Edges.NodeList.Edges.Nodes, err = entDoc.Edges.NodeList.QueryNodes().
+		WithExternalReferences().
+		WithFromNode().
+		WithHashes().
+		WithIdentifiers().
+		WithNodes().
+		WithOriginators().
+		WithPrimaryPurpose().
+		WithSuppliers().
+		All(backend.ctx)
+	if err != nil {
+		return nil, fmt.Errorf("%w", err)
+	}
 
-	return doc, nil
+	return &sbom.Document{
+		Metadata: entMetadataToProtobom(entDoc.Edges.Metadata),
+		NodeList: entNodeListToProtobom(entDoc.Edges.NodeList),
+	}, nil
 }
 
 func entExtRefsToProtobom(entRefs ent.ExternalReferences) []*sbom.ExternalReference {
@@ -106,6 +121,7 @@ func entMetadataToProtobom(entmd *ent.Metadata) *sbom.Metadata {
 		Id:            entmd.ID,
 		Version:       entmd.Version,
 		Name:          entmd.Name,
+		Date:          timestamppb.New(entmd.Date),
 		Comment:       entmd.Comment,
 		Tools:         []*sbom.Tool{},
 		Authors:       authors,
@@ -134,31 +150,35 @@ func entMetadataToProtobom(entmd *ent.Metadata) *sbom.Metadata {
 }
 
 func entNodeListToProtobom(nl *ent.NodeList) *sbom.NodeList {
-	edges := []*sbom.Edge{}
-	nodes := []*sbom.Node{}
-
-	for _, n := range nl.Edges.Nodes {
-		edgeType := sbom.Edge_Type_value[n.Type.String()]
-		toIDs := []string{}
-
-		for _, e := range n.Edges.Nodes {
-			toIDs = append(toIDs, e.ID)
-		}
-
-		edges = append(edges, &sbom.Edge{
-			Type: sbom.Edge_Type(edgeType),
-			From: n.ID,
-			To:   toIDs,
-		})
-
-		nodes = append(nodes, entNodeToProtobom(n))
-	}
-
-	return &sbom.NodeList{
-		Nodes:        nodes,
-		Edges:        edges,
+	pbnl := &sbom.NodeList{
+		Nodes:        []*sbom.Node{},
+		Edges:        []*sbom.Edge{},
 		RootElements: nl.RootElements,
 	}
+
+	edgeMap := make(map[string]*sbom.Edge)
+
+	for _, n := range nl.Edges.Nodes {
+		if edgeMap[n.ID] == nil {
+			edgeMap[n.ID] = &sbom.Edge{From: n.ID}
+		}
+
+		for _, e := range n.Edges.Nodes {
+			edgeType := sbom.Edge_Type_value[e.EdgeType.String()]
+			edgeMap[n.ID].To = append(edgeMap[n.ID].To, e.ID)
+			edgeMap[n.ID].Type = sbom.Edge_Type(edgeType)
+		}
+
+		pbnl.Nodes = append(pbnl.Nodes, entNodeToProtobom(n))
+	}
+
+	for _, edge := range edgeMap {
+		if len(edge.To) > 0 {
+			pbnl.Edges = append(pbnl.Edges, edge)
+		}
+	}
+
+	return pbnl
 }
 
 func entNodeToProtobom(n *ent.Node) *sbom.Node {
@@ -166,7 +186,7 @@ func entNodeToProtobom(n *ent.Node) *sbom.Node {
 
 	nodeType := sbom.Node_NodeType_value[n.Type.String()]
 
-	return &sbom.Node{
+	pbNode := &sbom.Node{
 		Id:                 n.ID,
 		Type:               sbom.Node_NodeType(nodeType),
 		Name:               n.Name,
@@ -186,14 +206,27 @@ func entNodeToProtobom(n *ent.Node) *sbom.Node {
 		FileTypes:          n.FileTypes,
 		Suppliers:          entPersonsToProtobom(n.Edges.Suppliers),
 		Originators:        entPersonsToProtobom(n.Edges.Originators),
-		ReleaseDate:        timestamppb.New(n.ReleaseDate),
-		BuildDate:          timestamppb.New(n.BuildDate),
-		ValidUntilDate:     timestamppb.New(n.ValidUntilDate),
 		ExternalReferences: pbExtRefs,
 		Identifiers:        entIdentifiersToProtobom(n.Edges.Identifiers),
 		Hashes:             entHashesToProtobom(n.Edges.Hashes),
 		PrimaryPurpose:     entPurposesToProtobom(n.Edges.PrimaryPurpose),
 	}
+
+	epoch := time.Unix(0, 0).UTC()
+
+	if n.ReleaseDate != epoch {
+		pbNode.ReleaseDate = timestamppb.New(n.ReleaseDate)
+	}
+
+	if n.BuildDate != epoch {
+		pbNode.BuildDate = timestamppb.New(n.BuildDate)
+	}
+
+	if n.ValidUntilDate != epoch {
+		pbNode.ValidUntilDate = timestamppb.New(n.ValidUntilDate)
+	}
+
+	return pbNode
 }
 
 func entPersonsToProtobom(persons ent.Persons) []*sbom.Person {

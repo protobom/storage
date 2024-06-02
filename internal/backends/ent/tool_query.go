@@ -27,7 +27,6 @@ type ToolQuery struct {
 	inters       []Interceptor
 	predicates   []predicate.Tool
 	withMetadata *MetadataQuery
-	withFKs      bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -302,12 +301,12 @@ func (tq *ToolQuery) WithMetadata(opts ...func(*MetadataQuery)) *ToolQuery {
 // Example:
 //
 //	var v []struct {
-//		Name string `json:"name,omitempty"`
+//		MetadataID string `json:"metadata_id,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.Tool.Query().
-//		GroupBy(tool.FieldName).
+//		GroupBy(tool.FieldMetadataID).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (tq *ToolQuery) GroupBy(field string, fields ...string) *ToolGroupBy {
@@ -325,11 +324,11 @@ func (tq *ToolQuery) GroupBy(field string, fields ...string) *ToolGroupBy {
 // Example:
 //
 //	var v []struct {
-//		Name string `json:"name,omitempty"`
+//		MetadataID string `json:"metadata_id,omitempty"`
 //	}
 //
 //	client.Tool.Query().
-//		Select(tool.FieldName).
+//		Select(tool.FieldMetadataID).
 //		Scan(ctx, &v)
 func (tq *ToolQuery) Select(fields ...string) *ToolSelect {
 	tq.ctx.Fields = append(tq.ctx.Fields, fields...)
@@ -373,18 +372,11 @@ func (tq *ToolQuery) prepareQuery(ctx context.Context) error {
 func (tq *ToolQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Tool, error) {
 	var (
 		nodes       = []*Tool{}
-		withFKs     = tq.withFKs
 		_spec       = tq.querySpec()
 		loadedTypes = [1]bool{
 			tq.withMetadata != nil,
 		}
 	)
-	if tq.withMetadata != nil {
-		withFKs = true
-	}
-	if withFKs {
-		_spec.Node.Columns = append(_spec.Node.Columns, tool.ForeignKeys...)
-	}
 	_spec.ScanValues = func(columns []string) ([]any, error) {
 		return (*Tool).scanValues(nil, columns)
 	}
@@ -416,10 +408,7 @@ func (tq *ToolQuery) loadMetadata(ctx context.Context, query *MetadataQuery, nod
 	ids := make([]string, 0, len(nodes))
 	nodeids := make(map[string][]*Tool)
 	for i := range nodes {
-		if nodes[i].metadata_tools == nil {
-			continue
-		}
-		fk := *nodes[i].metadata_tools
+		fk := nodes[i].MetadataID
 		if _, ok := nodeids[fk]; !ok {
 			ids = append(ids, fk)
 		}
@@ -436,7 +425,7 @@ func (tq *ToolQuery) loadMetadata(ctx context.Context, query *MetadataQuery, nod
 	for _, n := range neighbors {
 		nodes, ok := nodeids[n.ID]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "metadata_tools" returned %v`, n.ID)
+			return fmt.Errorf(`unexpected foreign-key "metadata_id" returned %v`, n.ID)
 		}
 		for i := range nodes {
 			assign(nodes[i], n)
@@ -469,6 +458,9 @@ func (tq *ToolQuery) querySpec() *sqlgraph.QuerySpec {
 			if fields[i] != tool.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
+		}
+		if tq.withMetadata != nil {
+			_spec.Node.AddColumnOnce(tool.FieldMetadataID)
 		}
 	}
 	if ps := tq.predicates; len(ps) > 0 {

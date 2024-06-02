@@ -41,28 +41,28 @@ const (
 	// It exists in this package in order to avoid circular dependency with the "tool" package.
 	ToolsInverseTable = "tools"
 	// ToolsColumn is the table column denoting the tools relation/edge.
-	ToolsColumn = "metadata_tools"
+	ToolsColumn = "metadata_id"
 	// AuthorsTable is the table that holds the authors relation/edge.
 	AuthorsTable = "persons"
 	// AuthorsInverseTable is the table name for the Person entity.
 	// It exists in this package in order to avoid circular dependency with the "person" package.
 	AuthorsInverseTable = "persons"
 	// AuthorsColumn is the table column denoting the authors relation/edge.
-	AuthorsColumn = "metadata_authors"
+	AuthorsColumn = "metadata_id"
 	// DocumentTypesTable is the table that holds the document_types relation/edge.
 	DocumentTypesTable = "document_types"
 	// DocumentTypesInverseTable is the table name for the DocumentType entity.
 	// It exists in this package in order to avoid circular dependency with the "documenttype" package.
 	DocumentTypesInverseTable = "document_types"
 	// DocumentTypesColumn is the table column denoting the document_types relation/edge.
-	DocumentTypesColumn = "metadata_document_types"
+	DocumentTypesColumn = "metadata_id"
 	// DocumentTable is the table that holds the document relation/edge.
 	DocumentTable = "documents"
 	// DocumentInverseTable is the table name for the Document entity.
 	// It exists in this package in order to avoid circular dependency with the "document" package.
 	DocumentInverseTable = "documents"
 	// DocumentColumn is the table column denoting the document relation/edge.
-	DocumentColumn = "metadata_document"
+	DocumentColumn = "metadata_id"
 )
 
 // Columns holds all SQL columns for metadata fields.

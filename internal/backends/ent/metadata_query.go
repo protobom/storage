@@ -548,7 +548,9 @@ func (mq *MetadataQuery) loadTools(ctx context.Context, query *ToolQuery, nodes 
 			init(nodes[i])
 		}
 	}
-	query.withFKs = true
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(tool.FieldMetadataID)
+	}
 	query.Where(predicate.Tool(func(s *sql.Selector) {
 		s.Where(sql.InValues(s.C(metadata.ToolsColumn), fks...))
 	}))
@@ -557,13 +559,10 @@ func (mq *MetadataQuery) loadTools(ctx context.Context, query *ToolQuery, nodes 
 		return err
 	}
 	for _, n := range neighbors {
-		fk := n.metadata_tools
-		if fk == nil {
-			return fmt.Errorf(`foreign-key "metadata_tools" is nil for node %v`, n.ID)
-		}
-		node, ok := nodeids[*fk]
+		fk := n.MetadataID
+		node, ok := nodeids[fk]
 		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "metadata_tools" returned %v for node %v`, *fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "metadata_id" returned %v for node %v`, fk, n.ID)
 		}
 		assign(node, n)
 	}
@@ -580,6 +579,9 @@ func (mq *MetadataQuery) loadAuthors(ctx context.Context, query *PersonQuery, no
 		}
 	}
 	query.withFKs = true
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(person.FieldMetadataID)
+	}
 	query.Where(predicate.Person(func(s *sql.Selector) {
 		s.Where(sql.InValues(s.C(metadata.AuthorsColumn), fks...))
 	}))
@@ -588,13 +590,10 @@ func (mq *MetadataQuery) loadAuthors(ctx context.Context, query *PersonQuery, no
 		return err
 	}
 	for _, n := range neighbors {
-		fk := n.metadata_authors
-		if fk == nil {
-			return fmt.Errorf(`foreign-key "metadata_authors" is nil for node %v`, n.ID)
-		}
-		node, ok := nodeids[*fk]
+		fk := n.MetadataID
+		node, ok := nodeids[fk]
 		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "metadata_authors" returned %v for node %v`, *fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "metadata_id" returned %v for node %v`, fk, n.ID)
 		}
 		assign(node, n)
 	}
@@ -610,7 +609,9 @@ func (mq *MetadataQuery) loadDocumentTypes(ctx context.Context, query *DocumentT
 			init(nodes[i])
 		}
 	}
-	query.withFKs = true
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(documenttype.FieldMetadataID)
+	}
 	query.Where(predicate.DocumentType(func(s *sql.Selector) {
 		s.Where(sql.InValues(s.C(metadata.DocumentTypesColumn), fks...))
 	}))
@@ -619,13 +620,10 @@ func (mq *MetadataQuery) loadDocumentTypes(ctx context.Context, query *DocumentT
 		return err
 	}
 	for _, n := range neighbors {
-		fk := n.metadata_document_types
-		if fk == nil {
-			return fmt.Errorf(`foreign-key "metadata_document_types" is nil for node %v`, n.ID)
-		}
-		node, ok := nodeids[*fk]
+		fk := n.MetadataID
+		node, ok := nodeids[fk]
 		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "metadata_document_types" returned %v for node %v`, *fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "metadata_id" returned %v for node %v`, fk, n.ID)
 		}
 		assign(node, n)
 	}
@@ -641,7 +639,9 @@ func (mq *MetadataQuery) loadDocument(ctx context.Context, query *DocumentQuery,
 			init(nodes[i])
 		}
 	}
-	query.withFKs = true
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(document.FieldMetadataID)
+	}
 	query.Where(predicate.Document(func(s *sql.Selector) {
 		s.Where(sql.InValues(s.C(metadata.DocumentColumn), fks...))
 	}))
@@ -650,13 +650,10 @@ func (mq *MetadataQuery) loadDocument(ctx context.Context, query *DocumentQuery,
 		return err
 	}
 	for _, n := range neighbors {
-		fk := n.metadata_document
-		if fk == nil {
-			return fmt.Errorf(`foreign-key "metadata_document" is nil for node %v`, n.ID)
-		}
-		node, ok := nodeids[*fk]
+		fk := n.MetadataID
+		node, ok := nodeids[fk]
 		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "metadata_document" returned %v for node %v`, *fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "metadata_id" returned %v for node %v`, fk, n.ID)
 		}
 		assign(node, n)
 	}

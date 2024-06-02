@@ -18,6 +18,7 @@ type DocumentType struct {
 
 func (DocumentType) Fields() []ent.Field {
 	return []ent.Field{
+		field.String("metadata_id").Optional(),
 		field.Enum("type").Values(
 			"OTHER",
 			"DESIGN",
@@ -36,13 +37,12 @@ func (DocumentType) Fields() []ent.Field {
 
 func (DocumentType) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("metadata", Metadata.Type).Ref("document_types").Unique(),
+		edge.From("metadata", Metadata.Type).Ref("document_types").Unique().Field("metadata_id"),
 	}
 }
 
 func (DocumentType) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("type", "name", "description").Unique(),
-		index.Edges("metadata").Fields("id").Unique(),
+		index.Fields("metadata_id", "type", "name", "description").Unique(),
 	}
 }

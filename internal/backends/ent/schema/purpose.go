@@ -18,6 +18,7 @@ type Purpose struct {
 
 func (Purpose) Fields() []ent.Field {
 	return []ent.Field{
+		field.String("node_id").Optional(),
 		field.Enum("primary_purpose").Values(
 			"UNKNOWN_PURPOSE",
 			"APPLICATION",
@@ -54,12 +55,12 @@ func (Purpose) Fields() []ent.Field {
 
 func (Purpose) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("node", Node.Type).Ref("primary_purpose").Unique(),
+		edge.From("node", Node.Type).Ref("primary_purpose").Unique().Field("node_id"),
 	}
 }
 
 func (Purpose) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Edges("node").Fields("id").Unique(),
+		index.Fields("node_id", "primary_purpose").Unique(),
 	}
 }
