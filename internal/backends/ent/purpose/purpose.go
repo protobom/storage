@@ -19,30 +19,29 @@ const (
 	Label = "purpose"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
+	// FieldNodeID holds the string denoting the node_id field in the database.
+	FieldNodeID = "node_id"
 	// FieldPrimaryPurpose holds the string denoting the primary_purpose field in the database.
 	FieldPrimaryPurpose = "primary_purpose"
 	// EdgeNode holds the string denoting the node edge name in mutations.
 	EdgeNode = "node"
 	// Table holds the table name of the purpose in the database.
 	Table = "purposes"
-	// NodeTable is the table that holds the node relation/edge. The primary key declared below.
-	NodeTable = "node_primary_purpose"
+	// NodeTable is the table that holds the node relation/edge.
+	NodeTable = "purposes"
 	// NodeInverseTable is the table name for the Node entity.
 	// It exists in this package in order to avoid circular dependency with the "node" package.
 	NodeInverseTable = "nodes"
+	// NodeColumn is the table column denoting the node relation/edge.
+	NodeColumn = "node_id"
 )
 
 // Columns holds all SQL columns for purpose fields.
 var Columns = []string{
 	FieldID,
+	FieldNodeID,
 	FieldPrimaryPurpose,
 }
-
-var (
-	// NodePrimaryKey and NodeColumn2 are the table columns denoting the
-	// primary key for the node relation (M2M).
-	NodePrimaryKey = []string{"node_id", "purpose_id"}
-)
 
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {
@@ -112,28 +111,26 @@ func ByID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldID, opts...).ToFunc()
 }
 
+// ByNodeID orders the results by the node_id field.
+func ByNodeID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldNodeID, opts...).ToFunc()
+}
+
 // ByPrimaryPurpose orders the results by the primary_purpose field.
 func ByPrimaryPurpose(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldPrimaryPurpose, opts...).ToFunc()
 }
 
-// ByNodeCount orders the results by node count.
-func ByNodeCount(opts ...sql.OrderTermOption) OrderOption {
+// ByNodeField orders the results by node field.
+func ByNodeField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborsCount(s, newNodeStep(), opts...)
-	}
-}
-
-// ByNode orders the results by node terms.
-func ByNode(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newNodeStep(), append([]sql.OrderTerm{term}, terms...)...)
+		sqlgraph.OrderByNeighborTerms(s, newNodeStep(), sql.OrderByField(field, opts...))
 	}
 }
 func newNodeStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(NodeInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.M2M, true, NodeTable, NodePrimaryKey...),
+		sqlgraph.Edge(sqlgraph.M2O, true, NodeTable, NodeColumn),
 	)
 }

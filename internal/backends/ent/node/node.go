@@ -19,6 +19,10 @@ const (
 	Label = "node"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
+	// FieldFromNodeID holds the string denoting the from_node_id field in the database.
+	FieldFromNodeID = "from_node_id"
+	// FieldNodeListID holds the string denoting the node_list_id field in the database.
+	FieldNodeListID = "node_list_id"
 	// FieldType holds the string denoting the type field in the database.
 	FieldType = "type"
 	// FieldName holds the string denoting the name field in the database.
@@ -57,6 +61,8 @@ const (
 	FieldAttribution = "attribution"
 	// FieldFileTypes holds the string denoting the file_types field in the database.
 	FieldFileTypes = "file_types"
+	// FieldEdgeType holds the string denoting the edge_type field in the database.
+	FieldEdgeType = "edge_type"
 	// EdgeSuppliers holds the string denoting the suppliers edge name in mutations.
 	EdgeSuppliers = "suppliers"
 	// EdgeOriginators holds the string denoting the originators edge name in mutations.
@@ -69,12 +75,12 @@ const (
 	EdgeHashes = "hashes"
 	// EdgePrimaryPurpose holds the string denoting the primary_purpose edge name in mutations.
 	EdgePrimaryPurpose = "primary_purpose"
+	// EdgeFromNode holds the string denoting the from_node edge name in mutations.
+	EdgeFromNode = "from_node"
 	// EdgeNodes holds the string denoting the nodes edge name in mutations.
 	EdgeNodes = "nodes"
 	// EdgeNodeList holds the string denoting the node_list edge name in mutations.
 	EdgeNodeList = "node_list"
-	// EdgeEdgeTypes holds the string denoting the edge_types edge name in mutations.
-	EdgeEdgeTypes = "edge_types"
 	// Table holds the table name of the node in the database.
 	Table = "nodes"
 	// SuppliersTable is the table that holds the suppliers relation/edge.
@@ -90,14 +96,14 @@ const (
 	// It exists in this package in order to avoid circular dependency with the "person" package.
 	OriginatorsInverseTable = "persons"
 	// OriginatorsColumn is the table column denoting the originators relation/edge.
-	OriginatorsColumn = "node_originators"
+	OriginatorsColumn = "node_id"
 	// ExternalReferencesTable is the table that holds the external_references relation/edge.
 	ExternalReferencesTable = "external_references"
 	// ExternalReferencesInverseTable is the table name for the ExternalReference entity.
 	// It exists in this package in order to avoid circular dependency with the "externalreference" package.
 	ExternalReferencesInverseTable = "external_references"
 	// ExternalReferencesColumn is the table column denoting the external_references relation/edge.
-	ExternalReferencesColumn = "node_external_references"
+	ExternalReferencesColumn = "node_id"
 	// IdentifiersTable is the table that holds the identifiers relation/edge.
 	IdentifiersTable = "identifiers_entries"
 	// IdentifiersInverseTable is the table name for the IdentifiersEntry entity.
@@ -112,32 +118,35 @@ const (
 	HashesInverseTable = "hashes_entries"
 	// HashesColumn is the table column denoting the hashes relation/edge.
 	HashesColumn = "node_hashes"
-	// PrimaryPurposeTable is the table that holds the primary_purpose relation/edge. The primary key declared below.
-	PrimaryPurposeTable = "node_primary_purpose"
+	// PrimaryPurposeTable is the table that holds the primary_purpose relation/edge.
+	PrimaryPurposeTable = "purposes"
 	// PrimaryPurposeInverseTable is the table name for the Purpose entity.
 	// It exists in this package in order to avoid circular dependency with the "purpose" package.
 	PrimaryPurposeInverseTable = "purposes"
-	// NodesTable is the table that holds the nodes relation/edge. The primary key declared below.
-	NodesTable = "edge_types"
+	// PrimaryPurposeColumn is the table column denoting the primary_purpose relation/edge.
+	PrimaryPurposeColumn = "node_id"
+	// FromNodeTable is the table that holds the from_node relation/edge.
+	FromNodeTable = "nodes"
+	// FromNodeColumn is the table column denoting the from_node relation/edge.
+	FromNodeColumn = "from_node_id"
+	// NodesTable is the table that holds the nodes relation/edge.
+	NodesTable = "nodes"
+	// NodesColumn is the table column denoting the nodes relation/edge.
+	NodesColumn = "from_node_id"
 	// NodeListTable is the table that holds the node_list relation/edge.
 	NodeListTable = "nodes"
 	// NodeListInverseTable is the table name for the NodeList entity.
 	// It exists in this package in order to avoid circular dependency with the "nodelist" package.
 	NodeListInverseTable = "node_lists"
 	// NodeListColumn is the table column denoting the node_list relation/edge.
-	NodeListColumn = "node_list_nodes"
-	// EdgeTypesTable is the table that holds the edge_types relation/edge.
-	EdgeTypesTable = "edge_types"
-	// EdgeTypesInverseTable is the table name for the EdgeType entity.
-	// It exists in this package in order to avoid circular dependency with the "edgetype" package.
-	EdgeTypesInverseTable = "edge_types"
-	// EdgeTypesColumn is the table column denoting the edge_types relation/edge.
-	EdgeTypesColumn = "node_id"
+	NodeListColumn = "node_list_id"
 )
 
 // Columns holds all SQL columns for node fields.
 var Columns = []string{
 	FieldID,
+	FieldFromNodeID,
+	FieldNodeListID,
 	FieldType,
 	FieldName,
 	FieldVersion,
@@ -157,32 +166,13 @@ var Columns = []string{
 	FieldValidUntilDate,
 	FieldAttribution,
 	FieldFileTypes,
+	FieldEdgeType,
 }
-
-// ForeignKeys holds the SQL foreign-keys that are owned by the "nodes"
-// table and are not defined as standalone fields in the schema.
-var ForeignKeys = []string{
-	"node_list_nodes",
-}
-
-var (
-	// PrimaryPurposePrimaryKey and PrimaryPurposeColumn2 are the table columns denoting the
-	// primary key for the primary_purpose relation (M2M).
-	PrimaryPurposePrimaryKey = []string{"node_id", "purpose_id"}
-	// NodesPrimaryKey and NodesColumn2 are the table columns denoting the
-	// primary key for the nodes relation (M2M).
-	NodesPrimaryKey = []string{"node_id", "node_id"}
-)
 
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {
 	for i := range Columns {
 		if column == Columns[i] {
-			return true
-		}
-	}
-	for i := range ForeignKeys {
-		if column == ForeignKeys[i] {
 			return true
 		}
 	}
@@ -217,12 +207,88 @@ func TypeValidator(_type Type) error {
 	}
 }
 
+// EdgeType defines the type for the "edge_type" enum field.
+type EdgeType string
+
+// EdgeType values.
+const (
+	EdgeTypeUNKNOWN              EdgeType = "UNKNOWN"
+	EdgeTypeAmends               EdgeType = "amends"
+	EdgeTypeAncestor             EdgeType = "ancestor"
+	EdgeTypeBuildDependency      EdgeType = "buildDependency"
+	EdgeTypeBuildTool            EdgeType = "buildTool"
+	EdgeTypeContains             EdgeType = "contains"
+	EdgeTypeContainedBy          EdgeType = "contained_by"
+	EdgeTypeCopy                 EdgeType = "copy"
+	EdgeTypeDataFile             EdgeType = "dataFile"
+	EdgeTypeDependencyManifest   EdgeType = "dependencyManifest"
+	EdgeTypeDependsOn            EdgeType = "dependsOn"
+	EdgeTypeDependencyOf         EdgeType = "dependencyOf"
+	EdgeTypeDescendant           EdgeType = "descendant"
+	EdgeTypeDescribes            EdgeType = "describes"
+	EdgeTypeDescribedBy          EdgeType = "describedBy"
+	EdgeTypeDevDependency        EdgeType = "devDependency"
+	EdgeTypeDevTool              EdgeType = "devTool"
+	EdgeTypeDistributionArtifact EdgeType = "distributionArtifact"
+	EdgeTypeDocumentation        EdgeType = "documentation"
+	EdgeTypeDynamicLink          EdgeType = "dynamicLink"
+	EdgeTypeExample              EdgeType = "example"
+	EdgeTypeExpandedFromArchive  EdgeType = "expandedFromArchive"
+	EdgeTypeFileAdded            EdgeType = "fileAdded"
+	EdgeTypeFileDeleted          EdgeType = "fileDeleted"
+	EdgeTypeFileModified         EdgeType = "fileModified"
+	EdgeTypeGenerates            EdgeType = "generates"
+	EdgeTypeGeneratedFrom        EdgeType = "generatedFrom"
+	EdgeTypeMetafile             EdgeType = "metafile"
+	EdgeTypeOptionalComponent    EdgeType = "optionalComponent"
+	EdgeTypeOptionalDependency   EdgeType = "optionalDependency"
+	EdgeTypeOther                EdgeType = "other"
+	EdgeTypePackages             EdgeType = "packages"
+	EdgeTypePatch                EdgeType = "patch"
+	EdgeTypePrerequisite         EdgeType = "prerequisite"
+	EdgeTypePrerequisiteFor      EdgeType = "prerequisiteFor"
+	EdgeTypeProvidedDependency   EdgeType = "providedDependency"
+	EdgeTypeRequirementFor       EdgeType = "requirementFor"
+	EdgeTypeRuntimeDependency    EdgeType = "runtimeDependency"
+	EdgeTypeSpecificationFor     EdgeType = "specificationFor"
+	EdgeTypeStaticLink           EdgeType = "staticLink"
+	EdgeTypeTest                 EdgeType = "test"
+	EdgeTypeTestCase             EdgeType = "testCase"
+	EdgeTypeTestDependency       EdgeType = "testDependency"
+	EdgeTypeTestTool             EdgeType = "testTool"
+	EdgeTypeVariant              EdgeType = "variant"
+)
+
+func (et EdgeType) String() string {
+	return string(et)
+}
+
+// EdgeTypeValidator is a validator for the "edge_type" field enum values. It is called by the builders before save.
+func EdgeTypeValidator(et EdgeType) error {
+	switch et {
+	case EdgeTypeUNKNOWN, EdgeTypeAmends, EdgeTypeAncestor, EdgeTypeBuildDependency, EdgeTypeBuildTool, EdgeTypeContains, EdgeTypeContainedBy, EdgeTypeCopy, EdgeTypeDataFile, EdgeTypeDependencyManifest, EdgeTypeDependsOn, EdgeTypeDependencyOf, EdgeTypeDescendant, EdgeTypeDescribes, EdgeTypeDescribedBy, EdgeTypeDevDependency, EdgeTypeDevTool, EdgeTypeDistributionArtifact, EdgeTypeDocumentation, EdgeTypeDynamicLink, EdgeTypeExample, EdgeTypeExpandedFromArchive, EdgeTypeFileAdded, EdgeTypeFileDeleted, EdgeTypeFileModified, EdgeTypeGenerates, EdgeTypeGeneratedFrom, EdgeTypeMetafile, EdgeTypeOptionalComponent, EdgeTypeOptionalDependency, EdgeTypeOther, EdgeTypePackages, EdgeTypePatch, EdgeTypePrerequisite, EdgeTypePrerequisiteFor, EdgeTypeProvidedDependency, EdgeTypeRequirementFor, EdgeTypeRuntimeDependency, EdgeTypeSpecificationFor, EdgeTypeStaticLink, EdgeTypeTest, EdgeTypeTestCase, EdgeTypeTestDependency, EdgeTypeTestTool, EdgeTypeVariant:
+		return nil
+	default:
+		return fmt.Errorf("node: invalid enum value for edge_type field: %q", et)
+	}
+}
+
 // OrderOption defines the ordering options for the Node queries.
 type OrderOption func(*sql.Selector)
 
 // ByID orders the results by the id field.
 func ByID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldID, opts...).ToFunc()
+}
+
+// ByFromNodeID orders the results by the from_node_id field.
+func ByFromNodeID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldFromNodeID, opts...).ToFunc()
+}
+
+// ByNodeListID orders the results by the node_list_id field.
+func ByNodeListID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldNodeListID, opts...).ToFunc()
 }
 
 // ByType orders the results by the type field.
@@ -303,6 +369,11 @@ func ByBuildDate(opts ...sql.OrderTermOption) OrderOption {
 // ByValidUntilDate orders the results by the valid_until_date field.
 func ByValidUntilDate(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldValidUntilDate, opts...).ToFunc()
+}
+
+// ByEdgeType orders the results by the edge_type field.
+func ByEdgeType(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldEdgeType, opts...).ToFunc()
 }
 
 // BySuppliersCount orders the results by suppliers count.
@@ -389,6 +460,13 @@ func ByPrimaryPurpose(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	}
 }
 
+// ByFromNodeField orders the results by from_node field.
+func ByFromNodeField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newFromNodeStep(), sql.OrderByField(field, opts...))
+	}
+}
+
 // ByNodesCount orders the results by nodes count.
 func ByNodesCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -407,20 +485,6 @@ func ByNodes(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 func ByNodeListField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
 		sqlgraph.OrderByNeighborTerms(s, newNodeListStep(), sql.OrderByField(field, opts...))
-	}
-}
-
-// ByEdgeTypesCount orders the results by edge_types count.
-func ByEdgeTypesCount(opts ...sql.OrderTermOption) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborsCount(s, newEdgeTypesStep(), opts...)
-	}
-}
-
-// ByEdgeTypes orders the results by edge_types terms.
-func ByEdgeTypes(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newEdgeTypesStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
 func newSuppliersStep() *sqlgraph.Step {
@@ -462,14 +526,21 @@ func newPrimaryPurposeStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(PrimaryPurposeInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.M2M, false, PrimaryPurposeTable, PrimaryPurposePrimaryKey...),
+		sqlgraph.Edge(sqlgraph.O2M, false, PrimaryPurposeTable, PrimaryPurposeColumn),
+	)
+}
+func newFromNodeStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(Table, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, true, FromNodeTable, FromNodeColumn),
 	)
 }
 func newNodesStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(Table, FieldID),
-		sqlgraph.Edge(sqlgraph.M2M, false, NodesTable, NodesPrimaryKey...),
+		sqlgraph.Edge(sqlgraph.O2M, false, NodesTable, NodesColumn),
 	)
 }
 func newNodeListStep() *sqlgraph.Step {
@@ -477,12 +548,5 @@ func newNodeListStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(NodeListInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.M2O, true, NodeListTable, NodeListColumn),
-	)
-}
-func newEdgeTypesStep() *sqlgraph.Step {
-	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(EdgeTypesInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2M, true, EdgeTypesTable, EdgeTypesColumn),
 	)
 }

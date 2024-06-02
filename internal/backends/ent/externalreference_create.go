@@ -27,6 +27,20 @@ type ExternalReferenceCreate struct {
 	conflict []sql.ConflictOption
 }
 
+// SetNodeID sets the "node_id" field.
+func (erc *ExternalReferenceCreate) SetNodeID(s string) *ExternalReferenceCreate {
+	erc.mutation.SetNodeID(s)
+	return erc
+}
+
+// SetNillableNodeID sets the "node_id" field if the given value is not nil.
+func (erc *ExternalReferenceCreate) SetNillableNodeID(s *string) *ExternalReferenceCreate {
+	if s != nil {
+		erc.SetNodeID(*s)
+	}
+	return erc
+}
+
 // SetURL sets the "url" field.
 func (erc *ExternalReferenceCreate) SetURL(s string) *ExternalReferenceCreate {
 	erc.mutation.SetURL(s)
@@ -72,12 +86,6 @@ func (erc *ExternalReferenceCreate) AddHashes(h ...*HashesEntry) *ExternalRefere
 		ids[i] = h[i].ID
 	}
 	return erc.AddHashIDs(ids...)
-}
-
-// SetNodeID sets the "node" edge to the Node entity by ID.
-func (erc *ExternalReferenceCreate) SetNodeID(id string) *ExternalReferenceCreate {
-	erc.mutation.SetNodeID(id)
-	return erc
 }
 
 // SetNode sets the "node" edge to the Node entity.
@@ -132,9 +140,6 @@ func (erc *ExternalReferenceCreate) check() error {
 		if err := externalreference.TypeValidator(v); err != nil {
 			return &ValidationError{Name: "type", err: fmt.Errorf(`ent: validator failed for field "ExternalReference.type": %w`, err)}
 		}
-	}
-	if _, ok := erc.mutation.NodeID(); !ok {
-		return &ValidationError{Name: "node", err: errors.New(`ent: missing required edge "ExternalReference.node"`)}
 	}
 	return nil
 }
@@ -209,7 +214,7 @@ func (erc *ExternalReferenceCreate) createSpec() (*ExternalReference, *sqlgraph.
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.node_external_references = &nodes[0]
+		_node.NodeID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
@@ -219,7 +224,7 @@ func (erc *ExternalReferenceCreate) createSpec() (*ExternalReference, *sqlgraph.
 // of the `INSERT` statement. For example:
 //
 //	client.ExternalReference.Create().
-//		SetURL(v).
+//		SetNodeID(v).
 //		OnConflict(
 //			// Update the row with the new values
 //			// the was proposed for insertion.
@@ -228,7 +233,7 @@ func (erc *ExternalReferenceCreate) createSpec() (*ExternalReference, *sqlgraph.
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.ExternalReferenceUpsert) {
-//			SetURL(v+v).
+//			SetNodeID(v+v).
 //		}).
 //		Exec(ctx)
 func (erc *ExternalReferenceCreate) OnConflict(opts ...sql.ConflictOption) *ExternalReferenceUpsertOne {
@@ -263,6 +268,24 @@ type (
 		*sql.UpdateSet
 	}
 )
+
+// SetNodeID sets the "node_id" field.
+func (u *ExternalReferenceUpsert) SetNodeID(v string) *ExternalReferenceUpsert {
+	u.Set(externalreference.FieldNodeID, v)
+	return u
+}
+
+// UpdateNodeID sets the "node_id" field to the value that was provided on create.
+func (u *ExternalReferenceUpsert) UpdateNodeID() *ExternalReferenceUpsert {
+	u.SetExcluded(externalreference.FieldNodeID)
+	return u
+}
+
+// ClearNodeID clears the value of the "node_id" field.
+func (u *ExternalReferenceUpsert) ClearNodeID() *ExternalReferenceUpsert {
+	u.SetNull(externalreference.FieldNodeID)
+	return u
+}
 
 // SetURL sets the "url" field.
 func (u *ExternalReferenceUpsert) SetURL(v string) *ExternalReferenceUpsert {
@@ -356,6 +379,27 @@ func (u *ExternalReferenceUpsertOne) Update(set func(*ExternalReferenceUpsert)) 
 		set(&ExternalReferenceUpsert{UpdateSet: update})
 	}))
 	return u
+}
+
+// SetNodeID sets the "node_id" field.
+func (u *ExternalReferenceUpsertOne) SetNodeID(v string) *ExternalReferenceUpsertOne {
+	return u.Update(func(s *ExternalReferenceUpsert) {
+		s.SetNodeID(v)
+	})
+}
+
+// UpdateNodeID sets the "node_id" field to the value that was provided on create.
+func (u *ExternalReferenceUpsertOne) UpdateNodeID() *ExternalReferenceUpsertOne {
+	return u.Update(func(s *ExternalReferenceUpsert) {
+		s.UpdateNodeID()
+	})
+}
+
+// ClearNodeID clears the value of the "node_id" field.
+func (u *ExternalReferenceUpsertOne) ClearNodeID() *ExternalReferenceUpsertOne {
+	return u.Update(func(s *ExternalReferenceUpsert) {
+		s.ClearNodeID()
+	})
 }
 
 // SetURL sets the "url" field.
@@ -555,7 +599,7 @@ func (ercb *ExternalReferenceCreateBulk) ExecX(ctx context.Context) {
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.ExternalReferenceUpsert) {
-//			SetURL(v+v).
+//			SetNodeID(v+v).
 //		}).
 //		Exec(ctx)
 func (ercb *ExternalReferenceCreateBulk) OnConflict(opts ...sql.ConflictOption) *ExternalReferenceUpsertBulk {
@@ -622,6 +666,27 @@ func (u *ExternalReferenceUpsertBulk) Update(set func(*ExternalReferenceUpsert))
 		set(&ExternalReferenceUpsert{UpdateSet: update})
 	}))
 	return u
+}
+
+// SetNodeID sets the "node_id" field.
+func (u *ExternalReferenceUpsertBulk) SetNodeID(v string) *ExternalReferenceUpsertBulk {
+	return u.Update(func(s *ExternalReferenceUpsert) {
+		s.SetNodeID(v)
+	})
+}
+
+// UpdateNodeID sets the "node_id" field to the value that was provided on create.
+func (u *ExternalReferenceUpsertBulk) UpdateNodeID() *ExternalReferenceUpsertBulk {
+	return u.Update(func(s *ExternalReferenceUpsert) {
+		s.UpdateNodeID()
+	})
+}
+
+// ClearNodeID clears the value of the "node_id" field.
+func (u *ExternalReferenceUpsertBulk) ClearNodeID() *ExternalReferenceUpsertBulk {
+	return u.Update(func(s *ExternalReferenceUpsert) {
+		s.ClearNodeID()
+	})
 }
 
 // SetURL sets the "url" field.

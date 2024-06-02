@@ -27,7 +27,6 @@ type DocumentTypeQuery struct {
 	inters       []Interceptor
 	predicates   []predicate.DocumentType
 	withMetadata *MetadataQuery
-	withFKs      bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -302,12 +301,12 @@ func (dtq *DocumentTypeQuery) WithMetadata(opts ...func(*MetadataQuery)) *Docume
 // Example:
 //
 //	var v []struct {
-//		Type documenttype.Type `json:"type,omitempty"`
+//		MetadataID string `json:"metadata_id,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.DocumentType.Query().
-//		GroupBy(documenttype.FieldType).
+//		GroupBy(documenttype.FieldMetadataID).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (dtq *DocumentTypeQuery) GroupBy(field string, fields ...string) *DocumentTypeGroupBy {
@@ -325,11 +324,11 @@ func (dtq *DocumentTypeQuery) GroupBy(field string, fields ...string) *DocumentT
 // Example:
 //
 //	var v []struct {
-//		Type documenttype.Type `json:"type,omitempty"`
+//		MetadataID string `json:"metadata_id,omitempty"`
 //	}
 //
 //	client.DocumentType.Query().
-//		Select(documenttype.FieldType).
+//		Select(documenttype.FieldMetadataID).
 //		Scan(ctx, &v)
 func (dtq *DocumentTypeQuery) Select(fields ...string) *DocumentTypeSelect {
 	dtq.ctx.Fields = append(dtq.ctx.Fields, fields...)
@@ -373,18 +372,11 @@ func (dtq *DocumentTypeQuery) prepareQuery(ctx context.Context) error {
 func (dtq *DocumentTypeQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*DocumentType, error) {
 	var (
 		nodes       = []*DocumentType{}
-		withFKs     = dtq.withFKs
 		_spec       = dtq.querySpec()
 		loadedTypes = [1]bool{
 			dtq.withMetadata != nil,
 		}
 	)
-	if dtq.withMetadata != nil {
-		withFKs = true
-	}
-	if withFKs {
-		_spec.Node.Columns = append(_spec.Node.Columns, documenttype.ForeignKeys...)
-	}
 	_spec.ScanValues = func(columns []string) ([]any, error) {
 		return (*DocumentType).scanValues(nil, columns)
 	}
@@ -416,10 +408,7 @@ func (dtq *DocumentTypeQuery) loadMetadata(ctx context.Context, query *MetadataQ
 	ids := make([]string, 0, len(nodes))
 	nodeids := make(map[string][]*DocumentType)
 	for i := range nodes {
-		if nodes[i].metadata_document_types == nil {
-			continue
-		}
-		fk := *nodes[i].metadata_document_types
+		fk := nodes[i].MetadataID
 		if _, ok := nodeids[fk]; !ok {
 			ids = append(ids, fk)
 		}
@@ -436,7 +425,7 @@ func (dtq *DocumentTypeQuery) loadMetadata(ctx context.Context, query *MetadataQ
 	for _, n := range neighbors {
 		nodes, ok := nodeids[n.ID]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "metadata_document_types" returned %v`, n.ID)
+			return fmt.Errorf(`unexpected foreign-key "metadata_id" returned %v`, n.ID)
 		}
 		for i := range nodes {
 			assign(nodes[i], n)
@@ -469,6 +458,9 @@ func (dtq *DocumentTypeQuery) querySpec() *sqlgraph.QuerySpec {
 			if fields[i] != documenttype.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
+		}
+		if dtq.withMetadata != nil {
+			_spec.Node.AddColumnOnce(documenttype.FieldMetadataID)
 		}
 	}
 	if ps := dtq.predicates; len(ps) > 0 {

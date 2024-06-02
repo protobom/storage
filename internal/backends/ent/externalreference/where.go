@@ -58,6 +58,11 @@ func IDLTE(id int) predicate.ExternalReference {
 	return predicate.ExternalReference(sql.FieldLTE(FieldID, id))
 }
 
+// NodeID applies equality check predicate on the "node_id" field. It's identical to NodeIDEQ.
+func NodeID(v string) predicate.ExternalReference {
+	return predicate.ExternalReference(sql.FieldEQ(FieldNodeID, v))
+}
+
 // URL applies equality check predicate on the "url" field. It's identical to URLEQ.
 func URL(v string) predicate.ExternalReference {
 	return predicate.ExternalReference(sql.FieldEQ(FieldURL, v))
@@ -71,6 +76,81 @@ func Comment(v string) predicate.ExternalReference {
 // Authority applies equality check predicate on the "authority" field. It's identical to AuthorityEQ.
 func Authority(v string) predicate.ExternalReference {
 	return predicate.ExternalReference(sql.FieldEQ(FieldAuthority, v))
+}
+
+// NodeIDEQ applies the EQ predicate on the "node_id" field.
+func NodeIDEQ(v string) predicate.ExternalReference {
+	return predicate.ExternalReference(sql.FieldEQ(FieldNodeID, v))
+}
+
+// NodeIDNEQ applies the NEQ predicate on the "node_id" field.
+func NodeIDNEQ(v string) predicate.ExternalReference {
+	return predicate.ExternalReference(sql.FieldNEQ(FieldNodeID, v))
+}
+
+// NodeIDIn applies the In predicate on the "node_id" field.
+func NodeIDIn(vs ...string) predicate.ExternalReference {
+	return predicate.ExternalReference(sql.FieldIn(FieldNodeID, vs...))
+}
+
+// NodeIDNotIn applies the NotIn predicate on the "node_id" field.
+func NodeIDNotIn(vs ...string) predicate.ExternalReference {
+	return predicate.ExternalReference(sql.FieldNotIn(FieldNodeID, vs...))
+}
+
+// NodeIDGT applies the GT predicate on the "node_id" field.
+func NodeIDGT(v string) predicate.ExternalReference {
+	return predicate.ExternalReference(sql.FieldGT(FieldNodeID, v))
+}
+
+// NodeIDGTE applies the GTE predicate on the "node_id" field.
+func NodeIDGTE(v string) predicate.ExternalReference {
+	return predicate.ExternalReference(sql.FieldGTE(FieldNodeID, v))
+}
+
+// NodeIDLT applies the LT predicate on the "node_id" field.
+func NodeIDLT(v string) predicate.ExternalReference {
+	return predicate.ExternalReference(sql.FieldLT(FieldNodeID, v))
+}
+
+// NodeIDLTE applies the LTE predicate on the "node_id" field.
+func NodeIDLTE(v string) predicate.ExternalReference {
+	return predicate.ExternalReference(sql.FieldLTE(FieldNodeID, v))
+}
+
+// NodeIDContains applies the Contains predicate on the "node_id" field.
+func NodeIDContains(v string) predicate.ExternalReference {
+	return predicate.ExternalReference(sql.FieldContains(FieldNodeID, v))
+}
+
+// NodeIDHasPrefix applies the HasPrefix predicate on the "node_id" field.
+func NodeIDHasPrefix(v string) predicate.ExternalReference {
+	return predicate.ExternalReference(sql.FieldHasPrefix(FieldNodeID, v))
+}
+
+// NodeIDHasSuffix applies the HasSuffix predicate on the "node_id" field.
+func NodeIDHasSuffix(v string) predicate.ExternalReference {
+	return predicate.ExternalReference(sql.FieldHasSuffix(FieldNodeID, v))
+}
+
+// NodeIDIsNil applies the IsNil predicate on the "node_id" field.
+func NodeIDIsNil() predicate.ExternalReference {
+	return predicate.ExternalReference(sql.FieldIsNull(FieldNodeID))
+}
+
+// NodeIDNotNil applies the NotNil predicate on the "node_id" field.
+func NodeIDNotNil() predicate.ExternalReference {
+	return predicate.ExternalReference(sql.FieldNotNull(FieldNodeID))
+}
+
+// NodeIDEqualFold applies the EqualFold predicate on the "node_id" field.
+func NodeIDEqualFold(v string) predicate.ExternalReference {
+	return predicate.ExternalReference(sql.FieldEqualFold(FieldNodeID, v))
+}
+
+// NodeIDContainsFold applies the ContainsFold predicate on the "node_id" field.
+func NodeIDContainsFold(v string) predicate.ExternalReference {
+	return predicate.ExternalReference(sql.FieldContainsFold(FieldNodeID, v))
 }
 
 // URLEQ applies the EQ predicate on the "url" field.

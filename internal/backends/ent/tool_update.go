@@ -32,6 +32,26 @@ func (tu *ToolUpdate) Where(ps ...predicate.Tool) *ToolUpdate {
 	return tu
 }
 
+// SetMetadataID sets the "metadata_id" field.
+func (tu *ToolUpdate) SetMetadataID(s string) *ToolUpdate {
+	tu.mutation.SetMetadataID(s)
+	return tu
+}
+
+// SetNillableMetadataID sets the "metadata_id" field if the given value is not nil.
+func (tu *ToolUpdate) SetNillableMetadataID(s *string) *ToolUpdate {
+	if s != nil {
+		tu.SetMetadataID(*s)
+	}
+	return tu
+}
+
+// ClearMetadataID clears the value of the "metadata_id" field.
+func (tu *ToolUpdate) ClearMetadataID() *ToolUpdate {
+	tu.mutation.ClearMetadataID()
+	return tu
+}
+
 // SetName sets the "name" field.
 func (tu *ToolUpdate) SetName(s string) *ToolUpdate {
 	tu.mutation.SetName(s)
@@ -70,20 +90,6 @@ func (tu *ToolUpdate) SetVendor(s string) *ToolUpdate {
 func (tu *ToolUpdate) SetNillableVendor(s *string) *ToolUpdate {
 	if s != nil {
 		tu.SetVendor(*s)
-	}
-	return tu
-}
-
-// SetMetadataID sets the "metadata" edge to the Metadata entity by ID.
-func (tu *ToolUpdate) SetMetadataID(id string) *ToolUpdate {
-	tu.mutation.SetMetadataID(id)
-	return tu
-}
-
-// SetNillableMetadataID sets the "metadata" edge to the Metadata entity by ID if the given value is not nil.
-func (tu *ToolUpdate) SetNillableMetadataID(id *string) *ToolUpdate {
-	if id != nil {
-		tu = tu.SetMetadataID(*id)
 	}
 	return tu
 }
@@ -198,6 +204,26 @@ type ToolUpdateOne struct {
 	mutation *ToolMutation
 }
 
+// SetMetadataID sets the "metadata_id" field.
+func (tuo *ToolUpdateOne) SetMetadataID(s string) *ToolUpdateOne {
+	tuo.mutation.SetMetadataID(s)
+	return tuo
+}
+
+// SetNillableMetadataID sets the "metadata_id" field if the given value is not nil.
+func (tuo *ToolUpdateOne) SetNillableMetadataID(s *string) *ToolUpdateOne {
+	if s != nil {
+		tuo.SetMetadataID(*s)
+	}
+	return tuo
+}
+
+// ClearMetadataID clears the value of the "metadata_id" field.
+func (tuo *ToolUpdateOne) ClearMetadataID() *ToolUpdateOne {
+	tuo.mutation.ClearMetadataID()
+	return tuo
+}
+
 // SetName sets the "name" field.
 func (tuo *ToolUpdateOne) SetName(s string) *ToolUpdateOne {
 	tuo.mutation.SetName(s)
@@ -236,20 +262,6 @@ func (tuo *ToolUpdateOne) SetVendor(s string) *ToolUpdateOne {
 func (tuo *ToolUpdateOne) SetNillableVendor(s *string) *ToolUpdateOne {
 	if s != nil {
 		tuo.SetVendor(*s)
-	}
-	return tuo
-}
-
-// SetMetadataID sets the "metadata" edge to the Metadata entity by ID.
-func (tuo *ToolUpdateOne) SetMetadataID(id string) *ToolUpdateOne {
-	tuo.mutation.SetMetadataID(id)
-	return tuo
-}
-
-// SetNillableMetadataID sets the "metadata" edge to the Metadata entity by ID if the given value is not nil.
-func (tuo *ToolUpdateOne) SetNillableMetadataID(id *string) *ToolUpdateOne {
-	if id != nil {
-		tuo = tuo.SetMetadataID(*id)
 	}
 	return tuo
 }

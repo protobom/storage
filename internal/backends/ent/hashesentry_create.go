@@ -39,42 +39,42 @@ func (hec *HashesEntryCreate) SetHashData(s string) *HashesEntryCreate {
 	return hec
 }
 
-// SetExternalReferencesID sets the "external_references" edge to the ExternalReference entity by ID.
-func (hec *HashesEntryCreate) SetExternalReferencesID(id int) *HashesEntryCreate {
-	hec.mutation.SetExternalReferencesID(id)
+// SetExternalReferenceID sets the "external_reference" edge to the ExternalReference entity by ID.
+func (hec *HashesEntryCreate) SetExternalReferenceID(id int) *HashesEntryCreate {
+	hec.mutation.SetExternalReferenceID(id)
 	return hec
 }
 
-// SetNillableExternalReferencesID sets the "external_references" edge to the ExternalReference entity by ID if the given value is not nil.
-func (hec *HashesEntryCreate) SetNillableExternalReferencesID(id *int) *HashesEntryCreate {
+// SetNillableExternalReferenceID sets the "external_reference" edge to the ExternalReference entity by ID if the given value is not nil.
+func (hec *HashesEntryCreate) SetNillableExternalReferenceID(id *int) *HashesEntryCreate {
 	if id != nil {
-		hec = hec.SetExternalReferencesID(*id)
+		hec = hec.SetExternalReferenceID(*id)
 	}
 	return hec
 }
 
-// SetExternalReferences sets the "external_references" edge to the ExternalReference entity.
-func (hec *HashesEntryCreate) SetExternalReferences(e *ExternalReference) *HashesEntryCreate {
-	return hec.SetExternalReferencesID(e.ID)
+// SetExternalReference sets the "external_reference" edge to the ExternalReference entity.
+func (hec *HashesEntryCreate) SetExternalReference(e *ExternalReference) *HashesEntryCreate {
+	return hec.SetExternalReferenceID(e.ID)
 }
 
-// SetNodesID sets the "nodes" edge to the Node entity by ID.
-func (hec *HashesEntryCreate) SetNodesID(id string) *HashesEntryCreate {
-	hec.mutation.SetNodesID(id)
+// SetNodeID sets the "node" edge to the Node entity by ID.
+func (hec *HashesEntryCreate) SetNodeID(id string) *HashesEntryCreate {
+	hec.mutation.SetNodeID(id)
 	return hec
 }
 
-// SetNillableNodesID sets the "nodes" edge to the Node entity by ID if the given value is not nil.
-func (hec *HashesEntryCreate) SetNillableNodesID(id *string) *HashesEntryCreate {
+// SetNillableNodeID sets the "node" edge to the Node entity by ID if the given value is not nil.
+func (hec *HashesEntryCreate) SetNillableNodeID(id *string) *HashesEntryCreate {
 	if id != nil {
-		hec = hec.SetNodesID(*id)
+		hec = hec.SetNodeID(*id)
 	}
 	return hec
 }
 
-// SetNodes sets the "nodes" edge to the Node entity.
-func (hec *HashesEntryCreate) SetNodes(n *Node) *HashesEntryCreate {
-	return hec.SetNodesID(n.ID)
+// SetNode sets the "node" edge to the Node entity.
+func (hec *HashesEntryCreate) SetNode(n *Node) *HashesEntryCreate {
+	return hec.SetNodeID(n.ID)
 }
 
 // Mutation returns the HashesEntryMutation object of the builder.
@@ -157,12 +157,12 @@ func (hec *HashesEntryCreate) createSpec() (*HashesEntry, *sqlgraph.CreateSpec) 
 		_spec.SetField(hashesentry.FieldHashData, field.TypeString, value)
 		_node.HashData = value
 	}
-	if nodes := hec.mutation.ExternalReferencesIDs(); len(nodes) > 0 {
+	if nodes := hec.mutation.ExternalReferenceIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
-			Table:   hashesentry.ExternalReferencesTable,
-			Columns: []string{hashesentry.ExternalReferencesColumn},
+			Table:   hashesentry.ExternalReferenceTable,
+			Columns: []string{hashesentry.ExternalReferenceColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(externalreference.FieldID, field.TypeInt),
@@ -174,12 +174,12 @@ func (hec *HashesEntryCreate) createSpec() (*HashesEntry, *sqlgraph.CreateSpec) 
 		_node.external_reference_hashes = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := hec.mutation.NodesIDs(); len(nodes) > 0 {
+	if nodes := hec.mutation.NodeIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
-			Table:   hashesentry.NodesTable,
-			Columns: []string{hashesentry.NodesColumn},
+			Table:   hashesentry.NodeTable,
+			Columns: []string{hashesentry.NodeColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeString),

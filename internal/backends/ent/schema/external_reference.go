@@ -7,17 +7,18 @@ package schema
 
 import (
 	"entgo.io/ent"
-	"entgo.io/ent/schema"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
+	"entgo.io/ent/schema/index"
 )
 
 type ExternalReference struct {
 	ent.Schema
 }
 
-func (ExternalReference) Fields() []ent.Field { //nolint: funlen
+func (ExternalReference) Fields() []ent.Field { //nolint:funlen
 	return []ent.Field{
+		field.String("node_id").Optional(),
 		field.String("url"),
 		field.String("comment"),
 		field.String("authority").Optional(),
@@ -90,8 +91,12 @@ func (ExternalReference) Fields() []ent.Field { //nolint: funlen
 func (ExternalReference) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("hashes", HashesEntry.Type),
-		edge.From("node", Node.Type).Ref("external_references").Required().Unique(),
+		edge.From("node", Node.Type).Ref("external_references").Unique().Field("node_id"),
 	}
 }
 
-func (ExternalReference) Annotations() []schema.Annotation { return nil }
+func (ExternalReference) Indexes() []ent.Index {
+	return []ent.Index{
+		index.Fields("node_id").Unique(),
+	}
+}

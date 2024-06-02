@@ -31,14 +31,14 @@ const (
 	// It exists in this package in order to avoid circular dependency with the "node" package.
 	NodesInverseTable = "nodes"
 	// NodesColumn is the table column denoting the nodes relation/edge.
-	NodesColumn = "node_list_nodes"
+	NodesColumn = "node_list_id"
 	// DocumentTable is the table that holds the document relation/edge.
 	DocumentTable = "documents"
 	// DocumentInverseTable is the table name for the Document entity.
 	// It exists in this package in order to avoid circular dependency with the "document" package.
 	DocumentInverseTable = "documents"
 	// DocumentColumn is the table column denoting the document relation/edge.
-	DocumentColumn = "node_list_document"
+	DocumentColumn = "node_list_id"
 )
 
 // Columns holds all SQL columns for nodelist fields.

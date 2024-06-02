@@ -23,26 +23,26 @@ const (
 	FieldHashAlgorithmType = "hash_algorithm_type"
 	// FieldHashData holds the string denoting the hash_data field in the database.
 	FieldHashData = "hash_data"
-	// EdgeExternalReferences holds the string denoting the external_references edge name in mutations.
-	EdgeExternalReferences = "external_references"
-	// EdgeNodes holds the string denoting the nodes edge name in mutations.
-	EdgeNodes = "nodes"
+	// EdgeExternalReference holds the string denoting the external_reference edge name in mutations.
+	EdgeExternalReference = "external_reference"
+	// EdgeNode holds the string denoting the node edge name in mutations.
+	EdgeNode = "node"
 	// Table holds the table name of the hashesentry in the database.
 	Table = "hashes_entries"
-	// ExternalReferencesTable is the table that holds the external_references relation/edge.
-	ExternalReferencesTable = "hashes_entries"
-	// ExternalReferencesInverseTable is the table name for the ExternalReference entity.
+	// ExternalReferenceTable is the table that holds the external_reference relation/edge.
+	ExternalReferenceTable = "hashes_entries"
+	// ExternalReferenceInverseTable is the table name for the ExternalReference entity.
 	// It exists in this package in order to avoid circular dependency with the "externalreference" package.
-	ExternalReferencesInverseTable = "external_references"
-	// ExternalReferencesColumn is the table column denoting the external_references relation/edge.
-	ExternalReferencesColumn = "external_reference_hashes"
-	// NodesTable is the table that holds the nodes relation/edge.
-	NodesTable = "hashes_entries"
-	// NodesInverseTable is the table name for the Node entity.
+	ExternalReferenceInverseTable = "external_references"
+	// ExternalReferenceColumn is the table column denoting the external_reference relation/edge.
+	ExternalReferenceColumn = "external_reference_hashes"
+	// NodeTable is the table that holds the node relation/edge.
+	NodeTable = "hashes_entries"
+	// NodeInverseTable is the table name for the Node entity.
 	// It exists in this package in order to avoid circular dependency with the "node" package.
-	NodesInverseTable = "nodes"
-	// NodesColumn is the table column denoting the nodes relation/edge.
-	NodesColumn = "node_hashes"
+	NodeInverseTable = "nodes"
+	// NodeColumn is the table column denoting the node relation/edge.
+	NodeColumn = "node_hashes"
 )
 
 // Columns holds all SQL columns for hashesentry fields.
@@ -131,30 +131,30 @@ func ByHashData(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldHashData, opts...).ToFunc()
 }
 
-// ByExternalReferencesField orders the results by external_references field.
-func ByExternalReferencesField(field string, opts ...sql.OrderTermOption) OrderOption {
+// ByExternalReferenceField orders the results by external_reference field.
+func ByExternalReferenceField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newExternalReferencesStep(), sql.OrderByField(field, opts...))
+		sqlgraph.OrderByNeighborTerms(s, newExternalReferenceStep(), sql.OrderByField(field, opts...))
 	}
 }
 
-// ByNodesField orders the results by nodes field.
-func ByNodesField(field string, opts ...sql.OrderTermOption) OrderOption {
+// ByNodeField orders the results by node field.
+func ByNodeField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newNodesStep(), sql.OrderByField(field, opts...))
+		sqlgraph.OrderByNeighborTerms(s, newNodeStep(), sql.OrderByField(field, opts...))
 	}
 }
-func newExternalReferencesStep() *sqlgraph.Step {
+func newExternalReferenceStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(ExternalReferencesInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.M2O, true, ExternalReferencesTable, ExternalReferencesColumn),
+		sqlgraph.To(ExternalReferenceInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, true, ExternalReferenceTable, ExternalReferenceColumn),
 	)
 }
-func newNodesStep() *sqlgraph.Step {
+func newNodeStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(NodesInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.M2O, true, NodesTable, NodesColumn),
+		sqlgraph.To(NodeInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, true, NodeTable, NodeColumn),
 	)
 }

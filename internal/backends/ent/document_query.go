@@ -29,7 +29,6 @@ type DocumentQuery struct {
 	predicates   []predicate.Document
 	withMetadata *MetadataQuery
 	withNodeList *NodeListQuery
-	withFKs      bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -80,7 +79,7 @@ func (dq *DocumentQuery) QueryMetadata() *MetadataQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(document.Table, document.FieldID, selector),
 			sqlgraph.To(metadata.Table, metadata.FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, true, document.MetadataTable, document.MetadataColumn),
+			sqlgraph.Edge(sqlgraph.M2O, true, document.MetadataTable, document.MetadataColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(dq.driver.Dialect(), step)
 		return fromU, nil
@@ -334,6 +333,18 @@ func (dq *DocumentQuery) WithNodeList(opts ...func(*NodeListQuery)) *DocumentQue
 
 // GroupBy is used to group vertices by one or more fields/columns.
 // It is often used with aggregate functions, like: count, max, mean, min, sum.
+//
+// Example:
+//
+//	var v []struct {
+//		MetadataID string `json:"metadata_id,omitempty"`
+//		Count int `json:"count,omitempty"`
+//	}
+//
+//	client.Document.Query().
+//		GroupBy(document.FieldMetadataID).
+//		Aggregate(ent.Count()).
+//		Scan(ctx, &v)
 func (dq *DocumentQuery) GroupBy(field string, fields ...string) *DocumentGroupBy {
 	dq.ctx.Fields = append([]string{field}, fields...)
 	grbuild := &DocumentGroupBy{build: dq}
@@ -345,6 +356,16 @@ func (dq *DocumentQuery) GroupBy(field string, fields ...string) *DocumentGroupB
 
 // Select allows the selection one or more fields/columns for the given query,
 // instead of selecting all fields in the entity.
+//
+// Example:
+//
+//	var v []struct {
+//		MetadataID string `json:"metadata_id,omitempty"`
+//	}
+//
+//	client.Document.Query().
+//		Select(document.FieldMetadataID).
+//		Scan(ctx, &v)
 func (dq *DocumentQuery) Select(fields ...string) *DocumentSelect {
 	dq.ctx.Fields = append(dq.ctx.Fields, fields...)
 	sbuild := &DocumentSelect{DocumentQuery: dq}
@@ -387,19 +408,12 @@ func (dq *DocumentQuery) prepareQuery(ctx context.Context) error {
 func (dq *DocumentQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Document, error) {
 	var (
 		nodes       = []*Document{}
-		withFKs     = dq.withFKs
 		_spec       = dq.querySpec()
 		loadedTypes = [2]bool{
 			dq.withMetadata != nil,
 			dq.withNodeList != nil,
 		}
 	)
-	if dq.withMetadata != nil || dq.withNodeList != nil {
-		withFKs = true
-	}
-	if withFKs {
-		_spec.Node.Columns = append(_spec.Node.Columns, document.ForeignKeys...)
-	}
 	_spec.ScanValues = func(columns []string) ([]any, error) {
 		return (*Document).scanValues(nil, columns)
 	}
@@ -437,10 +451,7 @@ func (dq *DocumentQuery) loadMetadata(ctx context.Context, query *MetadataQuery,
 	ids := make([]string, 0, len(nodes))
 	nodeids := make(map[string][]*Document)
 	for i := range nodes {
-		if nodes[i].metadata_document == nil {
-			continue
-		}
-		fk := *nodes[i].metadata_document
+		fk := nodes[i].MetadataID
 		if _, ok := nodeids[fk]; !ok {
 			ids = append(ids, fk)
 		}
@@ -457,7 +468,7 @@ func (dq *DocumentQuery) loadMetadata(ctx context.Context, query *MetadataQuery,
 	for _, n := range neighbors {
 		nodes, ok := nodeids[n.ID]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "metadata_document" returned %v`, n.ID)
+			return fmt.Errorf(`unexpected foreign-key "metadata_id" returned %v`, n.ID)
 		}
 		for i := range nodes {
 			assign(nodes[i], n)
@@ -469,10 +480,7 @@ func (dq *DocumentQuery) loadNodeList(ctx context.Context, query *NodeListQuery,
 	ids := make([]int, 0, len(nodes))
 	nodeids := make(map[int][]*Document)
 	for i := range nodes {
-		if nodes[i].node_list_document == nil {
-			continue
-		}
-		fk := *nodes[i].node_list_document
+		fk := nodes[i].NodeListID
 		if _, ok := nodeids[fk]; !ok {
 			ids = append(ids, fk)
 		}
@@ -489,7 +497,7 @@ func (dq *DocumentQuery) loadNodeList(ctx context.Context, query *NodeListQuery,
 	for _, n := range neighbors {
 		nodes, ok := nodeids[n.ID]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "node_list_document" returned %v`, n.ID)
+			return fmt.Errorf(`unexpected foreign-key "node_list_id" returned %v`, n.ID)
 		}
 		for i := range nodes {
 			assign(nodes[i], n)
@@ -522,6 +530,12 @@ func (dq *DocumentQuery) querySpec() *sqlgraph.QuerySpec {
 			if fields[i] != document.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
+		}
+		if dq.withMetadata != nil {
+			_spec.Node.AddColumnOnce(document.FieldMetadataID)
+		}
+		if dq.withNodeList != nil {
+			_spec.Node.AddColumnOnce(document.FieldNodeListID)
 		}
 	}
 	if ps := dq.predicates; len(ps) > 0 {

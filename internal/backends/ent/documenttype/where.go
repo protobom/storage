@@ -58,6 +58,11 @@ func IDLTE(id int) predicate.DocumentType {
 	return predicate.DocumentType(sql.FieldLTE(FieldID, id))
 }
 
+// MetadataID applies equality check predicate on the "metadata_id" field. It's identical to MetadataIDEQ.
+func MetadataID(v string) predicate.DocumentType {
+	return predicate.DocumentType(sql.FieldEQ(FieldMetadataID, v))
+}
+
 // Name applies equality check predicate on the "name" field. It's identical to NameEQ.
 func Name(v string) predicate.DocumentType {
 	return predicate.DocumentType(sql.FieldEQ(FieldName, v))
@@ -66,6 +71,81 @@ func Name(v string) predicate.DocumentType {
 // Description applies equality check predicate on the "description" field. It's identical to DescriptionEQ.
 func Description(v string) predicate.DocumentType {
 	return predicate.DocumentType(sql.FieldEQ(FieldDescription, v))
+}
+
+// MetadataIDEQ applies the EQ predicate on the "metadata_id" field.
+func MetadataIDEQ(v string) predicate.DocumentType {
+	return predicate.DocumentType(sql.FieldEQ(FieldMetadataID, v))
+}
+
+// MetadataIDNEQ applies the NEQ predicate on the "metadata_id" field.
+func MetadataIDNEQ(v string) predicate.DocumentType {
+	return predicate.DocumentType(sql.FieldNEQ(FieldMetadataID, v))
+}
+
+// MetadataIDIn applies the In predicate on the "metadata_id" field.
+func MetadataIDIn(vs ...string) predicate.DocumentType {
+	return predicate.DocumentType(sql.FieldIn(FieldMetadataID, vs...))
+}
+
+// MetadataIDNotIn applies the NotIn predicate on the "metadata_id" field.
+func MetadataIDNotIn(vs ...string) predicate.DocumentType {
+	return predicate.DocumentType(sql.FieldNotIn(FieldMetadataID, vs...))
+}
+
+// MetadataIDGT applies the GT predicate on the "metadata_id" field.
+func MetadataIDGT(v string) predicate.DocumentType {
+	return predicate.DocumentType(sql.FieldGT(FieldMetadataID, v))
+}
+
+// MetadataIDGTE applies the GTE predicate on the "metadata_id" field.
+func MetadataIDGTE(v string) predicate.DocumentType {
+	return predicate.DocumentType(sql.FieldGTE(FieldMetadataID, v))
+}
+
+// MetadataIDLT applies the LT predicate on the "metadata_id" field.
+func MetadataIDLT(v string) predicate.DocumentType {
+	return predicate.DocumentType(sql.FieldLT(FieldMetadataID, v))
+}
+
+// MetadataIDLTE applies the LTE predicate on the "metadata_id" field.
+func MetadataIDLTE(v string) predicate.DocumentType {
+	return predicate.DocumentType(sql.FieldLTE(FieldMetadataID, v))
+}
+
+// MetadataIDContains applies the Contains predicate on the "metadata_id" field.
+func MetadataIDContains(v string) predicate.DocumentType {
+	return predicate.DocumentType(sql.FieldContains(FieldMetadataID, v))
+}
+
+// MetadataIDHasPrefix applies the HasPrefix predicate on the "metadata_id" field.
+func MetadataIDHasPrefix(v string) predicate.DocumentType {
+	return predicate.DocumentType(sql.FieldHasPrefix(FieldMetadataID, v))
+}
+
+// MetadataIDHasSuffix applies the HasSuffix predicate on the "metadata_id" field.
+func MetadataIDHasSuffix(v string) predicate.DocumentType {
+	return predicate.DocumentType(sql.FieldHasSuffix(FieldMetadataID, v))
+}
+
+// MetadataIDIsNil applies the IsNil predicate on the "metadata_id" field.
+func MetadataIDIsNil() predicate.DocumentType {
+	return predicate.DocumentType(sql.FieldIsNull(FieldMetadataID))
+}
+
+// MetadataIDNotNil applies the NotNil predicate on the "metadata_id" field.
+func MetadataIDNotNil() predicate.DocumentType {
+	return predicate.DocumentType(sql.FieldNotNull(FieldMetadataID))
+}
+
+// MetadataIDEqualFold applies the EqualFold predicate on the "metadata_id" field.
+func MetadataIDEqualFold(v string) predicate.DocumentType {
+	return predicate.DocumentType(sql.FieldEqualFold(FieldMetadataID, v))
+}
+
+// MetadataIDContainsFold applies the ContainsFold predicate on the "metadata_id" field.
+func MetadataIDContainsFold(v string) predicate.DocumentType {
+	return predicate.DocumentType(sql.FieldContainsFold(FieldMetadataID, v))
 }
 
 // TypeEQ applies the EQ predicate on the "type" field.

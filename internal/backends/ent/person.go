@@ -22,6 +22,10 @@ type Person struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID int `json:"id,omitempty"`
+	// MetadataID holds the value of the "metadata_id" field.
+	MetadataID string `json:"metadata_id,omitempty"`
+	// NodeID holds the value of the "node_id" field.
+	NodeID string `json:"node_id,omitempty"`
 	// Name holds the value of the "name" field.
 	Name string `json:"name,omitempty"`
 	// IsOrg holds the value of the "is_org" field.
@@ -34,12 +38,10 @@ type Person struct {
 	Phone string `json:"phone,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the PersonQuery when eager-loading is set.
-	Edges            PersonEdges `json:"edges"`
-	metadata_authors *string
-	node_suppliers   *string
-	node_originators *string
-	person_contacts  *int
-	selectValues     sql.SelectValues
+	Edges           PersonEdges `json:"edges"`
+	node_suppliers  *string
+	person_contacts *int
+	selectValues    sql.SelectValues
 }
 
 // PersonEdges holds the relations/edges for other nodes in the graph.
@@ -108,15 +110,11 @@ func (*Person) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullBool)
 		case person.FieldID:
 			values[i] = new(sql.NullInt64)
-		case person.FieldName, person.FieldEmail, person.FieldURL, person.FieldPhone:
+		case person.FieldMetadataID, person.FieldNodeID, person.FieldName, person.FieldEmail, person.FieldURL, person.FieldPhone:
 			values[i] = new(sql.NullString)
-		case person.ForeignKeys[0]: // metadata_authors
+		case person.ForeignKeys[0]: // node_suppliers
 			values[i] = new(sql.NullString)
-		case person.ForeignKeys[1]: // node_suppliers
-			values[i] = new(sql.NullString)
-		case person.ForeignKeys[2]: // node_originators
-			values[i] = new(sql.NullString)
-		case person.ForeignKeys[3]: // person_contacts
+		case person.ForeignKeys[1]: // person_contacts
 			values[i] = new(sql.NullInt64)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -139,6 +137,18 @@ func (pe *Person) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", value)
 			}
 			pe.ID = int(value.Int64)
+		case person.FieldMetadataID:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field metadata_id", values[i])
+			} else if value.Valid {
+				pe.MetadataID = value.String
+			}
+		case person.FieldNodeID:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field node_id", values[i])
+			} else if value.Valid {
+				pe.NodeID = value.String
+			}
 		case person.FieldName:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field name", values[i])
@@ -171,26 +181,12 @@ func (pe *Person) assignValues(columns []string, values []any) error {
 			}
 		case person.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field metadata_authors", values[i])
-			} else if value.Valid {
-				pe.metadata_authors = new(string)
-				*pe.metadata_authors = value.String
-			}
-		case person.ForeignKeys[1]:
-			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field node_suppliers", values[i])
 			} else if value.Valid {
 				pe.node_suppliers = new(string)
 				*pe.node_suppliers = value.String
 			}
-		case person.ForeignKeys[2]:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field node_originators", values[i])
-			} else if value.Valid {
-				pe.node_originators = new(string)
-				*pe.node_originators = value.String
-			}
-		case person.ForeignKeys[3]:
+		case person.ForeignKeys[1]:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for edge-field person_contacts", value)
 			} else if value.Valid {
@@ -253,6 +249,12 @@ func (pe *Person) String() string {
 	var builder strings.Builder
 	builder.WriteString("Person(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", pe.ID))
+	builder.WriteString("metadata_id=")
+	builder.WriteString(pe.MetadataID)
+	builder.WriteString(", ")
+	builder.WriteString("node_id=")
+	builder.WriteString(pe.NodeID)
+	builder.WriteString(", ")
 	builder.WriteString("name=")
 	builder.WriteString(pe.Name)
 	builder.WriteString(", ")

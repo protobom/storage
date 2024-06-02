@@ -21,6 +21,8 @@ type DocumentType struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID int `json:"id,omitempty"`
+	// MetadataID holds the value of the "metadata_id" field.
+	MetadataID string `json:"metadata_id,omitempty"`
 	// Type holds the value of the "type" field.
 	Type *documenttype.Type `json:"type,omitempty"`
 	// Name holds the value of the "name" field.
@@ -29,9 +31,8 @@ type DocumentType struct {
 	Description *string `json:"description,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the DocumentTypeQuery when eager-loading is set.
-	Edges                   DocumentTypeEdges `json:"edges"`
-	metadata_document_types *string
-	selectValues            sql.SelectValues
+	Edges        DocumentTypeEdges `json:"edges"`
+	selectValues sql.SelectValues
 }
 
 // DocumentTypeEdges holds the relations/edges for other nodes in the graph.
@@ -61,9 +62,7 @@ func (*DocumentType) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case documenttype.FieldID:
 			values[i] = new(sql.NullInt64)
-		case documenttype.FieldType, documenttype.FieldName, documenttype.FieldDescription:
-			values[i] = new(sql.NullString)
-		case documenttype.ForeignKeys[0]: // metadata_document_types
+		case documenttype.FieldMetadataID, documenttype.FieldType, documenttype.FieldName, documenttype.FieldDescription:
 			values[i] = new(sql.NullString)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -86,6 +85,12 @@ func (dt *DocumentType) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", value)
 			}
 			dt.ID = int(value.Int64)
+		case documenttype.FieldMetadataID:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field metadata_id", values[i])
+			} else if value.Valid {
+				dt.MetadataID = value.String
+			}
 		case documenttype.FieldType:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field type", values[i])
@@ -106,13 +111,6 @@ func (dt *DocumentType) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				dt.Description = new(string)
 				*dt.Description = value.String
-			}
-		case documenttype.ForeignKeys[0]:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field metadata_document_types", values[i])
-			} else if value.Valid {
-				dt.metadata_document_types = new(string)
-				*dt.metadata_document_types = value.String
 			}
 		default:
 			dt.selectValues.Set(columns[i], values[i])
@@ -155,6 +153,9 @@ func (dt *DocumentType) String() string {
 	var builder strings.Builder
 	builder.WriteString("DocumentType(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", dt.ID))
+	builder.WriteString("metadata_id=")
+	builder.WriteString(dt.MetadataID)
+	builder.WriteString(", ")
 	if v := dt.Type; v != nil {
 		builder.WriteString("type=")
 		builder.WriteString(fmt.Sprintf("%v", *v))

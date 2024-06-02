@@ -27,6 +27,34 @@ type PersonCreate struct {
 	conflict []sql.ConflictOption
 }
 
+// SetMetadataID sets the "metadata_id" field.
+func (pc *PersonCreate) SetMetadataID(s string) *PersonCreate {
+	pc.mutation.SetMetadataID(s)
+	return pc
+}
+
+// SetNillableMetadataID sets the "metadata_id" field if the given value is not nil.
+func (pc *PersonCreate) SetNillableMetadataID(s *string) *PersonCreate {
+	if s != nil {
+		pc.SetMetadataID(*s)
+	}
+	return pc
+}
+
+// SetNodeID sets the "node_id" field.
+func (pc *PersonCreate) SetNodeID(s string) *PersonCreate {
+	pc.mutation.SetNodeID(s)
+	return pc
+}
+
+// SetNillableNodeID sets the "node_id" field if the given value is not nil.
+func (pc *PersonCreate) SetNillableNodeID(s *string) *PersonCreate {
+	if s != nil {
+		pc.SetNodeID(*s)
+	}
+	return pc
+}
+
 // SetName sets the "name" field.
 func (pc *PersonCreate) SetName(s string) *PersonCreate {
 	pc.mutation.SetName(s)
@@ -91,37 +119,9 @@ func (pc *PersonCreate) AddContacts(p ...*Person) *PersonCreate {
 	return pc.AddContactIDs(ids...)
 }
 
-// SetMetadataID sets the "metadata" edge to the Metadata entity by ID.
-func (pc *PersonCreate) SetMetadataID(id string) *PersonCreate {
-	pc.mutation.SetMetadataID(id)
-	return pc
-}
-
-// SetNillableMetadataID sets the "metadata" edge to the Metadata entity by ID if the given value is not nil.
-func (pc *PersonCreate) SetNillableMetadataID(id *string) *PersonCreate {
-	if id != nil {
-		pc = pc.SetMetadataID(*id)
-	}
-	return pc
-}
-
 // SetMetadata sets the "metadata" edge to the Metadata entity.
 func (pc *PersonCreate) SetMetadata(m *Metadata) *PersonCreate {
 	return pc.SetMetadataID(m.ID)
-}
-
-// SetNodeID sets the "node" edge to the Node entity by ID.
-func (pc *PersonCreate) SetNodeID(id string) *PersonCreate {
-	pc.mutation.SetNodeID(id)
-	return pc
-}
-
-// SetNillableNodeID sets the "node" edge to the Node entity by ID if the given value is not nil.
-func (pc *PersonCreate) SetNillableNodeID(id *string) *PersonCreate {
-	if id != nil {
-		pc = pc.SetNodeID(*id)
-	}
-	return pc
 }
 
 // SetNode sets the "node" edge to the Node entity.
@@ -272,7 +272,7 @@ func (pc *PersonCreate) createSpec() (*Person, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.metadata_authors = &nodes[0]
+		_node.MetadataID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := pc.mutation.NodeIDs(); len(nodes) > 0 {
@@ -289,7 +289,7 @@ func (pc *PersonCreate) createSpec() (*Person, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.node_originators = &nodes[0]
+		_node.NodeID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
@@ -299,7 +299,7 @@ func (pc *PersonCreate) createSpec() (*Person, *sqlgraph.CreateSpec) {
 // of the `INSERT` statement. For example:
 //
 //	client.Person.Create().
-//		SetName(v).
+//		SetMetadataID(v).
 //		OnConflict(
 //			// Update the row with the new values
 //			// the was proposed for insertion.
@@ -308,7 +308,7 @@ func (pc *PersonCreate) createSpec() (*Person, *sqlgraph.CreateSpec) {
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.PersonUpsert) {
-//			SetName(v+v).
+//			SetMetadataID(v+v).
 //		}).
 //		Exec(ctx)
 func (pc *PersonCreate) OnConflict(opts ...sql.ConflictOption) *PersonUpsertOne {
@@ -343,6 +343,42 @@ type (
 		*sql.UpdateSet
 	}
 )
+
+// SetMetadataID sets the "metadata_id" field.
+func (u *PersonUpsert) SetMetadataID(v string) *PersonUpsert {
+	u.Set(person.FieldMetadataID, v)
+	return u
+}
+
+// UpdateMetadataID sets the "metadata_id" field to the value that was provided on create.
+func (u *PersonUpsert) UpdateMetadataID() *PersonUpsert {
+	u.SetExcluded(person.FieldMetadataID)
+	return u
+}
+
+// ClearMetadataID clears the value of the "metadata_id" field.
+func (u *PersonUpsert) ClearMetadataID() *PersonUpsert {
+	u.SetNull(person.FieldMetadataID)
+	return u
+}
+
+// SetNodeID sets the "node_id" field.
+func (u *PersonUpsert) SetNodeID(v string) *PersonUpsert {
+	u.Set(person.FieldNodeID, v)
+	return u
+}
+
+// UpdateNodeID sets the "node_id" field to the value that was provided on create.
+func (u *PersonUpsert) UpdateNodeID() *PersonUpsert {
+	u.SetExcluded(person.FieldNodeID)
+	return u
+}
+
+// ClearNodeID clears the value of the "node_id" field.
+func (u *PersonUpsert) ClearNodeID() *PersonUpsert {
+	u.SetNull(person.FieldNodeID)
+	return u
+}
 
 // SetName sets the "name" field.
 func (u *PersonUpsert) SetName(v string) *PersonUpsert {
@@ -442,6 +478,48 @@ func (u *PersonUpsertOne) Update(set func(*PersonUpsert)) *PersonUpsertOne {
 		set(&PersonUpsert{UpdateSet: update})
 	}))
 	return u
+}
+
+// SetMetadataID sets the "metadata_id" field.
+func (u *PersonUpsertOne) SetMetadataID(v string) *PersonUpsertOne {
+	return u.Update(func(s *PersonUpsert) {
+		s.SetMetadataID(v)
+	})
+}
+
+// UpdateMetadataID sets the "metadata_id" field to the value that was provided on create.
+func (u *PersonUpsertOne) UpdateMetadataID() *PersonUpsertOne {
+	return u.Update(func(s *PersonUpsert) {
+		s.UpdateMetadataID()
+	})
+}
+
+// ClearMetadataID clears the value of the "metadata_id" field.
+func (u *PersonUpsertOne) ClearMetadataID() *PersonUpsertOne {
+	return u.Update(func(s *PersonUpsert) {
+		s.ClearMetadataID()
+	})
+}
+
+// SetNodeID sets the "node_id" field.
+func (u *PersonUpsertOne) SetNodeID(v string) *PersonUpsertOne {
+	return u.Update(func(s *PersonUpsert) {
+		s.SetNodeID(v)
+	})
+}
+
+// UpdateNodeID sets the "node_id" field to the value that was provided on create.
+func (u *PersonUpsertOne) UpdateNodeID() *PersonUpsertOne {
+	return u.Update(func(s *PersonUpsert) {
+		s.UpdateNodeID()
+	})
+}
+
+// ClearNodeID clears the value of the "node_id" field.
+func (u *PersonUpsertOne) ClearNodeID() *PersonUpsertOne {
+	return u.Update(func(s *PersonUpsert) {
+		s.ClearNodeID()
+	})
 }
 
 // SetName sets the "name" field.
@@ -648,7 +726,7 @@ func (pcb *PersonCreateBulk) ExecX(ctx context.Context) {
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.PersonUpsert) {
-//			SetName(v+v).
+//			SetMetadataID(v+v).
 //		}).
 //		Exec(ctx)
 func (pcb *PersonCreateBulk) OnConflict(opts ...sql.ConflictOption) *PersonUpsertBulk {
@@ -715,6 +793,48 @@ func (u *PersonUpsertBulk) Update(set func(*PersonUpsert)) *PersonUpsertBulk {
 		set(&PersonUpsert{UpdateSet: update})
 	}))
 	return u
+}
+
+// SetMetadataID sets the "metadata_id" field.
+func (u *PersonUpsertBulk) SetMetadataID(v string) *PersonUpsertBulk {
+	return u.Update(func(s *PersonUpsert) {
+		s.SetMetadataID(v)
+	})
+}
+
+// UpdateMetadataID sets the "metadata_id" field to the value that was provided on create.
+func (u *PersonUpsertBulk) UpdateMetadataID() *PersonUpsertBulk {
+	return u.Update(func(s *PersonUpsert) {
+		s.UpdateMetadataID()
+	})
+}
+
+// ClearMetadataID clears the value of the "metadata_id" field.
+func (u *PersonUpsertBulk) ClearMetadataID() *PersonUpsertBulk {
+	return u.Update(func(s *PersonUpsert) {
+		s.ClearMetadataID()
+	})
+}
+
+// SetNodeID sets the "node_id" field.
+func (u *PersonUpsertBulk) SetNodeID(v string) *PersonUpsertBulk {
+	return u.Update(func(s *PersonUpsert) {
+		s.SetNodeID(v)
+	})
+}
+
+// UpdateNodeID sets the "node_id" field to the value that was provided on create.
+func (u *PersonUpsertBulk) UpdateNodeID() *PersonUpsertBulk {
+	return u.Update(func(s *PersonUpsert) {
+		s.UpdateNodeID()
+	})
+}
+
+// ClearNodeID clears the value of the "node_id" field.
+func (u *PersonUpsertBulk) ClearNodeID() *PersonUpsertBulk {
+	return u.Update(func(s *PersonUpsert) {
+		s.ClearNodeID()
+	})
 }
 
 // SetName sets the "name" field.

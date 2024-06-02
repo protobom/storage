@@ -26,7 +26,7 @@ type IdentifiersEntryQuery struct {
 	order      []identifiersentry.OrderOption
 	inters     []Interceptor
 	predicates []predicate.IdentifiersEntry
-	withNodes  *NodeQuery
+	withNode   *NodeQuery
 	withFKs    bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
@@ -64,8 +64,8 @@ func (ieq *IdentifiersEntryQuery) Order(o ...identifiersentry.OrderOption) *Iden
 	return ieq
 }
 
-// QueryNodes chains the current query on the "nodes" edge.
-func (ieq *IdentifiersEntryQuery) QueryNodes() *NodeQuery {
+// QueryNode chains the current query on the "node" edge.
+func (ieq *IdentifiersEntryQuery) QueryNode() *NodeQuery {
 	query := (&NodeClient{config: ieq.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := ieq.prepareQuery(ctx); err != nil {
@@ -78,7 +78,7 @@ func (ieq *IdentifiersEntryQuery) QueryNodes() *NodeQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(identifiersentry.Table, identifiersentry.FieldID, selector),
 			sqlgraph.To(node.Table, node.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, identifiersentry.NodesTable, identifiersentry.NodesColumn),
+			sqlgraph.Edge(sqlgraph.M2O, true, identifiersentry.NodeTable, identifiersentry.NodeColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(ieq.driver.Dialect(), step)
 		return fromU, nil
@@ -278,21 +278,21 @@ func (ieq *IdentifiersEntryQuery) Clone() *IdentifiersEntryQuery {
 		order:      append([]identifiersentry.OrderOption{}, ieq.order...),
 		inters:     append([]Interceptor{}, ieq.inters...),
 		predicates: append([]predicate.IdentifiersEntry{}, ieq.predicates...),
-		withNodes:  ieq.withNodes.Clone(),
+		withNode:   ieq.withNode.Clone(),
 		// clone intermediate query.
 		sql:  ieq.sql.Clone(),
 		path: ieq.path,
 	}
 }
 
-// WithNodes tells the query-builder to eager-load the nodes that are connected to
-// the "nodes" edge. The optional arguments are used to configure the query builder of the edge.
-func (ieq *IdentifiersEntryQuery) WithNodes(opts ...func(*NodeQuery)) *IdentifiersEntryQuery {
+// WithNode tells the query-builder to eager-load the nodes that are connected to
+// the "node" edge. The optional arguments are used to configure the query builder of the edge.
+func (ieq *IdentifiersEntryQuery) WithNode(opts ...func(*NodeQuery)) *IdentifiersEntryQuery {
 	query := (&NodeClient{config: ieq.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	ieq.withNodes = query
+	ieq.withNode = query
 	return ieq
 }
 
@@ -376,10 +376,10 @@ func (ieq *IdentifiersEntryQuery) sqlAll(ctx context.Context, hooks ...queryHook
 		withFKs     = ieq.withFKs
 		_spec       = ieq.querySpec()
 		loadedTypes = [1]bool{
-			ieq.withNodes != nil,
+			ieq.withNode != nil,
 		}
 	)
-	if ieq.withNodes != nil {
+	if ieq.withNode != nil {
 		withFKs = true
 	}
 	if withFKs {
@@ -403,16 +403,16 @@ func (ieq *IdentifiersEntryQuery) sqlAll(ctx context.Context, hooks ...queryHook
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
-	if query := ieq.withNodes; query != nil {
-		if err := ieq.loadNodes(ctx, query, nodes, nil,
-			func(n *IdentifiersEntry, e *Node) { n.Edges.Nodes = e }); err != nil {
+	if query := ieq.withNode; query != nil {
+		if err := ieq.loadNode(ctx, query, nodes, nil,
+			func(n *IdentifiersEntry, e *Node) { n.Edges.Node = e }); err != nil {
 			return nil, err
 		}
 	}
 	return nodes, nil
 }
 
-func (ieq *IdentifiersEntryQuery) loadNodes(ctx context.Context, query *NodeQuery, nodes []*IdentifiersEntry, init func(*IdentifiersEntry), assign func(*IdentifiersEntry, *Node)) error {
+func (ieq *IdentifiersEntryQuery) loadNode(ctx context.Context, query *NodeQuery, nodes []*IdentifiersEntry, init func(*IdentifiersEntry), assign func(*IdentifiersEntry, *Node)) error {
 	ids := make([]string, 0, len(nodes))
 	nodeids := make(map[string][]*IdentifiersEntry)
 	for i := range nodes {

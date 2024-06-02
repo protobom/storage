@@ -58,6 +58,11 @@ func IDLTE(id int) predicate.Tool {
 	return predicate.Tool(sql.FieldLTE(FieldID, id))
 }
 
+// MetadataID applies equality check predicate on the "metadata_id" field. It's identical to MetadataIDEQ.
+func MetadataID(v string) predicate.Tool {
+	return predicate.Tool(sql.FieldEQ(FieldMetadataID, v))
+}
+
 // Name applies equality check predicate on the "name" field. It's identical to NameEQ.
 func Name(v string) predicate.Tool {
 	return predicate.Tool(sql.FieldEQ(FieldName, v))
@@ -71,6 +76,81 @@ func Version(v string) predicate.Tool {
 // Vendor applies equality check predicate on the "vendor" field. It's identical to VendorEQ.
 func Vendor(v string) predicate.Tool {
 	return predicate.Tool(sql.FieldEQ(FieldVendor, v))
+}
+
+// MetadataIDEQ applies the EQ predicate on the "metadata_id" field.
+func MetadataIDEQ(v string) predicate.Tool {
+	return predicate.Tool(sql.FieldEQ(FieldMetadataID, v))
+}
+
+// MetadataIDNEQ applies the NEQ predicate on the "metadata_id" field.
+func MetadataIDNEQ(v string) predicate.Tool {
+	return predicate.Tool(sql.FieldNEQ(FieldMetadataID, v))
+}
+
+// MetadataIDIn applies the In predicate on the "metadata_id" field.
+func MetadataIDIn(vs ...string) predicate.Tool {
+	return predicate.Tool(sql.FieldIn(FieldMetadataID, vs...))
+}
+
+// MetadataIDNotIn applies the NotIn predicate on the "metadata_id" field.
+func MetadataIDNotIn(vs ...string) predicate.Tool {
+	return predicate.Tool(sql.FieldNotIn(FieldMetadataID, vs...))
+}
+
+// MetadataIDGT applies the GT predicate on the "metadata_id" field.
+func MetadataIDGT(v string) predicate.Tool {
+	return predicate.Tool(sql.FieldGT(FieldMetadataID, v))
+}
+
+// MetadataIDGTE applies the GTE predicate on the "metadata_id" field.
+func MetadataIDGTE(v string) predicate.Tool {
+	return predicate.Tool(sql.FieldGTE(FieldMetadataID, v))
+}
+
+// MetadataIDLT applies the LT predicate on the "metadata_id" field.
+func MetadataIDLT(v string) predicate.Tool {
+	return predicate.Tool(sql.FieldLT(FieldMetadataID, v))
+}
+
+// MetadataIDLTE applies the LTE predicate on the "metadata_id" field.
+func MetadataIDLTE(v string) predicate.Tool {
+	return predicate.Tool(sql.FieldLTE(FieldMetadataID, v))
+}
+
+// MetadataIDContains applies the Contains predicate on the "metadata_id" field.
+func MetadataIDContains(v string) predicate.Tool {
+	return predicate.Tool(sql.FieldContains(FieldMetadataID, v))
+}
+
+// MetadataIDHasPrefix applies the HasPrefix predicate on the "metadata_id" field.
+func MetadataIDHasPrefix(v string) predicate.Tool {
+	return predicate.Tool(sql.FieldHasPrefix(FieldMetadataID, v))
+}
+
+// MetadataIDHasSuffix applies the HasSuffix predicate on the "metadata_id" field.
+func MetadataIDHasSuffix(v string) predicate.Tool {
+	return predicate.Tool(sql.FieldHasSuffix(FieldMetadataID, v))
+}
+
+// MetadataIDIsNil applies the IsNil predicate on the "metadata_id" field.
+func MetadataIDIsNil() predicate.Tool {
+	return predicate.Tool(sql.FieldIsNull(FieldMetadataID))
+}
+
+// MetadataIDNotNil applies the NotNil predicate on the "metadata_id" field.
+func MetadataIDNotNil() predicate.Tool {
+	return predicate.Tool(sql.FieldNotNull(FieldMetadataID))
+}
+
+// MetadataIDEqualFold applies the EqualFold predicate on the "metadata_id" field.
+func MetadataIDEqualFold(v string) predicate.Tool {
+	return predicate.Tool(sql.FieldEqualFold(FieldMetadataID, v))
+}
+
+// MetadataIDContainsFold applies the ContainsFold predicate on the "metadata_id" field.
+func MetadataIDContainsFold(v string) predicate.Tool {
+	return predicate.Tool(sql.FieldContainsFold(FieldMetadataID, v))
 }
 
 // NameEQ applies the EQ predicate on the "name" field.

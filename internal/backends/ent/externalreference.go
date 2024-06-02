@@ -21,6 +21,8 @@ type ExternalReference struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID int `json:"id,omitempty"`
+	// NodeID holds the value of the "node_id" field.
+	NodeID string `json:"node_id,omitempty"`
 	// URL holds the value of the "url" field.
 	URL string `json:"url,omitempty"`
 	// Comment holds the value of the "comment" field.
@@ -31,9 +33,8 @@ type ExternalReference struct {
 	Type externalreference.Type `json:"type,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the ExternalReferenceQuery when eager-loading is set.
-	Edges                    ExternalReferenceEdges `json:"edges"`
-	node_external_references *string
-	selectValues             sql.SelectValues
+	Edges        ExternalReferenceEdges `json:"edges"`
+	selectValues sql.SelectValues
 }
 
 // ExternalReferenceEdges holds the relations/edges for other nodes in the graph.
@@ -74,9 +75,7 @@ func (*ExternalReference) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case externalreference.FieldID:
 			values[i] = new(sql.NullInt64)
-		case externalreference.FieldURL, externalreference.FieldComment, externalreference.FieldAuthority, externalreference.FieldType:
-			values[i] = new(sql.NullString)
-		case externalreference.ForeignKeys[0]: // node_external_references
+		case externalreference.FieldNodeID, externalreference.FieldURL, externalreference.FieldComment, externalreference.FieldAuthority, externalreference.FieldType:
 			values[i] = new(sql.NullString)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -99,6 +98,12 @@ func (er *ExternalReference) assignValues(columns []string, values []any) error 
 				return fmt.Errorf("unexpected type %T for field id", value)
 			}
 			er.ID = int(value.Int64)
+		case externalreference.FieldNodeID:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field node_id", values[i])
+			} else if value.Valid {
+				er.NodeID = value.String
+			}
 		case externalreference.FieldURL:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field url", values[i])
@@ -122,13 +127,6 @@ func (er *ExternalReference) assignValues(columns []string, values []any) error 
 				return fmt.Errorf("unexpected type %T for field type", values[i])
 			} else if value.Valid {
 				er.Type = externalreference.Type(value.String)
-			}
-		case externalreference.ForeignKeys[0]:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field node_external_references", values[i])
-			} else if value.Valid {
-				er.node_external_references = new(string)
-				*er.node_external_references = value.String
 			}
 		default:
 			er.selectValues.Set(columns[i], values[i])
@@ -176,6 +174,9 @@ func (er *ExternalReference) String() string {
 	var builder strings.Builder
 	builder.WriteString("ExternalReference(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", er.ID))
+	builder.WriteString("node_id=")
+	builder.WriteString(er.NodeID)
+	builder.WriteString(", ")
 	builder.WriteString("url=")
 	builder.WriteString(er.URL)
 	builder.WriteString(", ")

@@ -7,9 +7,9 @@ package schema
 
 import (
 	"entgo.io/ent"
-	"entgo.io/ent/schema"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
+	"entgo.io/ent/schema/index"
 )
 
 type NodeList struct {
@@ -29,4 +29,8 @@ func (NodeList) Edges() []ent.Edge {
 	}
 }
 
-func (NodeList) Annotations() []schema.Annotation { return nil }
+func (NodeList) Indexes() []ent.Index {
+	return []ent.Index{
+		index.Fields("root_elements").Unique(),
+	}
+}

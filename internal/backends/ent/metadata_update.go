@@ -137,23 +137,19 @@ func (mu *MetadataUpdate) AddDocumentTypes(d ...*DocumentType) *MetadataUpdate {
 	return mu.AddDocumentTypeIDs(ids...)
 }
 
-// SetDocumentID sets the "document" edge to the Document entity by ID.
-func (mu *MetadataUpdate) SetDocumentID(id int) *MetadataUpdate {
-	mu.mutation.SetDocumentID(id)
+// AddDocumentIDs adds the "document" edge to the Document entity by IDs.
+func (mu *MetadataUpdate) AddDocumentIDs(ids ...int) *MetadataUpdate {
+	mu.mutation.AddDocumentIDs(ids...)
 	return mu
 }
 
-// SetNillableDocumentID sets the "document" edge to the Document entity by ID if the given value is not nil.
-func (mu *MetadataUpdate) SetNillableDocumentID(id *int) *MetadataUpdate {
-	if id != nil {
-		mu = mu.SetDocumentID(*id)
+// AddDocument adds the "document" edges to the Document entity.
+func (mu *MetadataUpdate) AddDocument(d ...*Document) *MetadataUpdate {
+	ids := make([]int, len(d))
+	for i := range d {
+		ids[i] = d[i].ID
 	}
-	return mu
-}
-
-// SetDocument sets the "document" edge to the Document entity.
-func (mu *MetadataUpdate) SetDocument(d *Document) *MetadataUpdate {
-	return mu.SetDocumentID(d.ID)
+	return mu.AddDocumentIDs(ids...)
 }
 
 // Mutation returns the MetadataMutation object of the builder.
@@ -224,10 +220,25 @@ func (mu *MetadataUpdate) RemoveDocumentTypes(d ...*DocumentType) *MetadataUpdat
 	return mu.RemoveDocumentTypeIDs(ids...)
 }
 
-// ClearDocument clears the "document" edge to the Document entity.
+// ClearDocument clears all "document" edges to the Document entity.
 func (mu *MetadataUpdate) ClearDocument() *MetadataUpdate {
 	mu.mutation.ClearDocument()
 	return mu
+}
+
+// RemoveDocumentIDs removes the "document" edge to Document entities by IDs.
+func (mu *MetadataUpdate) RemoveDocumentIDs(ids ...int) *MetadataUpdate {
+	mu.mutation.RemoveDocumentIDs(ids...)
+	return mu
+}
+
+// RemoveDocument removes "document" edges to Document entities.
+func (mu *MetadataUpdate) RemoveDocument(d ...*Document) *MetadataUpdate {
+	ids := make([]int, len(d))
+	for i := range d {
+		ids[i] = d[i].ID
+	}
+	return mu.RemoveDocumentIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -415,7 +426,7 @@ func (mu *MetadataUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if mu.mutation.DocumentCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2O,
+			Rel:     sqlgraph.O2M,
 			Inverse: false,
 			Table:   metadata.DocumentTable,
 			Columns: []string{metadata.DocumentColumn},
@@ -426,9 +437,25 @@ func (mu *MetadataUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
+	if nodes := mu.mutation.RemovedDocumentIDs(); len(nodes) > 0 && !mu.mutation.DocumentCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   metadata.DocumentTable,
+			Columns: []string{metadata.DocumentColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(document.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
 	if nodes := mu.mutation.DocumentIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2O,
+			Rel:     sqlgraph.O2M,
 			Inverse: false,
 			Table:   metadata.DocumentTable,
 			Columns: []string{metadata.DocumentColumn},
@@ -563,23 +590,19 @@ func (muo *MetadataUpdateOne) AddDocumentTypes(d ...*DocumentType) *MetadataUpda
 	return muo.AddDocumentTypeIDs(ids...)
 }
 
-// SetDocumentID sets the "document" edge to the Document entity by ID.
-func (muo *MetadataUpdateOne) SetDocumentID(id int) *MetadataUpdateOne {
-	muo.mutation.SetDocumentID(id)
+// AddDocumentIDs adds the "document" edge to the Document entity by IDs.
+func (muo *MetadataUpdateOne) AddDocumentIDs(ids ...int) *MetadataUpdateOne {
+	muo.mutation.AddDocumentIDs(ids...)
 	return muo
 }
 
-// SetNillableDocumentID sets the "document" edge to the Document entity by ID if the given value is not nil.
-func (muo *MetadataUpdateOne) SetNillableDocumentID(id *int) *MetadataUpdateOne {
-	if id != nil {
-		muo = muo.SetDocumentID(*id)
+// AddDocument adds the "document" edges to the Document entity.
+func (muo *MetadataUpdateOne) AddDocument(d ...*Document) *MetadataUpdateOne {
+	ids := make([]int, len(d))
+	for i := range d {
+		ids[i] = d[i].ID
 	}
-	return muo
-}
-
-// SetDocument sets the "document" edge to the Document entity.
-func (muo *MetadataUpdateOne) SetDocument(d *Document) *MetadataUpdateOne {
-	return muo.SetDocumentID(d.ID)
+	return muo.AddDocumentIDs(ids...)
 }
 
 // Mutation returns the MetadataMutation object of the builder.
@@ -650,10 +673,25 @@ func (muo *MetadataUpdateOne) RemoveDocumentTypes(d ...*DocumentType) *MetadataU
 	return muo.RemoveDocumentTypeIDs(ids...)
 }
 
-// ClearDocument clears the "document" edge to the Document entity.
+// ClearDocument clears all "document" edges to the Document entity.
 func (muo *MetadataUpdateOne) ClearDocument() *MetadataUpdateOne {
 	muo.mutation.ClearDocument()
 	return muo
+}
+
+// RemoveDocumentIDs removes the "document" edge to Document entities by IDs.
+func (muo *MetadataUpdateOne) RemoveDocumentIDs(ids ...int) *MetadataUpdateOne {
+	muo.mutation.RemoveDocumentIDs(ids...)
+	return muo
+}
+
+// RemoveDocument removes "document" edges to Document entities.
+func (muo *MetadataUpdateOne) RemoveDocument(d ...*Document) *MetadataUpdateOne {
+	ids := make([]int, len(d))
+	for i := range d {
+		ids[i] = d[i].ID
+	}
+	return muo.RemoveDocumentIDs(ids...)
 }
 
 // Where appends a list predicates to the MetadataUpdate builder.
@@ -871,7 +909,7 @@ func (muo *MetadataUpdateOne) sqlSave(ctx context.Context) (_node *Metadata, err
 	}
 	if muo.mutation.DocumentCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2O,
+			Rel:     sqlgraph.O2M,
 			Inverse: false,
 			Table:   metadata.DocumentTable,
 			Columns: []string{metadata.DocumentColumn},
@@ -882,9 +920,25 @@ func (muo *MetadataUpdateOne) sqlSave(ctx context.Context) (_node *Metadata, err
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
+	if nodes := muo.mutation.RemovedDocumentIDs(); len(nodes) > 0 && !muo.mutation.DocumentCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   metadata.DocumentTable,
+			Columns: []string{metadata.DocumentColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(document.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
 	if nodes := muo.mutation.DocumentIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2O,
+			Rel:     sqlgraph.O2M,
 			Inverse: false,
 			Table:   metadata.DocumentTable,
 			Columns: []string{metadata.DocumentColumn},
