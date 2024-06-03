@@ -7,7 +7,6 @@ package schema
 
 import (
 	"entgo.io/ent"
-	"entgo.io/ent/schema"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
@@ -45,8 +44,8 @@ func (HashesEntry) Fields() []ent.Field {
 
 func (HashesEntry) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("external_references", ExternalReference.Type).Ref("hashes").Unique(),
-		edge.From("nodes", Node.Type).Ref("hashes").Unique(),
+		edge.From("external_reference", ExternalReference.Type).Ref("hashes").Unique(),
+		edge.From("node", Node.Type).Ref("hashes").Unique(),
 	}
 }
 
@@ -55,5 +54,3 @@ func (HashesEntry) Indexes() []ent.Index {
 		index.Fields("hash_algorithm_type", "hash_data").Unique(),
 	}
 }
-
-func (HashesEntry) Annotations() []schema.Annotation { return nil }

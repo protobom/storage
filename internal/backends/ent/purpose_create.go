@@ -26,25 +26,29 @@ type PurposeCreate struct {
 	conflict []sql.ConflictOption
 }
 
+// SetNodeID sets the "node_id" field.
+func (pc *PurposeCreate) SetNodeID(s string) *PurposeCreate {
+	pc.mutation.SetNodeID(s)
+	return pc
+}
+
+// SetNillableNodeID sets the "node_id" field if the given value is not nil.
+func (pc *PurposeCreate) SetNillableNodeID(s *string) *PurposeCreate {
+	if s != nil {
+		pc.SetNodeID(*s)
+	}
+	return pc
+}
+
 // SetPrimaryPurpose sets the "primary_purpose" field.
 func (pc *PurposeCreate) SetPrimaryPurpose(pp purpose.PrimaryPurpose) *PurposeCreate {
 	pc.mutation.SetPrimaryPurpose(pp)
 	return pc
 }
 
-// AddNodeIDs adds the "node" edge to the Node entity by IDs.
-func (pc *PurposeCreate) AddNodeIDs(ids ...string) *PurposeCreate {
-	pc.mutation.AddNodeIDs(ids...)
-	return pc
-}
-
-// AddNode adds the "node" edges to the Node entity.
-func (pc *PurposeCreate) AddNode(n ...*Node) *PurposeCreate {
-	ids := make([]string, len(n))
-	for i := range n {
-		ids[i] = n[i].ID
-	}
-	return pc.AddNodeIDs(ids...)
+// SetNode sets the "node" edge to the Node entity.
+func (pc *PurposeCreate) SetNode(n *Node) *PurposeCreate {
+	return pc.SetNodeID(n.ID)
 }
 
 // Mutation returns the PurposeMutation object of the builder.
@@ -122,10 +126,10 @@ func (pc *PurposeCreate) createSpec() (*Purpose, *sqlgraph.CreateSpec) {
 	}
 	if nodes := pc.mutation.NodeIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.M2O,
 			Inverse: true,
 			Table:   purpose.NodeTable,
-			Columns: purpose.NodePrimaryKey,
+			Columns: []string{purpose.NodeColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeString),
@@ -134,6 +138,7 @@ func (pc *PurposeCreate) createSpec() (*Purpose, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
+		_node.NodeID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
@@ -143,7 +148,7 @@ func (pc *PurposeCreate) createSpec() (*Purpose, *sqlgraph.CreateSpec) {
 // of the `INSERT` statement. For example:
 //
 //	client.Purpose.Create().
-//		SetPrimaryPurpose(v).
+//		SetNodeID(v).
 //		OnConflict(
 //			// Update the row with the new values
 //			// the was proposed for insertion.
@@ -152,7 +157,7 @@ func (pc *PurposeCreate) createSpec() (*Purpose, *sqlgraph.CreateSpec) {
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.PurposeUpsert) {
-//			SetPrimaryPurpose(v+v).
+//			SetNodeID(v+v).
 //		}).
 //		Exec(ctx)
 func (pc *PurposeCreate) OnConflict(opts ...sql.ConflictOption) *PurposeUpsertOne {
@@ -187,6 +192,24 @@ type (
 		*sql.UpdateSet
 	}
 )
+
+// SetNodeID sets the "node_id" field.
+func (u *PurposeUpsert) SetNodeID(v string) *PurposeUpsert {
+	u.Set(purpose.FieldNodeID, v)
+	return u
+}
+
+// UpdateNodeID sets the "node_id" field to the value that was provided on create.
+func (u *PurposeUpsert) UpdateNodeID() *PurposeUpsert {
+	u.SetExcluded(purpose.FieldNodeID)
+	return u
+}
+
+// ClearNodeID clears the value of the "node_id" field.
+func (u *PurposeUpsert) ClearNodeID() *PurposeUpsert {
+	u.SetNull(purpose.FieldNodeID)
+	return u
+}
 
 // SetPrimaryPurpose sets the "primary_purpose" field.
 func (u *PurposeUpsert) SetPrimaryPurpose(v purpose.PrimaryPurpose) *PurposeUpsert {
@@ -238,6 +261,27 @@ func (u *PurposeUpsertOne) Update(set func(*PurposeUpsert)) *PurposeUpsertOne {
 		set(&PurposeUpsert{UpdateSet: update})
 	}))
 	return u
+}
+
+// SetNodeID sets the "node_id" field.
+func (u *PurposeUpsertOne) SetNodeID(v string) *PurposeUpsertOne {
+	return u.Update(func(s *PurposeUpsert) {
+		s.SetNodeID(v)
+	})
+}
+
+// UpdateNodeID sets the "node_id" field to the value that was provided on create.
+func (u *PurposeUpsertOne) UpdateNodeID() *PurposeUpsertOne {
+	return u.Update(func(s *PurposeUpsert) {
+		s.UpdateNodeID()
+	})
+}
+
+// ClearNodeID clears the value of the "node_id" field.
+func (u *PurposeUpsertOne) ClearNodeID() *PurposeUpsertOne {
+	return u.Update(func(s *PurposeUpsert) {
+		s.ClearNodeID()
+	})
 }
 
 // SetPrimaryPurpose sets the "primary_purpose" field.
@@ -388,7 +432,7 @@ func (pcb *PurposeCreateBulk) ExecX(ctx context.Context) {
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.PurposeUpsert) {
-//			SetPrimaryPurpose(v+v).
+//			SetNodeID(v+v).
 //		}).
 //		Exec(ctx)
 func (pcb *PurposeCreateBulk) OnConflict(opts ...sql.ConflictOption) *PurposeUpsertBulk {
@@ -455,6 +499,27 @@ func (u *PurposeUpsertBulk) Update(set func(*PurposeUpsert)) *PurposeUpsertBulk 
 		set(&PurposeUpsert{UpdateSet: update})
 	}))
 	return u
+}
+
+// SetNodeID sets the "node_id" field.
+func (u *PurposeUpsertBulk) SetNodeID(v string) *PurposeUpsertBulk {
+	return u.Update(func(s *PurposeUpsert) {
+		s.SetNodeID(v)
+	})
+}
+
+// UpdateNodeID sets the "node_id" field to the value that was provided on create.
+func (u *PurposeUpsertBulk) UpdateNodeID() *PurposeUpsertBulk {
+	return u.Update(func(s *PurposeUpsert) {
+		s.UpdateNodeID()
+	})
+}
+
+// ClearNodeID clears the value of the "node_id" field.
+func (u *PurposeUpsertBulk) ClearNodeID() *PurposeUpsertBulk {
+	return u.Update(func(s *PurposeUpsert) {
+		s.ClearNodeID()
+	})
 }
 
 // SetPrimaryPurpose sets the "primary_purpose" field.

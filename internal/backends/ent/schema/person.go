@@ -7,9 +7,10 @@ package schema
 
 import (
 	"entgo.io/ent"
-	"entgo.io/ent/schema"
+	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
+	"entgo.io/ent/schema/index"
 )
 
 type Person struct {
@@ -18,6 +19,8 @@ type Person struct {
 
 func (Person) Fields() []ent.Field {
 	return []ent.Field{
+		field.String("metadata_id").Optional(),
+		field.String("node_id").Optional(),
 		field.String("name"),
 		field.Bool("is_org"),
 		field.String("email"),
@@ -29,9 +32,22 @@ func (Person) Fields() []ent.Field {
 func (Person) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("contacts", Person.Type).From("contact_owner").Unique(),
-		edge.From("metadata", Metadata.Type).Ref("authors").Unique(),
-		edge.From("node", Node.Type).Ref("suppliers").Unique().Ref("originators").Unique(),
+		edge.From("metadata", Metadata.Type).Ref("authors").Unique().Field("metadata_id"),
+		edge.From("node", Node.Type).Ref("suppliers").Unique().Ref("originators").Unique().Field("node_id"),
 	}
 }
 
-func (Person) Annotations() []schema.Annotation { return nil }
+func (Person) Indexes() []ent.Index {
+	return []ent.Index{
+		index.Fields("metadata_id", "name", "is_org", "email", "url", "phone").
+			Unique().
+			Annotations(
+				entsql.IndexWhere("metadata_id IS NOT NULL AND node_id IS NULL"),
+			),
+		index.Fields("node_id", "name", "is_org", "email", "url", "phone").
+			Unique().
+			Annotations(
+				entsql.IndexWhere("metadata_id IS NULL AND node_id IS NOT NULL"),
+			),
+	}
+}

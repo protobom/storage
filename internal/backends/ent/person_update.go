@@ -33,6 +33,46 @@ func (pu *PersonUpdate) Where(ps ...predicate.Person) *PersonUpdate {
 	return pu
 }
 
+// SetMetadataID sets the "metadata_id" field.
+func (pu *PersonUpdate) SetMetadataID(s string) *PersonUpdate {
+	pu.mutation.SetMetadataID(s)
+	return pu
+}
+
+// SetNillableMetadataID sets the "metadata_id" field if the given value is not nil.
+func (pu *PersonUpdate) SetNillableMetadataID(s *string) *PersonUpdate {
+	if s != nil {
+		pu.SetMetadataID(*s)
+	}
+	return pu
+}
+
+// ClearMetadataID clears the value of the "metadata_id" field.
+func (pu *PersonUpdate) ClearMetadataID() *PersonUpdate {
+	pu.mutation.ClearMetadataID()
+	return pu
+}
+
+// SetNodeID sets the "node_id" field.
+func (pu *PersonUpdate) SetNodeID(s string) *PersonUpdate {
+	pu.mutation.SetNodeID(s)
+	return pu
+}
+
+// SetNillableNodeID sets the "node_id" field if the given value is not nil.
+func (pu *PersonUpdate) SetNillableNodeID(s *string) *PersonUpdate {
+	if s != nil {
+		pu.SetNodeID(*s)
+	}
+	return pu
+}
+
+// ClearNodeID clears the value of the "node_id" field.
+func (pu *PersonUpdate) ClearNodeID() *PersonUpdate {
+	pu.mutation.ClearNodeID()
+	return pu
+}
+
 // SetName sets the "name" field.
 func (pu *PersonUpdate) SetName(s string) *PersonUpdate {
 	pu.mutation.SetName(s)
@@ -137,37 +177,9 @@ func (pu *PersonUpdate) AddContacts(p ...*Person) *PersonUpdate {
 	return pu.AddContactIDs(ids...)
 }
 
-// SetMetadataID sets the "metadata" edge to the Metadata entity by ID.
-func (pu *PersonUpdate) SetMetadataID(id string) *PersonUpdate {
-	pu.mutation.SetMetadataID(id)
-	return pu
-}
-
-// SetNillableMetadataID sets the "metadata" edge to the Metadata entity by ID if the given value is not nil.
-func (pu *PersonUpdate) SetNillableMetadataID(id *string) *PersonUpdate {
-	if id != nil {
-		pu = pu.SetMetadataID(*id)
-	}
-	return pu
-}
-
 // SetMetadata sets the "metadata" edge to the Metadata entity.
 func (pu *PersonUpdate) SetMetadata(m *Metadata) *PersonUpdate {
 	return pu.SetMetadataID(m.ID)
-}
-
-// SetNodeID sets the "node" edge to the Node entity by ID.
-func (pu *PersonUpdate) SetNodeID(id string) *PersonUpdate {
-	pu.mutation.SetNodeID(id)
-	return pu
-}
-
-// SetNillableNodeID sets the "node" edge to the Node entity by ID if the given value is not nil.
-func (pu *PersonUpdate) SetNillableNodeID(id *string) *PersonUpdate {
-	if id != nil {
-		pu = pu.SetNodeID(*id)
-	}
-	return pu
 }
 
 // SetNode sets the "node" edge to the Node entity.
@@ -422,6 +434,46 @@ type PersonUpdateOne struct {
 	mutation *PersonMutation
 }
 
+// SetMetadataID sets the "metadata_id" field.
+func (puo *PersonUpdateOne) SetMetadataID(s string) *PersonUpdateOne {
+	puo.mutation.SetMetadataID(s)
+	return puo
+}
+
+// SetNillableMetadataID sets the "metadata_id" field if the given value is not nil.
+func (puo *PersonUpdateOne) SetNillableMetadataID(s *string) *PersonUpdateOne {
+	if s != nil {
+		puo.SetMetadataID(*s)
+	}
+	return puo
+}
+
+// ClearMetadataID clears the value of the "metadata_id" field.
+func (puo *PersonUpdateOne) ClearMetadataID() *PersonUpdateOne {
+	puo.mutation.ClearMetadataID()
+	return puo
+}
+
+// SetNodeID sets the "node_id" field.
+func (puo *PersonUpdateOne) SetNodeID(s string) *PersonUpdateOne {
+	puo.mutation.SetNodeID(s)
+	return puo
+}
+
+// SetNillableNodeID sets the "node_id" field if the given value is not nil.
+func (puo *PersonUpdateOne) SetNillableNodeID(s *string) *PersonUpdateOne {
+	if s != nil {
+		puo.SetNodeID(*s)
+	}
+	return puo
+}
+
+// ClearNodeID clears the value of the "node_id" field.
+func (puo *PersonUpdateOne) ClearNodeID() *PersonUpdateOne {
+	puo.mutation.ClearNodeID()
+	return puo
+}
+
 // SetName sets the "name" field.
 func (puo *PersonUpdateOne) SetName(s string) *PersonUpdateOne {
 	puo.mutation.SetName(s)
@@ -526,37 +578,9 @@ func (puo *PersonUpdateOne) AddContacts(p ...*Person) *PersonUpdateOne {
 	return puo.AddContactIDs(ids...)
 }
 
-// SetMetadataID sets the "metadata" edge to the Metadata entity by ID.
-func (puo *PersonUpdateOne) SetMetadataID(id string) *PersonUpdateOne {
-	puo.mutation.SetMetadataID(id)
-	return puo
-}
-
-// SetNillableMetadataID sets the "metadata" edge to the Metadata entity by ID if the given value is not nil.
-func (puo *PersonUpdateOne) SetNillableMetadataID(id *string) *PersonUpdateOne {
-	if id != nil {
-		puo = puo.SetMetadataID(*id)
-	}
-	return puo
-}
-
 // SetMetadata sets the "metadata" edge to the Metadata entity.
 func (puo *PersonUpdateOne) SetMetadata(m *Metadata) *PersonUpdateOne {
 	return puo.SetMetadataID(m.ID)
-}
-
-// SetNodeID sets the "node" edge to the Node entity by ID.
-func (puo *PersonUpdateOne) SetNodeID(id string) *PersonUpdateOne {
-	puo.mutation.SetNodeID(id)
-	return puo
-}
-
-// SetNillableNodeID sets the "node" edge to the Node entity by ID if the given value is not nil.
-func (puo *PersonUpdateOne) SetNillableNodeID(id *string) *PersonUpdateOne {
-	if id != nil {
-		puo = puo.SetNodeID(*id)
-	}
-	return puo
 }
 
 // SetNode sets the "node" edge to the Node entity.

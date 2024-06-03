@@ -38,23 +38,23 @@ func (iec *IdentifiersEntryCreate) SetSoftwareIdentifierValue(s string) *Identif
 	return iec
 }
 
-// SetNodesID sets the "nodes" edge to the Node entity by ID.
-func (iec *IdentifiersEntryCreate) SetNodesID(id string) *IdentifiersEntryCreate {
-	iec.mutation.SetNodesID(id)
+// SetNodeID sets the "node" edge to the Node entity by ID.
+func (iec *IdentifiersEntryCreate) SetNodeID(id string) *IdentifiersEntryCreate {
+	iec.mutation.SetNodeID(id)
 	return iec
 }
 
-// SetNillableNodesID sets the "nodes" edge to the Node entity by ID if the given value is not nil.
-func (iec *IdentifiersEntryCreate) SetNillableNodesID(id *string) *IdentifiersEntryCreate {
+// SetNillableNodeID sets the "node" edge to the Node entity by ID if the given value is not nil.
+func (iec *IdentifiersEntryCreate) SetNillableNodeID(id *string) *IdentifiersEntryCreate {
 	if id != nil {
-		iec = iec.SetNodesID(*id)
+		iec = iec.SetNodeID(*id)
 	}
 	return iec
 }
 
-// SetNodes sets the "nodes" edge to the Node entity.
-func (iec *IdentifiersEntryCreate) SetNodes(n *Node) *IdentifiersEntryCreate {
-	return iec.SetNodesID(n.ID)
+// SetNode sets the "node" edge to the Node entity.
+func (iec *IdentifiersEntryCreate) SetNode(n *Node) *IdentifiersEntryCreate {
+	return iec.SetNodeID(n.ID)
 }
 
 // Mutation returns the IdentifiersEntryMutation object of the builder.
@@ -137,12 +137,12 @@ func (iec *IdentifiersEntryCreate) createSpec() (*IdentifiersEntry, *sqlgraph.Cr
 		_spec.SetField(identifiersentry.FieldSoftwareIdentifierValue, field.TypeString, value)
 		_node.SoftwareIdentifierValue = value
 	}
-	if nodes := iec.mutation.NodesIDs(); len(nodes) > 0 {
+	if nodes := iec.mutation.NodeIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
-			Table:   identifiersentry.NodesTable,
-			Columns: []string{identifiersentry.NodesColumn},
+			Table:   identifiersentry.NodeTable,
+			Columns: []string{identifiersentry.NodeColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeString),

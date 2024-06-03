@@ -19,6 +19,8 @@ const (
 	Label = "external_reference"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
+	// FieldNodeID holds the string denoting the node_id field in the database.
+	FieldNodeID = "node_id"
 	// FieldURL holds the string denoting the url field in the database.
 	FieldURL = "url"
 	// FieldComment holds the string denoting the comment field in the database.
@@ -46,33 +48,23 @@ const (
 	// It exists in this package in order to avoid circular dependency with the "node" package.
 	NodeInverseTable = "nodes"
 	// NodeColumn is the table column denoting the node relation/edge.
-	NodeColumn = "node_external_references"
+	NodeColumn = "node_id"
 )
 
 // Columns holds all SQL columns for externalreference fields.
 var Columns = []string{
 	FieldID,
+	FieldNodeID,
 	FieldURL,
 	FieldComment,
 	FieldAuthority,
 	FieldType,
 }
 
-// ForeignKeys holds the SQL foreign-keys that are owned by the "external_references"
-// table and are not defined as standalone fields in the schema.
-var ForeignKeys = []string{
-	"node_external_references",
-}
-
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {
 	for i := range Columns {
 		if column == Columns[i] {
-			return true
-		}
-	}
-	for i := range ForeignKeys {
-		if column == ForeignKeys[i] {
 			return true
 		}
 	}
@@ -167,6 +159,11 @@ type OrderOption func(*sql.Selector)
 // ByID orders the results by the id field.
 func ByID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldID, opts...).ToFunc()
+}
+
+// ByNodeID orders the results by the node_id field.
+func ByNodeID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldNodeID, opts...).ToFunc()
 }
 
 // ByURL orders the results by the url field.

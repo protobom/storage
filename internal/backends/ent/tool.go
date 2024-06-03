@@ -21,6 +21,8 @@ type Tool struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID int `json:"id,omitempty"`
+	// MetadataID holds the value of the "metadata_id" field.
+	MetadataID string `json:"metadata_id,omitempty"`
 	// Name holds the value of the "name" field.
 	Name string `json:"name,omitempty"`
 	// Version holds the value of the "version" field.
@@ -29,9 +31,8 @@ type Tool struct {
 	Vendor string `json:"vendor,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the ToolQuery when eager-loading is set.
-	Edges          ToolEdges `json:"edges"`
-	metadata_tools *string
-	selectValues   sql.SelectValues
+	Edges        ToolEdges `json:"edges"`
+	selectValues sql.SelectValues
 }
 
 // ToolEdges holds the relations/edges for other nodes in the graph.
@@ -61,9 +62,7 @@ func (*Tool) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case tool.FieldID:
 			values[i] = new(sql.NullInt64)
-		case tool.FieldName, tool.FieldVersion, tool.FieldVendor:
-			values[i] = new(sql.NullString)
-		case tool.ForeignKeys[0]: // metadata_tools
+		case tool.FieldMetadataID, tool.FieldName, tool.FieldVersion, tool.FieldVendor:
 			values[i] = new(sql.NullString)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -86,6 +85,12 @@ func (t *Tool) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", value)
 			}
 			t.ID = int(value.Int64)
+		case tool.FieldMetadataID:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field metadata_id", values[i])
+			} else if value.Valid {
+				t.MetadataID = value.String
+			}
 		case tool.FieldName:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field name", values[i])
@@ -103,13 +108,6 @@ func (t *Tool) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field vendor", values[i])
 			} else if value.Valid {
 				t.Vendor = value.String
-			}
-		case tool.ForeignKeys[0]:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field metadata_tools", values[i])
-			} else if value.Valid {
-				t.metadata_tools = new(string)
-				*t.metadata_tools = value.String
 			}
 		default:
 			t.selectValues.Set(columns[i], values[i])
@@ -152,6 +150,9 @@ func (t *Tool) String() string {
 	var builder strings.Builder
 	builder.WriteString("Tool(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", t.ID))
+	builder.WriteString("metadata_id=")
+	builder.WriteString(t.MetadataID)
+	builder.WriteString(", ")
 	builder.WriteString("name=")
 	builder.WriteString(t.Name)
 	builder.WriteString(", ")

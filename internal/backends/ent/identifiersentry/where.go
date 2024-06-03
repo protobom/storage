@@ -148,21 +148,21 @@ func SoftwareIdentifierValueContainsFold(v string) predicate.IdentifiersEntry {
 	return predicate.IdentifiersEntry(sql.FieldContainsFold(FieldSoftwareIdentifierValue, v))
 }
 
-// HasNodes applies the HasEdge predicate on the "nodes" edge.
-func HasNodes() predicate.IdentifiersEntry {
+// HasNode applies the HasEdge predicate on the "node" edge.
+func HasNode() predicate.IdentifiersEntry {
 	return predicate.IdentifiersEntry(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, NodesTable, NodesColumn),
+			sqlgraph.Edge(sqlgraph.M2O, true, NodeTable, NodeColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
 }
 
-// HasNodesWith applies the HasEdge predicate on the "nodes" edge with a given conditions (other predicates).
-func HasNodesWith(preds ...predicate.Node) predicate.IdentifiersEntry {
+// HasNodeWith applies the HasEdge predicate on the "node" edge with a given conditions (other predicates).
+func HasNodeWith(preds ...predicate.Node) predicate.IdentifiersEntry {
 	return predicate.IdentifiersEntry(func(s *sql.Selector) {
-		step := newNodesStep()
+		step := newNodeStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

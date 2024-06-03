@@ -459,7 +459,9 @@ func (nlq *NodeListQuery) loadNodes(ctx context.Context, query *NodeQuery, nodes
 			init(nodes[i])
 		}
 	}
-	query.withFKs = true
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(node.FieldNodeListID)
+	}
 	query.Where(predicate.Node(func(s *sql.Selector) {
 		s.Where(sql.InValues(s.C(nodelist.NodesColumn), fks...))
 	}))
@@ -468,13 +470,10 @@ func (nlq *NodeListQuery) loadNodes(ctx context.Context, query *NodeQuery, nodes
 		return err
 	}
 	for _, n := range neighbors {
-		fk := n.node_list_nodes
-		if fk == nil {
-			return fmt.Errorf(`foreign-key "node_list_nodes" is nil for node %v`, n.ID)
-		}
-		node, ok := nodeids[*fk]
+		fk := n.NodeListID
+		node, ok := nodeids[fk]
 		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "node_list_nodes" returned %v for node %v`, *fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "node_list_id" returned %v for node %v`, fk, n.ID)
 		}
 		assign(node, n)
 	}
@@ -487,7 +486,9 @@ func (nlq *NodeListQuery) loadDocument(ctx context.Context, query *DocumentQuery
 		fks = append(fks, nodes[i].ID)
 		nodeids[nodes[i].ID] = nodes[i]
 	}
-	query.withFKs = true
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(document.FieldNodeListID)
+	}
 	query.Where(predicate.Document(func(s *sql.Selector) {
 		s.Where(sql.InValues(s.C(nodelist.DocumentColumn), fks...))
 	}))
@@ -496,13 +497,10 @@ func (nlq *NodeListQuery) loadDocument(ctx context.Context, query *DocumentQuery
 		return err
 	}
 	for _, n := range neighbors {
-		fk := n.node_list_document
-		if fk == nil {
-			return fmt.Errorf(`foreign-key "node_list_document" is nil for node %v`, n.ID)
-		}
-		node, ok := nodeids[*fk]
+		fk := n.NodeListID
+		node, ok := nodeids[fk]
 		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "node_list_document" returned %v for node %v`, *fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "node_list_id" returned %v for node %v`, fk, n.ID)
 		}
 		assign(node, n)
 	}

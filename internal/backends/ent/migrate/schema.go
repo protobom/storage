@@ -8,6 +8,7 @@
 package migrate
 
 import (
+	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/dialect/sql/schema"
 	"entgo.io/ent/schema/field"
 )
@@ -16,8 +17,8 @@ var (
 	// DocumentsColumns holds the columns for the "documents" table.
 	DocumentsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
-		{Name: "metadata_document", Type: field.TypeString, Unique: true},
-		{Name: "node_list_document", Type: field.TypeInt, Unique: true},
+		{Name: "metadata_id", Type: field.TypeString},
+		{Name: "node_list_id", Type: field.TypeInt, Unique: true},
 	}
 	// DocumentsTable holds the schema information for the "documents" table.
 	DocumentsTable = &schema.Table{
@@ -40,7 +41,7 @@ var (
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "document_metadata_document_node_list_document",
+				Name:    "document_metadata_id_node_list_id",
 				Unique:  true,
 				Columns: []*schema.Column{DocumentsColumns[1], DocumentsColumns[2]},
 			},
@@ -52,7 +53,7 @@ var (
 		{Name: "type", Type: field.TypeEnum, Nullable: true, Enums: []string{"OTHER", "DESIGN", "SOURCE", "BUILD", "ANALYZED", "DEPLOYED", "RUNTIME", "DISCOVERY", "DECOMISSION"}},
 		{Name: "name", Type: field.TypeString, Nullable: true},
 		{Name: "description", Type: field.TypeString, Nullable: true},
-		{Name: "metadata_document_types", Type: field.TypeString, Nullable: true},
+		{Name: "metadata_id", Type: field.TypeString, Nullable: true},
 	}
 	// DocumentTypesTable holds the schema information for the "document_types" table.
 	DocumentTypesTable = &schema.Table{
@@ -67,43 +68,11 @@ var (
 				OnDelete:   schema.SetNull,
 			},
 		},
-	}
-	// EdgeTypesColumns holds the columns for the "edge_types" table.
-	EdgeTypesColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeInt, Increment: true},
-		{Name: "type", Type: field.TypeEnum, Enums: []string{"UNKNOWN", "amends", "ancestor", "buildDependency", "buildTool", "contains", "contained_by", "copy", "dataFile", "dependencyManifest", "dependsOn", "dependencyOf", "descendant", "describes", "describedBy", "devDependency", "devTool", "distributionArtifact", "documentation", "dynamicLink", "example", "expandedFromArchive", "fileAdded", "fileDeleted", "fileModified", "generates", "generatedFrom", "metafile", "optionalComponent", "optionalDependency", "other", "packages", "patch", "prerequisite", "prerequisiteFor", "providedDependency", "requirementFor", "runtimeDependency", "specificationFor", "staticLink", "test", "testCase", "testDependency", "testTool", "variant"}},
-		{Name: "node_id", Type: field.TypeString},
-		{Name: "to_id", Type: field.TypeString},
-	}
-	// EdgeTypesTable holds the schema information for the "edge_types" table.
-	EdgeTypesTable = &schema.Table{
-		Name:       "edge_types",
-		Columns:    EdgeTypesColumns,
-		PrimaryKey: []*schema.Column{EdgeTypesColumns[0]},
-		ForeignKeys: []*schema.ForeignKey{
-			{
-				Symbol:     "edge_types_nodes_from",
-				Columns:    []*schema.Column{EdgeTypesColumns[2]},
-				RefColumns: []*schema.Column{NodesColumns[0]},
-				OnDelete:   schema.NoAction,
-			},
-			{
-				Symbol:     "edge_types_nodes_to",
-				Columns:    []*schema.Column{EdgeTypesColumns[3]},
-				RefColumns: []*schema.Column{NodesColumns[0]},
-				OnDelete:   schema.NoAction,
-			},
-		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "edgetype_type_node_id_to_id",
+				Name:    "documenttype_metadata_id_type_name_description",
 				Unique:  true,
-				Columns: []*schema.Column{EdgeTypesColumns[1], EdgeTypesColumns[2], EdgeTypesColumns[3]},
-			},
-			{
-				Name:    "edgetype_node_id_node_id",
-				Unique:  true,
-				Columns: []*schema.Column{EdgeTypesColumns[2], EdgeTypesColumns[2]},
+				Columns: []*schema.Column{DocumentTypesColumns[4], DocumentTypesColumns[1], DocumentTypesColumns[2], DocumentTypesColumns[3]},
 			},
 		},
 	}
@@ -114,7 +83,7 @@ var (
 		{Name: "comment", Type: field.TypeString},
 		{Name: "authority", Type: field.TypeString, Nullable: true},
 		{Name: "type", Type: field.TypeEnum, Enums: []string{"UNKNOWN", "ATTESTATION", "BINARY", "BOM", "BOWER", "BUILD_META", "BUILD_SYSTEM", "CERTIFICATION_REPORT", "CHAT", "CODIFIED_INFRASTRUCTURE", "COMPONENT_ANALYSIS_REPORT", "CONFIGURATION", "DISTRIBUTION_INTAKE", "DOCUMENTATION", "DOWNLOAD", "DYNAMIC_ANALYSIS_REPORT", "EOL_NOTICE", "EVIDENCE", "EXPORT_CONTROL_ASSESSMENT", "FORMULATION", "FUNDING", "ISSUE_TRACKER", "LICENSE", "LOG", "MAILING_LIST", "MATURITY_REPORT", "MAVEN_CENTRAL", "METRICS", "MODEL_CARD", "NPM", "NUGET", "OTHER", "POAM", "PRIVACY_ASSESSMENT", "PRODUCT_METADATA", "PURCHASE_ORDER", "QUALITY_ASSESSMENT_REPORT", "QUALITY_METRICS", "RELEASE_HISTORY", "RELEASE_NOTES", "RISK_ASSESSMENT", "RUNTIME_ANALYSIS_REPORT", "SECURE_SOFTWARE_ATTESTATION", "SECURITY_ADVERSARY_MODEL", "SECURITY_ADVISORY", "SECURITY_CONTACT", "SECURITY_FIX", "SECURITY_OTHER", "SECURITY_PENTEST_REPORT", "SECURITY_POLICY", "SECURITY_SWID", "SECURITY_THREAT_MODEL", "SOCIAL", "SOURCE_ARTIFACT", "STATIC_ANALYSIS_REPORT", "SUPPORT", "VCS", "VULNERABILITY_ASSERTION", "VULNERABILITY_DISCLOSURE_REPORT", "VULNERABILITY_EXPLOITABILITY_ASSESSMENT", "WEBSITE"}},
-		{Name: "node_external_references", Type: field.TypeString},
+		{Name: "node_id", Type: field.TypeString, Nullable: true},
 	}
 	// ExternalReferencesTable holds the schema information for the "external_references" table.
 	ExternalReferencesTable = &schema.Table{
@@ -126,7 +95,14 @@ var (
 				Symbol:     "external_references_nodes_external_references",
 				Columns:    []*schema.Column{ExternalReferencesColumns[5]},
 				RefColumns: []*schema.Column{NodesColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.SetNull,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "externalreference_node_id",
+				Unique:  true,
+				Columns: []*schema.Column{ExternalReferencesColumns[5]},
 			},
 		},
 	}
@@ -195,7 +171,7 @@ var (
 	}
 	// MetadataColumns holds the columns for the "metadata" table.
 	MetadataColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeString, Unique: true},
+		{Name: "id", Type: field.TypeString},
 		{Name: "version", Type: field.TypeString},
 		{Name: "name", Type: field.TypeString},
 		{Name: "date", Type: field.TypeTime},
@@ -206,6 +182,13 @@ var (
 		Name:       "metadata",
 		Columns:    MetadataColumns,
 		PrimaryKey: []*schema.Column{MetadataColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "metadata_id_version_name",
+				Unique:  true,
+				Columns: []*schema.Column{MetadataColumns[0], MetadataColumns[1], MetadataColumns[2]},
+			},
+		},
 	}
 	// NodesColumns holds the columns for the "nodes" table.
 	NodesColumns = []*schema.Column{
@@ -229,7 +212,9 @@ var (
 		{Name: "valid_until_date", Type: field.TypeTime},
 		{Name: "attribution", Type: field.TypeJSON},
 		{Name: "file_types", Type: field.TypeJSON},
-		{Name: "node_list_nodes", Type: field.TypeInt},
+		{Name: "edge_type", Type: field.TypeEnum, Nullable: true, Enums: []string{"UNKNOWN", "amends", "ancestor", "buildDependency", "buildTool", "contains", "contained_by", "copy", "dataFile", "dependencyManifest", "dependsOn", "dependencyOf", "descendant", "describes", "describedBy", "devDependency", "devTool", "distributionArtifact", "documentation", "dynamicLink", "example", "expandedFromArchive", "fileAdded", "fileDeleted", "fileModified", "generates", "generatedFrom", "metafile", "optionalComponent", "optionalDependency", "other", "packages", "patch", "prerequisite", "prerequisiteFor", "providedDependency", "requirementFor", "runtimeDependency", "specificationFor", "staticLink", "test", "testCase", "testDependency", "testTool", "variant"}},
+		{Name: "from_node_id", Type: field.TypeString, Nullable: true},
+		{Name: "node_list_id", Type: field.TypeInt, Nullable: true},
 	}
 	// NodesTable holds the schema information for the "nodes" table.
 	NodesTable = &schema.Table{
@@ -238,10 +223,23 @@ var (
 		PrimaryKey: []*schema.Column{NodesColumns[0]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
+				Symbol:     "nodes_nodes_nodes",
+				Columns:    []*schema.Column{NodesColumns[21]},
+				RefColumns: []*schema.Column{NodesColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
 				Symbol:     "nodes_node_lists_nodes",
-				Columns:    []*schema.Column{NodesColumns[20]},
+				Columns:    []*schema.Column{NodesColumns[22]},
 				RefColumns: []*schema.Column{NodeListsColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.SetNull,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "node_id_node_list_id",
+				Unique:  true,
+				Columns: []*schema.Column{NodesColumns[0], NodesColumns[22]},
 			},
 		},
 	}
@@ -255,6 +253,13 @@ var (
 		Name:       "node_lists",
 		Columns:    NodeListsColumns,
 		PrimaryKey: []*schema.Column{NodeListsColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "nodelist_root_elements",
+				Unique:  true,
+				Columns: []*schema.Column{NodeListsColumns[1]},
+			},
+		},
 	}
 	// PersonsColumns holds the columns for the "persons" table.
 	PersonsColumns = []*schema.Column{
@@ -264,9 +269,9 @@ var (
 		{Name: "email", Type: field.TypeString},
 		{Name: "url", Type: field.TypeString},
 		{Name: "phone", Type: field.TypeString},
-		{Name: "metadata_authors", Type: field.TypeString, Nullable: true},
+		{Name: "metadata_id", Type: field.TypeString, Nullable: true},
 		{Name: "node_suppliers", Type: field.TypeString, Nullable: true},
-		{Name: "node_originators", Type: field.TypeString, Nullable: true},
+		{Name: "node_id", Type: field.TypeString, Nullable: true},
 		{Name: "person_contacts", Type: field.TypeInt, Nullable: true},
 	}
 	// PersonsTable holds the schema information for the "persons" table.
@@ -300,17 +305,51 @@ var (
 				OnDelete:   schema.SetNull,
 			},
 		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "person_metadata_id_name_is_org_email_url_phone",
+				Unique:  true,
+				Columns: []*schema.Column{PersonsColumns[6], PersonsColumns[1], PersonsColumns[2], PersonsColumns[3], PersonsColumns[4], PersonsColumns[5]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "metadata_id IS NOT NULL AND node_id IS NULL",
+				},
+			},
+			{
+				Name:    "person_node_id_name_is_org_email_url_phone",
+				Unique:  true,
+				Columns: []*schema.Column{PersonsColumns[8], PersonsColumns[1], PersonsColumns[2], PersonsColumns[3], PersonsColumns[4], PersonsColumns[5]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "metadata_id IS NULL AND node_id IS NOT NULL",
+				},
+			},
+		},
 	}
 	// PurposesColumns holds the columns for the "purposes" table.
 	PurposesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "primary_purpose", Type: field.TypeEnum, Enums: []string{"UNKNOWN_PURPOSE", "APPLICATION", "ARCHIVE", "BOM", "CONFIGURATION", "CONTAINER", "DATA", "DEVICE", "DEVICE_DRIVER", "DOCUMENTATION", "EVIDENCE", "EXECUTABLE", "FILE", "FIRMWARE", "FRAMEWORK", "INSTALL", "LIBRARY", "MACHINE_LEARNING_MODEL", "MANIFEST", "MODEL", "MODULE", "OPERATING_SYSTEM", "OTHER", "PATCH", "PLATFORM", "REQUIREMENT", "SOURCE", "SPECIFICATION", "TEST"}},
+		{Name: "node_id", Type: field.TypeString, Nullable: true},
 	}
 	// PurposesTable holds the schema information for the "purposes" table.
 	PurposesTable = &schema.Table{
 		Name:       "purposes",
 		Columns:    PurposesColumns,
 		PrimaryKey: []*schema.Column{PurposesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "purposes_nodes_primary_purpose",
+				Columns:    []*schema.Column{PurposesColumns[2]},
+				RefColumns: []*schema.Column{NodesColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "purpose_node_id_primary_purpose",
+				Unique:  true,
+				Columns: []*schema.Column{PurposesColumns[2], PurposesColumns[1]},
+			},
+		},
 	}
 	// ToolsColumns holds the columns for the "tools" table.
 	ToolsColumns = []*schema.Column{
@@ -318,7 +357,7 @@ var (
 		{Name: "name", Type: field.TypeString},
 		{Name: "version", Type: field.TypeString},
 		{Name: "vendor", Type: field.TypeString},
-		{Name: "metadata_tools", Type: field.TypeString, Nullable: true},
+		{Name: "metadata_id", Type: field.TypeString, Nullable: true},
 	}
 	// ToolsTable holds the schema information for the "tools" table.
 	ToolsTable = &schema.Table{
@@ -333,29 +372,11 @@ var (
 				OnDelete:   schema.SetNull,
 			},
 		},
-	}
-	// NodePrimaryPurposeColumns holds the columns for the "node_primary_purpose" table.
-	NodePrimaryPurposeColumns = []*schema.Column{
-		{Name: "node_id", Type: field.TypeString},
-		{Name: "purpose_id", Type: field.TypeInt},
-	}
-	// NodePrimaryPurposeTable holds the schema information for the "node_primary_purpose" table.
-	NodePrimaryPurposeTable = &schema.Table{
-		Name:       "node_primary_purpose",
-		Columns:    NodePrimaryPurposeColumns,
-		PrimaryKey: []*schema.Column{NodePrimaryPurposeColumns[0], NodePrimaryPurposeColumns[1]},
-		ForeignKeys: []*schema.ForeignKey{
+		Indexes: []*schema.Index{
 			{
-				Symbol:     "node_primary_purpose_node_id",
-				Columns:    []*schema.Column{NodePrimaryPurposeColumns[0]},
-				RefColumns: []*schema.Column{NodesColumns[0]},
-				OnDelete:   schema.Cascade,
-			},
-			{
-				Symbol:     "node_primary_purpose_purpose_id",
-				Columns:    []*schema.Column{NodePrimaryPurposeColumns[1]},
-				RefColumns: []*schema.Column{PurposesColumns[0]},
-				OnDelete:   schema.Cascade,
+				Name:    "tool_metadata_id_name_version_vendor",
+				Unique:  true,
+				Columns: []*schema.Column{ToolsColumns[4], ToolsColumns[1], ToolsColumns[2], ToolsColumns[3]},
 			},
 		},
 	}
@@ -363,7 +384,6 @@ var (
 	Tables = []*schema.Table{
 		DocumentsTable,
 		DocumentTypesTable,
-		EdgeTypesTable,
 		ExternalReferencesTable,
 		HashesEntriesTable,
 		IdentifiersEntriesTable,
@@ -373,7 +393,6 @@ var (
 		PersonsTable,
 		PurposesTable,
 		ToolsTable,
-		NodePrimaryPurposeTable,
 	}
 )
 
@@ -381,18 +400,16 @@ func init() {
 	DocumentsTable.ForeignKeys[0].RefTable = MetadataTable
 	DocumentsTable.ForeignKeys[1].RefTable = NodeListsTable
 	DocumentTypesTable.ForeignKeys[0].RefTable = MetadataTable
-	EdgeTypesTable.ForeignKeys[0].RefTable = NodesTable
-	EdgeTypesTable.ForeignKeys[1].RefTable = NodesTable
 	ExternalReferencesTable.ForeignKeys[0].RefTable = NodesTable
 	HashesEntriesTable.ForeignKeys[0].RefTable = ExternalReferencesTable
 	HashesEntriesTable.ForeignKeys[1].RefTable = NodesTable
 	IdentifiersEntriesTable.ForeignKeys[0].RefTable = NodesTable
-	NodesTable.ForeignKeys[0].RefTable = NodeListsTable
+	NodesTable.ForeignKeys[0].RefTable = NodesTable
+	NodesTable.ForeignKeys[1].RefTable = NodeListsTable
 	PersonsTable.ForeignKeys[0].RefTable = MetadataTable
 	PersonsTable.ForeignKeys[1].RefTable = NodesTable
 	PersonsTable.ForeignKeys[2].RefTable = NodesTable
 	PersonsTable.ForeignKeys[3].RefTable = PersonsTable
+	PurposesTable.ForeignKeys[0].RefTable = NodesTable
 	ToolsTable.ForeignKeys[0].RefTable = MetadataTable
-	NodePrimaryPurposeTable.ForeignKeys[0].RefTable = NodesTable
-	NodePrimaryPurposeTable.ForeignKeys[1].RefTable = PurposesTable
 }

@@ -23,13 +23,13 @@ import (
 // HashesEntryQuery is the builder for querying HashesEntry entities.
 type HashesEntryQuery struct {
 	config
-	ctx                    *QueryContext
-	order                  []hashesentry.OrderOption
-	inters                 []Interceptor
-	predicates             []predicate.HashesEntry
-	withExternalReferences *ExternalReferenceQuery
-	withNodes              *NodeQuery
-	withFKs                bool
+	ctx                   *QueryContext
+	order                 []hashesentry.OrderOption
+	inters                []Interceptor
+	predicates            []predicate.HashesEntry
+	withExternalReference *ExternalReferenceQuery
+	withNode              *NodeQuery
+	withFKs               bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -66,8 +66,8 @@ func (heq *HashesEntryQuery) Order(o ...hashesentry.OrderOption) *HashesEntryQue
 	return heq
 }
 
-// QueryExternalReferences chains the current query on the "external_references" edge.
-func (heq *HashesEntryQuery) QueryExternalReferences() *ExternalReferenceQuery {
+// QueryExternalReference chains the current query on the "external_reference" edge.
+func (heq *HashesEntryQuery) QueryExternalReference() *ExternalReferenceQuery {
 	query := (&ExternalReferenceClient{config: heq.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := heq.prepareQuery(ctx); err != nil {
@@ -80,7 +80,7 @@ func (heq *HashesEntryQuery) QueryExternalReferences() *ExternalReferenceQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(hashesentry.Table, hashesentry.FieldID, selector),
 			sqlgraph.To(externalreference.Table, externalreference.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, hashesentry.ExternalReferencesTable, hashesentry.ExternalReferencesColumn),
+			sqlgraph.Edge(sqlgraph.M2O, true, hashesentry.ExternalReferenceTable, hashesentry.ExternalReferenceColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(heq.driver.Dialect(), step)
 		return fromU, nil
@@ -88,8 +88,8 @@ func (heq *HashesEntryQuery) QueryExternalReferences() *ExternalReferenceQuery {
 	return query
 }
 
-// QueryNodes chains the current query on the "nodes" edge.
-func (heq *HashesEntryQuery) QueryNodes() *NodeQuery {
+// QueryNode chains the current query on the "node" edge.
+func (heq *HashesEntryQuery) QueryNode() *NodeQuery {
 	query := (&NodeClient{config: heq.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := heq.prepareQuery(ctx); err != nil {
@@ -102,7 +102,7 @@ func (heq *HashesEntryQuery) QueryNodes() *NodeQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(hashesentry.Table, hashesentry.FieldID, selector),
 			sqlgraph.To(node.Table, node.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, hashesentry.NodesTable, hashesentry.NodesColumn),
+			sqlgraph.Edge(sqlgraph.M2O, true, hashesentry.NodeTable, hashesentry.NodeColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(heq.driver.Dialect(), step)
 		return fromU, nil
@@ -297,38 +297,38 @@ func (heq *HashesEntryQuery) Clone() *HashesEntryQuery {
 		return nil
 	}
 	return &HashesEntryQuery{
-		config:                 heq.config,
-		ctx:                    heq.ctx.Clone(),
-		order:                  append([]hashesentry.OrderOption{}, heq.order...),
-		inters:                 append([]Interceptor{}, heq.inters...),
-		predicates:             append([]predicate.HashesEntry{}, heq.predicates...),
-		withExternalReferences: heq.withExternalReferences.Clone(),
-		withNodes:              heq.withNodes.Clone(),
+		config:                heq.config,
+		ctx:                   heq.ctx.Clone(),
+		order:                 append([]hashesentry.OrderOption{}, heq.order...),
+		inters:                append([]Interceptor{}, heq.inters...),
+		predicates:            append([]predicate.HashesEntry{}, heq.predicates...),
+		withExternalReference: heq.withExternalReference.Clone(),
+		withNode:              heq.withNode.Clone(),
 		// clone intermediate query.
 		sql:  heq.sql.Clone(),
 		path: heq.path,
 	}
 }
 
-// WithExternalReferences tells the query-builder to eager-load the nodes that are connected to
-// the "external_references" edge. The optional arguments are used to configure the query builder of the edge.
-func (heq *HashesEntryQuery) WithExternalReferences(opts ...func(*ExternalReferenceQuery)) *HashesEntryQuery {
+// WithExternalReference tells the query-builder to eager-load the nodes that are connected to
+// the "external_reference" edge. The optional arguments are used to configure the query builder of the edge.
+func (heq *HashesEntryQuery) WithExternalReference(opts ...func(*ExternalReferenceQuery)) *HashesEntryQuery {
 	query := (&ExternalReferenceClient{config: heq.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	heq.withExternalReferences = query
+	heq.withExternalReference = query
 	return heq
 }
 
-// WithNodes tells the query-builder to eager-load the nodes that are connected to
-// the "nodes" edge. The optional arguments are used to configure the query builder of the edge.
-func (heq *HashesEntryQuery) WithNodes(opts ...func(*NodeQuery)) *HashesEntryQuery {
+// WithNode tells the query-builder to eager-load the nodes that are connected to
+// the "node" edge. The optional arguments are used to configure the query builder of the edge.
+func (heq *HashesEntryQuery) WithNode(opts ...func(*NodeQuery)) *HashesEntryQuery {
 	query := (&NodeClient{config: heq.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	heq.withNodes = query
+	heq.withNode = query
 	return heq
 }
 
@@ -412,11 +412,11 @@ func (heq *HashesEntryQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]
 		withFKs     = heq.withFKs
 		_spec       = heq.querySpec()
 		loadedTypes = [2]bool{
-			heq.withExternalReferences != nil,
-			heq.withNodes != nil,
+			heq.withExternalReference != nil,
+			heq.withNode != nil,
 		}
 	)
-	if heq.withExternalReferences != nil || heq.withNodes != nil {
+	if heq.withExternalReference != nil || heq.withNode != nil {
 		withFKs = true
 	}
 	if withFKs {
@@ -440,22 +440,22 @@ func (heq *HashesEntryQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
-	if query := heq.withExternalReferences; query != nil {
-		if err := heq.loadExternalReferences(ctx, query, nodes, nil,
-			func(n *HashesEntry, e *ExternalReference) { n.Edges.ExternalReferences = e }); err != nil {
+	if query := heq.withExternalReference; query != nil {
+		if err := heq.loadExternalReference(ctx, query, nodes, nil,
+			func(n *HashesEntry, e *ExternalReference) { n.Edges.ExternalReference = e }); err != nil {
 			return nil, err
 		}
 	}
-	if query := heq.withNodes; query != nil {
-		if err := heq.loadNodes(ctx, query, nodes, nil,
-			func(n *HashesEntry, e *Node) { n.Edges.Nodes = e }); err != nil {
+	if query := heq.withNode; query != nil {
+		if err := heq.loadNode(ctx, query, nodes, nil,
+			func(n *HashesEntry, e *Node) { n.Edges.Node = e }); err != nil {
 			return nil, err
 		}
 	}
 	return nodes, nil
 }
 
-func (heq *HashesEntryQuery) loadExternalReferences(ctx context.Context, query *ExternalReferenceQuery, nodes []*HashesEntry, init func(*HashesEntry), assign func(*HashesEntry, *ExternalReference)) error {
+func (heq *HashesEntryQuery) loadExternalReference(ctx context.Context, query *ExternalReferenceQuery, nodes []*HashesEntry, init func(*HashesEntry), assign func(*HashesEntry, *ExternalReference)) error {
 	ids := make([]int, 0, len(nodes))
 	nodeids := make(map[int][]*HashesEntry)
 	for i := range nodes {
@@ -487,7 +487,7 @@ func (heq *HashesEntryQuery) loadExternalReferences(ctx context.Context, query *
 	}
 	return nil
 }
-func (heq *HashesEntryQuery) loadNodes(ctx context.Context, query *NodeQuery, nodes []*HashesEntry, init func(*HashesEntry), assign func(*HashesEntry, *Node)) error {
+func (heq *HashesEntryQuery) loadNode(ctx context.Context, query *NodeQuery, nodes []*HashesEntry, init func(*HashesEntry), assign func(*HashesEntry, *Node)) error {
 	ids := make([]string, 0, len(nodes))
 	nodeids := make(map[string][]*HashesEntry)
 	for i := range nodes {

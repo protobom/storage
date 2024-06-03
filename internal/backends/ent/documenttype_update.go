@@ -32,6 +32,26 @@ func (dtu *DocumentTypeUpdate) Where(ps ...predicate.DocumentType) *DocumentType
 	return dtu
 }
 
+// SetMetadataID sets the "metadata_id" field.
+func (dtu *DocumentTypeUpdate) SetMetadataID(s string) *DocumentTypeUpdate {
+	dtu.mutation.SetMetadataID(s)
+	return dtu
+}
+
+// SetNillableMetadataID sets the "metadata_id" field if the given value is not nil.
+func (dtu *DocumentTypeUpdate) SetNillableMetadataID(s *string) *DocumentTypeUpdate {
+	if s != nil {
+		dtu.SetMetadataID(*s)
+	}
+	return dtu
+}
+
+// ClearMetadataID clears the value of the "metadata_id" field.
+func (dtu *DocumentTypeUpdate) ClearMetadataID() *DocumentTypeUpdate {
+	dtu.mutation.ClearMetadataID()
+	return dtu
+}
+
 // SetType sets the "type" field.
 func (dtu *DocumentTypeUpdate) SetType(d documenttype.Type) *DocumentTypeUpdate {
 	dtu.mutation.SetType(d)
@@ -89,20 +109,6 @@ func (dtu *DocumentTypeUpdate) SetNillableDescription(s *string) *DocumentTypeUp
 // ClearDescription clears the value of the "description" field.
 func (dtu *DocumentTypeUpdate) ClearDescription() *DocumentTypeUpdate {
 	dtu.mutation.ClearDescription()
-	return dtu
-}
-
-// SetMetadataID sets the "metadata" edge to the Metadata entity by ID.
-func (dtu *DocumentTypeUpdate) SetMetadataID(id string) *DocumentTypeUpdate {
-	dtu.mutation.SetMetadataID(id)
-	return dtu
-}
-
-// SetNillableMetadataID sets the "metadata" edge to the Metadata entity by ID if the given value is not nil.
-func (dtu *DocumentTypeUpdate) SetNillableMetadataID(id *string) *DocumentTypeUpdate {
-	if id != nil {
-		dtu = dtu.SetMetadataID(*id)
-	}
 	return dtu
 }
 
@@ -238,6 +244,26 @@ type DocumentTypeUpdateOne struct {
 	mutation *DocumentTypeMutation
 }
 
+// SetMetadataID sets the "metadata_id" field.
+func (dtuo *DocumentTypeUpdateOne) SetMetadataID(s string) *DocumentTypeUpdateOne {
+	dtuo.mutation.SetMetadataID(s)
+	return dtuo
+}
+
+// SetNillableMetadataID sets the "metadata_id" field if the given value is not nil.
+func (dtuo *DocumentTypeUpdateOne) SetNillableMetadataID(s *string) *DocumentTypeUpdateOne {
+	if s != nil {
+		dtuo.SetMetadataID(*s)
+	}
+	return dtuo
+}
+
+// ClearMetadataID clears the value of the "metadata_id" field.
+func (dtuo *DocumentTypeUpdateOne) ClearMetadataID() *DocumentTypeUpdateOne {
+	dtuo.mutation.ClearMetadataID()
+	return dtuo
+}
+
 // SetType sets the "type" field.
 func (dtuo *DocumentTypeUpdateOne) SetType(d documenttype.Type) *DocumentTypeUpdateOne {
 	dtuo.mutation.SetType(d)
@@ -295,20 +321,6 @@ func (dtuo *DocumentTypeUpdateOne) SetNillableDescription(s *string) *DocumentTy
 // ClearDescription clears the value of the "description" field.
 func (dtuo *DocumentTypeUpdateOne) ClearDescription() *DocumentTypeUpdateOne {
 	dtuo.mutation.ClearDescription()
-	return dtuo
-}
-
-// SetMetadataID sets the "metadata" edge to the Metadata entity by ID.
-func (dtuo *DocumentTypeUpdateOne) SetMetadataID(id string) *DocumentTypeUpdateOne {
-	dtuo.mutation.SetMetadataID(id)
-	return dtuo
-}
-
-// SetNillableMetadataID sets the "metadata" edge to the Metadata entity by ID if the given value is not nil.
-func (dtuo *DocumentTypeUpdateOne) SetNillableMetadataID(id *string) *DocumentTypeUpdateOne {
-	if id != nil {
-		dtuo = dtuo.SetMetadataID(*id)
-	}
 	return dtuo
 }
 

@@ -34,22 +34,22 @@ type IdentifiersEntry struct {
 
 // IdentifiersEntryEdges holds the relations/edges for other nodes in the graph.
 type IdentifiersEntryEdges struct {
-	// Nodes holds the value of the nodes edge.
-	Nodes *Node `json:"nodes,omitempty"`
+	// Node holds the value of the node edge.
+	Node *Node `json:"node,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [1]bool
 }
 
-// NodesOrErr returns the Nodes value or an error if the edge
+// NodeOrErr returns the Node value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
-func (e IdentifiersEntryEdges) NodesOrErr() (*Node, error) {
-	if e.Nodes != nil {
-		return e.Nodes, nil
+func (e IdentifiersEntryEdges) NodeOrErr() (*Node, error) {
+	if e.Node != nil {
+		return e.Node, nil
 	} else if e.loadedTypes[0] {
 		return nil, &NotFoundError{label: node.Label}
 	}
-	return nil, &NotLoadedError{edge: "nodes"}
+	return nil, &NotLoadedError{edge: "node"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -116,9 +116,9 @@ func (ie *IdentifiersEntry) Value(name string) (ent.Value, error) {
 	return ie.selectValues.Get(name)
 }
 
-// QueryNodes queries the "nodes" edge of the IdentifiersEntry entity.
-func (ie *IdentifiersEntry) QueryNodes() *NodeQuery {
-	return NewIdentifiersEntryClient(ie.config).QueryNodes(ie)
+// QueryNode queries the "node" edge of the IdentifiersEntry entity.
+func (ie *IdentifiersEntry) QueryNode() *NodeQuery {
+	return NewIdentifiersEntryClient(ie.config).QueryNode(ie)
 }
 
 // Update returns a builder for updating this IdentifiersEntry.

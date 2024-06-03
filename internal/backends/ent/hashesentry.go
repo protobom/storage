@@ -36,35 +36,35 @@ type HashesEntry struct {
 
 // HashesEntryEdges holds the relations/edges for other nodes in the graph.
 type HashesEntryEdges struct {
-	// ExternalReferences holds the value of the external_references edge.
-	ExternalReferences *ExternalReference `json:"external_references,omitempty"`
-	// Nodes holds the value of the nodes edge.
-	Nodes *Node `json:"nodes,omitempty"`
+	// ExternalReference holds the value of the external_reference edge.
+	ExternalReference *ExternalReference `json:"external_reference,omitempty"`
+	// Node holds the value of the node edge.
+	Node *Node `json:"node,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [2]bool
 }
 
-// ExternalReferencesOrErr returns the ExternalReferences value or an error if the edge
+// ExternalReferenceOrErr returns the ExternalReference value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
-func (e HashesEntryEdges) ExternalReferencesOrErr() (*ExternalReference, error) {
-	if e.ExternalReferences != nil {
-		return e.ExternalReferences, nil
+func (e HashesEntryEdges) ExternalReferenceOrErr() (*ExternalReference, error) {
+	if e.ExternalReference != nil {
+		return e.ExternalReference, nil
 	} else if e.loadedTypes[0] {
 		return nil, &NotFoundError{label: externalreference.Label}
 	}
-	return nil, &NotLoadedError{edge: "external_references"}
+	return nil, &NotLoadedError{edge: "external_reference"}
 }
 
-// NodesOrErr returns the Nodes value or an error if the edge
+// NodeOrErr returns the Node value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
-func (e HashesEntryEdges) NodesOrErr() (*Node, error) {
-	if e.Nodes != nil {
-		return e.Nodes, nil
+func (e HashesEntryEdges) NodeOrErr() (*Node, error) {
+	if e.Node != nil {
+		return e.Node, nil
 	} else if e.loadedTypes[1] {
 		return nil, &NotFoundError{label: node.Label}
 	}
-	return nil, &NotLoadedError{edge: "nodes"}
+	return nil, &NotLoadedError{edge: "node"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -140,14 +140,14 @@ func (he *HashesEntry) Value(name string) (ent.Value, error) {
 	return he.selectValues.Get(name)
 }
 
-// QueryExternalReferences queries the "external_references" edge of the HashesEntry entity.
-func (he *HashesEntry) QueryExternalReferences() *ExternalReferenceQuery {
-	return NewHashesEntryClient(he.config).QueryExternalReferences(he)
+// QueryExternalReference queries the "external_reference" edge of the HashesEntry entity.
+func (he *HashesEntry) QueryExternalReference() *ExternalReferenceQuery {
+	return NewHashesEntryClient(he.config).QueryExternalReference(he)
 }
 
-// QueryNodes queries the "nodes" edge of the HashesEntry entity.
-func (he *HashesEntry) QueryNodes() *NodeQuery {
-	return NewHashesEntryClient(he.config).QueryNodes(he)
+// QueryNode queries the "node" edge of the HashesEntry entity.
+func (he *HashesEntry) QueryNode() *NodeQuery {
+	return NewHashesEntryClient(he.config).QueryNode(he)
 }
 
 // Update returns a builder for updating this HashesEntry.

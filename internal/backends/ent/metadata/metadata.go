@@ -41,28 +41,28 @@ const (
 	// It exists in this package in order to avoid circular dependency with the "tool" package.
 	ToolsInverseTable = "tools"
 	// ToolsColumn is the table column denoting the tools relation/edge.
-	ToolsColumn = "metadata_tools"
+	ToolsColumn = "metadata_id"
 	// AuthorsTable is the table that holds the authors relation/edge.
 	AuthorsTable = "persons"
 	// AuthorsInverseTable is the table name for the Person entity.
 	// It exists in this package in order to avoid circular dependency with the "person" package.
 	AuthorsInverseTable = "persons"
 	// AuthorsColumn is the table column denoting the authors relation/edge.
-	AuthorsColumn = "metadata_authors"
+	AuthorsColumn = "metadata_id"
 	// DocumentTypesTable is the table that holds the document_types relation/edge.
 	DocumentTypesTable = "document_types"
 	// DocumentTypesInverseTable is the table name for the DocumentType entity.
 	// It exists in this package in order to avoid circular dependency with the "documenttype" package.
 	DocumentTypesInverseTable = "document_types"
 	// DocumentTypesColumn is the table column denoting the document_types relation/edge.
-	DocumentTypesColumn = "metadata_document_types"
+	DocumentTypesColumn = "metadata_id"
 	// DocumentTable is the table that holds the document relation/edge.
 	DocumentTable = "documents"
 	// DocumentInverseTable is the table name for the Document entity.
 	// It exists in this package in order to avoid circular dependency with the "document" package.
 	DocumentInverseTable = "documents"
 	// DocumentColumn is the table column denoting the document relation/edge.
-	DocumentColumn = "metadata_document"
+	DocumentColumn = "metadata_id"
 )
 
 // Columns holds all SQL columns for metadata fields.
@@ -83,6 +83,11 @@ func ValidColumn(column string) bool {
 	}
 	return false
 }
+
+var (
+	// IDValidator is a validator for the "id" field. It is called by the builders before save.
+	IDValidator func(string) error
+)
 
 // OrderOption defines the ordering options for the Metadata queries.
 type OrderOption func(*sql.Selector)
@@ -154,10 +159,17 @@ func ByDocumentTypes(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	}
 }
 
-// ByDocumentField orders the results by document field.
-func ByDocumentField(field string, opts ...sql.OrderTermOption) OrderOption {
+// ByDocumentCount orders the results by document count.
+func ByDocumentCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newDocumentStep(), sql.OrderByField(field, opts...))
+		sqlgraph.OrderByNeighborsCount(s, newDocumentStep(), opts...)
+	}
+}
+
+// ByDocument orders the results by document terms.
+func ByDocument(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newDocumentStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
 func newToolsStep() *sqlgraph.Step {
@@ -185,6 +197,6 @@ func newDocumentStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(DocumentInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2O, false, DocumentTable, DocumentColumn),
+		sqlgraph.Edge(sqlgraph.O2M, false, DocumentTable, DocumentColumn),
 	)
 }
