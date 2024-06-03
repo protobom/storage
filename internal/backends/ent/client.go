@@ -21,6 +21,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/documenttype"
+	"github.com/protobom/storage/internal/backends/ent/edgetype"
 	"github.com/protobom/storage/internal/backends/ent/externalreference"
 	"github.com/protobom/storage/internal/backends/ent/hashesentry"
 	"github.com/protobom/storage/internal/backends/ent/identifiersentry"
@@ -41,6 +42,8 @@ type Client struct {
 	Document *DocumentClient
 	// DocumentType is the client for interacting with the DocumentType builders.
 	DocumentType *DocumentTypeClient
+	// EdgeType is the client for interacting with the EdgeType builders.
+	EdgeType *EdgeTypeClient
 	// ExternalReference is the client for interacting with the ExternalReference builders.
 	ExternalReference *ExternalReferenceClient
 	// HashesEntry is the client for interacting with the HashesEntry builders.
@@ -72,6 +75,7 @@ func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
 	c.Document = NewDocumentClient(c.config)
 	c.DocumentType = NewDocumentTypeClient(c.config)
+	c.EdgeType = NewEdgeTypeClient(c.config)
 	c.ExternalReference = NewExternalReferenceClient(c.config)
 	c.HashesEntry = NewHashesEntryClient(c.config)
 	c.IdentifiersEntry = NewIdentifiersEntryClient(c.config)
@@ -175,6 +179,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		config:            cfg,
 		Document:          NewDocumentClient(cfg),
 		DocumentType:      NewDocumentTypeClient(cfg),
+		EdgeType:          NewEdgeTypeClient(cfg),
 		ExternalReference: NewExternalReferenceClient(cfg),
 		HashesEntry:       NewHashesEntryClient(cfg),
 		IdentifiersEntry:  NewIdentifiersEntryClient(cfg),
@@ -205,6 +210,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		config:            cfg,
 		Document:          NewDocumentClient(cfg),
 		DocumentType:      NewDocumentTypeClient(cfg),
+		EdgeType:          NewEdgeTypeClient(cfg),
 		ExternalReference: NewExternalReferenceClient(cfg),
 		HashesEntry:       NewHashesEntryClient(cfg),
 		IdentifiersEntry:  NewIdentifiersEntryClient(cfg),
@@ -243,7 +249,7 @@ func (c *Client) Close() error {
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
-		c.Document, c.DocumentType, c.ExternalReference, c.HashesEntry,
+		c.Document, c.DocumentType, c.EdgeType, c.ExternalReference, c.HashesEntry,
 		c.IdentifiersEntry, c.Metadata, c.Node, c.NodeList, c.Person, c.Purpose,
 		c.Tool,
 	} {
@@ -255,7 +261,7 @@ func (c *Client) Use(hooks ...Hook) {
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
-		c.Document, c.DocumentType, c.ExternalReference, c.HashesEntry,
+		c.Document, c.DocumentType, c.EdgeType, c.ExternalReference, c.HashesEntry,
 		c.IdentifiersEntry, c.Metadata, c.Node, c.NodeList, c.Person, c.Purpose,
 		c.Tool,
 	} {
@@ -270,6 +276,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.Document.mutate(ctx, m)
 	case *DocumentTypeMutation:
 		return c.DocumentType.mutate(ctx, m)
+	case *EdgeTypeMutation:
+		return c.EdgeType.mutate(ctx, m)
 	case *ExternalReferenceMutation:
 		return c.ExternalReference.mutate(ctx, m)
 	case *HashesEntryMutation:
@@ -604,6 +612,171 @@ func (c *DocumentTypeClient) mutate(ctx context.Context, m *DocumentTypeMutation
 		return (&DocumentTypeDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown DocumentType mutation op: %q", m.Op())
+	}
+}
+
+// EdgeTypeClient is a client for the EdgeType schema.
+type EdgeTypeClient struct {
+	config
+}
+
+// NewEdgeTypeClient returns a client for the EdgeType from the given config.
+func NewEdgeTypeClient(c config) *EdgeTypeClient {
+	return &EdgeTypeClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `edgetype.Hooks(f(g(h())))`.
+func (c *EdgeTypeClient) Use(hooks ...Hook) {
+	c.hooks.EdgeType = append(c.hooks.EdgeType, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `edgetype.Intercept(f(g(h())))`.
+func (c *EdgeTypeClient) Intercept(interceptors ...Interceptor) {
+	c.inters.EdgeType = append(c.inters.EdgeType, interceptors...)
+}
+
+// Create returns a builder for creating a EdgeType entity.
+func (c *EdgeTypeClient) Create() *EdgeTypeCreate {
+	mutation := newEdgeTypeMutation(c.config, OpCreate)
+	return &EdgeTypeCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of EdgeType entities.
+func (c *EdgeTypeClient) CreateBulk(builders ...*EdgeTypeCreate) *EdgeTypeCreateBulk {
+	return &EdgeTypeCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *EdgeTypeClient) MapCreateBulk(slice any, setFunc func(*EdgeTypeCreate, int)) *EdgeTypeCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &EdgeTypeCreateBulk{err: fmt.Errorf("calling to EdgeTypeClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*EdgeTypeCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &EdgeTypeCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for EdgeType.
+func (c *EdgeTypeClient) Update() *EdgeTypeUpdate {
+	mutation := newEdgeTypeMutation(c.config, OpUpdate)
+	return &EdgeTypeUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *EdgeTypeClient) UpdateOne(et *EdgeType) *EdgeTypeUpdateOne {
+	mutation := newEdgeTypeMutation(c.config, OpUpdateOne, withEdgeType(et))
+	return &EdgeTypeUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *EdgeTypeClient) UpdateOneID(id int) *EdgeTypeUpdateOne {
+	mutation := newEdgeTypeMutation(c.config, OpUpdateOne, withEdgeTypeID(id))
+	return &EdgeTypeUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for EdgeType.
+func (c *EdgeTypeClient) Delete() *EdgeTypeDelete {
+	mutation := newEdgeTypeMutation(c.config, OpDelete)
+	return &EdgeTypeDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *EdgeTypeClient) DeleteOne(et *EdgeType) *EdgeTypeDeleteOne {
+	return c.DeleteOneID(et.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *EdgeTypeClient) DeleteOneID(id int) *EdgeTypeDeleteOne {
+	builder := c.Delete().Where(edgetype.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &EdgeTypeDeleteOne{builder}
+}
+
+// Query returns a query builder for EdgeType.
+func (c *EdgeTypeClient) Query() *EdgeTypeQuery {
+	return &EdgeTypeQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeEdgeType},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a EdgeType entity by its id.
+func (c *EdgeTypeClient) Get(ctx context.Context, id int) (*EdgeType, error) {
+	return c.Query().Where(edgetype.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *EdgeTypeClient) GetX(ctx context.Context, id int) *EdgeType {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryFrom queries the from edge of a EdgeType.
+func (c *EdgeTypeClient) QueryFrom(et *EdgeType) *NodeQuery {
+	query := (&NodeClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := et.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(edgetype.Table, edgetype.FieldID, id),
+			sqlgraph.To(node.Table, node.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, edgetype.FromTable, edgetype.FromColumn),
+		)
+		fromV = sqlgraph.Neighbors(et.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryTo queries the to edge of a EdgeType.
+func (c *EdgeTypeClient) QueryTo(et *EdgeType) *NodeQuery {
+	query := (&NodeClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := et.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(edgetype.Table, edgetype.FieldID, id),
+			sqlgraph.To(node.Table, node.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, edgetype.ToTable, edgetype.ToColumn),
+		)
+		fromV = sqlgraph.Neighbors(et.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *EdgeTypeClient) Hooks() []Hook {
+	return c.hooks.EdgeType
+}
+
+// Interceptors returns the client interceptors.
+func (c *EdgeTypeClient) Interceptors() []Interceptor {
+	return c.inters.EdgeType
+}
+
+func (c *EdgeTypeClient) mutate(ctx context.Context, m *EdgeTypeMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&EdgeTypeCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&EdgeTypeUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&EdgeTypeUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&EdgeTypeDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown EdgeType mutation op: %q", m.Op())
 	}
 }
 
@@ -1487,15 +1660,15 @@ func (c *NodeClient) QueryPrimaryPurpose(n *Node) *PurposeQuery {
 	return query
 }
 
-// QueryFromNode queries the from_node edge of a Node.
-func (c *NodeClient) QueryFromNode(n *Node) *NodeQuery {
+// QueryToNodes queries the to_nodes edge of a Node.
+func (c *NodeClient) QueryToNodes(n *Node) *NodeQuery {
 	query := (&NodeClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := n.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(node.Table, node.FieldID, id),
 			sqlgraph.To(node.Table, node.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, node.FromNodeTable, node.FromNodeColumn),
+			sqlgraph.Edge(sqlgraph.M2M, true, node.ToNodesTable, node.ToNodesPrimaryKey...),
 		)
 		fromV = sqlgraph.Neighbors(n.driver.Dialect(), step)
 		return fromV, nil
@@ -1511,7 +1684,7 @@ func (c *NodeClient) QueryNodes(n *Node) *NodeQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(node.Table, node.FieldID, id),
 			sqlgraph.To(node.Table, node.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, node.NodesTable, node.NodesColumn),
+			sqlgraph.Edge(sqlgraph.M2M, false, node.NodesTable, node.NodesPrimaryKey...),
 		)
 		fromV = sqlgraph.Neighbors(n.driver.Dialect(), step)
 		return fromV, nil
@@ -1528,6 +1701,22 @@ func (c *NodeClient) QueryNodeList(n *Node) *NodeListQuery {
 			sqlgraph.From(node.Table, node.FieldID, id),
 			sqlgraph.To(nodelist.Table, nodelist.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, node.NodeListTable, node.NodeListColumn),
+		)
+		fromV = sqlgraph.Neighbors(n.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryEdgeTypes queries the edge_types edge of a Node.
+func (c *NodeClient) QueryEdgeTypes(n *Node) *EdgeTypeQuery {
+	query := (&EdgeTypeClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := n.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(node.Table, node.FieldID, id),
+			sqlgraph.To(edgetype.Table, edgetype.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, node.EdgeTypesTable, node.EdgeTypesColumn),
 		)
 		fromV = sqlgraph.Neighbors(n.driver.Dialect(), step)
 		return fromV, nil
@@ -2223,11 +2412,12 @@ func (c *ToolClient) mutate(ctx context.Context, m *ToolMutation) (Value, error)
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		Document, DocumentType, ExternalReference, HashesEntry, IdentifiersEntry,
-		Metadata, Node, NodeList, Person, Purpose, Tool []ent.Hook
+		Document, DocumentType, EdgeType, ExternalReference, HashesEntry,
+		IdentifiersEntry, Metadata, Node, NodeList, Person, Purpose, Tool []ent.Hook
 	}
 	inters struct {
-		Document, DocumentType, ExternalReference, HashesEntry, IdentifiersEntry,
-		Metadata, Node, NodeList, Person, Purpose, Tool []ent.Interceptor
+		Document, DocumentType, EdgeType, ExternalReference, HashesEntry,
+		IdentifiersEntry, Metadata, Node, NodeList, Person, Purpose,
+		Tool []ent.Interceptor
 	}
 )

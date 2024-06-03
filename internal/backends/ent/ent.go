@@ -18,6 +18,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/documenttype"
+	"github.com/protobom/storage/internal/backends/ent/edgetype"
 	"github.com/protobom/storage/internal/backends/ent/externalreference"
 	"github.com/protobom/storage/internal/backends/ent/hashesentry"
 	"github.com/protobom/storage/internal/backends/ent/identifiersentry"
@@ -89,6 +90,7 @@ func checkColumn(table, column string) error {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
 			document.Table:          document.ValidColumn,
 			documenttype.Table:      documenttype.ValidColumn,
+			edgetype.Table:          edgetype.ValidColumn,
 			externalreference.Table: externalreference.ValidColumn,
 			hashesentry.Table:       hashesentry.ValidColumn,
 			identifiersentry.Table:  identifiersentry.ValidColumn,

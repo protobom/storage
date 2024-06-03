@@ -76,6 +76,45 @@ var (
 			},
 		},
 	}
+	// EdgeTypesColumns holds the columns for the "edge_types" table.
+	EdgeTypesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "type", Type: field.TypeEnum, Enums: []string{"UNKNOWN", "amends", "ancestor", "buildDependency", "buildTool", "contains", "contained_by", "copy", "dataFile", "dependencyManifest", "dependsOn", "dependencyOf", "descendant", "describes", "describedBy", "devDependency", "devTool", "distributionArtifact", "documentation", "dynamicLink", "example", "expandedFromArchive", "fileAdded", "fileDeleted", "fileModified", "generates", "generatedFrom", "metafile", "optionalComponent", "optionalDependency", "other", "packages", "patch", "prerequisite", "prerequisiteFor", "providedDependency", "requirementFor", "runtimeDependency", "specificationFor", "staticLink", "test", "testCase", "testDependency", "testTool", "variant"}},
+		{Name: "node_id", Type: field.TypeString},
+		{Name: "to_node_id", Type: field.TypeString},
+	}
+	// EdgeTypesTable holds the schema information for the "edge_types" table.
+	EdgeTypesTable = &schema.Table{
+		Name:       "edge_types",
+		Columns:    EdgeTypesColumns,
+		PrimaryKey: []*schema.Column{EdgeTypesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "edge_types_nodes_from",
+				Columns:    []*schema.Column{EdgeTypesColumns[2]},
+				RefColumns: []*schema.Column{NodesColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "edge_types_nodes_to",
+				Columns:    []*schema.Column{EdgeTypesColumns[3]},
+				RefColumns: []*schema.Column{NodesColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "edgetype_type_node_id_to_node_id",
+				Unique:  true,
+				Columns: []*schema.Column{EdgeTypesColumns[1], EdgeTypesColumns[2], EdgeTypesColumns[3]},
+			},
+			{
+				Name:    "edgetype_node_id_to_node_id",
+				Unique:  true,
+				Columns: []*schema.Column{EdgeTypesColumns[2], EdgeTypesColumns[3]},
+			},
+		},
+	}
 	// ExternalReferencesColumns holds the columns for the "external_references" table.
 	ExternalReferencesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -212,8 +251,6 @@ var (
 		{Name: "valid_until_date", Type: field.TypeTime},
 		{Name: "attribution", Type: field.TypeJSON},
 		{Name: "file_types", Type: field.TypeJSON},
-		{Name: "edge_type", Type: field.TypeEnum, Nullable: true, Enums: []string{"UNKNOWN", "amends", "ancestor", "buildDependency", "buildTool", "contains", "contained_by", "copy", "dataFile", "dependencyManifest", "dependsOn", "dependencyOf", "descendant", "describes", "describedBy", "devDependency", "devTool", "distributionArtifact", "documentation", "dynamicLink", "example", "expandedFromArchive", "fileAdded", "fileDeleted", "fileModified", "generates", "generatedFrom", "metafile", "optionalComponent", "optionalDependency", "other", "packages", "patch", "prerequisite", "prerequisiteFor", "providedDependency", "requirementFor", "runtimeDependency", "specificationFor", "staticLink", "test", "testCase", "testDependency", "testTool", "variant"}},
-		{Name: "from_node_id", Type: field.TypeString, Nullable: true},
 		{Name: "node_list_id", Type: field.TypeInt, Nullable: true},
 	}
 	// NodesTable holds the schema information for the "nodes" table.
@@ -223,14 +260,8 @@ var (
 		PrimaryKey: []*schema.Column{NodesColumns[0]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:     "nodes_nodes_nodes",
-				Columns:    []*schema.Column{NodesColumns[21]},
-				RefColumns: []*schema.Column{NodesColumns[0]},
-				OnDelete:   schema.SetNull,
-			},
-			{
 				Symbol:     "nodes_node_lists_nodes",
-				Columns:    []*schema.Column{NodesColumns[22]},
+				Columns:    []*schema.Column{NodesColumns[20]},
 				RefColumns: []*schema.Column{NodeListsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -239,7 +270,7 @@ var (
 			{
 				Name:    "node_id_node_list_id",
 				Unique:  true,
-				Columns: []*schema.Column{NodesColumns[0], NodesColumns[22]},
+				Columns: []*schema.Column{NodesColumns[0], NodesColumns[20]},
 			},
 		},
 	}
@@ -384,6 +415,7 @@ var (
 	Tables = []*schema.Table{
 		DocumentsTable,
 		DocumentTypesTable,
+		EdgeTypesTable,
 		ExternalReferencesTable,
 		HashesEntriesTable,
 		IdentifiersEntriesTable,
@@ -400,12 +432,13 @@ func init() {
 	DocumentsTable.ForeignKeys[0].RefTable = MetadataTable
 	DocumentsTable.ForeignKeys[1].RefTable = NodeListsTable
 	DocumentTypesTable.ForeignKeys[0].RefTable = MetadataTable
+	EdgeTypesTable.ForeignKeys[0].RefTable = NodesTable
+	EdgeTypesTable.ForeignKeys[1].RefTable = NodesTable
 	ExternalReferencesTable.ForeignKeys[0].RefTable = NodesTable
 	HashesEntriesTable.ForeignKeys[0].RefTable = ExternalReferencesTable
 	HashesEntriesTable.ForeignKeys[1].RefTable = NodesTable
 	IdentifiersEntriesTable.ForeignKeys[0].RefTable = NodesTable
-	NodesTable.ForeignKeys[0].RefTable = NodesTable
-	NodesTable.ForeignKeys[1].RefTable = NodeListsTable
+	NodesTable.ForeignKeys[0].RefTable = NodeListsTable
 	PersonsTable.ForeignKeys[0].RefTable = MetadataTable
 	PersonsTable.ForeignKeys[1].RefTable = NodesTable
 	PersonsTable.ForeignKeys[2].RefTable = NodesTable

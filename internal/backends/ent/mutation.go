@@ -17,6 +17,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/documenttype"
+	"github.com/protobom/storage/internal/backends/ent/edgetype"
 	"github.com/protobom/storage/internal/backends/ent/externalreference"
 	"github.com/protobom/storage/internal/backends/ent/hashesentry"
 	"github.com/protobom/storage/internal/backends/ent/identifiersentry"
@@ -40,6 +41,7 @@ const (
 	// Node types.
 	TypeDocument          = "Document"
 	TypeDocumentType      = "DocumentType"
+	TypeEdgeType          = "EdgeType"
 	TypeExternalReference = "ExternalReference"
 	TypeHashesEntry       = "HashesEntry"
 	TypeIdentifiersEntry  = "IdentifiersEntry"
@@ -1153,6 +1155,566 @@ func (m *DocumentTypeMutation) ResetEdge(name string) error {
 		return nil
 	}
 	return fmt.Errorf("unknown DocumentType edge %s", name)
+}
+
+// EdgeTypeMutation represents an operation that mutates the EdgeType nodes in the graph.
+type EdgeTypeMutation struct {
+	config
+	op            Op
+	typ           string
+	id            *int
+	_type         *edgetype.Type
+	clearedFields map[string]struct{}
+	from          *string
+	clearedfrom   bool
+	to            *string
+	clearedto     bool
+	done          bool
+	oldValue      func(context.Context) (*EdgeType, error)
+	predicates    []predicate.EdgeType
+}
+
+var _ ent.Mutation = (*EdgeTypeMutation)(nil)
+
+// edgetypeOption allows management of the mutation configuration using functional options.
+type edgetypeOption func(*EdgeTypeMutation)
+
+// newEdgeTypeMutation creates new mutation for the EdgeType entity.
+func newEdgeTypeMutation(c config, op Op, opts ...edgetypeOption) *EdgeTypeMutation {
+	m := &EdgeTypeMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeEdgeType,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withEdgeTypeID sets the ID field of the mutation.
+func withEdgeTypeID(id int) edgetypeOption {
+	return func(m *EdgeTypeMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *EdgeType
+		)
+		m.oldValue = func(ctx context.Context) (*EdgeType, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().EdgeType.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withEdgeType sets the old EdgeType of the mutation.
+func withEdgeType(node *EdgeType) edgetypeOption {
+	return func(m *EdgeTypeMutation) {
+		m.oldValue = func(context.Context) (*EdgeType, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m EdgeTypeMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m EdgeTypeMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *EdgeTypeMutation) ID() (id int, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *EdgeTypeMutation) IDs(ctx context.Context) ([]int, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().EdgeType.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetType sets the "type" field.
+func (m *EdgeTypeMutation) SetType(e edgetype.Type) {
+	m._type = &e
+}
+
+// GetType returns the value of the "type" field in the mutation.
+func (m *EdgeTypeMutation) GetType() (r edgetype.Type, exists bool) {
+	v := m._type
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldType returns the old "type" field's value of the EdgeType entity.
+// If the EdgeType object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EdgeTypeMutation) OldType(ctx context.Context) (v edgetype.Type, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldType is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldType requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldType: %w", err)
+	}
+	return oldValue.Type, nil
+}
+
+// ResetType resets all changes to the "type" field.
+func (m *EdgeTypeMutation) ResetType() {
+	m._type = nil
+}
+
+// SetNodeID sets the "node_id" field.
+func (m *EdgeTypeMutation) SetNodeID(s string) {
+	m.from = &s
+}
+
+// NodeID returns the value of the "node_id" field in the mutation.
+func (m *EdgeTypeMutation) NodeID() (r string, exists bool) {
+	v := m.from
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldNodeID returns the old "node_id" field's value of the EdgeType entity.
+// If the EdgeType object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EdgeTypeMutation) OldNodeID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldNodeID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldNodeID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldNodeID: %w", err)
+	}
+	return oldValue.NodeID, nil
+}
+
+// ResetNodeID resets all changes to the "node_id" field.
+func (m *EdgeTypeMutation) ResetNodeID() {
+	m.from = nil
+}
+
+// SetToNodeID sets the "to_node_id" field.
+func (m *EdgeTypeMutation) SetToNodeID(s string) {
+	m.to = &s
+}
+
+// ToNodeID returns the value of the "to_node_id" field in the mutation.
+func (m *EdgeTypeMutation) ToNodeID() (r string, exists bool) {
+	v := m.to
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldToNodeID returns the old "to_node_id" field's value of the EdgeType entity.
+// If the EdgeType object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EdgeTypeMutation) OldToNodeID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldToNodeID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldToNodeID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldToNodeID: %w", err)
+	}
+	return oldValue.ToNodeID, nil
+}
+
+// ResetToNodeID resets all changes to the "to_node_id" field.
+func (m *EdgeTypeMutation) ResetToNodeID() {
+	m.to = nil
+}
+
+// SetFromID sets the "from" edge to the Node entity by id.
+func (m *EdgeTypeMutation) SetFromID(id string) {
+	m.from = &id
+}
+
+// ClearFrom clears the "from" edge to the Node entity.
+func (m *EdgeTypeMutation) ClearFrom() {
+	m.clearedfrom = true
+	m.clearedFields[edgetype.FieldNodeID] = struct{}{}
+}
+
+// FromCleared reports if the "from" edge to the Node entity was cleared.
+func (m *EdgeTypeMutation) FromCleared() bool {
+	return m.clearedfrom
+}
+
+// FromID returns the "from" edge ID in the mutation.
+func (m *EdgeTypeMutation) FromID() (id string, exists bool) {
+	if m.from != nil {
+		return *m.from, true
+	}
+	return
+}
+
+// FromIDs returns the "from" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// FromID instead. It exists only for internal usage by the builders.
+func (m *EdgeTypeMutation) FromIDs() (ids []string) {
+	if id := m.from; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetFrom resets all changes to the "from" edge.
+func (m *EdgeTypeMutation) ResetFrom() {
+	m.from = nil
+	m.clearedfrom = false
+}
+
+// SetToID sets the "to" edge to the Node entity by id.
+func (m *EdgeTypeMutation) SetToID(id string) {
+	m.to = &id
+}
+
+// ClearTo clears the "to" edge to the Node entity.
+func (m *EdgeTypeMutation) ClearTo() {
+	m.clearedto = true
+	m.clearedFields[edgetype.FieldToNodeID] = struct{}{}
+}
+
+// ToCleared reports if the "to" edge to the Node entity was cleared.
+func (m *EdgeTypeMutation) ToCleared() bool {
+	return m.clearedto
+}
+
+// ToID returns the "to" edge ID in the mutation.
+func (m *EdgeTypeMutation) ToID() (id string, exists bool) {
+	if m.to != nil {
+		return *m.to, true
+	}
+	return
+}
+
+// ToIDs returns the "to" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// ToID instead. It exists only for internal usage by the builders.
+func (m *EdgeTypeMutation) ToIDs() (ids []string) {
+	if id := m.to; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetTo resets all changes to the "to" edge.
+func (m *EdgeTypeMutation) ResetTo() {
+	m.to = nil
+	m.clearedto = false
+}
+
+// Where appends a list predicates to the EdgeTypeMutation builder.
+func (m *EdgeTypeMutation) Where(ps ...predicate.EdgeType) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the EdgeTypeMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *EdgeTypeMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.EdgeType, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *EdgeTypeMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *EdgeTypeMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (EdgeType).
+func (m *EdgeTypeMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *EdgeTypeMutation) Fields() []string {
+	fields := make([]string, 0, 3)
+	if m._type != nil {
+		fields = append(fields, edgetype.FieldType)
+	}
+	if m.from != nil {
+		fields = append(fields, edgetype.FieldNodeID)
+	}
+	if m.to != nil {
+		fields = append(fields, edgetype.FieldToNodeID)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *EdgeTypeMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case edgetype.FieldType:
+		return m.GetType()
+	case edgetype.FieldNodeID:
+		return m.NodeID()
+	case edgetype.FieldToNodeID:
+		return m.ToNodeID()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *EdgeTypeMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case edgetype.FieldType:
+		return m.OldType(ctx)
+	case edgetype.FieldNodeID:
+		return m.OldNodeID(ctx)
+	case edgetype.FieldToNodeID:
+		return m.OldToNodeID(ctx)
+	}
+	return nil, fmt.Errorf("unknown EdgeType field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *EdgeTypeMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case edgetype.FieldType:
+		v, ok := value.(edgetype.Type)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetType(v)
+		return nil
+	case edgetype.FieldNodeID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetNodeID(v)
+		return nil
+	case edgetype.FieldToNodeID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetToNodeID(v)
+		return nil
+	}
+	return fmt.Errorf("unknown EdgeType field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *EdgeTypeMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *EdgeTypeMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *EdgeTypeMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown EdgeType numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *EdgeTypeMutation) ClearedFields() []string {
+	return nil
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *EdgeTypeMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *EdgeTypeMutation) ClearField(name string) error {
+	return fmt.Errorf("unknown EdgeType nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *EdgeTypeMutation) ResetField(name string) error {
+	switch name {
+	case edgetype.FieldType:
+		m.ResetType()
+		return nil
+	case edgetype.FieldNodeID:
+		m.ResetNodeID()
+		return nil
+	case edgetype.FieldToNodeID:
+		m.ResetToNodeID()
+		return nil
+	}
+	return fmt.Errorf("unknown EdgeType field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *EdgeTypeMutation) AddedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.from != nil {
+		edges = append(edges, edgetype.EdgeFrom)
+	}
+	if m.to != nil {
+		edges = append(edges, edgetype.EdgeTo)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *EdgeTypeMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case edgetype.EdgeFrom:
+		if id := m.from; id != nil {
+			return []ent.Value{*id}
+		}
+	case edgetype.EdgeTo:
+		if id := m.to; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *EdgeTypeMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 2)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *EdgeTypeMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *EdgeTypeMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.clearedfrom {
+		edges = append(edges, edgetype.EdgeFrom)
+	}
+	if m.clearedto {
+		edges = append(edges, edgetype.EdgeTo)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *EdgeTypeMutation) EdgeCleared(name string) bool {
+	switch name {
+	case edgetype.EdgeFrom:
+		return m.clearedfrom
+	case edgetype.EdgeTo:
+		return m.clearedto
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *EdgeTypeMutation) ClearEdge(name string) error {
+	switch name {
+	case edgetype.EdgeFrom:
+		m.ClearFrom()
+		return nil
+	case edgetype.EdgeTo:
+		m.ClearTo()
+		return nil
+	}
+	return fmt.Errorf("unknown EdgeType unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *EdgeTypeMutation) ResetEdge(name string) error {
+	switch name {
+	case edgetype.EdgeFrom:
+		m.ResetFrom()
+		return nil
+	case edgetype.EdgeTo:
+		m.ResetTo()
+		return nil
+	}
+	return fmt.Errorf("unknown EdgeType edge %s", name)
 }
 
 // ExternalReferenceMutation represents an operation that mutates the ExternalReference nodes in the graph.
@@ -3694,7 +4256,6 @@ type NodeMutation struct {
 	appendattribution          []string
 	file_types                 *[]string
 	appendfile_types           []string
-	edge_type                  *node.EdgeType
 	clearedFields              map[string]struct{}
 	suppliers                  map[int]struct{}
 	removedsuppliers           map[int]struct{}
@@ -3714,13 +4275,17 @@ type NodeMutation struct {
 	primary_purpose            map[int]struct{}
 	removedprimary_purpose     map[int]struct{}
 	clearedprimary_purpose     bool
-	from_node                  *string
-	clearedfrom_node           bool
+	to_nodes                   map[string]struct{}
+	removedto_nodes            map[string]struct{}
+	clearedto_nodes            bool
 	nodes                      map[string]struct{}
 	removednodes               map[string]struct{}
 	clearednodes               bool
 	node_list                  *int
 	clearednode_list           bool
+	edge_types                 map[int]struct{}
+	removededge_types          map[int]struct{}
+	clearededge_types          bool
 	done                       bool
 	oldValue                   func(context.Context) (*Node, error)
 	predicates                 []predicate.Node
@@ -3828,55 +4393,6 @@ func (m *NodeMutation) IDs(ctx context.Context) ([]string, error) {
 	default:
 		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
 	}
-}
-
-// SetFromNodeID sets the "from_node_id" field.
-func (m *NodeMutation) SetFromNodeID(s string) {
-	m.from_node = &s
-}
-
-// FromNodeID returns the value of the "from_node_id" field in the mutation.
-func (m *NodeMutation) FromNodeID() (r string, exists bool) {
-	v := m.from_node
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldFromNodeID returns the old "from_node_id" field's value of the Node entity.
-// If the Node object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *NodeMutation) OldFromNodeID(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldFromNodeID is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldFromNodeID requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldFromNodeID: %w", err)
-	}
-	return oldValue.FromNodeID, nil
-}
-
-// ClearFromNodeID clears the value of the "from_node_id" field.
-func (m *NodeMutation) ClearFromNodeID() {
-	m.from_node = nil
-	m.clearedFields[node.FieldFromNodeID] = struct{}{}
-}
-
-// FromNodeIDCleared returns if the "from_node_id" field was cleared in this mutation.
-func (m *NodeMutation) FromNodeIDCleared() bool {
-	_, ok := m.clearedFields[node.FieldFromNodeID]
-	return ok
-}
-
-// ResetFromNodeID resets all changes to the "from_node_id" field.
-func (m *NodeMutation) ResetFromNodeID() {
-	m.from_node = nil
-	delete(m.clearedFields, node.FieldFromNodeID)
 }
 
 // SetNodeListID sets the "node_list_id" field.
@@ -4657,55 +5173,6 @@ func (m *NodeMutation) ResetFileTypes() {
 	m.appendfile_types = nil
 }
 
-// SetEdgeType sets the "edge_type" field.
-func (m *NodeMutation) SetEdgeType(nt node.EdgeType) {
-	m.edge_type = &nt
-}
-
-// EdgeType returns the value of the "edge_type" field in the mutation.
-func (m *NodeMutation) EdgeType() (r node.EdgeType, exists bool) {
-	v := m.edge_type
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldEdgeType returns the old "edge_type" field's value of the Node entity.
-// If the Node object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *NodeMutation) OldEdgeType(ctx context.Context) (v node.EdgeType, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldEdgeType is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldEdgeType requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldEdgeType: %w", err)
-	}
-	return oldValue.EdgeType, nil
-}
-
-// ClearEdgeType clears the value of the "edge_type" field.
-func (m *NodeMutation) ClearEdgeType() {
-	m.edge_type = nil
-	m.clearedFields[node.FieldEdgeType] = struct{}{}
-}
-
-// EdgeTypeCleared returns if the "edge_type" field was cleared in this mutation.
-func (m *NodeMutation) EdgeTypeCleared() bool {
-	_, ok := m.clearedFields[node.FieldEdgeType]
-	return ok
-}
-
-// ResetEdgeType resets all changes to the "edge_type" field.
-func (m *NodeMutation) ResetEdgeType() {
-	m.edge_type = nil
-	delete(m.clearedFields, node.FieldEdgeType)
-}
-
 // AddSupplierIDs adds the "suppliers" edge to the Person entity by ids.
 func (m *NodeMutation) AddSupplierIDs(ids ...int) {
 	if m.suppliers == nil {
@@ -5030,31 +5497,58 @@ func (m *NodeMutation) ResetPrimaryPurpose() {
 	m.removedprimary_purpose = nil
 }
 
-// ClearFromNode clears the "from_node" edge to the Node entity.
-func (m *NodeMutation) ClearFromNode() {
-	m.clearedfrom_node = true
-	m.clearedFields[node.FieldFromNodeID] = struct{}{}
+// AddToNodeIDs adds the "to_nodes" edge to the Node entity by ids.
+func (m *NodeMutation) AddToNodeIDs(ids ...string) {
+	if m.to_nodes == nil {
+		m.to_nodes = make(map[string]struct{})
+	}
+	for i := range ids {
+		m.to_nodes[ids[i]] = struct{}{}
+	}
 }
 
-// FromNodeCleared reports if the "from_node" edge to the Node entity was cleared.
-func (m *NodeMutation) FromNodeCleared() bool {
-	return m.FromNodeIDCleared() || m.clearedfrom_node
+// ClearToNodes clears the "to_nodes" edge to the Node entity.
+func (m *NodeMutation) ClearToNodes() {
+	m.clearedto_nodes = true
 }
 
-// FromNodeIDs returns the "from_node" edge IDs in the mutation.
-// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
-// FromNodeID instead. It exists only for internal usage by the builders.
-func (m *NodeMutation) FromNodeIDs() (ids []string) {
-	if id := m.from_node; id != nil {
-		ids = append(ids, *id)
+// ToNodesCleared reports if the "to_nodes" edge to the Node entity was cleared.
+func (m *NodeMutation) ToNodesCleared() bool {
+	return m.clearedto_nodes
+}
+
+// RemoveToNodeIDs removes the "to_nodes" edge to the Node entity by IDs.
+func (m *NodeMutation) RemoveToNodeIDs(ids ...string) {
+	if m.removedto_nodes == nil {
+		m.removedto_nodes = make(map[string]struct{})
+	}
+	for i := range ids {
+		delete(m.to_nodes, ids[i])
+		m.removedto_nodes[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedToNodes returns the removed IDs of the "to_nodes" edge to the Node entity.
+func (m *NodeMutation) RemovedToNodesIDs() (ids []string) {
+	for id := range m.removedto_nodes {
+		ids = append(ids, id)
 	}
 	return
 }
 
-// ResetFromNode resets all changes to the "from_node" edge.
-func (m *NodeMutation) ResetFromNode() {
-	m.from_node = nil
-	m.clearedfrom_node = false
+// ToNodesIDs returns the "to_nodes" edge IDs in the mutation.
+func (m *NodeMutation) ToNodesIDs() (ids []string) {
+	for id := range m.to_nodes {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetToNodes resets all changes to the "to_nodes" edge.
+func (m *NodeMutation) ResetToNodes() {
+	m.to_nodes = nil
+	m.clearedto_nodes = false
+	m.removedto_nodes = nil
 }
 
 // AddNodeIDs adds the "nodes" edge to the Node entity by ids.
@@ -5138,6 +5632,60 @@ func (m *NodeMutation) ResetNodeList() {
 	m.clearednode_list = false
 }
 
+// AddEdgeTypeIDs adds the "edge_types" edge to the EdgeType entity by ids.
+func (m *NodeMutation) AddEdgeTypeIDs(ids ...int) {
+	if m.edge_types == nil {
+		m.edge_types = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.edge_types[ids[i]] = struct{}{}
+	}
+}
+
+// ClearEdgeTypes clears the "edge_types" edge to the EdgeType entity.
+func (m *NodeMutation) ClearEdgeTypes() {
+	m.clearededge_types = true
+}
+
+// EdgeTypesCleared reports if the "edge_types" edge to the EdgeType entity was cleared.
+func (m *NodeMutation) EdgeTypesCleared() bool {
+	return m.clearededge_types
+}
+
+// RemoveEdgeTypeIDs removes the "edge_types" edge to the EdgeType entity by IDs.
+func (m *NodeMutation) RemoveEdgeTypeIDs(ids ...int) {
+	if m.removededge_types == nil {
+		m.removededge_types = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.edge_types, ids[i])
+		m.removededge_types[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedEdgeTypes returns the removed IDs of the "edge_types" edge to the EdgeType entity.
+func (m *NodeMutation) RemovedEdgeTypesIDs() (ids []int) {
+	for id := range m.removededge_types {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// EdgeTypesIDs returns the "edge_types" edge IDs in the mutation.
+func (m *NodeMutation) EdgeTypesIDs() (ids []int) {
+	for id := range m.edge_types {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetEdgeTypes resets all changes to the "edge_types" edge.
+func (m *NodeMutation) ResetEdgeTypes() {
+	m.edge_types = nil
+	m.clearededge_types = false
+	m.removededge_types = nil
+}
+
 // Where appends a list predicates to the NodeMutation builder.
 func (m *NodeMutation) Where(ps ...predicate.Node) {
 	m.predicates = append(m.predicates, ps...)
@@ -5172,10 +5720,7 @@ func (m *NodeMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *NodeMutation) Fields() []string {
-	fields := make([]string, 0, 22)
-	if m.from_node != nil {
-		fields = append(fields, node.FieldFromNodeID)
-	}
+	fields := make([]string, 0, 20)
 	if m.node_list != nil {
 		fields = append(fields, node.FieldNodeListID)
 	}
@@ -5236,9 +5781,6 @@ func (m *NodeMutation) Fields() []string {
 	if m.file_types != nil {
 		fields = append(fields, node.FieldFileTypes)
 	}
-	if m.edge_type != nil {
-		fields = append(fields, node.FieldEdgeType)
-	}
 	return fields
 }
 
@@ -5247,8 +5789,6 @@ func (m *NodeMutation) Fields() []string {
 // schema.
 func (m *NodeMutation) Field(name string) (ent.Value, bool) {
 	switch name {
-	case node.FieldFromNodeID:
-		return m.FromNodeID()
 	case node.FieldNodeListID:
 		return m.NodeListID()
 	case node.FieldType:
@@ -5289,8 +5829,6 @@ func (m *NodeMutation) Field(name string) (ent.Value, bool) {
 		return m.Attribution()
 	case node.FieldFileTypes:
 		return m.FileTypes()
-	case node.FieldEdgeType:
-		return m.EdgeType()
 	}
 	return nil, false
 }
@@ -5300,8 +5838,6 @@ func (m *NodeMutation) Field(name string) (ent.Value, bool) {
 // database failed.
 func (m *NodeMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
 	switch name {
-	case node.FieldFromNodeID:
-		return m.OldFromNodeID(ctx)
 	case node.FieldNodeListID:
 		return m.OldNodeListID(ctx)
 	case node.FieldType:
@@ -5342,8 +5878,6 @@ func (m *NodeMutation) OldField(ctx context.Context, name string) (ent.Value, er
 		return m.OldAttribution(ctx)
 	case node.FieldFileTypes:
 		return m.OldFileTypes(ctx)
-	case node.FieldEdgeType:
-		return m.OldEdgeType(ctx)
 	}
 	return nil, fmt.Errorf("unknown Node field %s", name)
 }
@@ -5353,13 +5887,6 @@ func (m *NodeMutation) OldField(ctx context.Context, name string) (ent.Value, er
 // type.
 func (m *NodeMutation) SetField(name string, value ent.Value) error {
 	switch name {
-	case node.FieldFromNodeID:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetFromNodeID(v)
-		return nil
 	case node.FieldNodeListID:
 		v, ok := value.(int)
 		if !ok {
@@ -5500,13 +6027,6 @@ func (m *NodeMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetFileTypes(v)
 		return nil
-	case node.FieldEdgeType:
-		v, ok := value.(node.EdgeType)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetEdgeType(v)
-		return nil
 	}
 	return fmt.Errorf("unknown Node field %s", name)
 }
@@ -5540,14 +6060,8 @@ func (m *NodeMutation) AddField(name string, value ent.Value) error {
 // mutation.
 func (m *NodeMutation) ClearedFields() []string {
 	var fields []string
-	if m.FieldCleared(node.FieldFromNodeID) {
-		fields = append(fields, node.FieldFromNodeID)
-	}
 	if m.FieldCleared(node.FieldNodeListID) {
 		fields = append(fields, node.FieldNodeListID)
-	}
-	if m.FieldCleared(node.FieldEdgeType) {
-		fields = append(fields, node.FieldEdgeType)
 	}
 	return fields
 }
@@ -5563,14 +6077,8 @@ func (m *NodeMutation) FieldCleared(name string) bool {
 // error if the field is not defined in the schema.
 func (m *NodeMutation) ClearField(name string) error {
 	switch name {
-	case node.FieldFromNodeID:
-		m.ClearFromNodeID()
-		return nil
 	case node.FieldNodeListID:
 		m.ClearNodeListID()
-		return nil
-	case node.FieldEdgeType:
-		m.ClearEdgeType()
 		return nil
 	}
 	return fmt.Errorf("unknown Node nullable field %s", name)
@@ -5580,9 +6088,6 @@ func (m *NodeMutation) ClearField(name string) error {
 // It returns an error if the field is not defined in the schema.
 func (m *NodeMutation) ResetField(name string) error {
 	switch name {
-	case node.FieldFromNodeID:
-		m.ResetFromNodeID()
-		return nil
 	case node.FieldNodeListID:
 		m.ResetNodeListID()
 		return nil
@@ -5643,16 +6148,13 @@ func (m *NodeMutation) ResetField(name string) error {
 	case node.FieldFileTypes:
 		m.ResetFileTypes()
 		return nil
-	case node.FieldEdgeType:
-		m.ResetEdgeType()
-		return nil
 	}
 	return fmt.Errorf("unknown Node field %s", name)
 }
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *NodeMutation) AddedEdges() []string {
-	edges := make([]string, 0, 9)
+	edges := make([]string, 0, 10)
 	if m.suppliers != nil {
 		edges = append(edges, node.EdgeSuppliers)
 	}
@@ -5671,14 +6173,17 @@ func (m *NodeMutation) AddedEdges() []string {
 	if m.primary_purpose != nil {
 		edges = append(edges, node.EdgePrimaryPurpose)
 	}
-	if m.from_node != nil {
-		edges = append(edges, node.EdgeFromNode)
+	if m.to_nodes != nil {
+		edges = append(edges, node.EdgeToNodes)
 	}
 	if m.nodes != nil {
 		edges = append(edges, node.EdgeNodes)
 	}
 	if m.node_list != nil {
 		edges = append(edges, node.EdgeNodeList)
+	}
+	if m.edge_types != nil {
+		edges = append(edges, node.EdgeEdgeTypes)
 	}
 	return edges
 }
@@ -5723,10 +6228,12 @@ func (m *NodeMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
-	case node.EdgeFromNode:
-		if id := m.from_node; id != nil {
-			return []ent.Value{*id}
+	case node.EdgeToNodes:
+		ids := make([]ent.Value, 0, len(m.to_nodes))
+		for id := range m.to_nodes {
+			ids = append(ids, id)
 		}
+		return ids
 	case node.EdgeNodes:
 		ids := make([]ent.Value, 0, len(m.nodes))
 		for id := range m.nodes {
@@ -5737,13 +6244,19 @@ func (m *NodeMutation) AddedIDs(name string) []ent.Value {
 		if id := m.node_list; id != nil {
 			return []ent.Value{*id}
 		}
+	case node.EdgeEdgeTypes:
+		ids := make([]ent.Value, 0, len(m.edge_types))
+		for id := range m.edge_types {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *NodeMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 9)
+	edges := make([]string, 0, 10)
 	if m.removedsuppliers != nil {
 		edges = append(edges, node.EdgeSuppliers)
 	}
@@ -5762,8 +6275,14 @@ func (m *NodeMutation) RemovedEdges() []string {
 	if m.removedprimary_purpose != nil {
 		edges = append(edges, node.EdgePrimaryPurpose)
 	}
+	if m.removedto_nodes != nil {
+		edges = append(edges, node.EdgeToNodes)
+	}
 	if m.removednodes != nil {
 		edges = append(edges, node.EdgeNodes)
+	}
+	if m.removededge_types != nil {
+		edges = append(edges, node.EdgeEdgeTypes)
 	}
 	return edges
 }
@@ -5808,9 +6327,21 @@ func (m *NodeMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case node.EdgeToNodes:
+		ids := make([]ent.Value, 0, len(m.removedto_nodes))
+		for id := range m.removedto_nodes {
+			ids = append(ids, id)
+		}
+		return ids
 	case node.EdgeNodes:
 		ids := make([]ent.Value, 0, len(m.removednodes))
 		for id := range m.removednodes {
+			ids = append(ids, id)
+		}
+		return ids
+	case node.EdgeEdgeTypes:
+		ids := make([]ent.Value, 0, len(m.removededge_types))
+		for id := range m.removededge_types {
 			ids = append(ids, id)
 		}
 		return ids
@@ -5820,7 +6351,7 @@ func (m *NodeMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *NodeMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 9)
+	edges := make([]string, 0, 10)
 	if m.clearedsuppliers {
 		edges = append(edges, node.EdgeSuppliers)
 	}
@@ -5839,14 +6370,17 @@ func (m *NodeMutation) ClearedEdges() []string {
 	if m.clearedprimary_purpose {
 		edges = append(edges, node.EdgePrimaryPurpose)
 	}
-	if m.clearedfrom_node {
-		edges = append(edges, node.EdgeFromNode)
+	if m.clearedto_nodes {
+		edges = append(edges, node.EdgeToNodes)
 	}
 	if m.clearednodes {
 		edges = append(edges, node.EdgeNodes)
 	}
 	if m.clearednode_list {
 		edges = append(edges, node.EdgeNodeList)
+	}
+	if m.clearededge_types {
+		edges = append(edges, node.EdgeEdgeTypes)
 	}
 	return edges
 }
@@ -5867,12 +6401,14 @@ func (m *NodeMutation) EdgeCleared(name string) bool {
 		return m.clearedhashes
 	case node.EdgePrimaryPurpose:
 		return m.clearedprimary_purpose
-	case node.EdgeFromNode:
-		return m.clearedfrom_node
+	case node.EdgeToNodes:
+		return m.clearedto_nodes
 	case node.EdgeNodes:
 		return m.clearednodes
 	case node.EdgeNodeList:
 		return m.clearednode_list
+	case node.EdgeEdgeTypes:
+		return m.clearededge_types
 	}
 	return false
 }
@@ -5881,9 +6417,6 @@ func (m *NodeMutation) EdgeCleared(name string) bool {
 // if that edge is not defined in the schema.
 func (m *NodeMutation) ClearEdge(name string) error {
 	switch name {
-	case node.EdgeFromNode:
-		m.ClearFromNode()
-		return nil
 	case node.EdgeNodeList:
 		m.ClearNodeList()
 		return nil
@@ -5913,14 +6446,17 @@ func (m *NodeMutation) ResetEdge(name string) error {
 	case node.EdgePrimaryPurpose:
 		m.ResetPrimaryPurpose()
 		return nil
-	case node.EdgeFromNode:
-		m.ResetFromNode()
+	case node.EdgeToNodes:
+		m.ResetToNodes()
 		return nil
 	case node.EdgeNodes:
 		m.ResetNodes()
 		return nil
 	case node.EdgeNodeList:
 		m.ResetNodeList()
+		return nil
+	case node.EdgeEdgeTypes:
+		m.ResetEdgeTypes()
 		return nil
 	}
 	return fmt.Errorf("unknown Node edge %s", name)
