@@ -23,8 +23,6 @@ type Node struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID string `json:"id,omitempty"`
-	// FromNodeID holds the value of the "from_node_id" field.
-	FromNodeID string `json:"from_node_id,omitempty"`
 	// NodeListID holds the value of the "node_list_id" field.
 	NodeListID int `json:"node_list_id,omitempty"`
 	// Type holds the value of the "type" field.
@@ -65,8 +63,6 @@ type Node struct {
 	Attribution []string `json:"attribution,omitempty"`
 	// FileTypes holds the value of the "file_types" field.
 	FileTypes []string `json:"file_types,omitempty"`
-	// EdgeType holds the value of the "edge_type" field.
-	EdgeType node.EdgeType `json:"edge_type,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the NodeQuery when eager-loading is set.
 	Edges        NodeEdges `json:"edges"`
@@ -87,15 +83,17 @@ type NodeEdges struct {
 	Hashes []*HashesEntry `json:"hashes,omitempty"`
 	// PrimaryPurpose holds the value of the primary_purpose edge.
 	PrimaryPurpose []*Purpose `json:"primary_purpose,omitempty"`
-	// FromNode holds the value of the from_node edge.
-	FromNode *Node `json:"from_node,omitempty"`
+	// ToNodes holds the value of the to_nodes edge.
+	ToNodes []*Node `json:"to_nodes,omitempty"`
 	// Nodes holds the value of the nodes edge.
 	Nodes []*Node `json:"nodes,omitempty"`
 	// NodeList holds the value of the node_list edge.
 	NodeList *NodeList `json:"node_list,omitempty"`
+	// EdgeTypes holds the value of the edge_types edge.
+	EdgeTypes []*EdgeType `json:"edge_types,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [9]bool
+	loadedTypes [10]bool
 }
 
 // SuppliersOrErr returns the Suppliers value or an error if the edge
@@ -152,15 +150,13 @@ func (e NodeEdges) PrimaryPurposeOrErr() ([]*Purpose, error) {
 	return nil, &NotLoadedError{edge: "primary_purpose"}
 }
 
-// FromNodeOrErr returns the FromNode value or an error if the edge
-// was not loaded in eager-loading, or loaded but was not found.
-func (e NodeEdges) FromNodeOrErr() (*Node, error) {
-	if e.FromNode != nil {
-		return e.FromNode, nil
-	} else if e.loadedTypes[6] {
-		return nil, &NotFoundError{label: node.Label}
+// ToNodesOrErr returns the ToNodes value or an error if the edge
+// was not loaded in eager-loading.
+func (e NodeEdges) ToNodesOrErr() ([]*Node, error) {
+	if e.loadedTypes[6] {
+		return e.ToNodes, nil
 	}
-	return nil, &NotLoadedError{edge: "from_node"}
+	return nil, &NotLoadedError{edge: "to_nodes"}
 }
 
 // NodesOrErr returns the Nodes value or an error if the edge
@@ -183,6 +179,15 @@ func (e NodeEdges) NodeListOrErr() (*NodeList, error) {
 	return nil, &NotLoadedError{edge: "node_list"}
 }
 
+// EdgeTypesOrErr returns the EdgeTypes value or an error if the edge
+// was not loaded in eager-loading.
+func (e NodeEdges) EdgeTypesOrErr() ([]*EdgeType, error) {
+	if e.loadedTypes[9] {
+		return e.EdgeTypes, nil
+	}
+	return nil, &NotLoadedError{edge: "edge_types"}
+}
+
 // scanValues returns the types for scanning values from sql.Rows.
 func (*Node) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
@@ -192,7 +197,7 @@ func (*Node) scanValues(columns []string) ([]any, error) {
 			values[i] = new([]byte)
 		case node.FieldNodeListID:
 			values[i] = new(sql.NullInt64)
-		case node.FieldID, node.FieldFromNodeID, node.FieldType, node.FieldName, node.FieldVersion, node.FieldFileName, node.FieldURLHome, node.FieldURLDownload, node.FieldLicenseConcluded, node.FieldLicenseComments, node.FieldCopyright, node.FieldSourceInfo, node.FieldComment, node.FieldSummary, node.FieldDescription, node.FieldEdgeType:
+		case node.FieldID, node.FieldType, node.FieldName, node.FieldVersion, node.FieldFileName, node.FieldURLHome, node.FieldURLDownload, node.FieldLicenseConcluded, node.FieldLicenseComments, node.FieldCopyright, node.FieldSourceInfo, node.FieldComment, node.FieldSummary, node.FieldDescription:
 			values[i] = new(sql.NullString)
 		case node.FieldReleaseDate, node.FieldBuildDate, node.FieldValidUntilDate:
 			values[i] = new(sql.NullTime)
@@ -216,12 +221,6 @@ func (n *Node) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value.Valid {
 				n.ID = value.String
-			}
-		case node.FieldFromNodeID:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field from_node_id", values[i])
-			} else if value.Valid {
-				n.FromNodeID = value.String
 			}
 		case node.FieldNodeListID:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -349,12 +348,6 @@ func (n *Node) assignValues(columns []string, values []any) error {
 					return fmt.Errorf("unmarshal field file_types: %w", err)
 				}
 			}
-		case node.FieldEdgeType:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field edge_type", values[i])
-			} else if value.Valid {
-				n.EdgeType = node.EdgeType(value.String)
-			}
 		default:
 			n.selectValues.Set(columns[i], values[i])
 		}
@@ -398,9 +391,9 @@ func (n *Node) QueryPrimaryPurpose() *PurposeQuery {
 	return NewNodeClient(n.config).QueryPrimaryPurpose(n)
 }
 
-// QueryFromNode queries the "from_node" edge of the Node entity.
-func (n *Node) QueryFromNode() *NodeQuery {
-	return NewNodeClient(n.config).QueryFromNode(n)
+// QueryToNodes queries the "to_nodes" edge of the Node entity.
+func (n *Node) QueryToNodes() *NodeQuery {
+	return NewNodeClient(n.config).QueryToNodes(n)
 }
 
 // QueryNodes queries the "nodes" edge of the Node entity.
@@ -411,6 +404,11 @@ func (n *Node) QueryNodes() *NodeQuery {
 // QueryNodeList queries the "node_list" edge of the Node entity.
 func (n *Node) QueryNodeList() *NodeListQuery {
 	return NewNodeClient(n.config).QueryNodeList(n)
+}
+
+// QueryEdgeTypes queries the "edge_types" edge of the Node entity.
+func (n *Node) QueryEdgeTypes() *EdgeTypeQuery {
+	return NewNodeClient(n.config).QueryEdgeTypes(n)
 }
 
 // Update returns a builder for updating this Node.
@@ -436,9 +434,6 @@ func (n *Node) String() string {
 	var builder strings.Builder
 	builder.WriteString("Node(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", n.ID))
-	builder.WriteString("from_node_id=")
-	builder.WriteString(n.FromNodeID)
-	builder.WriteString(", ")
 	builder.WriteString("node_list_id=")
 	builder.WriteString(fmt.Sprintf("%v", n.NodeListID))
 	builder.WriteString(", ")
@@ -498,9 +493,6 @@ func (n *Node) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("file_types=")
 	builder.WriteString(fmt.Sprintf("%v", n.FileTypes))
-	builder.WriteString(", ")
-	builder.WriteString("edge_type=")
-	builder.WriteString(fmt.Sprintf("%v", n.EdgeType))
 	builder.WriteByte(')')
 	return builder.String()
 }

@@ -20,19 +20,19 @@ import (
 
 // Retrieve implements the storage.Retriever interface.
 func (backend *Backend) Retrieve(id string, _opts *storage.RetrieveOptions) (*sbom.Document, error) {
-	if backend.BackendOptions == nil {
-		backend.BackendOptions = NewBackendOptions()
+	if backend.Options == nil {
+		backend.Options = NewBackendOptions()
 	}
 
-	backend.init(backend.BackendOptions)
+	backend.init(backend.Options)
 
-	defer backend.client.Close()
+	defer backend.Options.client.Close()
 
-	entDoc, err := backend.client.Document.Query().
+	entDoc, err := backend.Options.client.Document.Query().
 		Where(document.HasMetadataWith(metadata.IDEQ(id))).
 		WithMetadata().
 		WithNodeList().
-		Only(backend.ctx)
+		Only(backend.Options.ctx)
 	if err != nil {
 		return nil, fmt.Errorf("%w", err)
 	}
@@ -41,29 +41,29 @@ func (backend *Backend) Retrieve(id string, _opts *storage.RetrieveOptions) (*sb
 		WithAuthors().
 		WithDocumentTypes().
 		WithTools().
-		Only(backend.ctx)
+		Only(backend.Options.ctx)
 	if err != nil {
 		return nil, fmt.Errorf("%w", err)
 	}
 
 	entDoc.Edges.NodeList, err = entDoc.QueryNodeList().
 		WithNodes().
-		Only(backend.ctx)
+		Only(backend.Options.ctx)
 	if err != nil {
 		return nil, fmt.Errorf("%w", err)
 	}
 
 	// Eager-load the nodes edges of the node list.
 	entDoc.Edges.NodeList.Edges.Nodes, err = entDoc.Edges.NodeList.QueryNodes().
+		WithEdgeTypes().
 		WithExternalReferences().
-		WithFromNode().
 		WithHashes().
 		WithIdentifiers().
 		WithNodes().
 		WithOriginators().
 		WithPrimaryPurpose().
 		WithSuppliers().
-		All(backend.ctx)
+		All(backend.Options.ctx)
 	if err != nil {
 		return nil, fmt.Errorf("%w", err)
 	}
@@ -157,20 +157,6 @@ func entNodeListToProtobom(nl *ent.NodeList) *sbom.NodeList {
 	}
 
 	edgeMap := make(map[string]*sbom.Edge)
-
-	for _, n := range nl.Edges.Nodes {
-		if edgeMap[n.ID] == nil {
-			edgeMap[n.ID] = &sbom.Edge{From: n.ID}
-		}
-
-		for _, e := range n.Edges.Nodes {
-			edgeType := sbom.Edge_Type_value[e.EdgeType.String()]
-			edgeMap[n.ID].To = append(edgeMap[n.ID].To, e.ID)
-			edgeMap[n.ID].Type = sbom.Edge_Type(edgeType)
-		}
-
-		pbnl.Nodes = append(pbnl.Nodes, entNodeToProtobom(n))
-	}
 
 	for _, edge := range edgeMap {
 		if len(edge.To) > 0 {

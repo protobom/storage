@@ -19,29 +19,29 @@ import (
 
 // Backend implements the protobom.pkg.storage.Backend interface.
 type Backend struct {
-	// BackendOptions is the set of options common to all ent Backends.
-	*BackendOptions
+	// Options is the set of options common to all ent Backends.
+	Options *BackendOptions
 }
 
 var _ storage.Backend = (*Backend)(nil)
 
 func NewBackend(opts ...Option) *Backend {
 	backend := &Backend{
-		BackendOptions: NewBackendOptions(),
+		Options: NewBackendOptions(),
 	}
 
 	for _, opt := range opts {
 		opt(backend)
 	}
 
-	backend.init(backend.BackendOptions)
+	backend.init(backend.Options)
 
 	return backend
 }
 
 func (backend *Backend) init(opts *BackendOptions) {
-	if backend.BackendOptions == nil {
-		backend.BackendOptions = NewBackendOptions()
+	if backend.Options == nil {
+		backend.Options = NewBackendOptions()
 	}
 
 	// Register the SQLite driver as "sqlite3".
@@ -69,22 +69,22 @@ func (backend *Backend) init(opts *BackendOptions) {
 }
 
 func (backend *Backend) Debug() *Backend {
-	backend.debug = true
-	backend.init(backend.BackendOptions)
+	backend.Options.debug = true
+	backend.init(backend.Options)
 
 	return backend
 }
 
 func (backend *Backend) WithBackendOptions(opts *BackendOptions) *Backend {
-	backend.BackendOptions = opts
-	backend.init(backend.BackendOptions)
+	backend.Options = opts
+	backend.init(backend.Options)
 
 	return backend
 }
 
 func (backend *Backend) WithDatabaseFile(file string) *Backend {
-	backend.DatabaseFile = file
-	backend.init(backend.BackendOptions)
+	backend.Options.DatabaseFile = file
+	backend.init(backend.Options)
 
 	return backend
 }

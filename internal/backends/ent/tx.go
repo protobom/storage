@@ -20,6 +20,8 @@ type Tx struct {
 	Document *DocumentClient
 	// DocumentType is the client for interacting with the DocumentType builders.
 	DocumentType *DocumentTypeClient
+	// EdgeType is the client for interacting with the EdgeType builders.
+	EdgeType *EdgeTypeClient
 	// ExternalReference is the client for interacting with the ExternalReference builders.
 	ExternalReference *ExternalReferenceClient
 	// HashesEntry is the client for interacting with the HashesEntry builders.
@@ -171,6 +173,7 @@ func (tx *Tx) Client() *Client {
 func (tx *Tx) init() {
 	tx.Document = NewDocumentClient(tx.config)
 	tx.DocumentType = NewDocumentTypeClient(tx.config)
+	tx.EdgeType = NewEdgeTypeClient(tx.config)
 	tx.ExternalReference = NewExternalReferenceClient(tx.config)
 	tx.HashesEntry = NewHashesEntryClient(tx.config)
 	tx.IdentifiersEntry = NewIdentifiersEntryClient(tx.config)

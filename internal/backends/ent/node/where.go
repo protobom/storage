@@ -70,11 +70,6 @@ func IDContainsFold(id string) predicate.Node {
 	return predicate.Node(sql.FieldContainsFold(FieldID, id))
 }
 
-// FromNodeID applies equality check predicate on the "from_node_id" field. It's identical to FromNodeIDEQ.
-func FromNodeID(v string) predicate.Node {
-	return predicate.Node(sql.FieldEQ(FieldFromNodeID, v))
-}
-
 // NodeListID applies equality check predicate on the "node_list_id" field. It's identical to NodeListIDEQ.
 func NodeListID(v int) predicate.Node {
 	return predicate.Node(sql.FieldEQ(FieldNodeListID, v))
@@ -153,81 +148,6 @@ func BuildDate(v time.Time) predicate.Node {
 // ValidUntilDate applies equality check predicate on the "valid_until_date" field. It's identical to ValidUntilDateEQ.
 func ValidUntilDate(v time.Time) predicate.Node {
 	return predicate.Node(sql.FieldEQ(FieldValidUntilDate, v))
-}
-
-// FromNodeIDEQ applies the EQ predicate on the "from_node_id" field.
-func FromNodeIDEQ(v string) predicate.Node {
-	return predicate.Node(sql.FieldEQ(FieldFromNodeID, v))
-}
-
-// FromNodeIDNEQ applies the NEQ predicate on the "from_node_id" field.
-func FromNodeIDNEQ(v string) predicate.Node {
-	return predicate.Node(sql.FieldNEQ(FieldFromNodeID, v))
-}
-
-// FromNodeIDIn applies the In predicate on the "from_node_id" field.
-func FromNodeIDIn(vs ...string) predicate.Node {
-	return predicate.Node(sql.FieldIn(FieldFromNodeID, vs...))
-}
-
-// FromNodeIDNotIn applies the NotIn predicate on the "from_node_id" field.
-func FromNodeIDNotIn(vs ...string) predicate.Node {
-	return predicate.Node(sql.FieldNotIn(FieldFromNodeID, vs...))
-}
-
-// FromNodeIDGT applies the GT predicate on the "from_node_id" field.
-func FromNodeIDGT(v string) predicate.Node {
-	return predicate.Node(sql.FieldGT(FieldFromNodeID, v))
-}
-
-// FromNodeIDGTE applies the GTE predicate on the "from_node_id" field.
-func FromNodeIDGTE(v string) predicate.Node {
-	return predicate.Node(sql.FieldGTE(FieldFromNodeID, v))
-}
-
-// FromNodeIDLT applies the LT predicate on the "from_node_id" field.
-func FromNodeIDLT(v string) predicate.Node {
-	return predicate.Node(sql.FieldLT(FieldFromNodeID, v))
-}
-
-// FromNodeIDLTE applies the LTE predicate on the "from_node_id" field.
-func FromNodeIDLTE(v string) predicate.Node {
-	return predicate.Node(sql.FieldLTE(FieldFromNodeID, v))
-}
-
-// FromNodeIDContains applies the Contains predicate on the "from_node_id" field.
-func FromNodeIDContains(v string) predicate.Node {
-	return predicate.Node(sql.FieldContains(FieldFromNodeID, v))
-}
-
-// FromNodeIDHasPrefix applies the HasPrefix predicate on the "from_node_id" field.
-func FromNodeIDHasPrefix(v string) predicate.Node {
-	return predicate.Node(sql.FieldHasPrefix(FieldFromNodeID, v))
-}
-
-// FromNodeIDHasSuffix applies the HasSuffix predicate on the "from_node_id" field.
-func FromNodeIDHasSuffix(v string) predicate.Node {
-	return predicate.Node(sql.FieldHasSuffix(FieldFromNodeID, v))
-}
-
-// FromNodeIDIsNil applies the IsNil predicate on the "from_node_id" field.
-func FromNodeIDIsNil() predicate.Node {
-	return predicate.Node(sql.FieldIsNull(FieldFromNodeID))
-}
-
-// FromNodeIDNotNil applies the NotNil predicate on the "from_node_id" field.
-func FromNodeIDNotNil() predicate.Node {
-	return predicate.Node(sql.FieldNotNull(FieldFromNodeID))
-}
-
-// FromNodeIDEqualFold applies the EqualFold predicate on the "from_node_id" field.
-func FromNodeIDEqualFold(v string) predicate.Node {
-	return predicate.Node(sql.FieldEqualFold(FieldFromNodeID, v))
-}
-
-// FromNodeIDContainsFold applies the ContainsFold predicate on the "from_node_id" field.
-func FromNodeIDContainsFold(v string) predicate.Node {
-	return predicate.Node(sql.FieldContainsFold(FieldFromNodeID, v))
 }
 
 // NodeListIDEQ applies the EQ predicate on the "node_list_id" field.
@@ -1180,36 +1100,6 @@ func ValidUntilDateLTE(v time.Time) predicate.Node {
 	return predicate.Node(sql.FieldLTE(FieldValidUntilDate, v))
 }
 
-// EdgeTypeEQ applies the EQ predicate on the "edge_type" field.
-func EdgeTypeEQ(v EdgeType) predicate.Node {
-	return predicate.Node(sql.FieldEQ(FieldEdgeType, v))
-}
-
-// EdgeTypeNEQ applies the NEQ predicate on the "edge_type" field.
-func EdgeTypeNEQ(v EdgeType) predicate.Node {
-	return predicate.Node(sql.FieldNEQ(FieldEdgeType, v))
-}
-
-// EdgeTypeIn applies the In predicate on the "edge_type" field.
-func EdgeTypeIn(vs ...EdgeType) predicate.Node {
-	return predicate.Node(sql.FieldIn(FieldEdgeType, vs...))
-}
-
-// EdgeTypeNotIn applies the NotIn predicate on the "edge_type" field.
-func EdgeTypeNotIn(vs ...EdgeType) predicate.Node {
-	return predicate.Node(sql.FieldNotIn(FieldEdgeType, vs...))
-}
-
-// EdgeTypeIsNil applies the IsNil predicate on the "edge_type" field.
-func EdgeTypeIsNil() predicate.Node {
-	return predicate.Node(sql.FieldIsNull(FieldEdgeType))
-}
-
-// EdgeTypeNotNil applies the NotNil predicate on the "edge_type" field.
-func EdgeTypeNotNil() predicate.Node {
-	return predicate.Node(sql.FieldNotNull(FieldEdgeType))
-}
-
 // HasSuppliers applies the HasEdge predicate on the "suppliers" edge.
 func HasSuppliers() predicate.Node {
 	return predicate.Node(func(s *sql.Selector) {
@@ -1348,21 +1238,21 @@ func HasPrimaryPurposeWith(preds ...predicate.Purpose) predicate.Node {
 	})
 }
 
-// HasFromNode applies the HasEdge predicate on the "from_node" edge.
-func HasFromNode() predicate.Node {
+// HasToNodes applies the HasEdge predicate on the "to_nodes" edge.
+func HasToNodes() predicate.Node {
 	return predicate.Node(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, FromNodeTable, FromNodeColumn),
+			sqlgraph.Edge(sqlgraph.M2M, true, ToNodesTable, ToNodesPrimaryKey...),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
 }
 
-// HasFromNodeWith applies the HasEdge predicate on the "from_node" edge with a given conditions (other predicates).
-func HasFromNodeWith(preds ...predicate.Node) predicate.Node {
+// HasToNodesWith applies the HasEdge predicate on the "to_nodes" edge with a given conditions (other predicates).
+func HasToNodesWith(preds ...predicate.Node) predicate.Node {
 	return predicate.Node(func(s *sql.Selector) {
-		step := newFromNodeStep()
+		step := newToNodesStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)
@@ -1376,7 +1266,7 @@ func HasNodes() predicate.Node {
 	return predicate.Node(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, NodesTable, NodesColumn),
+			sqlgraph.Edge(sqlgraph.M2M, false, NodesTable, NodesPrimaryKey...),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
@@ -1409,6 +1299,29 @@ func HasNodeList() predicate.Node {
 func HasNodeListWith(preds ...predicate.NodeList) predicate.Node {
 	return predicate.Node(func(s *sql.Selector) {
 		step := newNodeListStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasEdgeTypes applies the HasEdge predicate on the "edge_types" edge.
+func HasEdgeTypes() predicate.Node {
+	return predicate.Node(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, EdgeTypesTable, EdgeTypesColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasEdgeTypesWith applies the HasEdge predicate on the "edge_types" edge with a given conditions (other predicates).
+func HasEdgeTypesWith(preds ...predicate.EdgeType) predicate.Node {
+	return predicate.Node(func(s *sql.Selector) {
+		step := newEdgeTypesStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)
