@@ -54,11 +54,11 @@ func (backend *Backend) Store(doc *sbom.Document, opts *storage.StoreOptions) er
 	}
 
 	if err := backend.StoreMetadata(doc.Metadata); err != nil {
-		return fmt.Errorf("%w", err)
+		return err
 	}
 
 	if err := backend.StoreNodeList(doc.NodeList); err != nil {
-		return fmt.Errorf("%w", err)
+		return err
 	}
 
 	entNodeList, err := backend.client.NodeList.Query().
@@ -69,7 +69,7 @@ func (backend *Backend) Store(doc *sbom.Document, opts *storage.StoreOptions) er
 			)).
 		Only(backend.ctx)
 	if err != nil {
-		return fmt.Errorf("%w", err)
+		return fmt.Errorf("querying node lists: %w", err)
 	}
 
 	err = backend.client.Document.Create().
@@ -157,7 +157,7 @@ func (backend *Backend) StoreExternalReferences(refs []*sbom.ExternalReference) 
 		backend.ctx = context.WithValue(backend.ctx, externalReferenceIDKey{}, id)
 
 		if err := backend.StoreHashesEntries(ref.Hashes); err != nil {
-			return fmt.Errorf("%w", err)
+			return err
 		}
 	}
 
@@ -246,15 +246,15 @@ func (backend *Backend) StoreMetadata(md *sbom.Metadata) error {
 	backend.ctx = context.WithValue(backend.ctx, metadataIDKey{}, md.Id)
 
 	if err := backend.StorePersons(md.Authors); err != nil {
-		return fmt.Errorf("%w", err)
+		return err
 	}
 
 	if err := backend.StoreDocumentTypes(md.DocumentTypes); err != nil {
-		return fmt.Errorf("%w", err)
+		return err
 	}
 
 	if err := backend.StoreTools(md.Tools); err != nil {
-		return fmt.Errorf("%w", err)
+		return err
 	}
 
 	return nil
@@ -276,12 +276,12 @@ func (backend *Backend) StoreNodeList(nodeList *sbom.NodeList) error {
 	backend.ctx = context.WithValue(backend.ctx, nodeListIDKey{}, id)
 
 	if err := backend.StoreNodes(nodeList.Nodes); err != nil {
-		return fmt.Errorf("%w", err)
+		return err
 	}
 
 	// Update nodes of this node list with their typed edges.
 	if err := backend.StoreEdges(nodeList.Edges); err != nil {
-		return fmt.Errorf("%w", err)
+		return err
 	}
 
 	return nil
@@ -303,27 +303,27 @@ func (backend *Backend) StoreNodes(nodes []*sbom.Node) error { //nolint:cyclop
 		backend.ctx = context.WithValue(backend.ctx, nodeIDKey{}, n.Id)
 
 		if err := backend.StoreExternalReferences(n.ExternalReferences); err != nil {
-			return fmt.Errorf("%w", err)
+			return err
 		}
 
 		if err := backend.StorePersons(n.Originators); err != nil {
-			return fmt.Errorf("%w", err)
+			return err
 		}
 
 		if err := backend.StorePersons(n.Suppliers); err != nil {
-			return fmt.Errorf("%w", err)
+			return err
 		}
 
 		if err := backend.StorePurposes(n.PrimaryPurpose); err != nil {
-			return fmt.Errorf("%w", err)
+			return err
 		}
 
 		if err := backend.StoreHashesEntries(n.Hashes); err != nil {
-			return fmt.Errorf("%w", err)
+			return err
 		}
 
 		if err := backend.StoreIdentifiersEntries(n.Identifiers); err != nil {
-			return fmt.Errorf("%w", err)
+			return err
 		}
 	}
 
@@ -359,7 +359,7 @@ func (backend *Backend) StorePersons(persons []*sbom.Person) error {
 		backend.ctx = context.WithValue(backend.ctx, contactOwnerIDKey{}, id)
 
 		if err := backend.StorePersons(p.Contacts); err != nil {
-			return fmt.Errorf("%w", err)
+			return err
 		}
 	}
 

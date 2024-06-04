@@ -34,7 +34,7 @@ func (backend *Backend) Retrieve(id string, _ *storage.RetrieveOptions) (*sbom.D
 		WithNodeList().
 		Only(backend.ctx)
 	if err != nil {
-		return nil, fmt.Errorf("%w", err)
+		return nil, fmt.Errorf("eager loading document edges: %w", err)
 	}
 
 	entDoc.Edges.Metadata, err = entDoc.QueryMetadata().
@@ -43,14 +43,14 @@ func (backend *Backend) Retrieve(id string, _ *storage.RetrieveOptions) (*sbom.D
 		WithTools().
 		Only(backend.ctx)
 	if err != nil {
-		return nil, fmt.Errorf("%w", err)
+		return nil, fmt.Errorf("eager loading metadata edges: %w", err)
 	}
 
 	entDoc.Edges.NodeList, err = entDoc.QueryNodeList().
 		WithNodes().
 		Only(backend.ctx)
 	if err != nil {
-		return nil, fmt.Errorf("%w", err)
+		return nil, fmt.Errorf("eager loading node list edges: %w", err)
 	}
 
 	// Eager-load the nodes edges of the node list.
@@ -65,7 +65,7 @@ func (backend *Backend) Retrieve(id string, _ *storage.RetrieveOptions) (*sbom.D
 		WithSuppliers().
 		All(backend.ctx)
 	if err != nil {
-		return nil, fmt.Errorf("%w", err)
+		return nil, fmt.Errorf("eager loading node edges: %w", err)
 	}
 
 	return &sbom.Document{
