@@ -104,9 +104,9 @@ var (
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "edgetype_id_type_node_id_to_node_id",
+				Name:    "edgetype_type_node_id_to_node_id",
 				Unique:  true,
-				Columns: []*schema.Column{EdgeTypesColumns[0], EdgeTypesColumns[1], EdgeTypesColumns[2], EdgeTypesColumns[3]},
+				Columns: []*schema.Column{EdgeTypesColumns[1], EdgeTypesColumns[2], EdgeTypesColumns[3]},
 			},
 			{
 				Name:    "edgetype_node_id_to_node_id",

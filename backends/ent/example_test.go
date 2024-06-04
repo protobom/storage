@@ -30,7 +30,11 @@ func Example() {
 	}
 
 	rdr := reader.New()
-	backend := ent.NewBackend().WithDatabaseFile("example.db")
+	backend := ent.NewBackend().WithDatabaseFile(dbFile)
+
+	if err := backend.InitClient(); err != nil {
+		panic(err)
+	}
 
 	sbom, err := rdr.ParseFile(filepath.Join(cwd, "testdata", "sbom.cdx.json"))
 	if err != nil {

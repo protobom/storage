@@ -19,20 +19,20 @@ import (
 )
 
 // Retrieve implements the storage.Retriever interface.
-func (backend *Backend) Retrieve(id string, _opts *storage.RetrieveOptions) (*sbom.Document, error) {
+func (backend *Backend) Retrieve(id string, _ *storage.RetrieveOptions) (*sbom.Document, error) {
+	if backend.client == nil {
+		return nil, fmt.Errorf("%w", errUninitializedClient)
+	}
+
 	if backend.Options == nil {
 		backend.Options = NewBackendOptions()
 	}
 
-	backend.init(backend.Options)
-
-	defer backend.Options.client.Close()
-
-	entDoc, err := backend.Options.client.Document.Query().
+	entDoc, err := backend.client.Document.Query().
 		Where(document.HasMetadataWith(metadata.IDEQ(id))).
 		WithMetadata().
 		WithNodeList().
-		Only(backend.Options.ctx)
+		Only(backend.ctx)
 	if err != nil {
 		return nil, fmt.Errorf("%w", err)
 	}
@@ -41,14 +41,14 @@ func (backend *Backend) Retrieve(id string, _opts *storage.RetrieveOptions) (*sb
 		WithAuthors().
 		WithDocumentTypes().
 		WithTools().
-		Only(backend.Options.ctx)
+		Only(backend.ctx)
 	if err != nil {
 		return nil, fmt.Errorf("%w", err)
 	}
 
 	entDoc.Edges.NodeList, err = entDoc.QueryNodeList().
 		WithNodes().
-		Only(backend.Options.ctx)
+		Only(backend.ctx)
 	if err != nil {
 		return nil, fmt.Errorf("%w", err)
 	}
@@ -63,7 +63,7 @@ func (backend *Backend) Retrieve(id string, _opts *storage.RetrieveOptions) (*sb
 		WithOriginators().
 		WithPrimaryPurpose().
 		WithSuppliers().
-		All(backend.Options.ctx)
+		All(backend.ctx)
 	if err != nil {
 		return nil, fmt.Errorf("%w", err)
 	}
@@ -157,6 +157,20 @@ func entNodeListToProtobom(nl *ent.NodeList) *sbom.NodeList {
 	}
 
 	edgeMap := make(map[string]*sbom.Edge)
+
+	for _, n := range nl.Edges.Nodes {
+		pbnl.Nodes = append(pbnl.Nodes, entNodeToProtobom(n))
+
+		for _, e := range n.Edges.EdgeTypes {
+			if edgeMap[e.NodeID] == nil {
+				edgeMap[e.NodeID] = &sbom.Edge{From: e.NodeID}
+			}
+
+			edgeType := sbom.Edge_Type_value[e.Type.String()]
+			edgeMap[e.NodeID].To = append(edgeMap[e.NodeID].To, e.ToNodeID)
+			edgeMap[e.NodeID].Type = sbom.Edge_Type(edgeType)
+		}
+	}
 
 	for _, edge := range edgeMap {
 		if len(edge.To) > 0 {

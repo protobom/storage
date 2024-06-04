@@ -79,6 +79,6 @@ func (EdgeType) Edges() []ent.Edge {
 
 func (EdgeType) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("id", "type", "node_id", "to_node_id").Unique(),
+		index.Fields("type", "node_id", "to_node_id").Unique(),
 	}
 }

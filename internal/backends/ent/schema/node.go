@@ -16,7 +16,7 @@ type Node struct {
 	ent.Schema
 }
 
-func (Node) Fields() []ent.Field { //nolint:funlen
+func (Node) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("id").NotEmpty().Unique().Immutable(),
 		field.Int("node_list_id").Optional(),

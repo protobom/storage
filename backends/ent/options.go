@@ -6,26 +6,25 @@
 package ent
 
 import (
-	"context"
-
-	"github.com/protobom/storage/internal/backends/ent"
+	"errors"
 )
 
 // Enable SQLite foreign key support.
 const dsnParams string = "?_pragma=foreign_keys(1)"
 
+var (
+	errInvalidEntOptions   = errors.New("invalid ent backend options")
+	errUninitializedClient = errors.New("backend client must be initialized")
+)
+
 type (
 	// BackendOptions contains options specific to the protobom ent backend.
 	BackendOptions struct {
-		client              *ent.Client
-		ctx                 context.Context
-		DatabaseFile        string
-		metadataID          string
-		nodeID              string
-		debug               bool
-		contactOwnerID      int
-		externalReferenceID int
-		nodeListID          int
+		// DatabaseFile is the file path of the SQLite database to be created.
+		DatabaseFile string
+
+		// Debug configures the ent client to output all SQL statements during execution.
+		Debug bool
 	}
 
 	// Option represents a single configuration option for the ent backend.
@@ -35,7 +34,6 @@ type (
 // NewBackendOptions creates a new BackendOptions for the backend.
 func NewBackendOptions() *BackendOptions {
 	return &BackendOptions{
-		ctx:          context.Background(),
 		DatabaseFile: ":memory:",
 	}
 }

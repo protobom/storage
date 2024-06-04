@@ -19,6 +19,9 @@ import (
 
 // Backend implements the protobom.pkg.storage.Backend interface.
 type Backend struct {
+	client *ent.Client
+	ctx    context.Context
+
 	// Options is the set of options common to all ent Backends.
 	Options *BackendOptions
 }
@@ -34,12 +37,10 @@ func NewBackend(opts ...Option) *Backend {
 		opt(backend)
 	}
 
-	backend.init(backend.Options)
-
 	return backend
 }
 
-func (backend *Backend) init(opts *BackendOptions) {
+func (backend *Backend) InitClient() error {
 	if backend.Options == nil {
 		backend.Options = NewBackendOptions()
 	}
@@ -50,41 +51,45 @@ func (backend *Backend) init(opts *BackendOptions) {
 	}
 
 	clientOpts := []ent.Option{}
-	if opts.debug {
+	if backend.Options.Debug {
 		clientOpts = append(clientOpts, ent.Debug())
 	}
 
-	client, err := ent.Open("sqlite3", opts.DatabaseFile+dsnParams, clientOpts...)
+	client, err := ent.Open("sqlite3", backend.Options.DatabaseFile+dsnParams, clientOpts...)
 	if err != nil {
-		panic(fmt.Errorf("failed opening connection to sqlite: %w", err))
+		return fmt.Errorf("failed opening connection to sqlite: %w", err)
 	}
 
-	opts.client = client
-	opts.ctx = ent.NewContext(context.Background(), client)
+	backend.client = client
+	backend.ctx = ent.NewContext(context.Background(), client)
 
 	// Run the auto migration tool.
-	if err := opts.client.Schema.Create(opts.ctx); err != nil {
-		panic(fmt.Errorf("failed creating schema resources: %w", err))
+	if err := backend.client.Schema.Create(backend.ctx); err != nil {
+		return fmt.Errorf("failed creating schema resources: %w", err)
 	}
+
+	return nil
+}
+
+func (backend *Backend) CloseClient() {
+	backend.client.Close()
 }
 
 func (backend *Backend) Debug() *Backend {
-	backend.Options.debug = true
-	backend.init(backend.Options)
+	backend.Options.Debug = true
+	backend.client.Debug()
 
 	return backend
 }
 
 func (backend *Backend) WithBackendOptions(opts *BackendOptions) *Backend {
 	backend.Options = opts
-	backend.init(backend.Options)
 
 	return backend
 }
 
 func (backend *Backend) WithDatabaseFile(file string) *Backend {
 	backend.Options.DatabaseFile = file
-	backend.init(backend.Options)
 
 	return backend
 }
