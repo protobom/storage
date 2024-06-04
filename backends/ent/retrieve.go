@@ -156,25 +156,34 @@ func entNodeListToProtobom(nl *ent.NodeList) *sbom.NodeList {
 		RootElements: nl.RootElements,
 	}
 
-	edgeMap := make(map[string]*sbom.Edge)
+	// Mapping of from ID and edge type to slice of to IDs.
+	edgeMap := make(map[struct {
+		fromID   string
+		edgeType string
+	}][]string)
 
 	for _, n := range nl.Edges.Nodes {
 		pbnl.Nodes = append(pbnl.Nodes, entNodeToProtobom(n))
 
 		for _, e := range n.Edges.EdgeTypes {
-			if edgeMap[e.NodeID] == nil {
-				edgeMap[e.NodeID] = &sbom.Edge{From: e.NodeID}
-			}
+			key := struct {
+				fromID   string
+				edgeType string
+			}{e.NodeID, e.Type.String()}
 
-			edgeType := sbom.Edge_Type_value[e.Type.String()]
-			edgeMap[e.NodeID].To = append(edgeMap[e.NodeID].To, e.ToNodeID)
-			edgeMap[e.NodeID].Type = sbom.Edge_Type(edgeType)
+			edgeMap[key] = append(edgeMap[key], e.ToNodeID)
 		}
 	}
 
-	for _, edge := range edgeMap {
-		if len(edge.To) > 0 {
-			pbnl.Edges = append(pbnl.Edges, edge)
+	for typedEdge, toIDs := range edgeMap {
+		if len(toIDs) > 0 {
+			edgeType := sbom.Edge_Type_value[typedEdge.edgeType]
+
+			pbnl.Edges = append(pbnl.Edges, &sbom.Edge{
+				Type: sbom.Edge_Type(edgeType),
+				From: typedEdge.fromID,
+				To:   toIDs,
+			})
 		}
 	}
 
