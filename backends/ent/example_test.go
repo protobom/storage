@@ -36,6 +36,8 @@ func Example() {
 		panic(err)
 	}
 
+	defer backend.CloseClient()
+
 	sbom, err := rdr.ParseFile(filepath.Join(cwd, "testdata", "sbom.cdx.json"))
 	if err != nil {
 		panic(err)
