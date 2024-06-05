@@ -39,13 +39,9 @@ func (backend *Backend) Store(doc *sbom.Document, opts *storage.StoreOptions) er
 		return fmt.Errorf("%w", errUninitializedClient)
 	}
 
-	if backend.Options == nil {
-		backend.Options = NewBackendOptions()
-	}
-
 	if opts == nil {
 		opts = &storage.StoreOptions{
-			BackendOptions: backend.Options,
+			BackendOptions: NewBackendOptions(),
 		}
 	}
 
@@ -61,20 +57,25 @@ func (backend *Backend) Store(doc *sbom.Document, opts *storage.StoreOptions) er
 		return err
 	}
 
-	entNodeList, err := backend.client.NodeList.Query().
-		Where(
-			nodelist.Or(
-				nodelist.HasDocumentWith(document.HasMetadataWith(metadata.IDEQ(doc.Metadata.Id))),
-				nodelist.Not(nodelist.HasDocument()),
-			)).
-		Only(backend.ctx)
-	if err != nil {
-		return fmt.Errorf("querying node lists: %w", err)
+	nodeListID, ok := backend.ctx.Value(nodeListIDKey{}).(int)
+	if !ok {
+		var err error
+
+		nodeListID, err = backend.client.NodeList.Query().
+			Where(
+				nodelist.Or(
+					nodelist.HasDocumentWith(document.HasMetadataWith(metadata.IDEQ(doc.Metadata.Id))),
+					nodelist.Not(nodelist.HasDocument()),
+				)).
+			OnlyID(backend.ctx)
+		if err != nil {
+			return fmt.Errorf("querying node lists: %w", err)
+		}
 	}
 
-	err = backend.client.Document.Create().
+	err := backend.client.Document.Create().
 		SetMetadataID(doc.Metadata.Id).
-		SetNodeListID(entNodeList.ID).
+		SetNodeListID(nodeListID).
 		OnConflict().
 		Ignore().
 		Exec(backend.ctx)
