@@ -42,6 +42,6 @@ func (Document) Edges() []ent.Edge {
 
 func (Document) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("metadata_id", "node_list_id").Unique(),
+		index.Fields("metadata_id").Unique(),
 	}
 }

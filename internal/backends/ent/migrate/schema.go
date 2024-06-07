@@ -41,9 +41,9 @@ var (
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "document_metadata_id_node_list_id",
+				Name:    "document_metadata_id",
 				Unique:  true,
-				Columns: []*schema.Column{DocumentsColumns[1], DocumentsColumns[2]},
+				Columns: []*schema.Column{DocumentsColumns[1]},
 			},
 		},
 	}
@@ -139,9 +139,9 @@ var (
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "externalreference_node_id",
+				Name:    "externalreference_node_id_url_type",
 				Unique:  true,
-				Columns: []*schema.Column{ExternalReferencesColumns[5]},
+				Columns: []*schema.Column{ExternalReferencesColumns[5], ExternalReferencesColumns[1], ExternalReferencesColumns[4]},
 			},
 		},
 	}
@@ -284,13 +284,6 @@ var (
 		Name:       "node_lists",
 		Columns:    NodeListsColumns,
 		PrimaryKey: []*schema.Column{NodeListsColumns[0]},
-		Indexes: []*schema.Index{
-			{
-				Name:    "nodelist_root_elements",
-				Unique:  true,
-				Columns: []*schema.Column{NodeListsColumns[1]},
-			},
-		},
 	}
 	// PersonsColumns holds the columns for the "persons" table.
 	PersonsColumns = []*schema.Column{
