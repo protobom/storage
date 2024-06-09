@@ -9,7 +9,6 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
-	"entgo.io/ent/schema/index"
 )
 
 type Document struct {
@@ -18,30 +17,18 @@ type Document struct {
 
 func (Document) Fields() []ent.Field {
 	return []ent.Field{
-		field.String("metadata_id").Immutable(),
-		field.Int("node_list_id").Immutable(),
+		field.String("id").Unique().Immutable(),
 	}
 }
 
 func (Document) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("metadata", Metadata.Type).
-			Ref("document").
-			Required().
+		edge.To("metadata", Metadata.Type).
 			Unique().
 			Immutable().
-			Field("metadata_id"),
-		edge.From("node_list", NodeList.Type).
-			Ref("document").
-			Required().
+			StorageKey(edge.Column("id")),
+		edge.To("node_list", NodeList.Type).
 			Unique().
-			Immutable().
-			Field("node_list_id"),
-	}
-}
-
-func (Document) Indexes() []ent.Index {
-	return []ent.Index{
-		index.Fields("metadata_id").Unique(),
+			Immutable(),
 	}
 }

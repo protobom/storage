@@ -77,7 +77,6 @@ func (backend *Backend) CloseClient() {
 
 func (backend *Backend) Debug() *Backend {
 	backend.Options.Debug = true
-	backend.client.Debug()
 
 	return backend
 }

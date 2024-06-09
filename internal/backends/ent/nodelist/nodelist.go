@@ -17,6 +17,8 @@ const (
 	Label = "node_list"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
+	// FieldDocumentID holds the string denoting the document_id field in the database.
+	FieldDocumentID = "document_id"
 	// FieldRootElements holds the string denoting the root_elements field in the database.
 	FieldRootElements = "root_elements"
 	// EdgeNodes holds the string denoting the nodes edge name in mutations.
@@ -33,17 +35,18 @@ const (
 	// NodesColumn is the table column denoting the nodes relation/edge.
 	NodesColumn = "node_list_id"
 	// DocumentTable is the table that holds the document relation/edge.
-	DocumentTable = "documents"
+	DocumentTable = "node_lists"
 	// DocumentInverseTable is the table name for the Document entity.
 	// It exists in this package in order to avoid circular dependency with the "document" package.
 	DocumentInverseTable = "documents"
 	// DocumentColumn is the table column denoting the document relation/edge.
-	DocumentColumn = "node_list_id"
+	DocumentColumn = "document_id"
 )
 
 // Columns holds all SQL columns for nodelist fields.
 var Columns = []string{
 	FieldID,
+	FieldDocumentID,
 	FieldRootElements,
 }
 
@@ -63,6 +66,11 @@ type OrderOption func(*sql.Selector)
 // ByID orders the results by the id field.
 func ByID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldID, opts...).ToFunc()
+}
+
+// ByDocumentID orders the results by the document_id field.
+func ByDocumentID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDocumentID, opts...).ToFunc()
 }
 
 // ByNodesCount orders the results by nodes count.
@@ -96,6 +104,6 @@ func newDocumentStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(DocumentInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2O, false, DocumentTable, DocumentColumn),
+		sqlgraph.Edge(sqlgraph.O2O, true, DocumentTable, DocumentColumn),
 	)
 }

@@ -58,6 +58,76 @@ func IDLTE(id int) predicate.NodeList {
 	return predicate.NodeList(sql.FieldLTE(FieldID, id))
 }
 
+// DocumentID applies equality check predicate on the "document_id" field. It's identical to DocumentIDEQ.
+func DocumentID(v string) predicate.NodeList {
+	return predicate.NodeList(sql.FieldEQ(FieldDocumentID, v))
+}
+
+// DocumentIDEQ applies the EQ predicate on the "document_id" field.
+func DocumentIDEQ(v string) predicate.NodeList {
+	return predicate.NodeList(sql.FieldEQ(FieldDocumentID, v))
+}
+
+// DocumentIDNEQ applies the NEQ predicate on the "document_id" field.
+func DocumentIDNEQ(v string) predicate.NodeList {
+	return predicate.NodeList(sql.FieldNEQ(FieldDocumentID, v))
+}
+
+// DocumentIDIn applies the In predicate on the "document_id" field.
+func DocumentIDIn(vs ...string) predicate.NodeList {
+	return predicate.NodeList(sql.FieldIn(FieldDocumentID, vs...))
+}
+
+// DocumentIDNotIn applies the NotIn predicate on the "document_id" field.
+func DocumentIDNotIn(vs ...string) predicate.NodeList {
+	return predicate.NodeList(sql.FieldNotIn(FieldDocumentID, vs...))
+}
+
+// DocumentIDGT applies the GT predicate on the "document_id" field.
+func DocumentIDGT(v string) predicate.NodeList {
+	return predicate.NodeList(sql.FieldGT(FieldDocumentID, v))
+}
+
+// DocumentIDGTE applies the GTE predicate on the "document_id" field.
+func DocumentIDGTE(v string) predicate.NodeList {
+	return predicate.NodeList(sql.FieldGTE(FieldDocumentID, v))
+}
+
+// DocumentIDLT applies the LT predicate on the "document_id" field.
+func DocumentIDLT(v string) predicate.NodeList {
+	return predicate.NodeList(sql.FieldLT(FieldDocumentID, v))
+}
+
+// DocumentIDLTE applies the LTE predicate on the "document_id" field.
+func DocumentIDLTE(v string) predicate.NodeList {
+	return predicate.NodeList(sql.FieldLTE(FieldDocumentID, v))
+}
+
+// DocumentIDContains applies the Contains predicate on the "document_id" field.
+func DocumentIDContains(v string) predicate.NodeList {
+	return predicate.NodeList(sql.FieldContains(FieldDocumentID, v))
+}
+
+// DocumentIDHasPrefix applies the HasPrefix predicate on the "document_id" field.
+func DocumentIDHasPrefix(v string) predicate.NodeList {
+	return predicate.NodeList(sql.FieldHasPrefix(FieldDocumentID, v))
+}
+
+// DocumentIDHasSuffix applies the HasSuffix predicate on the "document_id" field.
+func DocumentIDHasSuffix(v string) predicate.NodeList {
+	return predicate.NodeList(sql.FieldHasSuffix(FieldDocumentID, v))
+}
+
+// DocumentIDEqualFold applies the EqualFold predicate on the "document_id" field.
+func DocumentIDEqualFold(v string) predicate.NodeList {
+	return predicate.NodeList(sql.FieldEqualFold(FieldDocumentID, v))
+}
+
+// DocumentIDContainsFold applies the ContainsFold predicate on the "document_id" field.
+func DocumentIDContainsFold(v string) predicate.NodeList {
+	return predicate.NodeList(sql.FieldContainsFold(FieldDocumentID, v))
+}
+
 // HasNodes applies the HasEdge predicate on the "nodes" edge.
 func HasNodes() predicate.NodeList {
 	return predicate.NodeList(func(s *sql.Selector) {
@@ -86,7 +156,7 @@ func HasDocument() predicate.NodeList {
 	return predicate.NodeList(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, false, DocumentTable, DocumentColumn),
+			sqlgraph.Edge(sqlgraph.O2O, true, DocumentTable, DocumentColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})

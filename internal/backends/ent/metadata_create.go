@@ -106,19 +106,15 @@ func (mc *MetadataCreate) AddDocumentTypes(d ...*DocumentType) *MetadataCreate {
 	return mc.AddDocumentTypeIDs(ids...)
 }
 
-// AddDocumentIDs adds the "document" edge to the Document entity by IDs.
-func (mc *MetadataCreate) AddDocumentIDs(ids ...int) *MetadataCreate {
-	mc.mutation.AddDocumentIDs(ids...)
+// SetDocumentID sets the "document" edge to the Document entity by ID.
+func (mc *MetadataCreate) SetDocumentID(id string) *MetadataCreate {
+	mc.mutation.SetDocumentID(id)
 	return mc
 }
 
-// AddDocument adds the "document" edges to the Document entity.
-func (mc *MetadataCreate) AddDocument(d ...*Document) *MetadataCreate {
-	ids := make([]int, len(d))
-	for i := range d {
-		ids[i] = d[i].ID
-	}
-	return mc.AddDocumentIDs(ids...)
+// SetDocument sets the "document" edge to the Document entity.
+func (mc *MetadataCreate) SetDocument(d *Document) *MetadataCreate {
+	return mc.SetDocumentID(d.ID)
 }
 
 // Mutation returns the MetadataMutation object of the builder.
@@ -171,6 +167,9 @@ func (mc *MetadataCreate) check() error {
 		if err := metadata.IDValidator(v); err != nil {
 			return &ValidationError{Name: "id", err: fmt.Errorf(`ent: validator failed for field "Metadata.id": %w`, err)}
 		}
+	}
+	if _, ok := mc.mutation.DocumentID(); !ok {
+		return &ValidationError{Name: "document", err: errors.New(`ent: missing required edge "Metadata.document"`)}
 	}
 	return nil
 }
@@ -274,18 +273,19 @@ func (mc *MetadataCreate) createSpec() (*Metadata, *sqlgraph.CreateSpec) {
 	}
 	if nodes := mc.mutation.DocumentIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
+			Rel:     sqlgraph.O2O,
+			Inverse: true,
 			Table:   metadata.DocumentTable,
 			Columns: []string{metadata.DocumentColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(document.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(document.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
+		_node.ID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

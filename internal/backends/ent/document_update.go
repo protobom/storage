@@ -63,22 +63,8 @@ func (du *DocumentUpdate) ExecX(ctx context.Context) {
 	}
 }
 
-// check runs all checks and user-defined validators on the builder.
-func (du *DocumentUpdate) check() error {
-	if _, ok := du.mutation.MetadataID(); du.mutation.MetadataCleared() && !ok {
-		return errors.New(`ent: clearing a required unique edge "Document.metadata"`)
-	}
-	if _, ok := du.mutation.NodeListID(); du.mutation.NodeListCleared() && !ok {
-		return errors.New(`ent: clearing a required unique edge "Document.node_list"`)
-	}
-	return nil
-}
-
 func (du *DocumentUpdate) sqlSave(ctx context.Context) (n int, err error) {
-	if err := du.check(); err != nil {
-		return n, err
-	}
-	_spec := sqlgraph.NewUpdateSpec(document.Table, document.Columns, sqlgraph.NewFieldSpec(document.FieldID, field.TypeInt))
+	_spec := sqlgraph.NewUpdateSpec(document.Table, document.Columns, sqlgraph.NewFieldSpec(document.FieldID, field.TypeString))
 	if ps := du.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -151,22 +137,8 @@ func (duo *DocumentUpdateOne) ExecX(ctx context.Context) {
 	}
 }
 
-// check runs all checks and user-defined validators on the builder.
-func (duo *DocumentUpdateOne) check() error {
-	if _, ok := duo.mutation.MetadataID(); duo.mutation.MetadataCleared() && !ok {
-		return errors.New(`ent: clearing a required unique edge "Document.metadata"`)
-	}
-	if _, ok := duo.mutation.NodeListID(); duo.mutation.NodeListCleared() && !ok {
-		return errors.New(`ent: clearing a required unique edge "Document.node_list"`)
-	}
-	return nil
-}
-
 func (duo *DocumentUpdateOne) sqlSave(ctx context.Context) (_node *Document, err error) {
-	if err := duo.check(); err != nil {
-		return _node, err
-	}
-	_spec := sqlgraph.NewUpdateSpec(document.Table, document.Columns, sqlgraph.NewFieldSpec(document.FieldID, field.TypeInt))
+	_spec := sqlgraph.NewUpdateSpec(document.Table, document.Columns, sqlgraph.NewFieldSpec(document.FieldID, field.TypeString))
 	id, ok := duo.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "Document.id" for update`)}
