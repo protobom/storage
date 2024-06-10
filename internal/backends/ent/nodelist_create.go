@@ -27,6 +27,12 @@ type NodeListCreate struct {
 	conflict []sql.ConflictOption
 }
 
+// SetDocumentID sets the "document_id" field.
+func (nlc *NodeListCreate) SetDocumentID(s string) *NodeListCreate {
+	nlc.mutation.SetDocumentID(s)
+	return nlc
+}
+
 // SetRootElements sets the "root_elements" field.
 func (nlc *NodeListCreate) SetRootElements(s []string) *NodeListCreate {
 	nlc.mutation.SetRootElements(s)
@@ -46,20 +52,6 @@ func (nlc *NodeListCreate) AddNodes(n ...*Node) *NodeListCreate {
 		ids[i] = n[i].ID
 	}
 	return nlc.AddNodeIDs(ids...)
-}
-
-// SetDocumentID sets the "document" edge to the Document entity by ID.
-func (nlc *NodeListCreate) SetDocumentID(id int) *NodeListCreate {
-	nlc.mutation.SetDocumentID(id)
-	return nlc
-}
-
-// SetNillableDocumentID sets the "document" edge to the Document entity by ID if the given value is not nil.
-func (nlc *NodeListCreate) SetNillableDocumentID(id *int) *NodeListCreate {
-	if id != nil {
-		nlc = nlc.SetDocumentID(*id)
-	}
-	return nlc
 }
 
 // SetDocument sets the "document" edge to the Document entity.
@@ -101,8 +93,14 @@ func (nlc *NodeListCreate) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (nlc *NodeListCreate) check() error {
+	if _, ok := nlc.mutation.DocumentID(); !ok {
+		return &ValidationError{Name: "document_id", err: errors.New(`ent: missing required field "NodeList.document_id"`)}
+	}
 	if _, ok := nlc.mutation.RootElements(); !ok {
 		return &ValidationError{Name: "root_elements", err: errors.New(`ent: missing required field "NodeList.root_elements"`)}
+	}
+	if _, ok := nlc.mutation.DocumentID(); !ok {
+		return &ValidationError{Name: "document", err: errors.New(`ent: missing required edge "NodeList.document"`)}
 	}
 	return nil
 }
@@ -154,17 +152,18 @@ func (nlc *NodeListCreate) createSpec() (*NodeList, *sqlgraph.CreateSpec) {
 	if nodes := nlc.mutation.DocumentIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2O,
-			Inverse: false,
+			Inverse: true,
 			Table:   nodelist.DocumentTable,
 			Columns: []string{nodelist.DocumentColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(document.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(document.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
+		_node.DocumentID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
@@ -174,7 +173,7 @@ func (nlc *NodeListCreate) createSpec() (*NodeList, *sqlgraph.CreateSpec) {
 // of the `INSERT` statement. For example:
 //
 //	client.NodeList.Create().
-//		SetRootElements(v).
+//		SetDocumentID(v).
 //		OnConflict(
 //			// Update the row with the new values
 //			// the was proposed for insertion.
@@ -183,7 +182,7 @@ func (nlc *NodeListCreate) createSpec() (*NodeList, *sqlgraph.CreateSpec) {
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.NodeListUpsert) {
-//			SetRootElements(v+v).
+//			SetDocumentID(v+v).
 //		}).
 //		Exec(ctx)
 func (nlc *NodeListCreate) OnConflict(opts ...sql.ConflictOption) *NodeListUpsertOne {
@@ -218,6 +217,18 @@ type (
 		*sql.UpdateSet
 	}
 )
+
+// SetDocumentID sets the "document_id" field.
+func (u *NodeListUpsert) SetDocumentID(v string) *NodeListUpsert {
+	u.Set(nodelist.FieldDocumentID, v)
+	return u
+}
+
+// UpdateDocumentID sets the "document_id" field to the value that was provided on create.
+func (u *NodeListUpsert) UpdateDocumentID() *NodeListUpsert {
+	u.SetExcluded(nodelist.FieldDocumentID)
+	return u
+}
 
 // SetRootElements sets the "root_elements" field.
 func (u *NodeListUpsert) SetRootElements(v []string) *NodeListUpsert {
@@ -269,6 +280,20 @@ func (u *NodeListUpsertOne) Update(set func(*NodeListUpsert)) *NodeListUpsertOne
 		set(&NodeListUpsert{UpdateSet: update})
 	}))
 	return u
+}
+
+// SetDocumentID sets the "document_id" field.
+func (u *NodeListUpsertOne) SetDocumentID(v string) *NodeListUpsertOne {
+	return u.Update(func(s *NodeListUpsert) {
+		s.SetDocumentID(v)
+	})
+}
+
+// UpdateDocumentID sets the "document_id" field to the value that was provided on create.
+func (u *NodeListUpsertOne) UpdateDocumentID() *NodeListUpsertOne {
+	return u.Update(func(s *NodeListUpsert) {
+		s.UpdateDocumentID()
+	})
 }
 
 // SetRootElements sets the "root_elements" field.
@@ -419,7 +444,7 @@ func (nlcb *NodeListCreateBulk) ExecX(ctx context.Context) {
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.NodeListUpsert) {
-//			SetRootElements(v+v).
+//			SetDocumentID(v+v).
 //		}).
 //		Exec(ctx)
 func (nlcb *NodeListCreateBulk) OnConflict(opts ...sql.ConflictOption) *NodeListUpsertBulk {
@@ -486,6 +511,20 @@ func (u *NodeListUpsertBulk) Update(set func(*NodeListUpsert)) *NodeListUpsertBu
 		set(&NodeListUpsert{UpdateSet: update})
 	}))
 	return u
+}
+
+// SetDocumentID sets the "document_id" field.
+func (u *NodeListUpsertBulk) SetDocumentID(v string) *NodeListUpsertBulk {
+	return u.Update(func(s *NodeListUpsert) {
+		s.SetDocumentID(v)
+	})
+}
+
+// UpdateDocumentID sets the "document_id" field to the value that was provided on create.
+func (u *NodeListUpsertBulk) UpdateDocumentID() *NodeListUpsertBulk {
+	return u.Update(func(s *NodeListUpsert) {
+		s.UpdateDocumentID()
+	})
 }
 
 // SetRootElements sets the "root_elements" field.

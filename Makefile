@@ -3,8 +3,6 @@
 # SPDX-FileType: SOURCE
 # SPDX-License-Identifier: Apache-2.0
 # --------------------------------------------------------------
-BASH := ${shell type -p bash}
-SHELL := ${BASH}
 
 # ANSI color escape codes
 BOLD   := \033[1m

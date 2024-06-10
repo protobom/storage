@@ -13,15 +13,12 @@ import (
 	"github.com/protobom/protobom/pkg/storage"
 
 	"github.com/protobom/storage/internal/backends/ent"
-	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/documenttype"
 	"github.com/protobom/storage/internal/backends/ent/edgetype"
 	"github.com/protobom/storage/internal/backends/ent/externalreference"
 	"github.com/protobom/storage/internal/backends/ent/hashesentry"
 	"github.com/protobom/storage/internal/backends/ent/identifiersentry"
-	"github.com/protobom/storage/internal/backends/ent/metadata"
 	"github.com/protobom/storage/internal/backends/ent/node"
-	"github.com/protobom/storage/internal/backends/ent/nodelist"
 	"github.com/protobom/storage/internal/backends/ent/purpose"
 )
 
@@ -49,38 +46,21 @@ func (backend *Backend) Store(doc *sbom.Document, opts *storage.StoreOptions) er
 		return fmt.Errorf("%w", errInvalidEntOptions)
 	}
 
+	err := backend.client.Document.Create().
+		SetID(doc.Metadata.Id).
+		OnConflict().
+		Ignore().
+		Exec(backend.ctx)
+	if err != nil && !ent.IsConstraintError(err) {
+		return fmt.Errorf("ent.Document: %w", err)
+	}
+
 	if err := backend.StoreMetadata(doc.Metadata); err != nil {
 		return err
 	}
 
 	if err := backend.StoreNodeList(doc.NodeList); err != nil {
 		return err
-	}
-
-	nodeListID, ok := backend.ctx.Value(nodeListIDKey{}).(int)
-	if !ok {
-		var err error
-
-		nodeListID, err = backend.client.NodeList.Query().
-			Where(
-				nodelist.Or(
-					nodelist.HasDocumentWith(document.HasMetadataWith(metadata.IDEQ(doc.Metadata.Id))),
-					nodelist.Not(nodelist.HasDocument()),
-				)).
-			OnlyID(backend.ctx)
-		if err != nil {
-			return fmt.Errorf("querying node lists: %w", err)
-		}
-	}
-
-	err := backend.client.Document.Create().
-		SetMetadataID(doc.Metadata.Id).
-		SetNodeListID(nodeListID).
-		OnConflict().
-		Ignore().
-		Exec(backend.ctx)
-	if err != nil && !ent.IsConstraintError(err) {
-		return fmt.Errorf("ent.Document: %w", err)
 	}
 
 	return nil
@@ -234,6 +214,7 @@ func (backend *Backend) StoreMetadata(md *sbom.Metadata) error {
 
 	newMetadata := backend.client.Metadata.Create().
 		SetID(md.Id).
+		SetDocumentID(md.Id).
 		SetVersion(md.Version).
 		SetName(md.Name).
 		SetComment(md.Comment).
@@ -268,6 +249,10 @@ func (backend *Backend) StoreNodeList(nodeList *sbom.NodeList) error {
 
 	newNodeList := backend.client.NodeList.Create().
 		SetRootElements(nodeList.RootElements)
+
+	if documentID, ok := backend.ctx.Value(metadataIDKey{}).(string); ok {
+		newNodeList.SetDocumentID(documentID)
+	}
 
 	id, err := newNodeList.OnConflict().Ignore().ID(backend.ctx)
 	if err != nil && !ent.IsConstraintError(err) {

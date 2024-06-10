@@ -362,7 +362,7 @@ func (c *DocumentClient) UpdateOne(d *Document) *DocumentUpdateOne {
 }
 
 // UpdateOneID returns an update builder for the given id.
-func (c *DocumentClient) UpdateOneID(id int) *DocumentUpdateOne {
+func (c *DocumentClient) UpdateOneID(id string) *DocumentUpdateOne {
 	mutation := newDocumentMutation(c.config, OpUpdateOne, withDocumentID(id))
 	return &DocumentUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
@@ -379,7 +379,7 @@ func (c *DocumentClient) DeleteOne(d *Document) *DocumentDeleteOne {
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
-func (c *DocumentClient) DeleteOneID(id int) *DocumentDeleteOne {
+func (c *DocumentClient) DeleteOneID(id string) *DocumentDeleteOne {
 	builder := c.Delete().Where(document.ID(id))
 	builder.mutation.id = &id
 	builder.mutation.op = OpDeleteOne
@@ -396,12 +396,12 @@ func (c *DocumentClient) Query() *DocumentQuery {
 }
 
 // Get returns a Document entity by its id.
-func (c *DocumentClient) Get(ctx context.Context, id int) (*Document, error) {
+func (c *DocumentClient) Get(ctx context.Context, id string) (*Document, error) {
 	return c.Query().Where(document.ID(id)).Only(ctx)
 }
 
 // GetX is like Get, but panics if an error occurs.
-func (c *DocumentClient) GetX(ctx context.Context, id int) *Document {
+func (c *DocumentClient) GetX(ctx context.Context, id string) *Document {
 	obj, err := c.Get(ctx, id)
 	if err != nil {
 		panic(err)
@@ -417,7 +417,7 @@ func (c *DocumentClient) QueryMetadata(d *Document) *MetadataQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(document.Table, document.FieldID, id),
 			sqlgraph.To(metadata.Table, metadata.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, document.MetadataTable, document.MetadataColumn),
+			sqlgraph.Edge(sqlgraph.O2O, false, document.MetadataTable, document.MetadataColumn),
 		)
 		fromV = sqlgraph.Neighbors(d.driver.Dialect(), step)
 		return fromV, nil
@@ -433,7 +433,7 @@ func (c *DocumentClient) QueryNodeList(d *Document) *NodeListQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(document.Table, document.FieldID, id),
 			sqlgraph.To(nodelist.Table, nodelist.FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, true, document.NodeListTable, document.NodeListColumn),
+			sqlgraph.Edge(sqlgraph.O2O, false, document.NodeListTable, document.NodeListColumn),
 		)
 		fromV = sqlgraph.Neighbors(d.driver.Dialect(), step)
 		return fromV, nil
@@ -1423,7 +1423,7 @@ func (c *MetadataClient) QueryDocument(m *Metadata) *DocumentQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(metadata.Table, metadata.FieldID, id),
 			sqlgraph.To(document.Table, document.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, metadata.DocumentTable, metadata.DocumentColumn),
+			sqlgraph.Edge(sqlgraph.O2O, true, metadata.DocumentTable, metadata.DocumentColumn),
 		)
 		fromV = sqlgraph.Neighbors(m.driver.Dialect(), step)
 		return fromV, nil
@@ -1881,7 +1881,7 @@ func (c *NodeListClient) QueryDocument(nl *NodeList) *DocumentQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(nodelist.Table, nodelist.FieldID, id),
 			sqlgraph.To(document.Table, document.FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, false, nodelist.DocumentTable, nodelist.DocumentColumn),
+			sqlgraph.Edge(sqlgraph.O2O, true, nodelist.DocumentTable, nodelist.DocumentColumn),
 		)
 		fromV = sqlgraph.Neighbors(nl.driver.Dialect(), step)
 		return fromV, nil

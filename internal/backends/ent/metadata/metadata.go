@@ -57,12 +57,12 @@ const (
 	// DocumentTypesColumn is the table column denoting the document_types relation/edge.
 	DocumentTypesColumn = "metadata_id"
 	// DocumentTable is the table that holds the document relation/edge.
-	DocumentTable = "documents"
+	DocumentTable = "metadata"
 	// DocumentInverseTable is the table name for the Document entity.
 	// It exists in this package in order to avoid circular dependency with the "document" package.
 	DocumentInverseTable = "documents"
 	// DocumentColumn is the table column denoting the document relation/edge.
-	DocumentColumn = "metadata_id"
+	DocumentColumn = "id"
 )
 
 // Columns holds all SQL columns for metadata fields.
@@ -159,17 +159,10 @@ func ByDocumentTypes(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	}
 }
 
-// ByDocumentCount orders the results by document count.
-func ByDocumentCount(opts ...sql.OrderTermOption) OrderOption {
+// ByDocumentField orders the results by document field.
+func ByDocumentField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborsCount(s, newDocumentStep(), opts...)
-	}
-}
-
-// ByDocument orders the results by document terms.
-func ByDocument(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newDocumentStep(), append([]sql.OrderTerm{term}, terms...)...)
+		sqlgraph.OrderByNeighborTerms(s, newDocumentStep(), sql.OrderByField(field, opts...))
 	}
 }
 func newToolsStep() *sqlgraph.Step {
@@ -197,6 +190,6 @@ func newDocumentStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(DocumentInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2M, false, DocumentTable, DocumentColumn),
+		sqlgraph.Edge(sqlgraph.O2O, true, DocumentTable, DocumentColumn),
 	)
 }

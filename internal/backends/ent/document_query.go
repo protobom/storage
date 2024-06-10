@@ -8,6 +8,7 @@ package ent
 
 import (
 	"context"
+	"database/sql/driver"
 	"fmt"
 	"math"
 
@@ -79,7 +80,7 @@ func (dq *DocumentQuery) QueryMetadata() *MetadataQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(document.Table, document.FieldID, selector),
 			sqlgraph.To(metadata.Table, metadata.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, document.MetadataTable, document.MetadataColumn),
+			sqlgraph.Edge(sqlgraph.O2O, false, document.MetadataTable, document.MetadataColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(dq.driver.Dialect(), step)
 		return fromU, nil
@@ -101,7 +102,7 @@ func (dq *DocumentQuery) QueryNodeList() *NodeListQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(document.Table, document.FieldID, selector),
 			sqlgraph.To(nodelist.Table, nodelist.FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, true, document.NodeListTable, document.NodeListColumn),
+			sqlgraph.Edge(sqlgraph.O2O, false, document.NodeListTable, document.NodeListColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(dq.driver.Dialect(), step)
 		return fromU, nil
@@ -133,8 +134,8 @@ func (dq *DocumentQuery) FirstX(ctx context.Context) *Document {
 
 // FirstID returns the first Document ID from the query.
 // Returns a *NotFoundError when no Document ID was found.
-func (dq *DocumentQuery) FirstID(ctx context.Context) (id int, err error) {
-	var ids []int
+func (dq *DocumentQuery) FirstID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = dq.Limit(1).IDs(setContextOp(ctx, dq.ctx, "FirstID")); err != nil {
 		return
 	}
@@ -146,7 +147,7 @@ func (dq *DocumentQuery) FirstID(ctx context.Context) (id int, err error) {
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (dq *DocumentQuery) FirstIDX(ctx context.Context) int {
+func (dq *DocumentQuery) FirstIDX(ctx context.Context) string {
 	id, err := dq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -184,8 +185,8 @@ func (dq *DocumentQuery) OnlyX(ctx context.Context) *Document {
 // OnlyID is like Only, but returns the only Document ID in the query.
 // Returns a *NotSingularError when more than one Document ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (dq *DocumentQuery) OnlyID(ctx context.Context) (id int, err error) {
-	var ids []int
+func (dq *DocumentQuery) OnlyID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = dq.Limit(2).IDs(setContextOp(ctx, dq.ctx, "OnlyID")); err != nil {
 		return
 	}
@@ -201,7 +202,7 @@ func (dq *DocumentQuery) OnlyID(ctx context.Context) (id int, err error) {
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (dq *DocumentQuery) OnlyIDX(ctx context.Context) int {
+func (dq *DocumentQuery) OnlyIDX(ctx context.Context) string {
 	id, err := dq.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -229,7 +230,7 @@ func (dq *DocumentQuery) AllX(ctx context.Context) []*Document {
 }
 
 // IDs executes the query and returns a list of Document IDs.
-func (dq *DocumentQuery) IDs(ctx context.Context) (ids []int, err error) {
+func (dq *DocumentQuery) IDs(ctx context.Context) (ids []string, err error) {
 	if dq.ctx.Unique == nil && dq.path != nil {
 		dq.Unique(true)
 	}
@@ -241,7 +242,7 @@ func (dq *DocumentQuery) IDs(ctx context.Context) (ids []int, err error) {
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (dq *DocumentQuery) IDsX(ctx context.Context) []int {
+func (dq *DocumentQuery) IDsX(ctx context.Context) []string {
 	ids, err := dq.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -333,18 +334,6 @@ func (dq *DocumentQuery) WithNodeList(opts ...func(*NodeListQuery)) *DocumentQue
 
 // GroupBy is used to group vertices by one or more fields/columns.
 // It is often used with aggregate functions, like: count, max, mean, min, sum.
-//
-// Example:
-//
-//	var v []struct {
-//		MetadataID string `json:"metadata_id,omitempty"`
-//		Count int `json:"count,omitempty"`
-//	}
-//
-//	client.Document.Query().
-//		GroupBy(document.FieldMetadataID).
-//		Aggregate(ent.Count()).
-//		Scan(ctx, &v)
 func (dq *DocumentQuery) GroupBy(field string, fields ...string) *DocumentGroupBy {
 	dq.ctx.Fields = append([]string{field}, fields...)
 	grbuild := &DocumentGroupBy{build: dq}
@@ -356,16 +345,6 @@ func (dq *DocumentQuery) GroupBy(field string, fields ...string) *DocumentGroupB
 
 // Select allows the selection one or more fields/columns for the given query,
 // instead of selecting all fields in the entity.
-//
-// Example:
-//
-//	var v []struct {
-//		MetadataID string `json:"metadata_id,omitempty"`
-//	}
-//
-//	client.Document.Query().
-//		Select(document.FieldMetadataID).
-//		Scan(ctx, &v)
 func (dq *DocumentQuery) Select(fields ...string) *DocumentSelect {
 	dq.ctx.Fields = append(dq.ctx.Fields, fields...)
 	sbuild := &DocumentSelect{DocumentQuery: dq}
@@ -448,60 +427,53 @@ func (dq *DocumentQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Doc
 }
 
 func (dq *DocumentQuery) loadMetadata(ctx context.Context, query *MetadataQuery, nodes []*Document, init func(*Document), assign func(*Document, *Metadata)) error {
-	ids := make([]string, 0, len(nodes))
-	nodeids := make(map[string][]*Document)
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[string]*Document)
 	for i := range nodes {
-		fk := nodes[i].MetadataID
-		if _, ok := nodeids[fk]; !ok {
-			ids = append(ids, fk)
-		}
-		nodeids[fk] = append(nodeids[fk], nodes[i])
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
 	}
-	if len(ids) == 0 {
-		return nil
-	}
-	query.Where(metadata.IDIn(ids...))
+	query.Where(predicate.Metadata(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(document.MetadataColumn), fks...))
+	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {
 		return err
 	}
 	for _, n := range neighbors {
-		nodes, ok := nodeids[n.ID]
+		fk := n.ID
+		node, ok := nodeids[fk]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "metadata_id" returned %v`, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "id" returned %v for node %v`, fk, n.ID)
 		}
-		for i := range nodes {
-			assign(nodes[i], n)
-		}
+		assign(node, n)
 	}
 	return nil
 }
 func (dq *DocumentQuery) loadNodeList(ctx context.Context, query *NodeListQuery, nodes []*Document, init func(*Document), assign func(*Document, *NodeList)) error {
-	ids := make([]int, 0, len(nodes))
-	nodeids := make(map[int][]*Document)
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[string]*Document)
 	for i := range nodes {
-		fk := nodes[i].NodeListID
-		if _, ok := nodeids[fk]; !ok {
-			ids = append(ids, fk)
-		}
-		nodeids[fk] = append(nodeids[fk], nodes[i])
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
 	}
-	if len(ids) == 0 {
-		return nil
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(nodelist.FieldDocumentID)
 	}
-	query.Where(nodelist.IDIn(ids...))
+	query.Where(predicate.NodeList(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(document.NodeListColumn), fks...))
+	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {
 		return err
 	}
 	for _, n := range neighbors {
-		nodes, ok := nodeids[n.ID]
+		fk := n.DocumentID
+		node, ok := nodeids[fk]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "node_list_id" returned %v`, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "document_id" returned %v for node %v`, fk, n.ID)
 		}
-		for i := range nodes {
-			assign(nodes[i], n)
-		}
+		assign(node, n)
 	}
 	return nil
 }
@@ -516,7 +488,7 @@ func (dq *DocumentQuery) sqlCount(ctx context.Context) (int, error) {
 }
 
 func (dq *DocumentQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := sqlgraph.NewQuerySpec(document.Table, document.Columns, sqlgraph.NewFieldSpec(document.FieldID, field.TypeInt))
+	_spec := sqlgraph.NewQuerySpec(document.Table, document.Columns, sqlgraph.NewFieldSpec(document.FieldID, field.TypeString))
 	_spec.From = dq.sql
 	if unique := dq.ctx.Unique; unique != nil {
 		_spec.Unique = *unique
@@ -530,12 +502,6 @@ func (dq *DocumentQuery) querySpec() *sqlgraph.QuerySpec {
 			if fields[i] != document.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
-		}
-		if dq.withMetadata != nil {
-			_spec.Node.AddColumnOnce(document.FieldMetadataID)
-		}
-		if dq.withNodeList != nil {
-			_spec.Node.AddColumnOnce(document.FieldNodeListID)
 		}
 	}
 	if ps := dq.predicates; len(ps) > 0 {

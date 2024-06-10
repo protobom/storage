@@ -22,6 +22,8 @@ type NodeList struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID int `json:"id,omitempty"`
+	// DocumentID holds the value of the "document_id" field.
+	DocumentID string `json:"document_id,omitempty"`
 	// RootElements holds the value of the "root_elements" field.
 	RootElements []string `json:"root_elements,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -70,6 +72,8 @@ func (*NodeList) scanValues(columns []string) ([]any, error) {
 			values[i] = new([]byte)
 		case nodelist.FieldID:
 			values[i] = new(sql.NullInt64)
+		case nodelist.FieldDocumentID:
+			values[i] = new(sql.NullString)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -91,6 +95,12 @@ func (nl *NodeList) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", value)
 			}
 			nl.ID = int(value.Int64)
+		case nodelist.FieldDocumentID:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field document_id", values[i])
+			} else if value.Valid {
+				nl.DocumentID = value.String
+			}
 		case nodelist.FieldRootElements:
 			if value, ok := values[i].(*[]byte); !ok {
 				return fmt.Errorf("unexpected type %T for field root_elements", values[i])
@@ -145,6 +155,9 @@ func (nl *NodeList) String() string {
 	var builder strings.Builder
 	builder.WriteString("NodeList(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", nl.ID))
+	builder.WriteString("document_id=")
+	builder.WriteString(nl.DocumentID)
+	builder.WriteString(", ")
 	builder.WriteString("root_elements=")
 	builder.WriteString(fmt.Sprintf("%v", nl.RootElements))
 	builder.WriteByte(')')

@@ -16,36 +16,13 @@ import (
 var (
 	// DocumentsColumns holds the columns for the "documents" table.
 	DocumentsColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeInt, Increment: true},
-		{Name: "metadata_id", Type: field.TypeString},
-		{Name: "node_list_id", Type: field.TypeInt, Unique: true},
+		{Name: "id", Type: field.TypeString, Unique: true},
 	}
 	// DocumentsTable holds the schema information for the "documents" table.
 	DocumentsTable = &schema.Table{
 		Name:       "documents",
 		Columns:    DocumentsColumns,
 		PrimaryKey: []*schema.Column{DocumentsColumns[0]},
-		ForeignKeys: []*schema.ForeignKey{
-			{
-				Symbol:     "documents_metadata_document",
-				Columns:    []*schema.Column{DocumentsColumns[1]},
-				RefColumns: []*schema.Column{MetadataColumns[0]},
-				OnDelete:   schema.NoAction,
-			},
-			{
-				Symbol:     "documents_node_lists_document",
-				Columns:    []*schema.Column{DocumentsColumns[2]},
-				RefColumns: []*schema.Column{NodeListsColumns[0]},
-				OnDelete:   schema.NoAction,
-			},
-		},
-		Indexes: []*schema.Index{
-			{
-				Name:    "document_metadata_id_node_list_id",
-				Unique:  true,
-				Columns: []*schema.Column{DocumentsColumns[1], DocumentsColumns[2]},
-			},
-		},
 	}
 	// DocumentTypesColumns holds the columns for the "document_types" table.
 	DocumentTypesColumns = []*schema.Column{
@@ -139,9 +116,9 @@ var (
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "externalreference_node_id",
+				Name:    "externalreference_node_id_url_type",
 				Unique:  true,
-				Columns: []*schema.Column{ExternalReferencesColumns[5]},
+				Columns: []*schema.Column{ExternalReferencesColumns[5], ExternalReferencesColumns[1], ExternalReferencesColumns[4]},
 			},
 		},
 	}
@@ -221,6 +198,14 @@ var (
 		Name:       "metadata",
 		Columns:    MetadataColumns,
 		PrimaryKey: []*schema.Column{MetadataColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "metadata_documents_metadata",
+				Columns:    []*schema.Column{MetadataColumns[0]},
+				RefColumns: []*schema.Column{DocumentsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
 		Indexes: []*schema.Index{
 			{
 				Name:    "metadata_id_version_name",
@@ -278,17 +263,29 @@ var (
 	NodeListsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "root_elements", Type: field.TypeJSON},
+		{Name: "document_id", Type: field.TypeString, Unique: true},
 	}
 	// NodeListsTable holds the schema information for the "node_lists" table.
 	NodeListsTable = &schema.Table{
 		Name:       "node_lists",
 		Columns:    NodeListsColumns,
 		PrimaryKey: []*schema.Column{NodeListsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "node_lists_documents_node_list",
+				Columns:    []*schema.Column{NodeListsColumns[2]},
+				RefColumns: []*schema.Column{DocumentsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "nodelist_root_elements",
+				Name:    "nodelist_document_id_root_elements",
 				Unique:  true,
-				Columns: []*schema.Column{NodeListsColumns[1]},
+				Columns: []*schema.Column{NodeListsColumns[2], NodeListsColumns[1]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "root_elements IS NOT NULL",
+				},
 			},
 		},
 	}
@@ -429,8 +426,6 @@ var (
 )
 
 func init() {
-	DocumentsTable.ForeignKeys[0].RefTable = MetadataTable
-	DocumentsTable.ForeignKeys[1].RefTable = NodeListsTable
 	DocumentTypesTable.ForeignKeys[0].RefTable = MetadataTable
 	EdgeTypesTable.ForeignKeys[0].RefTable = NodesTable
 	EdgeTypesTable.ForeignKeys[1].RefTable = NodesTable
@@ -438,7 +433,9 @@ func init() {
 	HashesEntriesTable.ForeignKeys[0].RefTable = ExternalReferencesTable
 	HashesEntriesTable.ForeignKeys[1].RefTable = NodesTable
 	IdentifiersEntriesTable.ForeignKeys[0].RefTable = NodesTable
+	MetadataTable.ForeignKeys[0].RefTable = DocumentsTable
 	NodesTable.ForeignKeys[0].RefTable = NodeListsTable
+	NodeListsTable.ForeignKeys[0].RefTable = DocumentsTable
 	PersonsTable.ForeignKeys[0].RefTable = MetadataTable
 	PersonsTable.ForeignKeys[1].RefTable = NodesTable
 	PersonsTable.ForeignKeys[2].RefTable = NodesTable
