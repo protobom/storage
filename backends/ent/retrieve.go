@@ -6,6 +6,7 @@
 package ent
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -17,6 +18,8 @@ import (
 	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/externalreference"
 )
+
+var errMultipleDocuments = errors.New("multiple documents matching ID")
 
 // Retrieve implements the storage.Retriever interface.
 func (backend *Backend) Retrieve(id string, _ *storage.RetrieveOptions) (*sbom.Document, error) {
@@ -34,7 +37,7 @@ func (backend *Backend) Retrieve(id string, _ *storage.RetrieveOptions) (*sbom.D
 	}
 
 	if len(documents) > 1 {
-		return nil, fmt.Errorf("multiple documents matching ID %s: %w", id, err)
+		return nil, fmt.Errorf("%w %s", err, id)
 	}
 
 	return documents[0], nil
