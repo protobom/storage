@@ -32,6 +32,26 @@ func (ieu *IdentifiersEntryUpdate) Where(ps ...predicate.IdentifiersEntry) *Iden
 	return ieu
 }
 
+// SetNodeID sets the "node_id" field.
+func (ieu *IdentifiersEntryUpdate) SetNodeID(s string) *IdentifiersEntryUpdate {
+	ieu.mutation.SetNodeID(s)
+	return ieu
+}
+
+// SetNillableNodeID sets the "node_id" field if the given value is not nil.
+func (ieu *IdentifiersEntryUpdate) SetNillableNodeID(s *string) *IdentifiersEntryUpdate {
+	if s != nil {
+		ieu.SetNodeID(*s)
+	}
+	return ieu
+}
+
+// ClearNodeID clears the value of the "node_id" field.
+func (ieu *IdentifiersEntryUpdate) ClearNodeID() *IdentifiersEntryUpdate {
+	ieu.mutation.ClearNodeID()
+	return ieu
+}
+
 // SetSoftwareIdentifierType sets the "software_identifier_type" field.
 func (ieu *IdentifiersEntryUpdate) SetSoftwareIdentifierType(iit identifiersentry.SoftwareIdentifierType) *IdentifiersEntryUpdate {
 	ieu.mutation.SetSoftwareIdentifierType(iit)
@@ -56,20 +76,6 @@ func (ieu *IdentifiersEntryUpdate) SetSoftwareIdentifierValue(s string) *Identif
 func (ieu *IdentifiersEntryUpdate) SetNillableSoftwareIdentifierValue(s *string) *IdentifiersEntryUpdate {
 	if s != nil {
 		ieu.SetSoftwareIdentifierValue(*s)
-	}
-	return ieu
-}
-
-// SetNodeID sets the "node" edge to the Node entity by ID.
-func (ieu *IdentifiersEntryUpdate) SetNodeID(id string) *IdentifiersEntryUpdate {
-	ieu.mutation.SetNodeID(id)
-	return ieu
-}
-
-// SetNillableNodeID sets the "node" edge to the Node entity by ID if the given value is not nil.
-func (ieu *IdentifiersEntryUpdate) SetNillableNodeID(id *string) *IdentifiersEntryUpdate {
-	if id != nil {
-		ieu = ieu.SetNodeID(*id)
 	}
 	return ieu
 }
@@ -194,6 +200,26 @@ type IdentifiersEntryUpdateOne struct {
 	mutation *IdentifiersEntryMutation
 }
 
+// SetNodeID sets the "node_id" field.
+func (ieuo *IdentifiersEntryUpdateOne) SetNodeID(s string) *IdentifiersEntryUpdateOne {
+	ieuo.mutation.SetNodeID(s)
+	return ieuo
+}
+
+// SetNillableNodeID sets the "node_id" field if the given value is not nil.
+func (ieuo *IdentifiersEntryUpdateOne) SetNillableNodeID(s *string) *IdentifiersEntryUpdateOne {
+	if s != nil {
+		ieuo.SetNodeID(*s)
+	}
+	return ieuo
+}
+
+// ClearNodeID clears the value of the "node_id" field.
+func (ieuo *IdentifiersEntryUpdateOne) ClearNodeID() *IdentifiersEntryUpdateOne {
+	ieuo.mutation.ClearNodeID()
+	return ieuo
+}
+
 // SetSoftwareIdentifierType sets the "software_identifier_type" field.
 func (ieuo *IdentifiersEntryUpdateOne) SetSoftwareIdentifierType(iit identifiersentry.SoftwareIdentifierType) *IdentifiersEntryUpdateOne {
 	ieuo.mutation.SetSoftwareIdentifierType(iit)
@@ -218,20 +244,6 @@ func (ieuo *IdentifiersEntryUpdateOne) SetSoftwareIdentifierValue(s string) *Ide
 func (ieuo *IdentifiersEntryUpdateOne) SetNillableSoftwareIdentifierValue(s *string) *IdentifiersEntryUpdateOne {
 	if s != nil {
 		ieuo.SetSoftwareIdentifierValue(*s)
-	}
-	return ieuo
-}
-
-// SetNodeID sets the "node" edge to the Node entity by ID.
-func (ieuo *IdentifiersEntryUpdateOne) SetNodeID(id string) *IdentifiersEntryUpdateOne {
-	ieuo.mutation.SetNodeID(id)
-	return ieuo
-}
-
-// SetNillableNodeID sets the "node" edge to the Node entity by ID if the given value is not nil.
-func (ieuo *IdentifiersEntryUpdateOne) SetNillableNodeID(id *string) *IdentifiersEntryUpdateOne {
-	if id != nil {
-		ieuo = ieuo.SetNodeID(*id)
 	}
 	return ieuo
 }

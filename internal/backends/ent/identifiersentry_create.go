@@ -26,6 +26,20 @@ type IdentifiersEntryCreate struct {
 	conflict []sql.ConflictOption
 }
 
+// SetNodeID sets the "node_id" field.
+func (iec *IdentifiersEntryCreate) SetNodeID(s string) *IdentifiersEntryCreate {
+	iec.mutation.SetNodeID(s)
+	return iec
+}
+
+// SetNillableNodeID sets the "node_id" field if the given value is not nil.
+func (iec *IdentifiersEntryCreate) SetNillableNodeID(s *string) *IdentifiersEntryCreate {
+	if s != nil {
+		iec.SetNodeID(*s)
+	}
+	return iec
+}
+
 // SetSoftwareIdentifierType sets the "software_identifier_type" field.
 func (iec *IdentifiersEntryCreate) SetSoftwareIdentifierType(iit identifiersentry.SoftwareIdentifierType) *IdentifiersEntryCreate {
 	iec.mutation.SetSoftwareIdentifierType(iit)
@@ -35,20 +49,6 @@ func (iec *IdentifiersEntryCreate) SetSoftwareIdentifierType(iit identifiersentr
 // SetSoftwareIdentifierValue sets the "software_identifier_value" field.
 func (iec *IdentifiersEntryCreate) SetSoftwareIdentifierValue(s string) *IdentifiersEntryCreate {
 	iec.mutation.SetSoftwareIdentifierValue(s)
-	return iec
-}
-
-// SetNodeID sets the "node" edge to the Node entity by ID.
-func (iec *IdentifiersEntryCreate) SetNodeID(id string) *IdentifiersEntryCreate {
-	iec.mutation.SetNodeID(id)
-	return iec
-}
-
-// SetNillableNodeID sets the "node" edge to the Node entity by ID if the given value is not nil.
-func (iec *IdentifiersEntryCreate) SetNillableNodeID(id *string) *IdentifiersEntryCreate {
-	if id != nil {
-		iec = iec.SetNodeID(*id)
-	}
 	return iec
 }
 
@@ -151,7 +151,7 @@ func (iec *IdentifiersEntryCreate) createSpec() (*IdentifiersEntry, *sqlgraph.Cr
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.node_identifiers = &nodes[0]
+		_node.NodeID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
@@ -161,7 +161,7 @@ func (iec *IdentifiersEntryCreate) createSpec() (*IdentifiersEntry, *sqlgraph.Cr
 // of the `INSERT` statement. For example:
 //
 //	client.IdentifiersEntry.Create().
-//		SetSoftwareIdentifierType(v).
+//		SetNodeID(v).
 //		OnConflict(
 //			// Update the row with the new values
 //			// the was proposed for insertion.
@@ -170,7 +170,7 @@ func (iec *IdentifiersEntryCreate) createSpec() (*IdentifiersEntry, *sqlgraph.Cr
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.IdentifiersEntryUpsert) {
-//			SetSoftwareIdentifierType(v+v).
+//			SetNodeID(v+v).
 //		}).
 //		Exec(ctx)
 func (iec *IdentifiersEntryCreate) OnConflict(opts ...sql.ConflictOption) *IdentifiersEntryUpsertOne {
@@ -205,6 +205,24 @@ type (
 		*sql.UpdateSet
 	}
 )
+
+// SetNodeID sets the "node_id" field.
+func (u *IdentifiersEntryUpsert) SetNodeID(v string) *IdentifiersEntryUpsert {
+	u.Set(identifiersentry.FieldNodeID, v)
+	return u
+}
+
+// UpdateNodeID sets the "node_id" field to the value that was provided on create.
+func (u *IdentifiersEntryUpsert) UpdateNodeID() *IdentifiersEntryUpsert {
+	u.SetExcluded(identifiersentry.FieldNodeID)
+	return u
+}
+
+// ClearNodeID clears the value of the "node_id" field.
+func (u *IdentifiersEntryUpsert) ClearNodeID() *IdentifiersEntryUpsert {
+	u.SetNull(identifiersentry.FieldNodeID)
+	return u
+}
 
 // SetSoftwareIdentifierType sets the "software_identifier_type" field.
 func (u *IdentifiersEntryUpsert) SetSoftwareIdentifierType(v identifiersentry.SoftwareIdentifierType) *IdentifiersEntryUpsert {
@@ -268,6 +286,27 @@ func (u *IdentifiersEntryUpsertOne) Update(set func(*IdentifiersEntryUpsert)) *I
 		set(&IdentifiersEntryUpsert{UpdateSet: update})
 	}))
 	return u
+}
+
+// SetNodeID sets the "node_id" field.
+func (u *IdentifiersEntryUpsertOne) SetNodeID(v string) *IdentifiersEntryUpsertOne {
+	return u.Update(func(s *IdentifiersEntryUpsert) {
+		s.SetNodeID(v)
+	})
+}
+
+// UpdateNodeID sets the "node_id" field to the value that was provided on create.
+func (u *IdentifiersEntryUpsertOne) UpdateNodeID() *IdentifiersEntryUpsertOne {
+	return u.Update(func(s *IdentifiersEntryUpsert) {
+		s.UpdateNodeID()
+	})
+}
+
+// ClearNodeID clears the value of the "node_id" field.
+func (u *IdentifiersEntryUpsertOne) ClearNodeID() *IdentifiersEntryUpsertOne {
+	return u.Update(func(s *IdentifiersEntryUpsert) {
+		s.ClearNodeID()
+	})
 }
 
 // SetSoftwareIdentifierType sets the "software_identifier_type" field.
@@ -432,7 +471,7 @@ func (iecb *IdentifiersEntryCreateBulk) ExecX(ctx context.Context) {
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.IdentifiersEntryUpsert) {
-//			SetSoftwareIdentifierType(v+v).
+//			SetNodeID(v+v).
 //		}).
 //		Exec(ctx)
 func (iecb *IdentifiersEntryCreateBulk) OnConflict(opts ...sql.ConflictOption) *IdentifiersEntryUpsertBulk {
@@ -499,6 +538,27 @@ func (u *IdentifiersEntryUpsertBulk) Update(set func(*IdentifiersEntryUpsert)) *
 		set(&IdentifiersEntryUpsert{UpdateSet: update})
 	}))
 	return u
+}
+
+// SetNodeID sets the "node_id" field.
+func (u *IdentifiersEntryUpsertBulk) SetNodeID(v string) *IdentifiersEntryUpsertBulk {
+	return u.Update(func(s *IdentifiersEntryUpsert) {
+		s.SetNodeID(v)
+	})
+}
+
+// UpdateNodeID sets the "node_id" field to the value that was provided on create.
+func (u *IdentifiersEntryUpsertBulk) UpdateNodeID() *IdentifiersEntryUpsertBulk {
+	return u.Update(func(s *IdentifiersEntryUpsert) {
+		s.UpdateNodeID()
+	})
+}
+
+// ClearNodeID clears the value of the "node_id" field.
+func (u *IdentifiersEntryUpsertBulk) ClearNodeID() *IdentifiersEntryUpsertBulk {
+	return u.Update(func(s *IdentifiersEntryUpsert) {
+		s.ClearNodeID()
+	})
 }
 
 // SetSoftwareIdentifierType sets the "software_identifier_type" field.

@@ -18,6 +18,8 @@ type HashesEntry struct {
 
 func (HashesEntry) Fields() []ent.Field {
 	return []ent.Field{
+		field.Int("external_reference_id").Optional(),
+		field.String("node_id").Optional(),
 		field.Enum("hash_algorithm_type").Values(
 			"UNKNOWN",
 			"MD5",
@@ -44,13 +46,19 @@ func (HashesEntry) Fields() []ent.Field {
 
 func (HashesEntry) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("external_reference", ExternalReference.Type).Ref("hashes").Unique(),
-		edge.From("node", Node.Type).Ref("hashes").Unique(),
+		edge.From("external_reference", ExternalReference.Type).
+			Ref("hashes").
+			Unique().
+			Field("external_reference_id"),
+		edge.From("node", Node.Type).
+			Ref("hashes").
+			Unique().
+			Field("node_id"),
 	}
 }
 
 func (HashesEntry) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("hash_algorithm_type", "hash_data").Unique(),
+		index.Fields("external_reference_id", "node_id", "hash_algorithm_type", "hash_data").Unique(),
 	}
 }

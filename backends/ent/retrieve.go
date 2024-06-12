@@ -15,7 +15,7 @@ import (
 
 	"github.com/protobom/storage/internal/backends/ent"
 	"github.com/protobom/storage/internal/backends/ent/document"
-	"github.com/protobom/storage/internal/backends/ent/metadata"
+	"github.com/protobom/storage/internal/backends/ent/externalreference"
 )
 
 // Retrieve implements the storage.Retriever interface.
@@ -28,50 +28,105 @@ func (backend *Backend) Retrieve(id string, _ *storage.RetrieveOptions) (*sbom.D
 		backend.Options = NewBackendOptions()
 	}
 
-	entDoc, err := backend.client.Document.Query().
-		Where(document.HasMetadataWith(metadata.IDEQ(id))).
+	documents, err := backend.GetDocumentsByID(id)
+	if err != nil {
+		return nil, fmt.Errorf("querying documents: %w", err)
+	}
+
+	if len(documents) > 1 {
+		return nil, fmt.Errorf("multiple documents matching ID %s: %w", id, err)
+	}
+
+	return documents[0], nil
+}
+
+func (backend *Backend) GetDocumentsByID(ids ...string) ([]*sbom.Document, error) {
+	documents := []*sbom.Document{}
+
+	query := backend.client.Document.Query().
 		WithMetadata().
-		WithNodeList().
-		Only(backend.ctx)
-	if err != nil {
-		return nil, fmt.Errorf("eager loading document edges: %w", err)
+		WithNodeList()
+
+	if len(ids) > 0 {
+		query.Where(document.IDIn(ids...))
 	}
 
-	entDoc.Edges.Metadata, err = entDoc.QueryMetadata().
-		WithAuthors().
-		WithDocumentTypes().
-		WithTools().
-		Only(backend.ctx)
+	entDocs, err := query.All(backend.ctx)
 	if err != nil {
-		return nil, fmt.Errorf("eager loading metadata edges: %w", err)
+		return nil, fmt.Errorf("querying documents table: %w", err)
 	}
 
-	entDoc.Edges.NodeList, err = entDoc.QueryNodeList().
-		WithNodes().
-		Only(backend.ctx)
-	if err != nil {
-		return nil, fmt.Errorf("eager loading node list edges: %w", err)
+	for _, entDoc := range entDocs {
+		entDoc.Edges.Metadata, err = entDoc.QueryMetadata().
+			WithAuthors().
+			WithDocumentTypes().
+			WithTools().
+			Only(backend.ctx)
+		if err != nil {
+			return nil, fmt.Errorf("eager loading metadata edges: %w", err)
+		}
+
+		entDoc.Edges.NodeList, err = entDoc.QueryNodeList().
+			WithNodes().
+			Only(backend.ctx)
+		if err != nil {
+			return nil, fmt.Errorf("eager loading node list edges: %w", err)
+		}
+
+		// Eager-load the nodes edges of the node list.
+		entDoc.Edges.NodeList.Edges.Nodes, err = entDoc.Edges.NodeList.QueryNodes().
+			WithEdgeTypes().
+			WithExternalReferences().
+			WithHashes().
+			WithIdentifiers().
+			WithNodes().
+			WithOriginators().
+			WithPrimaryPurpose().
+			WithSuppliers().
+			All(backend.ctx)
+		if err != nil {
+			return nil, fmt.Errorf("eager loading node edges: %w", err)
+		}
+
+		documents = append(documents, &sbom.Document{
+			Metadata: entMetadataToProtobom(entDoc.Edges.Metadata),
+			NodeList: entNodeListToProtobom(entDoc.Edges.NodeList),
+		})
 	}
 
-	// Eager-load the nodes edges of the node list.
-	entDoc.Edges.NodeList.Edges.Nodes, err = entDoc.Edges.NodeList.QueryNodes().
-		WithEdgeTypes().
-		WithExternalReferences().
-		WithHashes().
-		WithIdentifiers().
-		WithNodes().
-		WithOriginators().
-		WithPrimaryPurpose().
-		WithSuppliers().
-		All(backend.ctx)
-	if err != nil {
-		return nil, fmt.Errorf("eager loading node edges: %w", err)
+	return documents, nil
+}
+
+func (backend *Backend) GetExternalReferencesByDocumentID(
+	id string, types ...string,
+) ([]*sbom.ExternalReference, error) {
+	query := backend.client.Document.Query().
+		Where(document.IDEQ(id)).
+		QueryNodeList().
+		QueryNodes().
+		QueryExternalReferences()
+
+	if len(types) > 0 {
+		refTypes := []externalreference.Type{}
+
+		for idx := range types {
+			refType := externalreference.Type(types[idx])
+			if err := externalreference.TypeValidator(refType); err != nil {
+				return nil, fmt.Errorf("%s: %w", types[idx], err)
+			}
+
+			refTypes = append(refTypes, refType)
+		}
+
+		query.Where(externalreference.TypeIn(refTypes...))
 	}
 
-	return &sbom.Document{
-		Metadata: entMetadataToProtobom(entDoc.Edges.Metadata),
-		NodeList: entNodeListToProtobom(entDoc.Edges.NodeList),
-	}, nil
+	entExtRefs, err := query.All(backend.ctx)
+	if err != nil {
+		return nil, fmt.Errorf("querying external references: %w", err)
+	}
+
+	return entExtRefsToProtobom(entExtRefs), nil
 }
 
 func entExtRefsToProtobom(entRefs ent.ExternalReferences) []*sbom.ExternalReference {

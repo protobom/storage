@@ -55,18 +55,18 @@ func (backend *Backend) Store(doc *sbom.Document, opts *storage.StoreOptions) er
 		return fmt.Errorf("ent.Document: %w", err)
 	}
 
-	if err := backend.StoreMetadata(doc.Metadata); err != nil {
+	if err := backend.saveMetadata(doc.Metadata); err != nil {
 		return err
 	}
 
-	if err := backend.StoreNodeList(doc.NodeList); err != nil {
+	if err := backend.saveNodeList(doc.NodeList); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (backend *Backend) StoreDocumentTypes(docTypes []*sbom.DocumentType) error {
+func (backend *Backend) saveDocumentTypes(docTypes []*sbom.DocumentType) error {
 	if backend.client == nil {
 		return fmt.Errorf("%w", errUninitializedClient)
 	}
@@ -92,7 +92,7 @@ func (backend *Backend) StoreDocumentTypes(docTypes []*sbom.DocumentType) error 
 	return nil
 }
 
-func (backend *Backend) StoreEdges(edges []*sbom.Edge) error {
+func (backend *Backend) saveEdges(edges []*sbom.Edge) error {
 	if backend.client == nil {
 		return fmt.Errorf("%w", errUninitializedClient)
 	}
@@ -114,7 +114,7 @@ func (backend *Backend) StoreEdges(edges []*sbom.Edge) error {
 	return nil
 }
 
-func (backend *Backend) StoreExternalReferences(refs []*sbom.ExternalReference) error {
+func (backend *Backend) saveExternalReferences(refs []*sbom.ExternalReference) error {
 	if backend.client == nil {
 		return fmt.Errorf("%w", errUninitializedClient)
 	}
@@ -137,7 +137,7 @@ func (backend *Backend) StoreExternalReferences(refs []*sbom.ExternalReference) 
 
 		backend.ctx = context.WithValue(backend.ctx, externalReferenceIDKey{}, id)
 
-		if err := backend.StoreHashesEntries(ref.Hashes); err != nil {
+		if err := backend.saveHashesEntries(ref.Hashes); err != nil {
 			return err
 		}
 	}
@@ -145,7 +145,7 @@ func (backend *Backend) StoreExternalReferences(refs []*sbom.ExternalReference) 
 	return nil
 }
 
-func (backend *Backend) StoreHashesEntries(hashes map[int32]string) error {
+func (backend *Backend) saveHashesEntries(hashes map[int32]string) error {
 	if backend.client == nil {
 		return fmt.Errorf("%w", errUninitializedClient)
 	}
@@ -178,7 +178,7 @@ func (backend *Backend) StoreHashesEntries(hashes map[int32]string) error {
 	return nil
 }
 
-func (backend *Backend) StoreIdentifiersEntries(idents map[int32]string) error {
+func (backend *Backend) saveIdentifiersEntries(idents map[int32]string) error {
 	if backend.client == nil {
 		return fmt.Errorf("%w", errUninitializedClient)
 	}
@@ -207,7 +207,7 @@ func (backend *Backend) StoreIdentifiersEntries(idents map[int32]string) error {
 	return nil
 }
 
-func (backend *Backend) StoreMetadata(md *sbom.Metadata) error {
+func (backend *Backend) saveMetadata(md *sbom.Metadata) error {
 	if backend.client == nil {
 		return fmt.Errorf("%w", errUninitializedClient)
 	}
@@ -227,22 +227,22 @@ func (backend *Backend) StoreMetadata(md *sbom.Metadata) error {
 
 	backend.ctx = context.WithValue(backend.ctx, metadataIDKey{}, md.Id)
 
-	if err := backend.StorePersons(md.Authors); err != nil {
+	if err := backend.savePersons(md.Authors); err != nil {
 		return err
 	}
 
-	if err := backend.StoreDocumentTypes(md.DocumentTypes); err != nil {
+	if err := backend.saveDocumentTypes(md.DocumentTypes); err != nil {
 		return err
 	}
 
-	if err := backend.StoreTools(md.Tools); err != nil {
+	if err := backend.saveTools(md.Tools); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (backend *Backend) StoreNodeList(nodeList *sbom.NodeList) error {
+func (backend *Backend) saveNodeList(nodeList *sbom.NodeList) error {
 	if backend.client == nil {
 		return fmt.Errorf("%w", errUninitializedClient)
 	}
@@ -261,19 +261,19 @@ func (backend *Backend) StoreNodeList(nodeList *sbom.NodeList) error {
 
 	backend.ctx = context.WithValue(backend.ctx, nodeListIDKey{}, id)
 
-	if err := backend.StoreNodes(nodeList.Nodes); err != nil {
+	if err := backend.saveNodes(nodeList.Nodes); err != nil {
 		return err
 	}
 
 	// Update nodes of this node list with their typed edges.
-	if err := backend.StoreEdges(nodeList.Edges); err != nil {
+	if err := backend.saveEdges(nodeList.Edges); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (backend *Backend) StoreNodes(nodes []*sbom.Node) error { //nolint:cyclop
+func (backend *Backend) saveNodes(nodes []*sbom.Node) error { //nolint:cyclop
 	if backend.client == nil {
 		return fmt.Errorf("%w", errUninitializedClient)
 	}
@@ -288,27 +288,27 @@ func (backend *Backend) StoreNodes(nodes []*sbom.Node) error { //nolint:cyclop
 
 		backend.ctx = context.WithValue(backend.ctx, nodeIDKey{}, n.Id)
 
-		if err := backend.StoreExternalReferences(n.ExternalReferences); err != nil {
+		if err := backend.saveExternalReferences(n.ExternalReferences); err != nil {
 			return err
 		}
 
-		if err := backend.StorePersons(n.Originators); err != nil {
+		if err := backend.savePersons(n.Originators); err != nil {
 			return err
 		}
 
-		if err := backend.StorePersons(n.Suppliers); err != nil {
+		if err := backend.savePersons(n.Suppliers); err != nil {
 			return err
 		}
 
-		if err := backend.StorePurposes(n.PrimaryPurpose); err != nil {
+		if err := backend.savePurposes(n.PrimaryPurpose); err != nil {
 			return err
 		}
 
-		if err := backend.StoreHashesEntries(n.Hashes); err != nil {
+		if err := backend.saveHashesEntries(n.Hashes); err != nil {
 			return err
 		}
 
-		if err := backend.StoreIdentifiersEntries(n.Identifiers); err != nil {
+		if err := backend.saveIdentifiersEntries(n.Identifiers); err != nil {
 			return err
 		}
 	}
@@ -316,7 +316,7 @@ func (backend *Backend) StoreNodes(nodes []*sbom.Node) error { //nolint:cyclop
 	return nil
 }
 
-func (backend *Backend) StorePersons(persons []*sbom.Person) error {
+func (backend *Backend) savePersons(persons []*sbom.Person) error {
 	if backend.client == nil {
 		return fmt.Errorf("%w", errUninitializedClient)
 	}
@@ -344,7 +344,7 @@ func (backend *Backend) StorePersons(persons []*sbom.Person) error {
 
 		backend.ctx = context.WithValue(backend.ctx, contactOwnerIDKey{}, id)
 
-		if err := backend.StorePersons(p.Contacts); err != nil {
+		if err := backend.savePersons(p.Contacts); err != nil {
 			return err
 		}
 	}
@@ -352,7 +352,7 @@ func (backend *Backend) StorePersons(persons []*sbom.Person) error {
 	return nil
 }
 
-func (backend *Backend) StorePurposes(purposes []sbom.Purpose) error {
+func (backend *Backend) savePurposes(purposes []sbom.Purpose) error {
 	if backend.client == nil {
 		return fmt.Errorf("%w", errUninitializedClient)
 	}
@@ -381,7 +381,7 @@ func (backend *Backend) StorePurposes(purposes []sbom.Purpose) error {
 	return nil
 }
 
-func (backend *Backend) StoreTools(tools []*sbom.Tool) error {
+func (backend *Backend) saveTools(tools []*sbom.Tool) error {
 	if backend.client == nil {
 		return fmt.Errorf("%w", errUninitializedClient)
 	}

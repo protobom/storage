@@ -41,7 +41,7 @@ const (
 	// It exists in this package in order to avoid circular dependency with the "hashesentry" package.
 	HashesInverseTable = "hashes_entries"
 	// HashesColumn is the table column denoting the hashes relation/edge.
-	HashesColumn = "external_reference_hashes"
+	HashesColumn = "external_reference_id"
 	// NodeTable is the table that holds the node relation/edge.
 	NodeTable = "external_references"
 	// NodeInverseTable is the table name for the Node entity.

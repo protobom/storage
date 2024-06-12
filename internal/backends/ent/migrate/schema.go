@@ -127,8 +127,8 @@ var (
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "hash_algorithm_type", Type: field.TypeEnum, Enums: []string{"UNKNOWN", "MD5", "SHA1", "SHA256", "SHA384", "SHA512", "SHA3_256", "SHA3_384", "SHA3_512", "BLAKE2B_256", "BLAKE2B_384", "BLAKE2B_512", "BLAKE3", "MD2", "ADLER32", "MD4", "MD6", "SHA224"}},
 		{Name: "hash_data", Type: field.TypeString},
-		{Name: "external_reference_hashes", Type: field.TypeInt, Nullable: true},
-		{Name: "node_hashes", Type: field.TypeString, Nullable: true},
+		{Name: "external_reference_id", Type: field.TypeInt, Nullable: true},
+		{Name: "node_id", Type: field.TypeString, Nullable: true},
 	}
 	// HashesEntriesTable holds the schema information for the "hashes_entries" table.
 	HashesEntriesTable = &schema.Table{
@@ -151,9 +151,9 @@ var (
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "hashesentry_hash_algorithm_type_hash_data",
+				Name:    "hashesentry_external_reference_id_node_id_hash_algorithm_type_hash_data",
 				Unique:  true,
-				Columns: []*schema.Column{HashesEntriesColumns[1], HashesEntriesColumns[2]},
+				Columns: []*schema.Column{HashesEntriesColumns[3], HashesEntriesColumns[4], HashesEntriesColumns[1], HashesEntriesColumns[2]},
 			},
 		},
 	}
@@ -162,7 +162,7 @@ var (
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "software_identifier_type", Type: field.TypeEnum, Enums: []string{"UNKNOWN_IDENTIFIER_TYPE", "PURL", "CPE22", "CPE23", "GITOID"}},
 		{Name: "software_identifier_value", Type: field.TypeString},
-		{Name: "node_identifiers", Type: field.TypeString, Nullable: true},
+		{Name: "node_id", Type: field.TypeString, Nullable: true},
 	}
 	// IdentifiersEntriesTable holds the schema information for the "identifiers_entries" table.
 	IdentifiersEntriesTable = &schema.Table{
@@ -276,16 +276,6 @@ var (
 				Columns:    []*schema.Column{NodeListsColumns[2]},
 				RefColumns: []*schema.Column{DocumentsColumns[0]},
 				OnDelete:   schema.NoAction,
-			},
-		},
-		Indexes: []*schema.Index{
-			{
-				Name:    "nodelist_document_id_root_elements",
-				Unique:  true,
-				Columns: []*schema.Column{NodeListsColumns[2], NodeListsColumns[1]},
-				Annotation: &entsql.IndexAnnotation{
-					Where: "root_elements IS NOT NULL",
-				},
 			},
 		},
 	}

@@ -2468,6 +2468,104 @@ func (m *HashesEntryMutation) IDs(ctx context.Context) ([]int, error) {
 	}
 }
 
+// SetExternalReferenceID sets the "external_reference_id" field.
+func (m *HashesEntryMutation) SetExternalReferenceID(i int) {
+	m.external_reference = &i
+}
+
+// ExternalReferenceID returns the value of the "external_reference_id" field in the mutation.
+func (m *HashesEntryMutation) ExternalReferenceID() (r int, exists bool) {
+	v := m.external_reference
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldExternalReferenceID returns the old "external_reference_id" field's value of the HashesEntry entity.
+// If the HashesEntry object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *HashesEntryMutation) OldExternalReferenceID(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldExternalReferenceID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldExternalReferenceID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldExternalReferenceID: %w", err)
+	}
+	return oldValue.ExternalReferenceID, nil
+}
+
+// ClearExternalReferenceID clears the value of the "external_reference_id" field.
+func (m *HashesEntryMutation) ClearExternalReferenceID() {
+	m.external_reference = nil
+	m.clearedFields[hashesentry.FieldExternalReferenceID] = struct{}{}
+}
+
+// ExternalReferenceIDCleared returns if the "external_reference_id" field was cleared in this mutation.
+func (m *HashesEntryMutation) ExternalReferenceIDCleared() bool {
+	_, ok := m.clearedFields[hashesentry.FieldExternalReferenceID]
+	return ok
+}
+
+// ResetExternalReferenceID resets all changes to the "external_reference_id" field.
+func (m *HashesEntryMutation) ResetExternalReferenceID() {
+	m.external_reference = nil
+	delete(m.clearedFields, hashesentry.FieldExternalReferenceID)
+}
+
+// SetNodeID sets the "node_id" field.
+func (m *HashesEntryMutation) SetNodeID(s string) {
+	m.node = &s
+}
+
+// NodeID returns the value of the "node_id" field in the mutation.
+func (m *HashesEntryMutation) NodeID() (r string, exists bool) {
+	v := m.node
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldNodeID returns the old "node_id" field's value of the HashesEntry entity.
+// If the HashesEntry object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *HashesEntryMutation) OldNodeID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldNodeID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldNodeID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldNodeID: %w", err)
+	}
+	return oldValue.NodeID, nil
+}
+
+// ClearNodeID clears the value of the "node_id" field.
+func (m *HashesEntryMutation) ClearNodeID() {
+	m.node = nil
+	m.clearedFields[hashesentry.FieldNodeID] = struct{}{}
+}
+
+// NodeIDCleared returns if the "node_id" field was cleared in this mutation.
+func (m *HashesEntryMutation) NodeIDCleared() bool {
+	_, ok := m.clearedFields[hashesentry.FieldNodeID]
+	return ok
+}
+
+// ResetNodeID resets all changes to the "node_id" field.
+func (m *HashesEntryMutation) ResetNodeID() {
+	m.node = nil
+	delete(m.clearedFields, hashesentry.FieldNodeID)
+}
+
 // SetHashAlgorithmType sets the "hash_algorithm_type" field.
 func (m *HashesEntryMutation) SetHashAlgorithmType(hat hashesentry.HashAlgorithmType) {
 	m.hash_algorithm_type = &hat
@@ -2540,27 +2638,15 @@ func (m *HashesEntryMutation) ResetHashData() {
 	m.hash_data = nil
 }
 
-// SetExternalReferenceID sets the "external_reference" edge to the ExternalReference entity by id.
-func (m *HashesEntryMutation) SetExternalReferenceID(id int) {
-	m.external_reference = &id
-}
-
 // ClearExternalReference clears the "external_reference" edge to the ExternalReference entity.
 func (m *HashesEntryMutation) ClearExternalReference() {
 	m.clearedexternal_reference = true
+	m.clearedFields[hashesentry.FieldExternalReferenceID] = struct{}{}
 }
 
 // ExternalReferenceCleared reports if the "external_reference" edge to the ExternalReference entity was cleared.
 func (m *HashesEntryMutation) ExternalReferenceCleared() bool {
-	return m.clearedexternal_reference
-}
-
-// ExternalReferenceID returns the "external_reference" edge ID in the mutation.
-func (m *HashesEntryMutation) ExternalReferenceID() (id int, exists bool) {
-	if m.external_reference != nil {
-		return *m.external_reference, true
-	}
-	return
+	return m.ExternalReferenceIDCleared() || m.clearedexternal_reference
 }
 
 // ExternalReferenceIDs returns the "external_reference" edge IDs in the mutation.
@@ -2579,27 +2665,15 @@ func (m *HashesEntryMutation) ResetExternalReference() {
 	m.clearedexternal_reference = false
 }
 
-// SetNodeID sets the "node" edge to the Node entity by id.
-func (m *HashesEntryMutation) SetNodeID(id string) {
-	m.node = &id
-}
-
 // ClearNode clears the "node" edge to the Node entity.
 func (m *HashesEntryMutation) ClearNode() {
 	m.clearednode = true
+	m.clearedFields[hashesentry.FieldNodeID] = struct{}{}
 }
 
 // NodeCleared reports if the "node" edge to the Node entity was cleared.
 func (m *HashesEntryMutation) NodeCleared() bool {
-	return m.clearednode
-}
-
-// NodeID returns the "node" edge ID in the mutation.
-func (m *HashesEntryMutation) NodeID() (id string, exists bool) {
-	if m.node != nil {
-		return *m.node, true
-	}
-	return
+	return m.NodeIDCleared() || m.clearednode
 }
 
 // NodeIDs returns the "node" edge IDs in the mutation.
@@ -2652,7 +2726,13 @@ func (m *HashesEntryMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *HashesEntryMutation) Fields() []string {
-	fields := make([]string, 0, 2)
+	fields := make([]string, 0, 4)
+	if m.external_reference != nil {
+		fields = append(fields, hashesentry.FieldExternalReferenceID)
+	}
+	if m.node != nil {
+		fields = append(fields, hashesentry.FieldNodeID)
+	}
 	if m.hash_algorithm_type != nil {
 		fields = append(fields, hashesentry.FieldHashAlgorithmType)
 	}
@@ -2667,6 +2747,10 @@ func (m *HashesEntryMutation) Fields() []string {
 // schema.
 func (m *HashesEntryMutation) Field(name string) (ent.Value, bool) {
 	switch name {
+	case hashesentry.FieldExternalReferenceID:
+		return m.ExternalReferenceID()
+	case hashesentry.FieldNodeID:
+		return m.NodeID()
 	case hashesentry.FieldHashAlgorithmType:
 		return m.HashAlgorithmType()
 	case hashesentry.FieldHashData:
@@ -2680,6 +2764,10 @@ func (m *HashesEntryMutation) Field(name string) (ent.Value, bool) {
 // database failed.
 func (m *HashesEntryMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
 	switch name {
+	case hashesentry.FieldExternalReferenceID:
+		return m.OldExternalReferenceID(ctx)
+	case hashesentry.FieldNodeID:
+		return m.OldNodeID(ctx)
 	case hashesentry.FieldHashAlgorithmType:
 		return m.OldHashAlgorithmType(ctx)
 	case hashesentry.FieldHashData:
@@ -2693,6 +2781,20 @@ func (m *HashesEntryMutation) OldField(ctx context.Context, name string) (ent.Va
 // type.
 func (m *HashesEntryMutation) SetField(name string, value ent.Value) error {
 	switch name {
+	case hashesentry.FieldExternalReferenceID:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetExternalReferenceID(v)
+		return nil
+	case hashesentry.FieldNodeID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetNodeID(v)
+		return nil
 	case hashesentry.FieldHashAlgorithmType:
 		v, ok := value.(hashesentry.HashAlgorithmType)
 		if !ok {
@@ -2714,13 +2816,16 @@ func (m *HashesEntryMutation) SetField(name string, value ent.Value) error {
 // AddedFields returns all numeric fields that were incremented/decremented during
 // this mutation.
 func (m *HashesEntryMutation) AddedFields() []string {
-	return nil
+	var fields []string
+	return fields
 }
 
 // AddedField returns the numeric value that was incremented/decremented on a field
 // with the given name. The second boolean return value indicates that this field
 // was not set, or was not defined in the schema.
 func (m *HashesEntryMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	}
 	return nil, false
 }
 
@@ -2736,7 +2841,14 @@ func (m *HashesEntryMutation) AddField(name string, value ent.Value) error {
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *HashesEntryMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(hashesentry.FieldExternalReferenceID) {
+		fields = append(fields, hashesentry.FieldExternalReferenceID)
+	}
+	if m.FieldCleared(hashesentry.FieldNodeID) {
+		fields = append(fields, hashesentry.FieldNodeID)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -2749,6 +2861,14 @@ func (m *HashesEntryMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *HashesEntryMutation) ClearField(name string) error {
+	switch name {
+	case hashesentry.FieldExternalReferenceID:
+		m.ClearExternalReferenceID()
+		return nil
+	case hashesentry.FieldNodeID:
+		m.ClearNodeID()
+		return nil
+	}
 	return fmt.Errorf("unknown HashesEntry nullable field %s", name)
 }
 
@@ -2756,6 +2876,12 @@ func (m *HashesEntryMutation) ClearField(name string) error {
 // It returns an error if the field is not defined in the schema.
 func (m *HashesEntryMutation) ResetField(name string) error {
 	switch name {
+	case hashesentry.FieldExternalReferenceID:
+		m.ResetExternalReferenceID()
+		return nil
+	case hashesentry.FieldNodeID:
+		m.ResetNodeID()
+		return nil
 	case hashesentry.FieldHashAlgorithmType:
 		m.ResetHashAlgorithmType()
 		return nil
@@ -2972,6 +3098,55 @@ func (m *IdentifiersEntryMutation) IDs(ctx context.Context) ([]int, error) {
 	}
 }
 
+// SetNodeID sets the "node_id" field.
+func (m *IdentifiersEntryMutation) SetNodeID(s string) {
+	m.node = &s
+}
+
+// NodeID returns the value of the "node_id" field in the mutation.
+func (m *IdentifiersEntryMutation) NodeID() (r string, exists bool) {
+	v := m.node
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldNodeID returns the old "node_id" field's value of the IdentifiersEntry entity.
+// If the IdentifiersEntry object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *IdentifiersEntryMutation) OldNodeID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldNodeID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldNodeID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldNodeID: %w", err)
+	}
+	return oldValue.NodeID, nil
+}
+
+// ClearNodeID clears the value of the "node_id" field.
+func (m *IdentifiersEntryMutation) ClearNodeID() {
+	m.node = nil
+	m.clearedFields[identifiersentry.FieldNodeID] = struct{}{}
+}
+
+// NodeIDCleared returns if the "node_id" field was cleared in this mutation.
+func (m *IdentifiersEntryMutation) NodeIDCleared() bool {
+	_, ok := m.clearedFields[identifiersentry.FieldNodeID]
+	return ok
+}
+
+// ResetNodeID resets all changes to the "node_id" field.
+func (m *IdentifiersEntryMutation) ResetNodeID() {
+	m.node = nil
+	delete(m.clearedFields, identifiersentry.FieldNodeID)
+}
+
 // SetSoftwareIdentifierType sets the "software_identifier_type" field.
 func (m *IdentifiersEntryMutation) SetSoftwareIdentifierType(iit identifiersentry.SoftwareIdentifierType) {
 	m.software_identifier_type = &iit
@@ -3044,27 +3219,15 @@ func (m *IdentifiersEntryMutation) ResetSoftwareIdentifierValue() {
 	m.software_identifier_value = nil
 }
 
-// SetNodeID sets the "node" edge to the Node entity by id.
-func (m *IdentifiersEntryMutation) SetNodeID(id string) {
-	m.node = &id
-}
-
 // ClearNode clears the "node" edge to the Node entity.
 func (m *IdentifiersEntryMutation) ClearNode() {
 	m.clearednode = true
+	m.clearedFields[identifiersentry.FieldNodeID] = struct{}{}
 }
 
 // NodeCleared reports if the "node" edge to the Node entity was cleared.
 func (m *IdentifiersEntryMutation) NodeCleared() bool {
-	return m.clearednode
-}
-
-// NodeID returns the "node" edge ID in the mutation.
-func (m *IdentifiersEntryMutation) NodeID() (id string, exists bool) {
-	if m.node != nil {
-		return *m.node, true
-	}
-	return
+	return m.NodeIDCleared() || m.clearednode
 }
 
 // NodeIDs returns the "node" edge IDs in the mutation.
@@ -3117,7 +3280,10 @@ func (m *IdentifiersEntryMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *IdentifiersEntryMutation) Fields() []string {
-	fields := make([]string, 0, 2)
+	fields := make([]string, 0, 3)
+	if m.node != nil {
+		fields = append(fields, identifiersentry.FieldNodeID)
+	}
 	if m.software_identifier_type != nil {
 		fields = append(fields, identifiersentry.FieldSoftwareIdentifierType)
 	}
@@ -3132,6 +3298,8 @@ func (m *IdentifiersEntryMutation) Fields() []string {
 // schema.
 func (m *IdentifiersEntryMutation) Field(name string) (ent.Value, bool) {
 	switch name {
+	case identifiersentry.FieldNodeID:
+		return m.NodeID()
 	case identifiersentry.FieldSoftwareIdentifierType:
 		return m.SoftwareIdentifierType()
 	case identifiersentry.FieldSoftwareIdentifierValue:
@@ -3145,6 +3313,8 @@ func (m *IdentifiersEntryMutation) Field(name string) (ent.Value, bool) {
 // database failed.
 func (m *IdentifiersEntryMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
 	switch name {
+	case identifiersentry.FieldNodeID:
+		return m.OldNodeID(ctx)
 	case identifiersentry.FieldSoftwareIdentifierType:
 		return m.OldSoftwareIdentifierType(ctx)
 	case identifiersentry.FieldSoftwareIdentifierValue:
@@ -3158,6 +3328,13 @@ func (m *IdentifiersEntryMutation) OldField(ctx context.Context, name string) (e
 // type.
 func (m *IdentifiersEntryMutation) SetField(name string, value ent.Value) error {
 	switch name {
+	case identifiersentry.FieldNodeID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetNodeID(v)
+		return nil
 	case identifiersentry.FieldSoftwareIdentifierType:
 		v, ok := value.(identifiersentry.SoftwareIdentifierType)
 		if !ok {
@@ -3201,7 +3378,11 @@ func (m *IdentifiersEntryMutation) AddField(name string, value ent.Value) error 
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *IdentifiersEntryMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(identifiersentry.FieldNodeID) {
+		fields = append(fields, identifiersentry.FieldNodeID)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -3214,6 +3395,11 @@ func (m *IdentifiersEntryMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *IdentifiersEntryMutation) ClearField(name string) error {
+	switch name {
+	case identifiersentry.FieldNodeID:
+		m.ClearNodeID()
+		return nil
+	}
 	return fmt.Errorf("unknown IdentifiersEntry nullable field %s", name)
 }
 
@@ -3221,6 +3407,9 @@ func (m *IdentifiersEntryMutation) ClearField(name string) error {
 // It returns an error if the field is not defined in the schema.
 func (m *IdentifiersEntryMutation) ResetField(name string) error {
 	switch name {
+	case identifiersentry.FieldNodeID:
+		m.ResetNodeID()
+		return nil
 	case identifiersentry.FieldSoftwareIdentifierType:
 		m.ResetSoftwareIdentifierType()
 		return nil

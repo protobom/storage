@@ -21,15 +21,16 @@ type IdentifiersEntry struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID int `json:"id,omitempty"`
+	// NodeID holds the value of the "node_id" field.
+	NodeID string `json:"node_id,omitempty"`
 	// SoftwareIdentifierType holds the value of the "software_identifier_type" field.
 	SoftwareIdentifierType identifiersentry.SoftwareIdentifierType `json:"software_identifier_type,omitempty"`
 	// SoftwareIdentifierValue holds the value of the "software_identifier_value" field.
 	SoftwareIdentifierValue string `json:"software_identifier_value,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the IdentifiersEntryQuery when eager-loading is set.
-	Edges            IdentifiersEntryEdges `json:"edges"`
-	node_identifiers *string
-	selectValues     sql.SelectValues
+	Edges        IdentifiersEntryEdges `json:"edges"`
+	selectValues sql.SelectValues
 }
 
 // IdentifiersEntryEdges holds the relations/edges for other nodes in the graph.
@@ -59,9 +60,7 @@ func (*IdentifiersEntry) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case identifiersentry.FieldID:
 			values[i] = new(sql.NullInt64)
-		case identifiersentry.FieldSoftwareIdentifierType, identifiersentry.FieldSoftwareIdentifierValue:
-			values[i] = new(sql.NullString)
-		case identifiersentry.ForeignKeys[0]: // node_identifiers
+		case identifiersentry.FieldNodeID, identifiersentry.FieldSoftwareIdentifierType, identifiersentry.FieldSoftwareIdentifierValue:
 			values[i] = new(sql.NullString)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -84,6 +83,12 @@ func (ie *IdentifiersEntry) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", value)
 			}
 			ie.ID = int(value.Int64)
+		case identifiersentry.FieldNodeID:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field node_id", values[i])
+			} else if value.Valid {
+				ie.NodeID = value.String
+			}
 		case identifiersentry.FieldSoftwareIdentifierType:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field software_identifier_type", values[i])
@@ -95,13 +100,6 @@ func (ie *IdentifiersEntry) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field software_identifier_value", values[i])
 			} else if value.Valid {
 				ie.SoftwareIdentifierValue = value.String
-			}
-		case identifiersentry.ForeignKeys[0]:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field node_identifiers", values[i])
-			} else if value.Valid {
-				ie.node_identifiers = new(string)
-				*ie.node_identifiers = value.String
 			}
 		default:
 			ie.selectValues.Set(columns[i], values[i])
@@ -144,6 +142,9 @@ func (ie *IdentifiersEntry) String() string {
 	var builder strings.Builder
 	builder.WriteString("IdentifiersEntry(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", ie.ID))
+	builder.WriteString("node_id=")
+	builder.WriteString(ie.NodeID)
+	builder.WriteString(", ")
 	builder.WriteString("software_identifier_type=")
 	builder.WriteString(fmt.Sprintf("%v", ie.SoftwareIdentifierType))
 	builder.WriteString(", ")

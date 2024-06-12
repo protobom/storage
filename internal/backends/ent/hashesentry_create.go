@@ -27,6 +27,34 @@ type HashesEntryCreate struct {
 	conflict []sql.ConflictOption
 }
 
+// SetExternalReferenceID sets the "external_reference_id" field.
+func (hec *HashesEntryCreate) SetExternalReferenceID(i int) *HashesEntryCreate {
+	hec.mutation.SetExternalReferenceID(i)
+	return hec
+}
+
+// SetNillableExternalReferenceID sets the "external_reference_id" field if the given value is not nil.
+func (hec *HashesEntryCreate) SetNillableExternalReferenceID(i *int) *HashesEntryCreate {
+	if i != nil {
+		hec.SetExternalReferenceID(*i)
+	}
+	return hec
+}
+
+// SetNodeID sets the "node_id" field.
+func (hec *HashesEntryCreate) SetNodeID(s string) *HashesEntryCreate {
+	hec.mutation.SetNodeID(s)
+	return hec
+}
+
+// SetNillableNodeID sets the "node_id" field if the given value is not nil.
+func (hec *HashesEntryCreate) SetNillableNodeID(s *string) *HashesEntryCreate {
+	if s != nil {
+		hec.SetNodeID(*s)
+	}
+	return hec
+}
+
 // SetHashAlgorithmType sets the "hash_algorithm_type" field.
 func (hec *HashesEntryCreate) SetHashAlgorithmType(hat hashesentry.HashAlgorithmType) *HashesEntryCreate {
 	hec.mutation.SetHashAlgorithmType(hat)
@@ -39,37 +67,9 @@ func (hec *HashesEntryCreate) SetHashData(s string) *HashesEntryCreate {
 	return hec
 }
 
-// SetExternalReferenceID sets the "external_reference" edge to the ExternalReference entity by ID.
-func (hec *HashesEntryCreate) SetExternalReferenceID(id int) *HashesEntryCreate {
-	hec.mutation.SetExternalReferenceID(id)
-	return hec
-}
-
-// SetNillableExternalReferenceID sets the "external_reference" edge to the ExternalReference entity by ID if the given value is not nil.
-func (hec *HashesEntryCreate) SetNillableExternalReferenceID(id *int) *HashesEntryCreate {
-	if id != nil {
-		hec = hec.SetExternalReferenceID(*id)
-	}
-	return hec
-}
-
 // SetExternalReference sets the "external_reference" edge to the ExternalReference entity.
 func (hec *HashesEntryCreate) SetExternalReference(e *ExternalReference) *HashesEntryCreate {
 	return hec.SetExternalReferenceID(e.ID)
-}
-
-// SetNodeID sets the "node" edge to the Node entity by ID.
-func (hec *HashesEntryCreate) SetNodeID(id string) *HashesEntryCreate {
-	hec.mutation.SetNodeID(id)
-	return hec
-}
-
-// SetNillableNodeID sets the "node" edge to the Node entity by ID if the given value is not nil.
-func (hec *HashesEntryCreate) SetNillableNodeID(id *string) *HashesEntryCreate {
-	if id != nil {
-		hec = hec.SetNodeID(*id)
-	}
-	return hec
 }
 
 // SetNode sets the "node" edge to the Node entity.
@@ -171,7 +171,7 @@ func (hec *HashesEntryCreate) createSpec() (*HashesEntry, *sqlgraph.CreateSpec) 
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.external_reference_hashes = &nodes[0]
+		_node.ExternalReferenceID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := hec.mutation.NodeIDs(); len(nodes) > 0 {
@@ -188,7 +188,7 @@ func (hec *HashesEntryCreate) createSpec() (*HashesEntry, *sqlgraph.CreateSpec) 
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.node_hashes = &nodes[0]
+		_node.NodeID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
@@ -198,7 +198,7 @@ func (hec *HashesEntryCreate) createSpec() (*HashesEntry, *sqlgraph.CreateSpec) 
 // of the `INSERT` statement. For example:
 //
 //	client.HashesEntry.Create().
-//		SetHashAlgorithmType(v).
+//		SetExternalReferenceID(v).
 //		OnConflict(
 //			// Update the row with the new values
 //			// the was proposed for insertion.
@@ -207,7 +207,7 @@ func (hec *HashesEntryCreate) createSpec() (*HashesEntry, *sqlgraph.CreateSpec) 
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.HashesEntryUpsert) {
-//			SetHashAlgorithmType(v+v).
+//			SetExternalReferenceID(v+v).
 //		}).
 //		Exec(ctx)
 func (hec *HashesEntryCreate) OnConflict(opts ...sql.ConflictOption) *HashesEntryUpsertOne {
@@ -242,6 +242,42 @@ type (
 		*sql.UpdateSet
 	}
 )
+
+// SetExternalReferenceID sets the "external_reference_id" field.
+func (u *HashesEntryUpsert) SetExternalReferenceID(v int) *HashesEntryUpsert {
+	u.Set(hashesentry.FieldExternalReferenceID, v)
+	return u
+}
+
+// UpdateExternalReferenceID sets the "external_reference_id" field to the value that was provided on create.
+func (u *HashesEntryUpsert) UpdateExternalReferenceID() *HashesEntryUpsert {
+	u.SetExcluded(hashesentry.FieldExternalReferenceID)
+	return u
+}
+
+// ClearExternalReferenceID clears the value of the "external_reference_id" field.
+func (u *HashesEntryUpsert) ClearExternalReferenceID() *HashesEntryUpsert {
+	u.SetNull(hashesentry.FieldExternalReferenceID)
+	return u
+}
+
+// SetNodeID sets the "node_id" field.
+func (u *HashesEntryUpsert) SetNodeID(v string) *HashesEntryUpsert {
+	u.Set(hashesentry.FieldNodeID, v)
+	return u
+}
+
+// UpdateNodeID sets the "node_id" field to the value that was provided on create.
+func (u *HashesEntryUpsert) UpdateNodeID() *HashesEntryUpsert {
+	u.SetExcluded(hashesentry.FieldNodeID)
+	return u
+}
+
+// ClearNodeID clears the value of the "node_id" field.
+func (u *HashesEntryUpsert) ClearNodeID() *HashesEntryUpsert {
+	u.SetNull(hashesentry.FieldNodeID)
+	return u
+}
 
 // SetHashAlgorithmType sets the "hash_algorithm_type" field.
 func (u *HashesEntryUpsert) SetHashAlgorithmType(v hashesentry.HashAlgorithmType) *HashesEntryUpsert {
@@ -305,6 +341,48 @@ func (u *HashesEntryUpsertOne) Update(set func(*HashesEntryUpsert)) *HashesEntry
 		set(&HashesEntryUpsert{UpdateSet: update})
 	}))
 	return u
+}
+
+// SetExternalReferenceID sets the "external_reference_id" field.
+func (u *HashesEntryUpsertOne) SetExternalReferenceID(v int) *HashesEntryUpsertOne {
+	return u.Update(func(s *HashesEntryUpsert) {
+		s.SetExternalReferenceID(v)
+	})
+}
+
+// UpdateExternalReferenceID sets the "external_reference_id" field to the value that was provided on create.
+func (u *HashesEntryUpsertOne) UpdateExternalReferenceID() *HashesEntryUpsertOne {
+	return u.Update(func(s *HashesEntryUpsert) {
+		s.UpdateExternalReferenceID()
+	})
+}
+
+// ClearExternalReferenceID clears the value of the "external_reference_id" field.
+func (u *HashesEntryUpsertOne) ClearExternalReferenceID() *HashesEntryUpsertOne {
+	return u.Update(func(s *HashesEntryUpsert) {
+		s.ClearExternalReferenceID()
+	})
+}
+
+// SetNodeID sets the "node_id" field.
+func (u *HashesEntryUpsertOne) SetNodeID(v string) *HashesEntryUpsertOne {
+	return u.Update(func(s *HashesEntryUpsert) {
+		s.SetNodeID(v)
+	})
+}
+
+// UpdateNodeID sets the "node_id" field to the value that was provided on create.
+func (u *HashesEntryUpsertOne) UpdateNodeID() *HashesEntryUpsertOne {
+	return u.Update(func(s *HashesEntryUpsert) {
+		s.UpdateNodeID()
+	})
+}
+
+// ClearNodeID clears the value of the "node_id" field.
+func (u *HashesEntryUpsertOne) ClearNodeID() *HashesEntryUpsertOne {
+	return u.Update(func(s *HashesEntryUpsert) {
+		s.ClearNodeID()
+	})
 }
 
 // SetHashAlgorithmType sets the "hash_algorithm_type" field.
@@ -469,7 +547,7 @@ func (hecb *HashesEntryCreateBulk) ExecX(ctx context.Context) {
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.HashesEntryUpsert) {
-//			SetHashAlgorithmType(v+v).
+//			SetExternalReferenceID(v+v).
 //		}).
 //		Exec(ctx)
 func (hecb *HashesEntryCreateBulk) OnConflict(opts ...sql.ConflictOption) *HashesEntryUpsertBulk {
@@ -536,6 +614,48 @@ func (u *HashesEntryUpsertBulk) Update(set func(*HashesEntryUpsert)) *HashesEntr
 		set(&HashesEntryUpsert{UpdateSet: update})
 	}))
 	return u
+}
+
+// SetExternalReferenceID sets the "external_reference_id" field.
+func (u *HashesEntryUpsertBulk) SetExternalReferenceID(v int) *HashesEntryUpsertBulk {
+	return u.Update(func(s *HashesEntryUpsert) {
+		s.SetExternalReferenceID(v)
+	})
+}
+
+// UpdateExternalReferenceID sets the "external_reference_id" field to the value that was provided on create.
+func (u *HashesEntryUpsertBulk) UpdateExternalReferenceID() *HashesEntryUpsertBulk {
+	return u.Update(func(s *HashesEntryUpsert) {
+		s.UpdateExternalReferenceID()
+	})
+}
+
+// ClearExternalReferenceID clears the value of the "external_reference_id" field.
+func (u *HashesEntryUpsertBulk) ClearExternalReferenceID() *HashesEntryUpsertBulk {
+	return u.Update(func(s *HashesEntryUpsert) {
+		s.ClearExternalReferenceID()
+	})
+}
+
+// SetNodeID sets the "node_id" field.
+func (u *HashesEntryUpsertBulk) SetNodeID(v string) *HashesEntryUpsertBulk {
+	return u.Update(func(s *HashesEntryUpsert) {
+		s.SetNodeID(v)
+	})
+}
+
+// UpdateNodeID sets the "node_id" field to the value that was provided on create.
+func (u *HashesEntryUpsertBulk) UpdateNodeID() *HashesEntryUpsertBulk {
+	return u.Update(func(s *HashesEntryUpsert) {
+		s.UpdateNodeID()
+	})
+}
+
+// ClearNodeID clears the value of the "node_id" field.
+func (u *HashesEntryUpsertBulk) ClearNodeID() *HashesEntryUpsertBulk {
+	return u.Update(func(s *HashesEntryUpsert) {
+		s.ClearNodeID()
+	})
 }
 
 // SetHashAlgorithmType sets the "hash_algorithm_type" field.

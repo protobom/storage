@@ -108,14 +108,14 @@ const (
 	// It exists in this package in order to avoid circular dependency with the "identifiersentry" package.
 	IdentifiersInverseTable = "identifiers_entries"
 	// IdentifiersColumn is the table column denoting the identifiers relation/edge.
-	IdentifiersColumn = "node_identifiers"
+	IdentifiersColumn = "node_id"
 	// HashesTable is the table that holds the hashes relation/edge.
 	HashesTable = "hashes_entries"
 	// HashesInverseTable is the table name for the HashesEntry entity.
 	// It exists in this package in order to avoid circular dependency with the "hashesentry" package.
 	HashesInverseTable = "hashes_entries"
 	// HashesColumn is the table column denoting the hashes relation/edge.
-	HashesColumn = "node_hashes"
+	HashesColumn = "node_id"
 	// PrimaryPurposeTable is the table that holds the primary_purpose relation/edge.
 	PrimaryPurposeTable = "purposes"
 	// PrimaryPurposeInverseTable is the table name for the Purpose entity.
