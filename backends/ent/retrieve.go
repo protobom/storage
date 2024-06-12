@@ -19,7 +19,10 @@ import (
 	"github.com/protobom/storage/internal/backends/ent/externalreference"
 )
 
-var errMultipleDocuments = errors.New("multiple documents matching ID")
+var (
+	errMultipleDocuments = errors.New("multiple documents matching ID")
+	errNoDocuments       = errors.New("no documents matching IDs")
+)
 
 // Retrieve implements the storage.Retriever interface.
 func (backend *Backend) Retrieve(id string, _ *storage.RetrieveOptions) (*sbom.Document, error) {
@@ -57,6 +60,10 @@ func (backend *Backend) GetDocumentsByID(ids ...string) ([]*sbom.Document, error
 	entDocs, err := query.All(backend.ctx)
 	if err != nil {
 		return nil, fmt.Errorf("querying documents table: %w", err)
+	}
+
+	if len(entDocs) == 0 {
+		return nil, fmt.Errorf("%w %s", errNoDocuments, ids)
 	}
 
 	for _, entDoc := range entDocs {
