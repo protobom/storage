@@ -37,7 +37,7 @@ func (backend *Backend) Retrieve(id string, _ *storage.RetrieveOptions) (*sbom.D
 	}
 
 	if len(documents) > 1 {
-		return nil, fmt.Errorf("%w %s", err, id)
+		return nil, fmt.Errorf("%w %s", errMultipleDocuments, id)
 	}
 
 	return documents[0], nil
