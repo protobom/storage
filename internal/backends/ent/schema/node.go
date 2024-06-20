@@ -57,6 +57,8 @@ func (Node) Edges() []ent.Edge {
 
 func (Node) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("id", "node_list_id").Unique(),
+		index.Fields("id", "node_list_id").
+			Unique().
+			StorageKey("idx_nodes"),
 	}
 }

@@ -43,6 +43,8 @@ func (DocumentType) Edges() []ent.Edge {
 
 func (DocumentType) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("metadata_id", "type", "name", "description").Unique(),
+		index.Fields("metadata_id", "type", "name", "description").
+			Unique().
+			StorageKey("idx_document_types"),
 	}
 }

@@ -59,6 +59,8 @@ func (HashesEntry) Edges() []ent.Edge {
 
 func (HashesEntry) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("external_reference_id", "node_id", "hash_algorithm_type", "hash_data").Unique(),
+		index.Fields("external_reference_id", "node_id", "hash_algorithm_type", "hash_data").
+			Unique().
+			StorageKey("idx_hashes_entries"),
 	}
 }

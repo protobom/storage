@@ -97,6 +97,8 @@ func (ExternalReference) Edges() []ent.Edge {
 
 func (ExternalReference) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("node_id", "url", "type").Unique(),
+		index.Fields("node_id", "url", "type").
+			Unique().
+			StorageKey("idx_external_references"),
 	}
 }

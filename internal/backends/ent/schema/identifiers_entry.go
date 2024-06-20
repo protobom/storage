@@ -41,6 +41,8 @@ func (IdentifiersEntry) Edges() []ent.Edge {
 
 func (IdentifiersEntry) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("software_identifier_type", "software_identifier_value").Unique(),
+		index.Fields("node_id", "software_identifier_type", "software_identifier_value").
+			Unique().
+			StorageKey("idx_identifiers_entries"),
 	}
 }
