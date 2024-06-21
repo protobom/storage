@@ -21,11 +21,11 @@ import (
 
 var (
 	errMultipleDocuments = errors.New("multiple documents matching ID")
-	errNoDocuments       = errors.New("no documents matching IDs")
+	errMissingDocument   = errors.New("no documents matching IDs")
 )
 
 // Retrieve implements the storage.Retriever interface.
-func (backend *Backend) Retrieve(id string, _ *storage.RetrieveOptions) (*sbom.Document, error) {
+func (backend *Backend) Retrieve(id string, _ *storage.RetrieveOptions) (doc *sbom.Document, err error) {
 	if backend.client == nil {
 		return nil, fmt.Errorf("%w", errUninitializedClient)
 	}
@@ -34,16 +34,18 @@ func (backend *Backend) Retrieve(id string, _ *storage.RetrieveOptions) (*sbom.D
 		backend.Options = NewBackendOptions()
 	}
 
-	documents, err := backend.GetDocumentsByID(id)
-	if err != nil {
-		return nil, fmt.Errorf("querying documents: %w", err)
+	switch documents, getDocsErr := backend.GetDocumentsByID(id); {
+	case getDocsErr != nil:
+		err = fmt.Errorf("querying documents: %w", getDocsErr)
+	case len(documents) == 0:
+		err = fmt.Errorf("%w %s", errMissingDocument, id)
+	case len(documents) > 1:
+		err = fmt.Errorf("%w %s", errMultipleDocuments, id)
+	default:
+		doc = documents[0]
 	}
 
-	if len(documents) > 1 {
-		return nil, fmt.Errorf("%w %s", errMultipleDocuments, id)
-	}
-
-	return documents[0], nil
+	return
 }
 
 func (backend *Backend) GetDocumentsByID(ids ...string) ([]*sbom.Document, error) {
@@ -60,10 +62,6 @@ func (backend *Backend) GetDocumentsByID(ids ...string) ([]*sbom.Document, error
 	entDocs, err := query.All(backend.ctx)
 	if err != nil {
 		return nil, fmt.Errorf("querying documents table: %w", err)
-	}
-
-	if len(entDocs) == 0 {
-		return nil, fmt.Errorf("%w %s", errNoDocuments, ids)
 	}
 
 	for _, entDoc := range entDocs {
