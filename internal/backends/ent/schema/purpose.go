@@ -61,6 +61,8 @@ func (Purpose) Edges() []ent.Edge {
 
 func (Purpose) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("node_id", "primary_purpose").Unique(),
+		index.Fields("node_id", "primary_purpose").
+			Unique().
+			StorageKey("idx_purposes"),
 	}
 }

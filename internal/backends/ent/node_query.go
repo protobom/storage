@@ -902,7 +902,9 @@ func (nq *NodeQuery) loadIdentifiers(ctx context.Context, query *IdentifiersEntr
 			init(nodes[i])
 		}
 	}
-	query.withFKs = true
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(identifiersentry.FieldNodeID)
+	}
 	query.Where(predicate.IdentifiersEntry(func(s *sql.Selector) {
 		s.Where(sql.InValues(s.C(node.IdentifiersColumn), fks...))
 	}))
@@ -911,13 +913,10 @@ func (nq *NodeQuery) loadIdentifiers(ctx context.Context, query *IdentifiersEntr
 		return err
 	}
 	for _, n := range neighbors {
-		fk := n.node_identifiers
-		if fk == nil {
-			return fmt.Errorf(`foreign-key "node_identifiers" is nil for node %v`, n.ID)
-		}
-		node, ok := nodeids[*fk]
+		fk := n.NodeID
+		node, ok := nodeids[fk]
 		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "node_identifiers" returned %v for node %v`, *fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "node_id" returned %v for node %v`, fk, n.ID)
 		}
 		assign(node, n)
 	}
@@ -933,7 +932,9 @@ func (nq *NodeQuery) loadHashes(ctx context.Context, query *HashesEntryQuery, no
 			init(nodes[i])
 		}
 	}
-	query.withFKs = true
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(hashesentry.FieldNodeID)
+	}
 	query.Where(predicate.HashesEntry(func(s *sql.Selector) {
 		s.Where(sql.InValues(s.C(node.HashesColumn), fks...))
 	}))
@@ -942,13 +943,10 @@ func (nq *NodeQuery) loadHashes(ctx context.Context, query *HashesEntryQuery, no
 		return err
 	}
 	for _, n := range neighbors {
-		fk := n.node_hashes
-		if fk == nil {
-			return fmt.Errorf(`foreign-key "node_hashes" is nil for node %v`, n.ID)
-		}
-		node, ok := nodeids[*fk]
+		fk := n.NodeID
+		node, ok := nodeids[fk]
 		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "node_hashes" returned %v for node %v`, *fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "node_id" returned %v for node %v`, fk, n.ID)
 		}
 		assign(node, n)
 	}

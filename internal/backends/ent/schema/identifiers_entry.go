@@ -18,6 +18,7 @@ type IdentifiersEntry struct {
 
 func (IdentifiersEntry) Fields() []ent.Field {
 	return []ent.Field{
+		field.String("node_id").Optional(),
 		field.Enum("software_identifier_type").Values(
 			"UNKNOWN_IDENTIFIER_TYPE",
 			"PURL",
@@ -31,12 +32,17 @@ func (IdentifiersEntry) Fields() []ent.Field {
 
 func (IdentifiersEntry) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("node", Node.Type).Ref("identifiers").Unique(),
+		edge.From("node", Node.Type).
+			Ref("identifiers").
+			Unique().
+			Field("node_id"),
 	}
 }
 
 func (IdentifiersEntry) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("software_identifier_type", "software_identifier_value").Unique(),
+		index.Fields("node_id", "software_identifier_type", "software_identifier_value").
+			Unique().
+			StorageKey("idx_identifiers_entries"),
 	}
 }

@@ -27,7 +27,6 @@ type IdentifiersEntryQuery struct {
 	inters     []Interceptor
 	predicates []predicate.IdentifiersEntry
 	withNode   *NodeQuery
-	withFKs    bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -302,12 +301,12 @@ func (ieq *IdentifiersEntryQuery) WithNode(opts ...func(*NodeQuery)) *Identifier
 // Example:
 //
 //	var v []struct {
-//		SoftwareIdentifierType identifiersentry.SoftwareIdentifierType `json:"software_identifier_type,omitempty"`
+//		NodeID string `json:"node_id,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.IdentifiersEntry.Query().
-//		GroupBy(identifiersentry.FieldSoftwareIdentifierType).
+//		GroupBy(identifiersentry.FieldNodeID).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (ieq *IdentifiersEntryQuery) GroupBy(field string, fields ...string) *IdentifiersEntryGroupBy {
@@ -325,11 +324,11 @@ func (ieq *IdentifiersEntryQuery) GroupBy(field string, fields ...string) *Ident
 // Example:
 //
 //	var v []struct {
-//		SoftwareIdentifierType identifiersentry.SoftwareIdentifierType `json:"software_identifier_type,omitempty"`
+//		NodeID string `json:"node_id,omitempty"`
 //	}
 //
 //	client.IdentifiersEntry.Query().
-//		Select(identifiersentry.FieldSoftwareIdentifierType).
+//		Select(identifiersentry.FieldNodeID).
 //		Scan(ctx, &v)
 func (ieq *IdentifiersEntryQuery) Select(fields ...string) *IdentifiersEntrySelect {
 	ieq.ctx.Fields = append(ieq.ctx.Fields, fields...)
@@ -373,18 +372,11 @@ func (ieq *IdentifiersEntryQuery) prepareQuery(ctx context.Context) error {
 func (ieq *IdentifiersEntryQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*IdentifiersEntry, error) {
 	var (
 		nodes       = []*IdentifiersEntry{}
-		withFKs     = ieq.withFKs
 		_spec       = ieq.querySpec()
 		loadedTypes = [1]bool{
 			ieq.withNode != nil,
 		}
 	)
-	if ieq.withNode != nil {
-		withFKs = true
-	}
-	if withFKs {
-		_spec.Node.Columns = append(_spec.Node.Columns, identifiersentry.ForeignKeys...)
-	}
 	_spec.ScanValues = func(columns []string) ([]any, error) {
 		return (*IdentifiersEntry).scanValues(nil, columns)
 	}
@@ -416,10 +408,7 @@ func (ieq *IdentifiersEntryQuery) loadNode(ctx context.Context, query *NodeQuery
 	ids := make([]string, 0, len(nodes))
 	nodeids := make(map[string][]*IdentifiersEntry)
 	for i := range nodes {
-		if nodes[i].node_identifiers == nil {
-			continue
-		}
-		fk := *nodes[i].node_identifiers
+		fk := nodes[i].NodeID
 		if _, ok := nodeids[fk]; !ok {
 			ids = append(ids, fk)
 		}
@@ -436,7 +425,7 @@ func (ieq *IdentifiersEntryQuery) loadNode(ctx context.Context, query *NodeQuery
 	for _, n := range neighbors {
 		nodes, ok := nodeids[n.ID]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "node_identifiers" returned %v`, n.ID)
+			return fmt.Errorf(`unexpected foreign-key "node_id" returned %v`, n.ID)
 		}
 		for i := range nodes {
 			assign(nodes[i], n)
@@ -469,6 +458,9 @@ func (ieq *IdentifiersEntryQuery) querySpec() *sqlgraph.QuerySpec {
 			if fields[i] != identifiersentry.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
+		}
+		if ieq.withNode != nil {
+			_spec.Node.AddColumnOnce(identifiersentry.FieldNodeID)
 		}
 	}
 	if ps := ieq.predicates; len(ps) > 0 {

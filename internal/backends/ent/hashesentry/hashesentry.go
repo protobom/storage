@@ -19,6 +19,10 @@ const (
 	Label = "hashes_entry"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
+	// FieldExternalReferenceID holds the string denoting the external_reference_id field in the database.
+	FieldExternalReferenceID = "external_reference_id"
+	// FieldNodeID holds the string denoting the node_id field in the database.
+	FieldNodeID = "node_id"
 	// FieldHashAlgorithmType holds the string denoting the hash_algorithm_type field in the database.
 	FieldHashAlgorithmType = "hash_algorithm_type"
 	// FieldHashData holds the string denoting the hash_data field in the database.
@@ -35,39 +39,29 @@ const (
 	// It exists in this package in order to avoid circular dependency with the "externalreference" package.
 	ExternalReferenceInverseTable = "external_references"
 	// ExternalReferenceColumn is the table column denoting the external_reference relation/edge.
-	ExternalReferenceColumn = "external_reference_hashes"
+	ExternalReferenceColumn = "external_reference_id"
 	// NodeTable is the table that holds the node relation/edge.
 	NodeTable = "hashes_entries"
 	// NodeInverseTable is the table name for the Node entity.
 	// It exists in this package in order to avoid circular dependency with the "node" package.
 	NodeInverseTable = "nodes"
 	// NodeColumn is the table column denoting the node relation/edge.
-	NodeColumn = "node_hashes"
+	NodeColumn = "node_id"
 )
 
 // Columns holds all SQL columns for hashesentry fields.
 var Columns = []string{
 	FieldID,
+	FieldExternalReferenceID,
+	FieldNodeID,
 	FieldHashAlgorithmType,
 	FieldHashData,
-}
-
-// ForeignKeys holds the SQL foreign-keys that are owned by the "hashes_entries"
-// table and are not defined as standalone fields in the schema.
-var ForeignKeys = []string{
-	"external_reference_hashes",
-	"node_hashes",
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {
 	for i := range Columns {
 		if column == Columns[i] {
-			return true
-		}
-	}
-	for i := range ForeignKeys {
-		if column == ForeignKeys[i] {
 			return true
 		}
 	}
@@ -119,6 +113,16 @@ type OrderOption func(*sql.Selector)
 // ByID orders the results by the id field.
 func ByID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldID, opts...).ToFunc()
+}
+
+// ByExternalReferenceID orders the results by the external_reference_id field.
+func ByExternalReferenceID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldExternalReferenceID, opts...).ToFunc()
+}
+
+// ByNodeID orders the results by the node_id field.
+func ByNodeID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldNodeID, opts...).ToFunc()
 }
 
 // ByHashAlgorithmType orders the results by the hash_algorithm_type field.

@@ -459,7 +459,9 @@ func (erq *ExternalReferenceQuery) loadHashes(ctx context.Context, query *Hashes
 			init(nodes[i])
 		}
 	}
-	query.withFKs = true
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(hashesentry.FieldExternalReferenceID)
+	}
 	query.Where(predicate.HashesEntry(func(s *sql.Selector) {
 		s.Where(sql.InValues(s.C(externalreference.HashesColumn), fks...))
 	}))
@@ -468,13 +470,10 @@ func (erq *ExternalReferenceQuery) loadHashes(ctx context.Context, query *Hashes
 		return err
 	}
 	for _, n := range neighbors {
-		fk := n.external_reference_hashes
-		if fk == nil {
-			return fmt.Errorf(`foreign-key "external_reference_hashes" is nil for node %v`, n.ID)
-		}
-		node, ok := nodeids[*fk]
+		fk := n.ExternalReferenceID
+		node, ok := nodeids[fk]
 		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "external_reference_hashes" returned %v for node %v`, *fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "external_reference_id" returned %v for node %v`, fk, n.ID)
 		}
 		assign(node, n)
 	}

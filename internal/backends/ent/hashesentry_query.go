@@ -29,7 +29,6 @@ type HashesEntryQuery struct {
 	predicates            []predicate.HashesEntry
 	withExternalReference *ExternalReferenceQuery
 	withNode              *NodeQuery
-	withFKs               bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -338,12 +337,12 @@ func (heq *HashesEntryQuery) WithNode(opts ...func(*NodeQuery)) *HashesEntryQuer
 // Example:
 //
 //	var v []struct {
-//		HashAlgorithmType hashesentry.HashAlgorithmType `json:"hash_algorithm_type,omitempty"`
+//		ExternalReferenceID int `json:"external_reference_id,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.HashesEntry.Query().
-//		GroupBy(hashesentry.FieldHashAlgorithmType).
+//		GroupBy(hashesentry.FieldExternalReferenceID).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (heq *HashesEntryQuery) GroupBy(field string, fields ...string) *HashesEntryGroupBy {
@@ -361,11 +360,11 @@ func (heq *HashesEntryQuery) GroupBy(field string, fields ...string) *HashesEntr
 // Example:
 //
 //	var v []struct {
-//		HashAlgorithmType hashesentry.HashAlgorithmType `json:"hash_algorithm_type,omitempty"`
+//		ExternalReferenceID int `json:"external_reference_id,omitempty"`
 //	}
 //
 //	client.HashesEntry.Query().
-//		Select(hashesentry.FieldHashAlgorithmType).
+//		Select(hashesentry.FieldExternalReferenceID).
 //		Scan(ctx, &v)
 func (heq *HashesEntryQuery) Select(fields ...string) *HashesEntrySelect {
 	heq.ctx.Fields = append(heq.ctx.Fields, fields...)
@@ -409,19 +408,12 @@ func (heq *HashesEntryQuery) prepareQuery(ctx context.Context) error {
 func (heq *HashesEntryQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*HashesEntry, error) {
 	var (
 		nodes       = []*HashesEntry{}
-		withFKs     = heq.withFKs
 		_spec       = heq.querySpec()
 		loadedTypes = [2]bool{
 			heq.withExternalReference != nil,
 			heq.withNode != nil,
 		}
 	)
-	if heq.withExternalReference != nil || heq.withNode != nil {
-		withFKs = true
-	}
-	if withFKs {
-		_spec.Node.Columns = append(_spec.Node.Columns, hashesentry.ForeignKeys...)
-	}
 	_spec.ScanValues = func(columns []string) ([]any, error) {
 		return (*HashesEntry).scanValues(nil, columns)
 	}
@@ -459,10 +451,7 @@ func (heq *HashesEntryQuery) loadExternalReference(ctx context.Context, query *E
 	ids := make([]int, 0, len(nodes))
 	nodeids := make(map[int][]*HashesEntry)
 	for i := range nodes {
-		if nodes[i].external_reference_hashes == nil {
-			continue
-		}
-		fk := *nodes[i].external_reference_hashes
+		fk := nodes[i].ExternalReferenceID
 		if _, ok := nodeids[fk]; !ok {
 			ids = append(ids, fk)
 		}
@@ -479,7 +468,7 @@ func (heq *HashesEntryQuery) loadExternalReference(ctx context.Context, query *E
 	for _, n := range neighbors {
 		nodes, ok := nodeids[n.ID]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "external_reference_hashes" returned %v`, n.ID)
+			return fmt.Errorf(`unexpected foreign-key "external_reference_id" returned %v`, n.ID)
 		}
 		for i := range nodes {
 			assign(nodes[i], n)
@@ -491,10 +480,7 @@ func (heq *HashesEntryQuery) loadNode(ctx context.Context, query *NodeQuery, nod
 	ids := make([]string, 0, len(nodes))
 	nodeids := make(map[string][]*HashesEntry)
 	for i := range nodes {
-		if nodes[i].node_hashes == nil {
-			continue
-		}
-		fk := *nodes[i].node_hashes
+		fk := nodes[i].NodeID
 		if _, ok := nodeids[fk]; !ok {
 			ids = append(ids, fk)
 		}
@@ -511,7 +497,7 @@ func (heq *HashesEntryQuery) loadNode(ctx context.Context, query *NodeQuery, nod
 	for _, n := range neighbors {
 		nodes, ok := nodeids[n.ID]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "node_hashes" returned %v`, n.ID)
+			return fmt.Errorf(`unexpected foreign-key "node_id" returned %v`, n.ID)
 		}
 		for i := range nodes {
 			assign(nodes[i], n)
@@ -544,6 +530,12 @@ func (heq *HashesEntryQuery) querySpec() *sqlgraph.QuerySpec {
 			if fields[i] != hashesentry.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
+		}
+		if heq.withExternalReference != nil {
+			_spec.Node.AddColumnOnce(hashesentry.FieldExternalReferenceID)
+		}
+		if heq.withNode != nil {
+			_spec.Node.AddColumnOnce(hashesentry.FieldNodeID)
 		}
 	}
 	if ps := heq.predicates; len(ps) > 0 {

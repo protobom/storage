@@ -22,16 +22,18 @@ type HashesEntry struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID int `json:"id,omitempty"`
+	// ExternalReferenceID holds the value of the "external_reference_id" field.
+	ExternalReferenceID int `json:"external_reference_id,omitempty"`
+	// NodeID holds the value of the "node_id" field.
+	NodeID string `json:"node_id,omitempty"`
 	// HashAlgorithmType holds the value of the "hash_algorithm_type" field.
 	HashAlgorithmType hashesentry.HashAlgorithmType `json:"hash_algorithm_type,omitempty"`
 	// HashData holds the value of the "hash_data" field.
 	HashData string `json:"hash_data,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the HashesEntryQuery when eager-loading is set.
-	Edges                     HashesEntryEdges `json:"edges"`
-	external_reference_hashes *int
-	node_hashes               *string
-	selectValues              sql.SelectValues
+	Edges        HashesEntryEdges `json:"edges"`
+	selectValues sql.SelectValues
 }
 
 // HashesEntryEdges holds the relations/edges for other nodes in the graph.
@@ -72,13 +74,9 @@ func (*HashesEntry) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case hashesentry.FieldID:
+		case hashesentry.FieldID, hashesentry.FieldExternalReferenceID:
 			values[i] = new(sql.NullInt64)
-		case hashesentry.FieldHashAlgorithmType, hashesentry.FieldHashData:
-			values[i] = new(sql.NullString)
-		case hashesentry.ForeignKeys[0]: // external_reference_hashes
-			values[i] = new(sql.NullInt64)
-		case hashesentry.ForeignKeys[1]: // node_hashes
+		case hashesentry.FieldNodeID, hashesentry.FieldHashAlgorithmType, hashesentry.FieldHashData:
 			values[i] = new(sql.NullString)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -101,6 +99,18 @@ func (he *HashesEntry) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", value)
 			}
 			he.ID = int(value.Int64)
+		case hashesentry.FieldExternalReferenceID:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field external_reference_id", values[i])
+			} else if value.Valid {
+				he.ExternalReferenceID = int(value.Int64)
+			}
+		case hashesentry.FieldNodeID:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field node_id", values[i])
+			} else if value.Valid {
+				he.NodeID = value.String
+			}
 		case hashesentry.FieldHashAlgorithmType:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field hash_algorithm_type", values[i])
@@ -112,20 +122,6 @@ func (he *HashesEntry) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field hash_data", values[i])
 			} else if value.Valid {
 				he.HashData = value.String
-			}
-		case hashesentry.ForeignKeys[0]:
-			if value, ok := values[i].(*sql.NullInt64); !ok {
-				return fmt.Errorf("unexpected type %T for edge-field external_reference_hashes", value)
-			} else if value.Valid {
-				he.external_reference_hashes = new(int)
-				*he.external_reference_hashes = int(value.Int64)
-			}
-		case hashesentry.ForeignKeys[1]:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field node_hashes", values[i])
-			} else if value.Valid {
-				he.node_hashes = new(string)
-				*he.node_hashes = value.String
 			}
 		default:
 			he.selectValues.Set(columns[i], values[i])
@@ -173,6 +169,12 @@ func (he *HashesEntry) String() string {
 	var builder strings.Builder
 	builder.WriteString("HashesEntry(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", he.ID))
+	builder.WriteString("external_reference_id=")
+	builder.WriteString(fmt.Sprintf("%v", he.ExternalReferenceID))
+	builder.WriteString(", ")
+	builder.WriteString("node_id=")
+	builder.WriteString(he.NodeID)
+	builder.WriteString(", ")
 	builder.WriteString("hash_algorithm_type=")
 	builder.WriteString(fmt.Sprintf("%v", he.HashAlgorithmType))
 	builder.WriteString(", ")

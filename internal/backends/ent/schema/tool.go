@@ -33,6 +33,8 @@ func (Tool) Edges() []ent.Edge {
 
 func (Tool) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("metadata_id", "name", "version", "vendor").Unique(),
+		index.Fields("metadata_id", "name", "version", "vendor").
+			Unique().
+			StorageKey("idx_tools"),
 	}
 }

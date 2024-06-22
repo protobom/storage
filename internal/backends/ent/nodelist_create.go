@@ -218,18 +218,6 @@ type (
 	}
 )
 
-// SetDocumentID sets the "document_id" field.
-func (u *NodeListUpsert) SetDocumentID(v string) *NodeListUpsert {
-	u.Set(nodelist.FieldDocumentID, v)
-	return u
-}
-
-// UpdateDocumentID sets the "document_id" field to the value that was provided on create.
-func (u *NodeListUpsert) UpdateDocumentID() *NodeListUpsert {
-	u.SetExcluded(nodelist.FieldDocumentID)
-	return u
-}
-
 // SetRootElements sets the "root_elements" field.
 func (u *NodeListUpsert) SetRootElements(v []string) *NodeListUpsert {
 	u.Set(nodelist.FieldRootElements, v)
@@ -252,6 +240,11 @@ func (u *NodeListUpsert) UpdateRootElements() *NodeListUpsert {
 //		Exec(ctx)
 func (u *NodeListUpsertOne) UpdateNewValues() *NodeListUpsertOne {
 	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
+		if _, exists := u.create.mutation.DocumentID(); exists {
+			s.SetIgnore(nodelist.FieldDocumentID)
+		}
+	}))
 	return u
 }
 
@@ -280,20 +273,6 @@ func (u *NodeListUpsertOne) Update(set func(*NodeListUpsert)) *NodeListUpsertOne
 		set(&NodeListUpsert{UpdateSet: update})
 	}))
 	return u
-}
-
-// SetDocumentID sets the "document_id" field.
-func (u *NodeListUpsertOne) SetDocumentID(v string) *NodeListUpsertOne {
-	return u.Update(func(s *NodeListUpsert) {
-		s.SetDocumentID(v)
-	})
-}
-
-// UpdateDocumentID sets the "document_id" field to the value that was provided on create.
-func (u *NodeListUpsertOne) UpdateDocumentID() *NodeListUpsertOne {
-	return u.Update(func(s *NodeListUpsert) {
-		s.UpdateDocumentID()
-	})
 }
 
 // SetRootElements sets the "root_elements" field.
@@ -483,6 +462,13 @@ type NodeListUpsertBulk struct {
 //		Exec(ctx)
 func (u *NodeListUpsertBulk) UpdateNewValues() *NodeListUpsertBulk {
 	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
+		for _, b := range u.create.builders {
+			if _, exists := b.mutation.DocumentID(); exists {
+				s.SetIgnore(nodelist.FieldDocumentID)
+			}
+		}
+	}))
 	return u
 }
 
@@ -511,20 +497,6 @@ func (u *NodeListUpsertBulk) Update(set func(*NodeListUpsert)) *NodeListUpsertBu
 		set(&NodeListUpsert{UpdateSet: update})
 	}))
 	return u
-}
-
-// SetDocumentID sets the "document_id" field.
-func (u *NodeListUpsertBulk) SetDocumentID(v string) *NodeListUpsertBulk {
-	return u.Update(func(s *NodeListUpsert) {
-		s.SetDocumentID(v)
-	})
-}
-
-// UpdateDocumentID sets the "document_id" field to the value that was provided on create.
-func (u *NodeListUpsertBulk) UpdateDocumentID() *NodeListUpsertBulk {
-	return u.Update(func(s *NodeListUpsert) {
-		s.UpdateDocumentID()
-	})
 }
 
 // SetRootElements sets the "root_elements" field.

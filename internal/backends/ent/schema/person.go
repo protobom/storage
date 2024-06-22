@@ -41,13 +41,11 @@ func (Person) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Fields("metadata_id", "name", "is_org", "email", "url", "phone").
 			Unique().
-			Annotations(
-				entsql.IndexWhere("metadata_id IS NOT NULL AND node_id IS NULL"),
-			),
+			Annotations(entsql.IndexWhere("metadata_id IS NOT NULL AND node_id IS NULL")).
+			StorageKey("idx_person_metadata_id"),
 		index.Fields("node_id", "name", "is_org", "email", "url", "phone").
 			Unique().
-			Annotations(
-				entsql.IndexWhere("metadata_id IS NULL AND node_id IS NOT NULL"),
-			),
+			Annotations(entsql.IndexWhere("metadata_id IS NULL AND node_id IS NOT NULL")).
+			StorageKey("idx_person_node_id"),
 	}
 }

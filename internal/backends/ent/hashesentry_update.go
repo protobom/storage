@@ -33,6 +33,46 @@ func (heu *HashesEntryUpdate) Where(ps ...predicate.HashesEntry) *HashesEntryUpd
 	return heu
 }
 
+// SetExternalReferenceID sets the "external_reference_id" field.
+func (heu *HashesEntryUpdate) SetExternalReferenceID(i int) *HashesEntryUpdate {
+	heu.mutation.SetExternalReferenceID(i)
+	return heu
+}
+
+// SetNillableExternalReferenceID sets the "external_reference_id" field if the given value is not nil.
+func (heu *HashesEntryUpdate) SetNillableExternalReferenceID(i *int) *HashesEntryUpdate {
+	if i != nil {
+		heu.SetExternalReferenceID(*i)
+	}
+	return heu
+}
+
+// ClearExternalReferenceID clears the value of the "external_reference_id" field.
+func (heu *HashesEntryUpdate) ClearExternalReferenceID() *HashesEntryUpdate {
+	heu.mutation.ClearExternalReferenceID()
+	return heu
+}
+
+// SetNodeID sets the "node_id" field.
+func (heu *HashesEntryUpdate) SetNodeID(s string) *HashesEntryUpdate {
+	heu.mutation.SetNodeID(s)
+	return heu
+}
+
+// SetNillableNodeID sets the "node_id" field if the given value is not nil.
+func (heu *HashesEntryUpdate) SetNillableNodeID(s *string) *HashesEntryUpdate {
+	if s != nil {
+		heu.SetNodeID(*s)
+	}
+	return heu
+}
+
+// ClearNodeID clears the value of the "node_id" field.
+func (heu *HashesEntryUpdate) ClearNodeID() *HashesEntryUpdate {
+	heu.mutation.ClearNodeID()
+	return heu
+}
+
 // SetHashAlgorithmType sets the "hash_algorithm_type" field.
 func (heu *HashesEntryUpdate) SetHashAlgorithmType(hat hashesentry.HashAlgorithmType) *HashesEntryUpdate {
 	heu.mutation.SetHashAlgorithmType(hat)
@@ -61,37 +101,9 @@ func (heu *HashesEntryUpdate) SetNillableHashData(s *string) *HashesEntryUpdate 
 	return heu
 }
 
-// SetExternalReferenceID sets the "external_reference" edge to the ExternalReference entity by ID.
-func (heu *HashesEntryUpdate) SetExternalReferenceID(id int) *HashesEntryUpdate {
-	heu.mutation.SetExternalReferenceID(id)
-	return heu
-}
-
-// SetNillableExternalReferenceID sets the "external_reference" edge to the ExternalReference entity by ID if the given value is not nil.
-func (heu *HashesEntryUpdate) SetNillableExternalReferenceID(id *int) *HashesEntryUpdate {
-	if id != nil {
-		heu = heu.SetExternalReferenceID(*id)
-	}
-	return heu
-}
-
 // SetExternalReference sets the "external_reference" edge to the ExternalReference entity.
 func (heu *HashesEntryUpdate) SetExternalReference(e *ExternalReference) *HashesEntryUpdate {
 	return heu.SetExternalReferenceID(e.ID)
-}
-
-// SetNodeID sets the "node" edge to the Node entity by ID.
-func (heu *HashesEntryUpdate) SetNodeID(id string) *HashesEntryUpdate {
-	heu.mutation.SetNodeID(id)
-	return heu
-}
-
-// SetNillableNodeID sets the "node" edge to the Node entity by ID if the given value is not nil.
-func (heu *HashesEntryUpdate) SetNillableNodeID(id *string) *HashesEntryUpdate {
-	if id != nil {
-		heu = heu.SetNodeID(*id)
-	}
-	return heu
 }
 
 // SetNode sets the "node" edge to the Node entity.
@@ -249,6 +261,46 @@ type HashesEntryUpdateOne struct {
 	mutation *HashesEntryMutation
 }
 
+// SetExternalReferenceID sets the "external_reference_id" field.
+func (heuo *HashesEntryUpdateOne) SetExternalReferenceID(i int) *HashesEntryUpdateOne {
+	heuo.mutation.SetExternalReferenceID(i)
+	return heuo
+}
+
+// SetNillableExternalReferenceID sets the "external_reference_id" field if the given value is not nil.
+func (heuo *HashesEntryUpdateOne) SetNillableExternalReferenceID(i *int) *HashesEntryUpdateOne {
+	if i != nil {
+		heuo.SetExternalReferenceID(*i)
+	}
+	return heuo
+}
+
+// ClearExternalReferenceID clears the value of the "external_reference_id" field.
+func (heuo *HashesEntryUpdateOne) ClearExternalReferenceID() *HashesEntryUpdateOne {
+	heuo.mutation.ClearExternalReferenceID()
+	return heuo
+}
+
+// SetNodeID sets the "node_id" field.
+func (heuo *HashesEntryUpdateOne) SetNodeID(s string) *HashesEntryUpdateOne {
+	heuo.mutation.SetNodeID(s)
+	return heuo
+}
+
+// SetNillableNodeID sets the "node_id" field if the given value is not nil.
+func (heuo *HashesEntryUpdateOne) SetNillableNodeID(s *string) *HashesEntryUpdateOne {
+	if s != nil {
+		heuo.SetNodeID(*s)
+	}
+	return heuo
+}
+
+// ClearNodeID clears the value of the "node_id" field.
+func (heuo *HashesEntryUpdateOne) ClearNodeID() *HashesEntryUpdateOne {
+	heuo.mutation.ClearNodeID()
+	return heuo
+}
+
 // SetHashAlgorithmType sets the "hash_algorithm_type" field.
 func (heuo *HashesEntryUpdateOne) SetHashAlgorithmType(hat hashesentry.HashAlgorithmType) *HashesEntryUpdateOne {
 	heuo.mutation.SetHashAlgorithmType(hat)
@@ -277,37 +329,9 @@ func (heuo *HashesEntryUpdateOne) SetNillableHashData(s *string) *HashesEntryUpd
 	return heuo
 }
 
-// SetExternalReferenceID sets the "external_reference" edge to the ExternalReference entity by ID.
-func (heuo *HashesEntryUpdateOne) SetExternalReferenceID(id int) *HashesEntryUpdateOne {
-	heuo.mutation.SetExternalReferenceID(id)
-	return heuo
-}
-
-// SetNillableExternalReferenceID sets the "external_reference" edge to the ExternalReference entity by ID if the given value is not nil.
-func (heuo *HashesEntryUpdateOne) SetNillableExternalReferenceID(id *int) *HashesEntryUpdateOne {
-	if id != nil {
-		heuo = heuo.SetExternalReferenceID(*id)
-	}
-	return heuo
-}
-
 // SetExternalReference sets the "external_reference" edge to the ExternalReference entity.
 func (heuo *HashesEntryUpdateOne) SetExternalReference(e *ExternalReference) *HashesEntryUpdateOne {
 	return heuo.SetExternalReferenceID(e.ID)
-}
-
-// SetNodeID sets the "node" edge to the Node entity by ID.
-func (heuo *HashesEntryUpdateOne) SetNodeID(id string) *HashesEntryUpdateOne {
-	heuo.mutation.SetNodeID(id)
-	return heuo
-}
-
-// SetNillableNodeID sets the "node" edge to the Node entity by ID if the given value is not nil.
-func (heuo *HashesEntryUpdateOne) SetNillableNodeID(id *string) *HashesEntryUpdateOne {
-	if id != nil {
-		heuo = heuo.SetNodeID(*id)
-	}
-	return heuo
 }
 
 // SetNode sets the "node" edge to the Node entity.

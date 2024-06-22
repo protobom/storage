@@ -58,9 +58,124 @@ func IDLTE(id int) predicate.HashesEntry {
 	return predicate.HashesEntry(sql.FieldLTE(FieldID, id))
 }
 
+// ExternalReferenceID applies equality check predicate on the "external_reference_id" field. It's identical to ExternalReferenceIDEQ.
+func ExternalReferenceID(v int) predicate.HashesEntry {
+	return predicate.HashesEntry(sql.FieldEQ(FieldExternalReferenceID, v))
+}
+
+// NodeID applies equality check predicate on the "node_id" field. It's identical to NodeIDEQ.
+func NodeID(v string) predicate.HashesEntry {
+	return predicate.HashesEntry(sql.FieldEQ(FieldNodeID, v))
+}
+
 // HashData applies equality check predicate on the "hash_data" field. It's identical to HashDataEQ.
 func HashData(v string) predicate.HashesEntry {
 	return predicate.HashesEntry(sql.FieldEQ(FieldHashData, v))
+}
+
+// ExternalReferenceIDEQ applies the EQ predicate on the "external_reference_id" field.
+func ExternalReferenceIDEQ(v int) predicate.HashesEntry {
+	return predicate.HashesEntry(sql.FieldEQ(FieldExternalReferenceID, v))
+}
+
+// ExternalReferenceIDNEQ applies the NEQ predicate on the "external_reference_id" field.
+func ExternalReferenceIDNEQ(v int) predicate.HashesEntry {
+	return predicate.HashesEntry(sql.FieldNEQ(FieldExternalReferenceID, v))
+}
+
+// ExternalReferenceIDIn applies the In predicate on the "external_reference_id" field.
+func ExternalReferenceIDIn(vs ...int) predicate.HashesEntry {
+	return predicate.HashesEntry(sql.FieldIn(FieldExternalReferenceID, vs...))
+}
+
+// ExternalReferenceIDNotIn applies the NotIn predicate on the "external_reference_id" field.
+func ExternalReferenceIDNotIn(vs ...int) predicate.HashesEntry {
+	return predicate.HashesEntry(sql.FieldNotIn(FieldExternalReferenceID, vs...))
+}
+
+// ExternalReferenceIDIsNil applies the IsNil predicate on the "external_reference_id" field.
+func ExternalReferenceIDIsNil() predicate.HashesEntry {
+	return predicate.HashesEntry(sql.FieldIsNull(FieldExternalReferenceID))
+}
+
+// ExternalReferenceIDNotNil applies the NotNil predicate on the "external_reference_id" field.
+func ExternalReferenceIDNotNil() predicate.HashesEntry {
+	return predicate.HashesEntry(sql.FieldNotNull(FieldExternalReferenceID))
+}
+
+// NodeIDEQ applies the EQ predicate on the "node_id" field.
+func NodeIDEQ(v string) predicate.HashesEntry {
+	return predicate.HashesEntry(sql.FieldEQ(FieldNodeID, v))
+}
+
+// NodeIDNEQ applies the NEQ predicate on the "node_id" field.
+func NodeIDNEQ(v string) predicate.HashesEntry {
+	return predicate.HashesEntry(sql.FieldNEQ(FieldNodeID, v))
+}
+
+// NodeIDIn applies the In predicate on the "node_id" field.
+func NodeIDIn(vs ...string) predicate.HashesEntry {
+	return predicate.HashesEntry(sql.FieldIn(FieldNodeID, vs...))
+}
+
+// NodeIDNotIn applies the NotIn predicate on the "node_id" field.
+func NodeIDNotIn(vs ...string) predicate.HashesEntry {
+	return predicate.HashesEntry(sql.FieldNotIn(FieldNodeID, vs...))
+}
+
+// NodeIDGT applies the GT predicate on the "node_id" field.
+func NodeIDGT(v string) predicate.HashesEntry {
+	return predicate.HashesEntry(sql.FieldGT(FieldNodeID, v))
+}
+
+// NodeIDGTE applies the GTE predicate on the "node_id" field.
+func NodeIDGTE(v string) predicate.HashesEntry {
+	return predicate.HashesEntry(sql.FieldGTE(FieldNodeID, v))
+}
+
+// NodeIDLT applies the LT predicate on the "node_id" field.
+func NodeIDLT(v string) predicate.HashesEntry {
+	return predicate.HashesEntry(sql.FieldLT(FieldNodeID, v))
+}
+
+// NodeIDLTE applies the LTE predicate on the "node_id" field.
+func NodeIDLTE(v string) predicate.HashesEntry {
+	return predicate.HashesEntry(sql.FieldLTE(FieldNodeID, v))
+}
+
+// NodeIDContains applies the Contains predicate on the "node_id" field.
+func NodeIDContains(v string) predicate.HashesEntry {
+	return predicate.HashesEntry(sql.FieldContains(FieldNodeID, v))
+}
+
+// NodeIDHasPrefix applies the HasPrefix predicate on the "node_id" field.
+func NodeIDHasPrefix(v string) predicate.HashesEntry {
+	return predicate.HashesEntry(sql.FieldHasPrefix(FieldNodeID, v))
+}
+
+// NodeIDHasSuffix applies the HasSuffix predicate on the "node_id" field.
+func NodeIDHasSuffix(v string) predicate.HashesEntry {
+	return predicate.HashesEntry(sql.FieldHasSuffix(FieldNodeID, v))
+}
+
+// NodeIDIsNil applies the IsNil predicate on the "node_id" field.
+func NodeIDIsNil() predicate.HashesEntry {
+	return predicate.HashesEntry(sql.FieldIsNull(FieldNodeID))
+}
+
+// NodeIDNotNil applies the NotNil predicate on the "node_id" field.
+func NodeIDNotNil() predicate.HashesEntry {
+	return predicate.HashesEntry(sql.FieldNotNull(FieldNodeID))
+}
+
+// NodeIDEqualFold applies the EqualFold predicate on the "node_id" field.
+func NodeIDEqualFold(v string) predicate.HashesEntry {
+	return predicate.HashesEntry(sql.FieldEqualFold(FieldNodeID, v))
+}
+
+// NodeIDContainsFold applies the ContainsFold predicate on the "node_id" field.
+func NodeIDContainsFold(v string) predicate.HashesEntry {
+	return predicate.HashesEntry(sql.FieldContainsFold(FieldNodeID, v))
 }
 
 // HashAlgorithmTypeEQ applies the EQ predicate on the "hash_algorithm_type" field.

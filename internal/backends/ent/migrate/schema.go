@@ -47,7 +47,7 @@ var (
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "documenttype_metadata_id_type_name_description",
+				Name:    "idx_document_types",
 				Unique:  true,
 				Columns: []*schema.Column{DocumentTypesColumns[4], DocumentTypesColumns[1], DocumentTypesColumns[2], DocumentTypesColumns[3]},
 			},
@@ -81,7 +81,7 @@ var (
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "edgetype_type_node_id_to_node_id",
+				Name:    "idx_edge_types",
 				Unique:  true,
 				Columns: []*schema.Column{EdgeTypesColumns[1], EdgeTypesColumns[2], EdgeTypesColumns[3]},
 			},
@@ -116,7 +116,7 @@ var (
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "externalreference_node_id_url_type",
+				Name:    "idx_external_references",
 				Unique:  true,
 				Columns: []*schema.Column{ExternalReferencesColumns[5], ExternalReferencesColumns[1], ExternalReferencesColumns[4]},
 			},
@@ -127,8 +127,8 @@ var (
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "hash_algorithm_type", Type: field.TypeEnum, Enums: []string{"UNKNOWN", "MD5", "SHA1", "SHA256", "SHA384", "SHA512", "SHA3_256", "SHA3_384", "SHA3_512", "BLAKE2B_256", "BLAKE2B_384", "BLAKE2B_512", "BLAKE3", "MD2", "ADLER32", "MD4", "MD6", "SHA224"}},
 		{Name: "hash_data", Type: field.TypeString},
-		{Name: "external_reference_hashes", Type: field.TypeInt, Nullable: true},
-		{Name: "node_hashes", Type: field.TypeString, Nullable: true},
+		{Name: "external_reference_id", Type: field.TypeInt, Nullable: true},
+		{Name: "node_id", Type: field.TypeString, Nullable: true},
 	}
 	// HashesEntriesTable holds the schema information for the "hashes_entries" table.
 	HashesEntriesTable = &schema.Table{
@@ -151,9 +151,9 @@ var (
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "hashesentry_hash_algorithm_type_hash_data",
+				Name:    "idx_hashes_entries",
 				Unique:  true,
-				Columns: []*schema.Column{HashesEntriesColumns[1], HashesEntriesColumns[2]},
+				Columns: []*schema.Column{HashesEntriesColumns[3], HashesEntriesColumns[4], HashesEntriesColumns[1], HashesEntriesColumns[2]},
 			},
 		},
 	}
@@ -162,7 +162,7 @@ var (
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "software_identifier_type", Type: field.TypeEnum, Enums: []string{"UNKNOWN_IDENTIFIER_TYPE", "PURL", "CPE22", "CPE23", "GITOID"}},
 		{Name: "software_identifier_value", Type: field.TypeString},
-		{Name: "node_identifiers", Type: field.TypeString, Nullable: true},
+		{Name: "node_id", Type: field.TypeString, Nullable: true},
 	}
 	// IdentifiersEntriesTable holds the schema information for the "identifiers_entries" table.
 	IdentifiersEntriesTable = &schema.Table{
@@ -179,9 +179,9 @@ var (
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "identifiersentry_software_identifier_type_software_identifier_value",
+				Name:    "idx_identifiers_entries",
 				Unique:  true,
-				Columns: []*schema.Column{IdentifiersEntriesColumns[1], IdentifiersEntriesColumns[2]},
+				Columns: []*schema.Column{IdentifiersEntriesColumns[3], IdentifiersEntriesColumns[1], IdentifiersEntriesColumns[2]},
 			},
 		},
 	}
@@ -208,7 +208,7 @@ var (
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "metadata_id_version_name",
+				Name:    "idx_metadata",
 				Unique:  true,
 				Columns: []*schema.Column{MetadataColumns[0], MetadataColumns[1], MetadataColumns[2]},
 			},
@@ -253,7 +253,7 @@ var (
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "node_id_node_list_id",
+				Name:    "idx_nodes",
 				Unique:  true,
 				Columns: []*schema.Column{NodesColumns[0], NodesColumns[20]},
 			},
@@ -276,16 +276,6 @@ var (
 				Columns:    []*schema.Column{NodeListsColumns[2]},
 				RefColumns: []*schema.Column{DocumentsColumns[0]},
 				OnDelete:   schema.NoAction,
-			},
-		},
-		Indexes: []*schema.Index{
-			{
-				Name:    "nodelist_document_id_root_elements",
-				Unique:  true,
-				Columns: []*schema.Column{NodeListsColumns[2], NodeListsColumns[1]},
-				Annotation: &entsql.IndexAnnotation{
-					Where: "root_elements IS NOT NULL",
-				},
 			},
 		},
 	}
@@ -335,7 +325,7 @@ var (
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "person_metadata_id_name_is_org_email_url_phone",
+				Name:    "idx_person_metadata_id",
 				Unique:  true,
 				Columns: []*schema.Column{PersonsColumns[6], PersonsColumns[1], PersonsColumns[2], PersonsColumns[3], PersonsColumns[4], PersonsColumns[5]},
 				Annotation: &entsql.IndexAnnotation{
@@ -343,7 +333,7 @@ var (
 				},
 			},
 			{
-				Name:    "person_node_id_name_is_org_email_url_phone",
+				Name:    "idx_person_node_id",
 				Unique:  true,
 				Columns: []*schema.Column{PersonsColumns[8], PersonsColumns[1], PersonsColumns[2], PersonsColumns[3], PersonsColumns[4], PersonsColumns[5]},
 				Annotation: &entsql.IndexAnnotation{
@@ -373,7 +363,7 @@ var (
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "purpose_node_id_primary_purpose",
+				Name:    "idx_purposes",
 				Unique:  true,
 				Columns: []*schema.Column{PurposesColumns[2], PurposesColumns[1]},
 			},
@@ -402,7 +392,7 @@ var (
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "tool_metadata_id_name_version_vendor",
+				Name:    "idx_tools",
 				Unique:  true,
 				Columns: []*schema.Column{ToolsColumns[4], ToolsColumns[1], ToolsColumns[2], ToolsColumns[3]},
 			},
