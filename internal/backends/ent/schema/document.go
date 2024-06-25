@@ -17,7 +17,7 @@ type Document struct {
 
 func (Document) Fields() []ent.Field {
 	return []ent.Field{
-		field.String("id").Immutable(),
+		field.String("id").Unique().Immutable(),
 	}
 }
 
