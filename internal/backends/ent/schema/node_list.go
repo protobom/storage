@@ -17,7 +17,7 @@ type NodeList struct {
 
 func (NodeList) Fields() []ent.Field {
 	return []ent.Field{
-		field.String("document_id").Unique().Immutable(),
+		field.String("document_id").Immutable(),
 		field.Strings("root_elements"),
 	}
 }

@@ -72,7 +72,7 @@ func (backend *Backend) saveDocumentTypes(docTypes []*sbom.DocumentType) error {
 	}
 
 	for _, dt := range docTypes {
-		typeName := documenttype.Type(dt.String())
+		typeName := documenttype.Type(dt.Type.String())
 
 		newDocType := backend.client.DocumentType.Create().
 			SetNillableType(&typeName).
@@ -153,7 +153,7 @@ func (backend *Backend) saveHashesEntries(hashes map[int32]string) error {
 	entries := []*ent.HashesEntryCreate{}
 
 	for alg, content := range hashes {
-		algName := sbom.HashAlgorithm_name[alg]
+		algName := sbom.HashAlgorithm(alg).String()
 
 		entry := backend.client.HashesEntry.Create().
 			SetHashAlgorithmType(hashesentry.HashAlgorithmType(algName)).
@@ -186,7 +186,7 @@ func (backend *Backend) saveIdentifiersEntries(idents map[int32]string) error {
 	entries := []*ent.IdentifiersEntryCreate{}
 
 	for typ, value := range idents {
-		typeName := sbom.SoftwareIdentifierType_name[typ]
+		typeName := sbom.SoftwareIdentifierType(typ).String()
 
 		entry := backend.client.IdentifiersEntry.Create().
 			SetSoftwareIdentifierType(identifiersentry.SoftwareIdentifierType(typeName)).
