@@ -470,7 +470,7 @@ func (backend *Backend) newNodeCreate(n *sbom.Node) *ent.NodeCreate {
 
 func rollback(tx *ent.Tx, err error) error {
 	if rollbackErr := tx.Rollback(); rollbackErr != nil {
-		err = fmt.Errorf("rolling back transaction: %w", rollbackErr)
+		return fmt.Errorf("rolling back transaction: %w", rollbackErr)
 	}
 
 	return err
