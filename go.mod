@@ -5,13 +5,13 @@ go 1.22.4
 require (
 	entgo.io/ent v0.13.1
 	github.com/glebarez/go-sqlite v1.22.0
-	github.com/protobom/protobom v0.4.2
-	google.golang.org/protobuf v1.34.1
+	github.com/protobom/protobom v0.4.3
+	google.golang.org/protobuf v1.34.2
 )
 
 require (
 	ariga.io/atlas v0.19.1-0.20240203083654-5948b60a8e43 // indirect
-	github.com/CycloneDX/cyclonedx-go v0.8.0 // indirect
+	github.com/CycloneDX/cyclonedx-go v0.9.0 // indirect
 	github.com/agext/levenshtein v1.2.1 // indirect
 	github.com/anchore/go-struct-converter v0.0.0-20230627203149-c72ef8859ca9 // indirect
 	github.com/apparentlymart/go-textseg/v13 v13.0.0 // indirect
