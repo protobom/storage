@@ -9,7 +9,7 @@
 # and support documentation.
 # ------------------------------------------------------------------------
 ---
-name: golangci-lint
+name: test
 
 on:
   pull_request:
@@ -23,14 +23,8 @@ permissions:
   contents: read
 
 jobs:
-  golangci:
-    name: lint
+  test:
     runs-on: ubuntu-latest
-
-    permissions:
-      contents: read
-      pull-requests: read
-      checks: write
 
     steps:
       - name: Checkout code
@@ -43,7 +37,5 @@ jobs:
           cache: false
           check-latest: true
 
-      - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@82d40c283aeb1f2b6595839195e95c2d6a49081b # v5.0.0
-        with:
-          version: v1.59
+      - name: Run tests
+        run: make test-unit
