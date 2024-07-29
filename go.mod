@@ -3,7 +3,7 @@ module github.com/protobom/storage
 go 1.22.4
 
 require (
-	entgo.io/ent v0.13.1
+	entgo.io/ent v0.14.0
 	github.com/glebarez/go-sqlite v1.22.0
 	github.com/protobom/protobom v0.4.3
 	google.golang.org/protobuf v1.34.2
