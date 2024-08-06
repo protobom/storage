@@ -135,10 +135,10 @@ func (nlc *NodeListCreate) createSpec() (*NodeList, *sqlgraph.CreateSpec) {
 	}
 	if nodes := nlc.mutation.NodesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   nodelist.NodesTable,
-			Columns: []string{nodelist.NodesColumn},
+			Columns: nodelist.NodesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeString),
