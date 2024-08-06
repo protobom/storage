@@ -20,8 +20,6 @@ import (
 	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/edgetype"
 	"github.com/protobom/storage/internal/backends/ent/externalreference"
-	"github.com/protobom/storage/internal/backends/ent/hashesentry"
-	"github.com/protobom/storage/internal/backends/ent/identifiersentry"
 	"github.com/protobom/storage/internal/backends/ent/node"
 	"github.com/protobom/storage/internal/backends/ent/nodelist"
 	"github.com/protobom/storage/internal/backends/ent/person"
@@ -170,6 +168,18 @@ func (nc *NodeCreate) SetFileTypes(s []string) *NodeCreate {
 	return nc
 }
 
+// SetHashes sets the "hashes" field.
+func (nc *NodeCreate) SetHashes(m map[int32]string) *NodeCreate {
+	nc.mutation.SetHashes(m)
+	return nc
+}
+
+// SetIdentifiers sets the "identifiers" field.
+func (nc *NodeCreate) SetIdentifiers(m map[int32]string) *NodeCreate {
+	nc.mutation.SetIdentifiers(m)
+	return nc
+}
+
 // SetID sets the "id" field.
 func (nc *NodeCreate) SetID(s string) *NodeCreate {
 	nc.mutation.SetID(s)
@@ -238,36 +248,6 @@ func (nc *NodeCreate) AddExternalReferences(e ...*ExternalReference) *NodeCreate
 		ids[i] = e[i].ID
 	}
 	return nc.AddExternalReferenceIDs(ids...)
-}
-
-// AddIdentifierIDs adds the "identifiers" edge to the IdentifiersEntry entity by IDs.
-func (nc *NodeCreate) AddIdentifierIDs(ids ...int) *NodeCreate {
-	nc.mutation.AddIdentifierIDs(ids...)
-	return nc
-}
-
-// AddIdentifiers adds the "identifiers" edges to the IdentifiersEntry entity.
-func (nc *NodeCreate) AddIdentifiers(i ...*IdentifiersEntry) *NodeCreate {
-	ids := make([]int, len(i))
-	for j := range i {
-		ids[j] = i[j].ID
-	}
-	return nc.AddIdentifierIDs(ids...)
-}
-
-// AddHashIDs adds the "hashes" edge to the HashesEntry entity by IDs.
-func (nc *NodeCreate) AddHashIDs(ids ...int) *NodeCreate {
-	nc.mutation.AddHashIDs(ids...)
-	return nc
-}
-
-// AddHashes adds the "hashes" edges to the HashesEntry entity.
-func (nc *NodeCreate) AddHashes(h ...*HashesEntry) *NodeCreate {
-	ids := make([]int, len(h))
-	for i := range h {
-		ids[i] = h[i].ID
-	}
-	return nc.AddHashIDs(ids...)
 }
 
 // AddPrimaryPurposeIDs adds the "primary_purpose" edge to the Purpose entity by IDs.
@@ -552,6 +532,14 @@ func (nc *NodeCreate) createSpec() (*Node, *sqlgraph.CreateSpec) {
 		_spec.SetField(node.FieldFileTypes, field.TypeJSON, value)
 		_node.FileTypes = value
 	}
+	if value, ok := nc.mutation.Hashes(); ok {
+		_spec.SetField(node.FieldHashes, field.TypeJSON, value)
+		_node.Hashes = value
+	}
+	if value, ok := nc.mutation.Identifiers(); ok {
+		_spec.SetField(node.FieldIdentifiers, field.TypeJSON, value)
+		_node.Identifiers = value
+	}
 	if nodes := nc.mutation.DocumentIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -610,38 +598,6 @@ func (nc *NodeCreate) createSpec() (*Node, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(externalreference.FieldID, field.TypeInt),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges = append(_spec.Edges, edge)
-	}
-	if nodes := nc.mutation.IdentifiersIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   node.IdentifiersTable,
-			Columns: []string{node.IdentifiersColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(identifiersentry.FieldID, field.TypeInt),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges = append(_spec.Edges, edge)
-	}
-	if nodes := nc.mutation.HashesIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   node.HashesTable,
-			Columns: []string{node.HashesColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(hashesentry.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {
@@ -1046,6 +1002,42 @@ func (u *NodeUpsert) UpdateFileTypes() *NodeUpsert {
 	return u
 }
 
+// SetHashes sets the "hashes" field.
+func (u *NodeUpsert) SetHashes(v map[int32]string) *NodeUpsert {
+	u.Set(node.FieldHashes, v)
+	return u
+}
+
+// UpdateHashes sets the "hashes" field to the value that was provided on create.
+func (u *NodeUpsert) UpdateHashes() *NodeUpsert {
+	u.SetExcluded(node.FieldHashes)
+	return u
+}
+
+// ClearHashes clears the value of the "hashes" field.
+func (u *NodeUpsert) ClearHashes() *NodeUpsert {
+	u.SetNull(node.FieldHashes)
+	return u
+}
+
+// SetIdentifiers sets the "identifiers" field.
+func (u *NodeUpsert) SetIdentifiers(v map[int32]string) *NodeUpsert {
+	u.Set(node.FieldIdentifiers, v)
+	return u
+}
+
+// UpdateIdentifiers sets the "identifiers" field to the value that was provided on create.
+func (u *NodeUpsert) UpdateIdentifiers() *NodeUpsert {
+	u.SetExcluded(node.FieldIdentifiers)
+	return u
+}
+
+// ClearIdentifiers clears the value of the "identifiers" field.
+func (u *NodeUpsert) ClearIdentifiers() *NodeUpsert {
+	u.SetNull(node.FieldIdentifiers)
+	return u
+}
+
 // UpdateNewValues updates the mutable fields using the new values that were set on create except the ID field.
 // Using this option is equivalent to using:
 //
@@ -1399,6 +1391,48 @@ func (u *NodeUpsertOne) SetFileTypes(v []string) *NodeUpsertOne {
 func (u *NodeUpsertOne) UpdateFileTypes() *NodeUpsertOne {
 	return u.Update(func(s *NodeUpsert) {
 		s.UpdateFileTypes()
+	})
+}
+
+// SetHashes sets the "hashes" field.
+func (u *NodeUpsertOne) SetHashes(v map[int32]string) *NodeUpsertOne {
+	return u.Update(func(s *NodeUpsert) {
+		s.SetHashes(v)
+	})
+}
+
+// UpdateHashes sets the "hashes" field to the value that was provided on create.
+func (u *NodeUpsertOne) UpdateHashes() *NodeUpsertOne {
+	return u.Update(func(s *NodeUpsert) {
+		s.UpdateHashes()
+	})
+}
+
+// ClearHashes clears the value of the "hashes" field.
+func (u *NodeUpsertOne) ClearHashes() *NodeUpsertOne {
+	return u.Update(func(s *NodeUpsert) {
+		s.ClearHashes()
+	})
+}
+
+// SetIdentifiers sets the "identifiers" field.
+func (u *NodeUpsertOne) SetIdentifiers(v map[int32]string) *NodeUpsertOne {
+	return u.Update(func(s *NodeUpsert) {
+		s.SetIdentifiers(v)
+	})
+}
+
+// UpdateIdentifiers sets the "identifiers" field to the value that was provided on create.
+func (u *NodeUpsertOne) UpdateIdentifiers() *NodeUpsertOne {
+	return u.Update(func(s *NodeUpsert) {
+		s.UpdateIdentifiers()
+	})
+}
+
+// ClearIdentifiers clears the value of the "identifiers" field.
+func (u *NodeUpsertOne) ClearIdentifiers() *NodeUpsertOne {
+	return u.Update(func(s *NodeUpsert) {
+		s.ClearIdentifiers()
 	})
 }
 
@@ -1921,6 +1955,48 @@ func (u *NodeUpsertBulk) SetFileTypes(v []string) *NodeUpsertBulk {
 func (u *NodeUpsertBulk) UpdateFileTypes() *NodeUpsertBulk {
 	return u.Update(func(s *NodeUpsert) {
 		s.UpdateFileTypes()
+	})
+}
+
+// SetHashes sets the "hashes" field.
+func (u *NodeUpsertBulk) SetHashes(v map[int32]string) *NodeUpsertBulk {
+	return u.Update(func(s *NodeUpsert) {
+		s.SetHashes(v)
+	})
+}
+
+// UpdateHashes sets the "hashes" field to the value that was provided on create.
+func (u *NodeUpsertBulk) UpdateHashes() *NodeUpsertBulk {
+	return u.Update(func(s *NodeUpsert) {
+		s.UpdateHashes()
+	})
+}
+
+// ClearHashes clears the value of the "hashes" field.
+func (u *NodeUpsertBulk) ClearHashes() *NodeUpsertBulk {
+	return u.Update(func(s *NodeUpsert) {
+		s.ClearHashes()
+	})
+}
+
+// SetIdentifiers sets the "identifiers" field.
+func (u *NodeUpsertBulk) SetIdentifiers(v map[int32]string) *NodeUpsertBulk {
+	return u.Update(func(s *NodeUpsert) {
+		s.SetIdentifiers(v)
+	})
+}
+
+// UpdateIdentifiers sets the "identifiers" field to the value that was provided on create.
+func (u *NodeUpsertBulk) UpdateIdentifiers() *NodeUpsertBulk {
+	return u.Update(func(s *NodeUpsert) {
+		s.UpdateIdentifiers()
+	})
+}
+
+// ClearIdentifiers clears the value of the "identifiers" field.
+func (u *NodeUpsertBulk) ClearIdentifiers() *NodeUpsertBulk {
+	return u.Update(func(s *NodeUpsert) {
+		s.ClearIdentifiers()
 	})
 }
 

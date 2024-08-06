@@ -62,30 +62,6 @@ func (f ExternalReferenceFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ExternalReferenceMutation", m)
 }
 
-// The HashesEntryFunc type is an adapter to allow the use of ordinary
-// function as HashesEntry mutator.
-type HashesEntryFunc func(context.Context, *ent.HashesEntryMutation) (ent.Value, error)
-
-// Mutate calls f(ctx, m).
-func (f HashesEntryFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	if mv, ok := m.(*ent.HashesEntryMutation); ok {
-		return f(ctx, mv)
-	}
-	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.HashesEntryMutation", m)
-}
-
-// The IdentifiersEntryFunc type is an adapter to allow the use of ordinary
-// function as IdentifiersEntry mutator.
-type IdentifiersEntryFunc func(context.Context, *ent.IdentifiersEntryMutation) (ent.Value, error)
-
-// Mutate calls f(ctx, m).
-func (f IdentifiersEntryFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	if mv, ok := m.(*ent.IdentifiersEntryMutation); ok {
-		return f(ctx, mv)
-	}
-	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.IdentifiersEntryMutation", m)
-}
-
 // The MetadataFunc type is an adapter to allow the use of ordinary
 // function as Metadata mutator.
 type MetadataFunc func(context.Context, *ent.MetadataMutation) (ent.Value, error)

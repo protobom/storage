@@ -47,6 +47,8 @@ func (Node) Fields() []ent.Field {
 		field.Time("valid_until_date"),
 		field.Strings("attribution"),
 		field.Strings("file_types"),
+		field.JSON("hashes", map[int32]string{}).Optional(),
+		field.JSON("identifiers", map[int32]string{}).Optional(),
 	}
 }
 
@@ -55,8 +57,6 @@ func (Node) Edges() []ent.Edge {
 		edge.To("suppliers", Person.Type),
 		edge.To("originators", Person.Type),
 		edge.To("external_references", ExternalReference.Type),
-		edge.To("identifiers", IdentifiersEntry.Type),
-		edge.To("hashes", HashesEntry.Type),
 		edge.To("primary_purpose", Purpose.Type),
 		edge.To("nodes", Node.Type).From("to_nodes").Through("edge_types", EdgeType.Type),
 		edge.From("node_list", NodeList.Type).Ref("nodes").Unique().Field("node_list_id"),

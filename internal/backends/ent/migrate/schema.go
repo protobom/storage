@@ -125,6 +125,7 @@ var (
 		{Name: "comment", Type: field.TypeString},
 		{Name: "authority", Type: field.TypeString, Nullable: true},
 		{Name: "type", Type: field.TypeEnum, Enums: []string{"UNKNOWN", "ATTESTATION", "BINARY", "BOM", "BOWER", "BUILD_META", "BUILD_SYSTEM", "CERTIFICATION_REPORT", "CHAT", "CODIFIED_INFRASTRUCTURE", "COMPONENT_ANALYSIS_REPORT", "CONFIGURATION", "DISTRIBUTION_INTAKE", "DOCUMENTATION", "DOWNLOAD", "DYNAMIC_ANALYSIS_REPORT", "EOL_NOTICE", "EVIDENCE", "EXPORT_CONTROL_ASSESSMENT", "FORMULATION", "FUNDING", "ISSUE_TRACKER", "LICENSE", "LOG", "MAILING_LIST", "MATURITY_REPORT", "MAVEN_CENTRAL", "METRICS", "MODEL_CARD", "NPM", "NUGET", "OTHER", "POAM", "PRIVACY_ASSESSMENT", "PRODUCT_METADATA", "PURCHASE_ORDER", "QUALITY_ASSESSMENT_REPORT", "QUALITY_METRICS", "RELEASE_HISTORY", "RELEASE_NOTES", "RISK_ASSESSMENT", "RUNTIME_ANALYSIS_REPORT", "SECURE_SOFTWARE_ATTESTATION", "SECURITY_ADVERSARY_MODEL", "SECURITY_ADVISORY", "SECURITY_CONTACT", "SECURITY_FIX", "SECURITY_OTHER", "SECURITY_PENTEST_REPORT", "SECURITY_POLICY", "SECURITY_SWID", "SECURITY_THREAT_MODEL", "SOCIAL", "SOURCE_ARTIFACT", "STATIC_ANALYSIS_REPORT", "SUPPORT", "VCS", "VULNERABILITY_ASSERTION", "VULNERABILITY_DISCLOSURE_REPORT", "VULNERABILITY_EXPLOITABILITY_ASSESSMENT", "WEBSITE"}},
+		{Name: "hashes", Type: field.TypeJSON, Nullable: true},
 		{Name: "document_id", Type: field.TypeString, Nullable: true},
 		{Name: "node_id", Type: field.TypeString, Nullable: true},
 	}
@@ -136,13 +137,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "external_references_documents_document",
-				Columns:    []*schema.Column{ExternalReferencesColumns[6]},
+				Columns:    []*schema.Column{ExternalReferencesColumns[7]},
 				RefColumns: []*schema.Column{DocumentsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "external_references_nodes_external_references",
-				Columns:    []*schema.Column{ExternalReferencesColumns[7]},
+				Columns:    []*schema.Column{ExternalReferencesColumns[8]},
 				RefColumns: []*schema.Column{NodesColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -151,84 +152,7 @@ var (
 			{
 				Name:    "idx_external_references",
 				Unique:  true,
-				Columns: []*schema.Column{ExternalReferencesColumns[7], ExternalReferencesColumns[2], ExternalReferencesColumns[5]},
-			},
-		},
-	}
-	// HashesEntriesColumns holds the columns for the "hashes_entries" table.
-	HashesEntriesColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeInt, Increment: true},
-		{Name: "hash_algorithm_type", Type: field.TypeEnum, Enums: []string{"UNKNOWN", "MD5", "SHA1", "SHA256", "SHA384", "SHA512", "SHA3_256", "SHA3_384", "SHA3_512", "BLAKE2B_256", "BLAKE2B_384", "BLAKE2B_512", "BLAKE3", "MD2", "ADLER32", "MD4", "MD6", "SHA224"}},
-		{Name: "hash_data", Type: field.TypeString},
-		{Name: "external_reference_id", Type: field.TypeInt, Nullable: true},
-		{Name: "document_id", Type: field.TypeString, Nullable: true},
-		{Name: "node_id", Type: field.TypeString, Nullable: true},
-	}
-	// HashesEntriesTable holds the schema information for the "hashes_entries" table.
-	HashesEntriesTable = &schema.Table{
-		Name:       "hashes_entries",
-		Columns:    HashesEntriesColumns,
-		PrimaryKey: []*schema.Column{HashesEntriesColumns[0]},
-		ForeignKeys: []*schema.ForeignKey{
-			{
-				Symbol:     "hashes_entries_external_references_hashes",
-				Columns:    []*schema.Column{HashesEntriesColumns[3]},
-				RefColumns: []*schema.Column{ExternalReferencesColumns[0]},
-				OnDelete:   schema.SetNull,
-			},
-			{
-				Symbol:     "hashes_entries_documents_document",
-				Columns:    []*schema.Column{HashesEntriesColumns[4]},
-				RefColumns: []*schema.Column{DocumentsColumns[0]},
-				OnDelete:   schema.SetNull,
-			},
-			{
-				Symbol:     "hashes_entries_nodes_hashes",
-				Columns:    []*schema.Column{HashesEntriesColumns[5]},
-				RefColumns: []*schema.Column{NodesColumns[0]},
-				OnDelete:   schema.SetNull,
-			},
-		},
-		Indexes: []*schema.Index{
-			{
-				Name:    "idx_hashes_entries",
-				Unique:  true,
-				Columns: []*schema.Column{HashesEntriesColumns[3], HashesEntriesColumns[5], HashesEntriesColumns[1], HashesEntriesColumns[2]},
-			},
-		},
-	}
-	// IdentifiersEntriesColumns holds the columns for the "identifiers_entries" table.
-	IdentifiersEntriesColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeInt, Increment: true},
-		{Name: "software_identifier_type", Type: field.TypeEnum, Enums: []string{"UNKNOWN_IDENTIFIER_TYPE", "PURL", "CPE22", "CPE23", "GITOID"}},
-		{Name: "software_identifier_value", Type: field.TypeString},
-		{Name: "document_id", Type: field.TypeString, Nullable: true},
-		{Name: "node_id", Type: field.TypeString, Nullable: true},
-	}
-	// IdentifiersEntriesTable holds the schema information for the "identifiers_entries" table.
-	IdentifiersEntriesTable = &schema.Table{
-		Name:       "identifiers_entries",
-		Columns:    IdentifiersEntriesColumns,
-		PrimaryKey: []*schema.Column{IdentifiersEntriesColumns[0]},
-		ForeignKeys: []*schema.ForeignKey{
-			{
-				Symbol:     "identifiers_entries_documents_document",
-				Columns:    []*schema.Column{IdentifiersEntriesColumns[3]},
-				RefColumns: []*schema.Column{DocumentsColumns[0]},
-				OnDelete:   schema.SetNull,
-			},
-			{
-				Symbol:     "identifiers_entries_nodes_identifiers",
-				Columns:    []*schema.Column{IdentifiersEntriesColumns[4]},
-				RefColumns: []*schema.Column{NodesColumns[0]},
-				OnDelete:   schema.SetNull,
-			},
-		},
-		Indexes: []*schema.Index{
-			{
-				Name:    "idx_identifiers_entries",
-				Unique:  true,
-				Columns: []*schema.Column{IdentifiersEntriesColumns[4], IdentifiersEntriesColumns[1], IdentifiersEntriesColumns[2]},
+				Columns: []*schema.Column{ExternalReferencesColumns[8], ExternalReferencesColumns[2], ExternalReferencesColumns[5]},
 			},
 		},
 	}
@@ -285,6 +209,8 @@ var (
 		{Name: "valid_until_date", Type: field.TypeTime},
 		{Name: "attribution", Type: field.TypeJSON},
 		{Name: "file_types", Type: field.TypeJSON},
+		{Name: "hashes", Type: field.TypeJSON, Nullable: true},
+		{Name: "identifiers", Type: field.TypeJSON, Nullable: true},
 		{Name: "document_id", Type: field.TypeString, Nullable: true},
 		{Name: "node_list_id", Type: field.TypeInt, Nullable: true},
 	}
@@ -296,13 +222,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "nodes_documents_document",
-				Columns:    []*schema.Column{NodesColumns[21]},
+				Columns:    []*schema.Column{NodesColumns[23]},
 				RefColumns: []*schema.Column{DocumentsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "nodes_node_lists_nodes",
-				Columns:    []*schema.Column{NodesColumns[22]},
+				Columns:    []*schema.Column{NodesColumns[24]},
 				RefColumns: []*schema.Column{NodeListsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -311,7 +237,7 @@ var (
 			{
 				Name:    "idx_nodes",
 				Unique:  true,
-				Columns: []*schema.Column{NodesColumns[0], NodesColumns[22]},
+				Columns: []*schema.Column{NodesColumns[0], NodesColumns[24]},
 			},
 		},
 	}
@@ -475,8 +401,6 @@ var (
 		DocumentTypesTable,
 		EdgeTypesTable,
 		ExternalReferencesTable,
-		HashesEntriesTable,
-		IdentifiersEntriesTable,
 		MetadataTable,
 		NodesTable,
 		NodeListsTable,
@@ -495,11 +419,6 @@ func init() {
 	EdgeTypesTable.ForeignKeys[2].RefTable = NodesTable
 	ExternalReferencesTable.ForeignKeys[0].RefTable = DocumentsTable
 	ExternalReferencesTable.ForeignKeys[1].RefTable = NodesTable
-	HashesEntriesTable.ForeignKeys[0].RefTable = ExternalReferencesTable
-	HashesEntriesTable.ForeignKeys[1].RefTable = DocumentsTable
-	HashesEntriesTable.ForeignKeys[2].RefTable = NodesTable
-	IdentifiersEntriesTable.ForeignKeys[0].RefTable = DocumentsTable
-	IdentifiersEntriesTable.ForeignKeys[1].RefTable = NodesTable
 	MetadataTable.ForeignKeys[0].RefTable = DocumentsTable
 	NodesTable.ForeignKeys[0].RefTable = DocumentsTable
 	NodesTable.ForeignKeys[1].RefTable = NodeListsTable

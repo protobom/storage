@@ -22,7 +22,7 @@ func (Document) Mixin() []ent.Mixin {
 	}
 }
 
-func (d Document) Fields() []ent.Field {
+func (Document) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("id").Unique().Immutable(),
 	}

@@ -1110,6 +1110,26 @@ func ValidUntilDateLTE(v time.Time) predicate.Node {
 	return predicate.Node(sql.FieldLTE(FieldValidUntilDate, v))
 }
 
+// HashesIsNil applies the IsNil predicate on the "hashes" field.
+func HashesIsNil() predicate.Node {
+	return predicate.Node(sql.FieldIsNull(FieldHashes))
+}
+
+// HashesNotNil applies the NotNil predicate on the "hashes" field.
+func HashesNotNil() predicate.Node {
+	return predicate.Node(sql.FieldNotNull(FieldHashes))
+}
+
+// IdentifiersIsNil applies the IsNil predicate on the "identifiers" field.
+func IdentifiersIsNil() predicate.Node {
+	return predicate.Node(sql.FieldIsNull(FieldIdentifiers))
+}
+
+// IdentifiersNotNil applies the NotNil predicate on the "identifiers" field.
+func IdentifiersNotNil() predicate.Node {
+	return predicate.Node(sql.FieldNotNull(FieldIdentifiers))
+}
+
 // HasDocument applies the HasEdge predicate on the "document" edge.
 func HasDocument() predicate.Node {
 	return predicate.Node(func(s *sql.Selector) {
@@ -1194,52 +1214,6 @@ func HasExternalReferences() predicate.Node {
 func HasExternalReferencesWith(preds ...predicate.ExternalReference) predicate.Node {
 	return predicate.Node(func(s *sql.Selector) {
 		step := newExternalReferencesStep()
-		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
-			for _, p := range preds {
-				p(s)
-			}
-		})
-	})
-}
-
-// HasIdentifiers applies the HasEdge predicate on the "identifiers" edge.
-func HasIdentifiers() predicate.Node {
-	return predicate.Node(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, IdentifiersTable, IdentifiersColumn),
-		)
-		sqlgraph.HasNeighbors(s, step)
-	})
-}
-
-// HasIdentifiersWith applies the HasEdge predicate on the "identifiers" edge with a given conditions (other predicates).
-func HasIdentifiersWith(preds ...predicate.IdentifiersEntry) predicate.Node {
-	return predicate.Node(func(s *sql.Selector) {
-		step := newIdentifiersStep()
-		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
-			for _, p := range preds {
-				p(s)
-			}
-		})
-	})
-}
-
-// HasHashes applies the HasEdge predicate on the "hashes" edge.
-func HasHashes() predicate.Node {
-	return predicate.Node(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, HashesTable, HashesColumn),
-		)
-		sqlgraph.HasNeighbors(s, step)
-	})
-}
-
-// HasHashesWith applies the HasEdge predicate on the "hashes" edge with a given conditions (other predicates).
-func HasHashesWith(preds ...predicate.HashesEntry) predicate.Node {
-	return predicate.Node(func(s *sql.Selector) {
-		step := newHashesStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

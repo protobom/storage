@@ -134,10 +134,10 @@ func (etc *EdgeTypeCreate) check() error {
 	if _, ok := etc.mutation.ToNodeID(); !ok {
 		return &ValidationError{Name: "to_node_id", err: errors.New(`ent: missing required field "EdgeType.to_node_id"`)}
 	}
-	if _, ok := etc.mutation.FromID(); !ok {
+	if len(etc.mutation.FromIDs()) == 0 {
 		return &ValidationError{Name: "from", err: errors.New(`ent: missing required edge "EdgeType.from"`)}
 	}
-	if _, ok := etc.mutation.ToID(); !ok {
+	if len(etc.mutation.ToIDs()) == 0 {
 		return &ValidationError{Name: "to", err: errors.New(`ent: missing required edge "EdgeType.to"`)}
 	}
 	return nil

@@ -31,10 +31,10 @@ const (
 	FieldAuthority = "authority"
 	// FieldType holds the string denoting the type field in the database.
 	FieldType = "type"
+	// FieldHashes holds the string denoting the hashes field in the database.
+	FieldHashes = "hashes"
 	// EdgeDocument holds the string denoting the document edge name in mutations.
 	EdgeDocument = "document"
-	// EdgeHashes holds the string denoting the hashes edge name in mutations.
-	EdgeHashes = "hashes"
 	// EdgeNode holds the string denoting the node edge name in mutations.
 	EdgeNode = "node"
 	// Table holds the table name of the externalreference in the database.
@@ -46,13 +46,6 @@ const (
 	DocumentInverseTable = "documents"
 	// DocumentColumn is the table column denoting the document relation/edge.
 	DocumentColumn = "document_id"
-	// HashesTable is the table that holds the hashes relation/edge.
-	HashesTable = "hashes_entries"
-	// HashesInverseTable is the table name for the HashesEntry entity.
-	// It exists in this package in order to avoid circular dependency with the "hashesentry" package.
-	HashesInverseTable = "hashes_entries"
-	// HashesColumn is the table column denoting the hashes relation/edge.
-	HashesColumn = "external_reference_id"
 	// NodeTable is the table that holds the node relation/edge.
 	NodeTable = "external_references"
 	// NodeInverseTable is the table name for the Node entity.
@@ -71,6 +64,7 @@ var Columns = []string{
 	FieldComment,
 	FieldAuthority,
 	FieldType,
+	FieldHashes,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "external_references"
@@ -216,20 +210,6 @@ func ByDocumentField(field string, opts ...sql.OrderTermOption) OrderOption {
 	}
 }
 
-// ByHashesCount orders the results by hashes count.
-func ByHashesCount(opts ...sql.OrderTermOption) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborsCount(s, newHashesStep(), opts...)
-	}
-}
-
-// ByHashes orders the results by hashes terms.
-func ByHashes(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newHashesStep(), append([]sql.OrderTerm{term}, terms...)...)
-	}
-}
-
 // ByNodeField orders the results by node field.
 func ByNodeField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -241,13 +221,6 @@ func newDocumentStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(DocumentInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.M2O, false, DocumentTable, DocumentColumn),
-	)
-}
-func newHashesStep() *sqlgraph.Step {
-	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(HashesInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2M, false, HashesTable, HashesColumn),
 	)
 }
 func newNodeStep() *sqlgraph.Step {

@@ -16,8 +16,6 @@ import (
 	"github.com/protobom/storage/internal/backends/ent/documenttype"
 	"github.com/protobom/storage/internal/backends/ent/edgetype"
 	"github.com/protobom/storage/internal/backends/ent/externalreference"
-	"github.com/protobom/storage/internal/backends/ent/hashesentry"
-	"github.com/protobom/storage/internal/backends/ent/identifiersentry"
 	"github.com/protobom/storage/internal/backends/ent/node"
 	"github.com/protobom/storage/internal/backends/ent/purpose"
 )
@@ -148,7 +146,8 @@ func (backend *Backend) saveExternalReferences(refs []*sbom.ExternalReference) e
 			SetURL(ref.Url).
 			SetComment(ref.Comment).
 			SetAuthority(ref.Authority).
-			SetType(externalreference.Type(ref.Type.String()))
+			SetType(externalreference.Type(ref.Type.String())).
+			SetHashes(ref.Hashes)
 
 		if nodeID, ok := backend.ctx.Value(nodeIDKey{}).(string); ok {
 			newRef.SetNodeID(nodeID)
@@ -164,82 +163,6 @@ func (backend *Backend) saveExternalReferences(refs []*sbom.ExternalReference) e
 		}
 
 		backend.ctx = context.WithValue(backend.ctx, externalReferenceIDKey{}, id)
-
-		if err := backend.saveHashesEntries(ref.Hashes); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (backend *Backend) saveHashesEntries(hashes map[int32]string) error {
-	if backend.client == nil {
-		return fmt.Errorf("%w", errUninitializedClient)
-	}
-
-	tx := ent.TxFromContext(backend.ctx)
-	entries := []*ent.HashesEntryCreate{}
-
-	for alg, content := range hashes {
-		algName := sbom.HashAlgorithm(alg).String()
-
-		entry := tx.HashesEntry.Create().
-			SetHashAlgorithmType(hashesentry.HashAlgorithmType(algName)).
-			SetHashData(content)
-
-		if externalReferenceID, ok := backend.ctx.Value(externalReferenceIDKey{}).(int); ok {
-			entry.SetExternalReferenceID(externalReferenceID)
-		}
-
-		if nodeID, ok := backend.ctx.Value(nodeIDKey{}).(string); ok {
-			entry.SetNodeID(nodeID)
-		}
-
-		if documentID, ok := backend.ctx.Value(documentIDKey{}).(string); ok {
-			entry.SetDocumentID(documentID)
-		}
-
-		entries = append(entries, entry)
-	}
-
-	if err := tx.HashesEntry.CreateBulk(entries...).
-		Exec(backend.ctx); err != nil && !ent.IsConstraintError(err) {
-		return fmt.Errorf("ent.HashesEntry: %w", err)
-	}
-
-	return nil
-}
-
-func (backend *Backend) saveIdentifiersEntries(idents map[int32]string) error {
-	if backend.client == nil {
-		return fmt.Errorf("%w", errUninitializedClient)
-	}
-
-	tx := ent.TxFromContext(backend.ctx)
-	entries := []*ent.IdentifiersEntryCreate{}
-
-	for typ, value := range idents {
-		typeName := sbom.SoftwareIdentifierType(typ).String()
-
-		entry := tx.IdentifiersEntry.Create().
-			SetSoftwareIdentifierType(identifiersentry.SoftwareIdentifierType(typeName)).
-			SetSoftwareIdentifierValue(value)
-
-		if nodeID, ok := backend.ctx.Value(nodeIDKey{}).(string); ok {
-			entry.SetNodeID(nodeID)
-		}
-
-		if documentID, ok := backend.ctx.Value(documentIDKey{}).(string); ok {
-			entry.SetDocumentID(documentID)
-		}
-
-		entries = append(entries, entry)
-	}
-
-	if err := tx.IdentifiersEntry.CreateBulk(entries...).
-		Exec(backend.ctx); err != nil && !ent.IsConstraintError(err) {
-		return fmt.Errorf("ent.IdentifiersEntry: %w", err)
 	}
 
 	return nil
@@ -316,7 +239,7 @@ func (backend *Backend) saveNodeList(nodeList *sbom.NodeList) error {
 	return nil
 }
 
-func (backend *Backend) saveNodes(nodes []*sbom.Node) error { //nolint:cyclop
+func (backend *Backend) saveNodes(nodes []*sbom.Node) error {
 	if backend.client == nil {
 		return fmt.Errorf("%w", errUninitializedClient)
 	}
@@ -343,14 +266,6 @@ func (backend *Backend) saveNodes(nodes []*sbom.Node) error { //nolint:cyclop
 		}
 
 		if err := backend.savePurposes(n.PrimaryPurpose); err != nil {
-			return err
-		}
-
-		if err := backend.saveHashesEntries(n.Hashes); err != nil {
-			return err
-		}
-
-		if err := backend.saveIdentifiersEntries(n.Identifiers); err != nil {
 			return err
 		}
 	}
@@ -490,7 +405,9 @@ func (backend *Backend) newNodeCreate(n *sbom.Node) *ent.NodeCreate {
 		SetURLDownload(n.UrlDownload).
 		SetURLHome(n.UrlHome).
 		SetValidUntilDate(n.ValidUntilDate.AsTime()).
-		SetVersion(n.Version)
+		SetVersion(n.Version).
+		SetHashes(n.Hashes).
+		SetIdentifiers(n.Identifiers)
 
 	if nodeListID, ok := backend.ctx.Value(nodeListIDKey{}).(int); ok {
 		newNode.SetNodeListID(nodeListID)

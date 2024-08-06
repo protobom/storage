@@ -388,6 +388,16 @@ func TypeNotIn(vs ...Type) predicate.ExternalReference {
 	return predicate.ExternalReference(sql.FieldNotIn(FieldType, vs...))
 }
 
+// HashesIsNil applies the IsNil predicate on the "hashes" field.
+func HashesIsNil() predicate.ExternalReference {
+	return predicate.ExternalReference(sql.FieldIsNull(FieldHashes))
+}
+
+// HashesNotNil applies the NotNil predicate on the "hashes" field.
+func HashesNotNil() predicate.ExternalReference {
+	return predicate.ExternalReference(sql.FieldNotNull(FieldHashes))
+}
+
 // HasDocument applies the HasEdge predicate on the "document" edge.
 func HasDocument() predicate.ExternalReference {
 	return predicate.ExternalReference(func(s *sql.Selector) {
@@ -403,29 +413,6 @@ func HasDocument() predicate.ExternalReference {
 func HasDocumentWith(preds ...predicate.Document) predicate.ExternalReference {
 	return predicate.ExternalReference(func(s *sql.Selector) {
 		step := newDocumentStep()
-		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
-			for _, p := range preds {
-				p(s)
-			}
-		})
-	})
-}
-
-// HasHashes applies the HasEdge predicate on the "hashes" edge.
-func HasHashes() predicate.ExternalReference {
-	return predicate.ExternalReference(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, HashesTable, HashesColumn),
-		)
-		sqlgraph.HasNeighbors(s, step)
-	})
-}
-
-// HasHashesWith applies the HasEdge predicate on the "hashes" edge with a given conditions (other predicates).
-func HasHashesWith(preds ...predicate.HashesEntry) predicate.ExternalReference {
-	return predicate.ExternalReference(func(s *sql.Selector) {
-		step := newHashesStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

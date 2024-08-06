@@ -61,6 +61,10 @@ const (
 	FieldAttribution = "attribution"
 	// FieldFileTypes holds the string denoting the file_types field in the database.
 	FieldFileTypes = "file_types"
+	// FieldHashes holds the string denoting the hashes field in the database.
+	FieldHashes = "hashes"
+	// FieldIdentifiers holds the string denoting the identifiers field in the database.
+	FieldIdentifiers = "identifiers"
 	// EdgeDocument holds the string denoting the document edge name in mutations.
 	EdgeDocument = "document"
 	// EdgeSuppliers holds the string denoting the suppliers edge name in mutations.
@@ -69,10 +73,6 @@ const (
 	EdgeOriginators = "originators"
 	// EdgeExternalReferences holds the string denoting the external_references edge name in mutations.
 	EdgeExternalReferences = "external_references"
-	// EdgeIdentifiers holds the string denoting the identifiers edge name in mutations.
-	EdgeIdentifiers = "identifiers"
-	// EdgeHashes holds the string denoting the hashes edge name in mutations.
-	EdgeHashes = "hashes"
 	// EdgePrimaryPurpose holds the string denoting the primary_purpose edge name in mutations.
 	EdgePrimaryPurpose = "primary_purpose"
 	// EdgeToNodes holds the string denoting the to_nodes edge name in mutations.
@@ -113,20 +113,6 @@ const (
 	ExternalReferencesInverseTable = "external_references"
 	// ExternalReferencesColumn is the table column denoting the external_references relation/edge.
 	ExternalReferencesColumn = "node_id"
-	// IdentifiersTable is the table that holds the identifiers relation/edge.
-	IdentifiersTable = "identifiers_entries"
-	// IdentifiersInverseTable is the table name for the IdentifiersEntry entity.
-	// It exists in this package in order to avoid circular dependency with the "identifiersentry" package.
-	IdentifiersInverseTable = "identifiers_entries"
-	// IdentifiersColumn is the table column denoting the identifiers relation/edge.
-	IdentifiersColumn = "node_id"
-	// HashesTable is the table that holds the hashes relation/edge.
-	HashesTable = "hashes_entries"
-	// HashesInverseTable is the table name for the HashesEntry entity.
-	// It exists in this package in order to avoid circular dependency with the "hashesentry" package.
-	HashesInverseTable = "hashes_entries"
-	// HashesColumn is the table column denoting the hashes relation/edge.
-	HashesColumn = "node_id"
 	// PrimaryPurposeTable is the table that holds the primary_purpose relation/edge.
 	PrimaryPurposeTable = "purposes"
 	// PrimaryPurposeInverseTable is the table name for the Purpose entity.
@@ -178,6 +164,8 @@ var Columns = []string{
 	FieldValidUntilDate,
 	FieldAttribution,
 	FieldFileTypes,
+	FieldHashes,
+	FieldIdentifiers,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "nodes"
@@ -380,34 +368,6 @@ func ByExternalReferences(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOptio
 	}
 }
 
-// ByIdentifiersCount orders the results by identifiers count.
-func ByIdentifiersCount(opts ...sql.OrderTermOption) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborsCount(s, newIdentifiersStep(), opts...)
-	}
-}
-
-// ByIdentifiers orders the results by identifiers terms.
-func ByIdentifiers(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newIdentifiersStep(), append([]sql.OrderTerm{term}, terms...)...)
-	}
-}
-
-// ByHashesCount orders the results by hashes count.
-func ByHashesCount(opts ...sql.OrderTermOption) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborsCount(s, newHashesStep(), opts...)
-	}
-}
-
-// ByHashes orders the results by hashes terms.
-func ByHashes(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newHashesStep(), append([]sql.OrderTerm{term}, terms...)...)
-	}
-}
-
 // ByPrimaryPurposeCount orders the results by primary_purpose count.
 func ByPrimaryPurposeCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -496,20 +456,6 @@ func newExternalReferencesStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(ExternalReferencesInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, ExternalReferencesTable, ExternalReferencesColumn),
-	)
-}
-func newIdentifiersStep() *sqlgraph.Step {
-	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(IdentifiersInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2M, false, IdentifiersTable, IdentifiersColumn),
-	)
-}
-func newHashesStep() *sqlgraph.Step {
-	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(HashesInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2M, false, HashesTable, HashesColumn),
 	)
 }
 func newPrimaryPurposeStep() *sqlgraph.Step {

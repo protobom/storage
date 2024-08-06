@@ -36,12 +36,12 @@ func (ExternalReference) Fields() []ent.Field {
 		field.String("comment"),
 		field.String("authority").Optional(),
 		field.Enum("type").Values(values...),
+		field.JSON("hashes", map[int32]string{}).Optional(),
 	}
 }
 
 func (ExternalReference) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.To("hashes", HashesEntry.Type),
 		edge.From("node", Node.Type).Ref("external_references").Unique().Field("node_id"),
 	}
 }

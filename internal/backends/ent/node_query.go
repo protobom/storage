@@ -12,14 +12,13 @@ import (
 	"fmt"
 	"math"
 
+	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/edgetype"
 	"github.com/protobom/storage/internal/backends/ent/externalreference"
-	"github.com/protobom/storage/internal/backends/ent/hashesentry"
-	"github.com/protobom/storage/internal/backends/ent/identifiersentry"
 	"github.com/protobom/storage/internal/backends/ent/node"
 	"github.com/protobom/storage/internal/backends/ent/nodelist"
 	"github.com/protobom/storage/internal/backends/ent/person"
@@ -38,8 +37,6 @@ type NodeQuery struct {
 	withSuppliers          *PersonQuery
 	withOriginators        *PersonQuery
 	withExternalReferences *ExternalReferenceQuery
-	withIdentifiers        *IdentifiersEntryQuery
-	withHashes             *HashesEntryQuery
 	withPrimaryPurpose     *PurposeQuery
 	withToNodes            *NodeQuery
 	withNodes              *NodeQuery
@@ -170,50 +167,6 @@ func (nq *NodeQuery) QueryExternalReferences() *ExternalReferenceQuery {
 	return query
 }
 
-// QueryIdentifiers chains the current query on the "identifiers" edge.
-func (nq *NodeQuery) QueryIdentifiers() *IdentifiersEntryQuery {
-	query := (&IdentifiersEntryClient{config: nq.config}).Query()
-	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := nq.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		selector := nq.sqlQuery(ctx)
-		if err := selector.Err(); err != nil {
-			return nil, err
-		}
-		step := sqlgraph.NewStep(
-			sqlgraph.From(node.Table, node.FieldID, selector),
-			sqlgraph.To(identifiersentry.Table, identifiersentry.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, node.IdentifiersTable, node.IdentifiersColumn),
-		)
-		fromU = sqlgraph.SetNeighbors(nq.driver.Dialect(), step)
-		return fromU, nil
-	}
-	return query
-}
-
-// QueryHashes chains the current query on the "hashes" edge.
-func (nq *NodeQuery) QueryHashes() *HashesEntryQuery {
-	query := (&HashesEntryClient{config: nq.config}).Query()
-	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := nq.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		selector := nq.sqlQuery(ctx)
-		if err := selector.Err(); err != nil {
-			return nil, err
-		}
-		step := sqlgraph.NewStep(
-			sqlgraph.From(node.Table, node.FieldID, selector),
-			sqlgraph.To(hashesentry.Table, hashesentry.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, node.HashesTable, node.HashesColumn),
-		)
-		fromU = sqlgraph.SetNeighbors(nq.driver.Dialect(), step)
-		return fromU, nil
-	}
-	return query
-}
-
 // QueryPrimaryPurpose chains the current query on the "primary_purpose" edge.
 func (nq *NodeQuery) QueryPrimaryPurpose() *PurposeQuery {
 	query := (&PurposeClient{config: nq.config}).Query()
@@ -327,7 +280,7 @@ func (nq *NodeQuery) QueryEdgeTypes() *EdgeTypeQuery {
 // First returns the first Node entity from the query.
 // Returns a *NotFoundError when no Node was found.
 func (nq *NodeQuery) First(ctx context.Context) (*Node, error) {
-	nodes, err := nq.Limit(1).All(setContextOp(ctx, nq.ctx, "First"))
+	nodes, err := nq.Limit(1).All(setContextOp(ctx, nq.ctx, ent.OpQueryFirst))
 	if err != nil {
 		return nil, err
 	}
@@ -350,7 +303,7 @@ func (nq *NodeQuery) FirstX(ctx context.Context) *Node {
 // Returns a *NotFoundError when no Node ID was found.
 func (nq *NodeQuery) FirstID(ctx context.Context) (id string, err error) {
 	var ids []string
-	if ids, err = nq.Limit(1).IDs(setContextOp(ctx, nq.ctx, "FirstID")); err != nil {
+	if ids, err = nq.Limit(1).IDs(setContextOp(ctx, nq.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
 	if len(ids) == 0 {
@@ -373,7 +326,7 @@ func (nq *NodeQuery) FirstIDX(ctx context.Context) string {
 // Returns a *NotSingularError when more than one Node entity is found.
 // Returns a *NotFoundError when no Node entities are found.
 func (nq *NodeQuery) Only(ctx context.Context) (*Node, error) {
-	nodes, err := nq.Limit(2).All(setContextOp(ctx, nq.ctx, "Only"))
+	nodes, err := nq.Limit(2).All(setContextOp(ctx, nq.ctx, ent.OpQueryOnly))
 	if err != nil {
 		return nil, err
 	}
@@ -401,7 +354,7 @@ func (nq *NodeQuery) OnlyX(ctx context.Context) *Node {
 // Returns a *NotFoundError when no entities are found.
 func (nq *NodeQuery) OnlyID(ctx context.Context) (id string, err error) {
 	var ids []string
-	if ids, err = nq.Limit(2).IDs(setContextOp(ctx, nq.ctx, "OnlyID")); err != nil {
+	if ids, err = nq.Limit(2).IDs(setContextOp(ctx, nq.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
 	switch len(ids) {
@@ -426,7 +379,7 @@ func (nq *NodeQuery) OnlyIDX(ctx context.Context) string {
 
 // All executes the query and returns a list of Nodes.
 func (nq *NodeQuery) All(ctx context.Context) ([]*Node, error) {
-	ctx = setContextOp(ctx, nq.ctx, "All")
+	ctx = setContextOp(ctx, nq.ctx, ent.OpQueryAll)
 	if err := nq.prepareQuery(ctx); err != nil {
 		return nil, err
 	}
@@ -448,7 +401,7 @@ func (nq *NodeQuery) IDs(ctx context.Context) (ids []string, err error) {
 	if nq.ctx.Unique == nil && nq.path != nil {
 		nq.Unique(true)
 	}
-	ctx = setContextOp(ctx, nq.ctx, "IDs")
+	ctx = setContextOp(ctx, nq.ctx, ent.OpQueryIDs)
 	if err = nq.Select(node.FieldID).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
@@ -466,7 +419,7 @@ func (nq *NodeQuery) IDsX(ctx context.Context) []string {
 
 // Count returns the count of the given query.
 func (nq *NodeQuery) Count(ctx context.Context) (int, error) {
-	ctx = setContextOp(ctx, nq.ctx, "Count")
+	ctx = setContextOp(ctx, nq.ctx, ent.OpQueryCount)
 	if err := nq.prepareQuery(ctx); err != nil {
 		return 0, err
 	}
@@ -484,7 +437,7 @@ func (nq *NodeQuery) CountX(ctx context.Context) int {
 
 // Exist returns true if the query has elements in the graph.
 func (nq *NodeQuery) Exist(ctx context.Context) (bool, error) {
-	ctx = setContextOp(ctx, nq.ctx, "Exist")
+	ctx = setContextOp(ctx, nq.ctx, ent.OpQueryExist)
 	switch _, err := nq.FirstID(ctx); {
 	case IsNotFound(err):
 		return false, nil
@@ -520,8 +473,6 @@ func (nq *NodeQuery) Clone() *NodeQuery {
 		withSuppliers:          nq.withSuppliers.Clone(),
 		withOriginators:        nq.withOriginators.Clone(),
 		withExternalReferences: nq.withExternalReferences.Clone(),
-		withIdentifiers:        nq.withIdentifiers.Clone(),
-		withHashes:             nq.withHashes.Clone(),
 		withPrimaryPurpose:     nq.withPrimaryPurpose.Clone(),
 		withToNodes:            nq.withToNodes.Clone(),
 		withNodes:              nq.withNodes.Clone(),
@@ -574,28 +525,6 @@ func (nq *NodeQuery) WithExternalReferences(opts ...func(*ExternalReferenceQuery
 		opt(query)
 	}
 	nq.withExternalReferences = query
-	return nq
-}
-
-// WithIdentifiers tells the query-builder to eager-load the nodes that are connected to
-// the "identifiers" edge. The optional arguments are used to configure the query builder of the edge.
-func (nq *NodeQuery) WithIdentifiers(opts ...func(*IdentifiersEntryQuery)) *NodeQuery {
-	query := (&IdentifiersEntryClient{config: nq.config}).Query()
-	for _, opt := range opts {
-		opt(query)
-	}
-	nq.withIdentifiers = query
-	return nq
-}
-
-// WithHashes tells the query-builder to eager-load the nodes that are connected to
-// the "hashes" edge. The optional arguments are used to configure the query builder of the edge.
-func (nq *NodeQuery) WithHashes(opts ...func(*HashesEntryQuery)) *NodeQuery {
-	query := (&HashesEntryClient{config: nq.config}).Query()
-	for _, opt := range opts {
-		opt(query)
-	}
-	nq.withHashes = query
 	return nq
 }
 
@@ -733,13 +662,11 @@ func (nq *NodeQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Node, e
 		nodes       = []*Node{}
 		withFKs     = nq.withFKs
 		_spec       = nq.querySpec()
-		loadedTypes = [11]bool{
+		loadedTypes = [9]bool{
 			nq.withDocument != nil,
 			nq.withSuppliers != nil,
 			nq.withOriginators != nil,
 			nq.withExternalReferences != nil,
-			nq.withIdentifiers != nil,
-			nq.withHashes != nil,
 			nq.withPrimaryPurpose != nil,
 			nq.withToNodes != nil,
 			nq.withNodes != nil,
@@ -797,20 +724,6 @@ func (nq *NodeQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Node, e
 			func(n *Node, e *ExternalReference) {
 				n.Edges.ExternalReferences = append(n.Edges.ExternalReferences, e)
 			}); err != nil {
-			return nil, err
-		}
-	}
-	if query := nq.withIdentifiers; query != nil {
-		if err := nq.loadIdentifiers(ctx, query, nodes,
-			func(n *Node) { n.Edges.Identifiers = []*IdentifiersEntry{} },
-			func(n *Node, e *IdentifiersEntry) { n.Edges.Identifiers = append(n.Edges.Identifiers, e) }); err != nil {
-			return nil, err
-		}
-	}
-	if query := nq.withHashes; query != nil {
-		if err := nq.loadHashes(ctx, query, nodes,
-			func(n *Node) { n.Edges.Hashes = []*HashesEntry{} },
-			func(n *Node, e *HashesEntry) { n.Edges.Hashes = append(n.Edges.Hashes, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -961,68 +874,6 @@ func (nq *NodeQuery) loadExternalReferences(ctx context.Context, query *External
 	}
 	query.Where(predicate.ExternalReference(func(s *sql.Selector) {
 		s.Where(sql.InValues(s.C(node.ExternalReferencesColumn), fks...))
-	}))
-	neighbors, err := query.All(ctx)
-	if err != nil {
-		return err
-	}
-	for _, n := range neighbors {
-		fk := n.NodeID
-		node, ok := nodeids[fk]
-		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "node_id" returned %v for node %v`, fk, n.ID)
-		}
-		assign(node, n)
-	}
-	return nil
-}
-func (nq *NodeQuery) loadIdentifiers(ctx context.Context, query *IdentifiersEntryQuery, nodes []*Node, init func(*Node), assign func(*Node, *IdentifiersEntry)) error {
-	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[string]*Node)
-	for i := range nodes {
-		fks = append(fks, nodes[i].ID)
-		nodeids[nodes[i].ID] = nodes[i]
-		if init != nil {
-			init(nodes[i])
-		}
-	}
-	query.withFKs = true
-	if len(query.ctx.Fields) > 0 {
-		query.ctx.AppendFieldOnce(identifiersentry.FieldNodeID)
-	}
-	query.Where(predicate.IdentifiersEntry(func(s *sql.Selector) {
-		s.Where(sql.InValues(s.C(node.IdentifiersColumn), fks...))
-	}))
-	neighbors, err := query.All(ctx)
-	if err != nil {
-		return err
-	}
-	for _, n := range neighbors {
-		fk := n.NodeID
-		node, ok := nodeids[fk]
-		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "node_id" returned %v for node %v`, fk, n.ID)
-		}
-		assign(node, n)
-	}
-	return nil
-}
-func (nq *NodeQuery) loadHashes(ctx context.Context, query *HashesEntryQuery, nodes []*Node, init func(*Node), assign func(*Node, *HashesEntry)) error {
-	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[string]*Node)
-	for i := range nodes {
-		fks = append(fks, nodes[i].ID)
-		nodeids[nodes[i].ID] = nodes[i]
-		if init != nil {
-			init(nodes[i])
-		}
-	}
-	query.withFKs = true
-	if len(query.ctx.Fields) > 0 {
-		query.ctx.AppendFieldOnce(hashesentry.FieldNodeID)
-	}
-	query.Where(predicate.HashesEntry(func(s *sql.Selector) {
-		s.Where(sql.InValues(s.C(node.HashesColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {
@@ -1350,7 +1201,7 @@ func (ngb *NodeGroupBy) Aggregate(fns ...AggregateFunc) *NodeGroupBy {
 
 // Scan applies the selector query and scans the result into the given value.
 func (ngb *NodeGroupBy) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, ngb.build.ctx, "GroupBy")
+	ctx = setContextOp(ctx, ngb.build.ctx, ent.OpQueryGroupBy)
 	if err := ngb.build.prepareQuery(ctx); err != nil {
 		return err
 	}
@@ -1398,7 +1249,7 @@ func (ns *NodeSelect) Aggregate(fns ...AggregateFunc) *NodeSelect {
 
 // Scan applies the selector query and scans the result into the given value.
 func (ns *NodeSelect) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, ns.ctx, "Select")
+	ctx = setContextOp(ctx, ns.ctx, ent.OpQuerySelect)
 	if err := ns.prepareQuery(ctx); err != nil {
 		return err
 	}

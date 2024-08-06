@@ -67,6 +67,10 @@ type Node struct {
 	Attribution []string `json:"attribution,omitempty"`
 	// FileTypes holds the value of the "file_types" field.
 	FileTypes []string `json:"file_types,omitempty"`
+	// Hashes holds the value of the "hashes" field.
+	Hashes map[int32]string `json:"hashes,omitempty"`
+	// Identifiers holds the value of the "identifiers" field.
+	Identifiers map[int32]string `json:"identifiers,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the NodeQuery when eager-loading is set.
 	Edges        NodeEdges `json:"edges"`
@@ -84,10 +88,6 @@ type NodeEdges struct {
 	Originators []*Person `json:"originators,omitempty"`
 	// ExternalReferences holds the value of the external_references edge.
 	ExternalReferences []*ExternalReference `json:"external_references,omitempty"`
-	// Identifiers holds the value of the identifiers edge.
-	Identifiers []*IdentifiersEntry `json:"identifiers,omitempty"`
-	// Hashes holds the value of the hashes edge.
-	Hashes []*HashesEntry `json:"hashes,omitempty"`
 	// PrimaryPurpose holds the value of the primary_purpose edge.
 	PrimaryPurpose []*Purpose `json:"primary_purpose,omitempty"`
 	// ToNodes holds the value of the to_nodes edge.
@@ -100,7 +100,7 @@ type NodeEdges struct {
 	EdgeTypes []*EdgeType `json:"edge_types,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [11]bool
+	loadedTypes [9]bool
 }
 
 // DocumentOrErr returns the Document value or an error if the edge
@@ -141,28 +141,10 @@ func (e NodeEdges) ExternalReferencesOrErr() ([]*ExternalReference, error) {
 	return nil, &NotLoadedError{edge: "external_references"}
 }
 
-// IdentifiersOrErr returns the Identifiers value or an error if the edge
-// was not loaded in eager-loading.
-func (e NodeEdges) IdentifiersOrErr() ([]*IdentifiersEntry, error) {
-	if e.loadedTypes[4] {
-		return e.Identifiers, nil
-	}
-	return nil, &NotLoadedError{edge: "identifiers"}
-}
-
-// HashesOrErr returns the Hashes value or an error if the edge
-// was not loaded in eager-loading.
-func (e NodeEdges) HashesOrErr() ([]*HashesEntry, error) {
-	if e.loadedTypes[5] {
-		return e.Hashes, nil
-	}
-	return nil, &NotLoadedError{edge: "hashes"}
-}
-
 // PrimaryPurposeOrErr returns the PrimaryPurpose value or an error if the edge
 // was not loaded in eager-loading.
 func (e NodeEdges) PrimaryPurposeOrErr() ([]*Purpose, error) {
-	if e.loadedTypes[6] {
+	if e.loadedTypes[4] {
 		return e.PrimaryPurpose, nil
 	}
 	return nil, &NotLoadedError{edge: "primary_purpose"}
@@ -171,7 +153,7 @@ func (e NodeEdges) PrimaryPurposeOrErr() ([]*Purpose, error) {
 // ToNodesOrErr returns the ToNodes value or an error if the edge
 // was not loaded in eager-loading.
 func (e NodeEdges) ToNodesOrErr() ([]*Node, error) {
-	if e.loadedTypes[7] {
+	if e.loadedTypes[5] {
 		return e.ToNodes, nil
 	}
 	return nil, &NotLoadedError{edge: "to_nodes"}
@@ -180,7 +162,7 @@ func (e NodeEdges) ToNodesOrErr() ([]*Node, error) {
 // NodesOrErr returns the Nodes value or an error if the edge
 // was not loaded in eager-loading.
 func (e NodeEdges) NodesOrErr() ([]*Node, error) {
-	if e.loadedTypes[8] {
+	if e.loadedTypes[6] {
 		return e.Nodes, nil
 	}
 	return nil, &NotLoadedError{edge: "nodes"}
@@ -191,7 +173,7 @@ func (e NodeEdges) NodesOrErr() ([]*Node, error) {
 func (e NodeEdges) NodeListOrErr() (*NodeList, error) {
 	if e.NodeList != nil {
 		return e.NodeList, nil
-	} else if e.loadedTypes[9] {
+	} else if e.loadedTypes[7] {
 		return nil, &NotFoundError{label: nodelist.Label}
 	}
 	return nil, &NotLoadedError{edge: "node_list"}
@@ -200,7 +182,7 @@ func (e NodeEdges) NodeListOrErr() (*NodeList, error) {
 // EdgeTypesOrErr returns the EdgeTypes value or an error if the edge
 // was not loaded in eager-loading.
 func (e NodeEdges) EdgeTypesOrErr() ([]*EdgeType, error) {
-	if e.loadedTypes[10] {
+	if e.loadedTypes[8] {
 		return e.EdgeTypes, nil
 	}
 	return nil, &NotLoadedError{edge: "edge_types"}
@@ -211,7 +193,7 @@ func (*Node) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case node.FieldProtoMessage, node.FieldLicenses, node.FieldAttribution, node.FieldFileTypes:
+		case node.FieldProtoMessage, node.FieldLicenses, node.FieldAttribution, node.FieldFileTypes, node.FieldHashes, node.FieldIdentifiers:
 			values[i] = new([]byte)
 		case node.FieldNodeListID:
 			values[i] = new(sql.NullInt64)
@@ -376,6 +358,22 @@ func (n *Node) assignValues(columns []string, values []any) error {
 					return fmt.Errorf("unmarshal field file_types: %w", err)
 				}
 			}
+		case node.FieldHashes:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field hashes", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &n.Hashes); err != nil {
+					return fmt.Errorf("unmarshal field hashes: %w", err)
+				}
+			}
+		case node.FieldIdentifiers:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field identifiers", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &n.Identifiers); err != nil {
+					return fmt.Errorf("unmarshal field identifiers: %w", err)
+				}
+			}
 		case node.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field document_id", values[i])
@@ -414,16 +412,6 @@ func (n *Node) QueryOriginators() *PersonQuery {
 // QueryExternalReferences queries the "external_references" edge of the Node entity.
 func (n *Node) QueryExternalReferences() *ExternalReferenceQuery {
 	return NewNodeClient(n.config).QueryExternalReferences(n)
-}
-
-// QueryIdentifiers queries the "identifiers" edge of the Node entity.
-func (n *Node) QueryIdentifiers() *IdentifiersEntryQuery {
-	return NewNodeClient(n.config).QueryIdentifiers(n)
-}
-
-// QueryHashes queries the "hashes" edge of the Node entity.
-func (n *Node) QueryHashes() *HashesEntryQuery {
-	return NewNodeClient(n.config).QueryHashes(n)
 }
 
 // QueryPrimaryPurpose queries the "primary_purpose" edge of the Node entity.
@@ -536,6 +524,12 @@ func (n *Node) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("file_types=")
 	builder.WriteString(fmt.Sprintf("%v", n.FileTypes))
+	builder.WriteString(", ")
+	builder.WriteString("hashes=")
+	builder.WriteString(fmt.Sprintf("%v", n.Hashes))
+	builder.WriteString(", ")
+	builder.WriteString("identifiers=")
+	builder.WriteString(fmt.Sprintf("%v", n.Identifiers))
 	builder.WriteByte(')')
 	return builder.String()
 }
