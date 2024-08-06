@@ -334,6 +334,18 @@ func (dq *DocumentQuery) WithNodeList(opts ...func(*NodeListQuery)) *DocumentQue
 
 // GroupBy is used to group vertices by one or more fields/columns.
 // It is often used with aggregate functions, like: count, max, mean, min, sum.
+//
+// Example:
+//
+//	var v []struct {
+//		Tags []string `json:"tags,omitempty"`
+//		Count int `json:"count,omitempty"`
+//	}
+//
+//	client.Document.Query().
+//		GroupBy(document.FieldTags).
+//		Aggregate(ent.Count()).
+//		Scan(ctx, &v)
 func (dq *DocumentQuery) GroupBy(field string, fields ...string) *DocumentGroupBy {
 	dq.ctx.Fields = append([]string{field}, fields...)
 	grbuild := &DocumentGroupBy{build: dq}
@@ -345,6 +357,16 @@ func (dq *DocumentQuery) GroupBy(field string, fields ...string) *DocumentGroupB
 
 // Select allows the selection one or more fields/columns for the given query,
 // instead of selecting all fields in the entity.
+//
+// Example:
+//
+//	var v []struct {
+//		Tags []string `json:"tags,omitempty"`
+//	}
+//
+//	client.Document.Query().
+//		Select(document.FieldTags).
+//		Scan(ctx, &v)
 func (dq *DocumentQuery) Select(fields ...string) *DocumentSelect {
 	dq.ctx.Fields = append(dq.ctx.Fields, fields...)
 	sbuild := &DocumentSelect{DocumentQuery: dq}

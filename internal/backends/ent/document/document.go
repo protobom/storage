@@ -17,6 +17,8 @@ const (
 	Label = "document"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
+	// FieldTags holds the string denoting the tags field in the database.
+	FieldTags = "tags"
 	// EdgeMetadata holds the string denoting the metadata edge name in mutations.
 	EdgeMetadata = "metadata"
 	// EdgeNodeList holds the string denoting the node_list edge name in mutations.
@@ -42,6 +44,7 @@ const (
 // Columns holds all SQL columns for document fields.
 var Columns = []string{
 	FieldID,
+	FieldTags,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -53,6 +56,11 @@ func ValidColumn(column string) bool {
 	}
 	return false
 }
+
+var (
+	// DefaultTags holds the default value on creation for the "tags" field.
+	DefaultTags []string
+)
 
 // OrderOption defines the ordering options for the Document queries.
 type OrderOption func(*sql.Selector)

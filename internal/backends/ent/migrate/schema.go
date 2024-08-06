@@ -17,12 +17,20 @@ var (
 	// DocumentsColumns holds the columns for the "documents" table.
 	DocumentsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeString, Unique: true},
+		{Name: "tags", Type: field.TypeJSON, Nullable: true},
 	}
 	// DocumentsTable holds the schema information for the "documents" table.
 	DocumentsTable = &schema.Table{
 		Name:       "documents",
 		Columns:    DocumentsColumns,
 		PrimaryKey: []*schema.Column{DocumentsColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "idx_document_tags",
+				Unique:  true,
+				Columns: []*schema.Column{DocumentsColumns[1]},
+			},
+		},
 	}
 	// DocumentTypesColumns holds the columns for the "document_types" table.
 	DocumentTypesColumns = []*schema.Column{

@@ -7,6 +7,7 @@
 package ent
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -19,9 +20,11 @@ import (
 
 // Document is the model entity for the Document schema.
 type Document struct {
-	config
+	config `json:"-"`
 	// ID of the ent.
 	ID string `json:"id,omitempty"`
+	// Tags holds the value of the "tags" field.
+	Tags []string `json:"tags,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the DocumentQuery when eager-loading is set.
 	Edges        DocumentEdges `json:"edges"`
@@ -66,6 +69,8 @@ func (*Document) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case document.FieldTags:
+			values[i] = new([]byte)
 		case document.FieldID:
 			values[i] = new(sql.NullString)
 		default:
@@ -88,6 +93,14 @@ func (d *Document) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value.Valid {
 				d.ID = value.String
+			}
+		case document.FieldTags:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field tags", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &d.Tags); err != nil {
+					return fmt.Errorf("unmarshal field tags: %w", err)
+				}
 			}
 		default:
 			d.selectValues.Set(columns[i], values[i])
@@ -134,7 +147,9 @@ func (d *Document) Unwrap() *Document {
 func (d *Document) String() string {
 	var builder strings.Builder
 	builder.WriteString("Document(")
-	builder.WriteString(fmt.Sprintf("id=%v", d.ID))
+	builder.WriteString(fmt.Sprintf("id=%v, ", d.ID))
+	builder.WriteString("tags=")
+	builder.WriteString(fmt.Sprintf("%v", d.Tags))
 	builder.WriteByte(')')
 	return builder.String()
 }

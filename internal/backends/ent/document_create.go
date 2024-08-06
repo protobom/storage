@@ -28,6 +28,12 @@ type DocumentCreate struct {
 	conflict []sql.ConflictOption
 }
 
+// SetTags sets the "tags" field.
+func (dc *DocumentCreate) SetTags(s []string) *DocumentCreate {
+	dc.mutation.SetTags(s)
+	return dc
+}
+
 // SetID sets the "id" field.
 func (dc *DocumentCreate) SetID(s string) *DocumentCreate {
 	dc.mutation.SetID(s)
@@ -79,6 +85,7 @@ func (dc *DocumentCreate) Mutation() *DocumentMutation {
 
 // Save creates the Document in the database.
 func (dc *DocumentCreate) Save(ctx context.Context) (*Document, error) {
+	dc.defaults()
 	return withHooks(ctx, dc.sqlSave, dc.mutation, dc.hooks)
 }
 
@@ -101,6 +108,14 @@ func (dc *DocumentCreate) Exec(ctx context.Context) error {
 func (dc *DocumentCreate) ExecX(ctx context.Context) {
 	if err := dc.Exec(ctx); err != nil {
 		panic(err)
+	}
+}
+
+// defaults sets the default values of the builder before save.
+func (dc *DocumentCreate) defaults() {
+	if _, ok := dc.mutation.Tags(); !ok {
+		v := document.DefaultTags
+		dc.mutation.SetTags(v)
 	}
 }
 
@@ -142,6 +157,10 @@ func (dc *DocumentCreate) createSpec() (*Document, *sqlgraph.CreateSpec) {
 		_node.ID = id
 		_spec.ID.Value = id
 	}
+	if value, ok := dc.mutation.Tags(); ok {
+		_spec.SetField(document.FieldTags, field.TypeJSON, value)
+		_node.Tags = value
+	}
 	if nodes := dc.mutation.MetadataIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2O,
@@ -181,11 +200,17 @@ func (dc *DocumentCreate) createSpec() (*Document, *sqlgraph.CreateSpec) {
 // of the `INSERT` statement. For example:
 //
 //	client.Document.Create().
+//		SetTags(v).
 //		OnConflict(
 //			// Update the row with the new values
 //			// the was proposed for insertion.
 //			sql.ResolveWithNewValues(),
 //		).
+//		// Override some of the fields with custom
+//		// update values.
+//		Update(func(u *ent.DocumentUpsert) {
+//			SetTags(v+v).
+//		}).
 //		Exec(ctx)
 func (dc *DocumentCreate) OnConflict(opts ...sql.ConflictOption) *DocumentUpsertOne {
 	dc.conflict = opts
@@ -219,6 +244,24 @@ type (
 		*sql.UpdateSet
 	}
 )
+
+// SetTags sets the "tags" field.
+func (u *DocumentUpsert) SetTags(v []string) *DocumentUpsert {
+	u.Set(document.FieldTags, v)
+	return u
+}
+
+// UpdateTags sets the "tags" field to the value that was provided on create.
+func (u *DocumentUpsert) UpdateTags() *DocumentUpsert {
+	u.SetExcluded(document.FieldTags)
+	return u
+}
+
+// ClearTags clears the value of the "tags" field.
+func (u *DocumentUpsert) ClearTags() *DocumentUpsert {
+	u.SetNull(document.FieldTags)
+	return u
+}
 
 // UpdateNewValues updates the mutable fields using the new values that were set on create except the ID field.
 // Using this option is equivalent to using:
@@ -266,6 +309,27 @@ func (u *DocumentUpsertOne) Update(set func(*DocumentUpsert)) *DocumentUpsertOne
 		set(&DocumentUpsert{UpdateSet: update})
 	}))
 	return u
+}
+
+// SetTags sets the "tags" field.
+func (u *DocumentUpsertOne) SetTags(v []string) *DocumentUpsertOne {
+	return u.Update(func(s *DocumentUpsert) {
+		s.SetTags(v)
+	})
+}
+
+// UpdateTags sets the "tags" field to the value that was provided on create.
+func (u *DocumentUpsertOne) UpdateTags() *DocumentUpsertOne {
+	return u.Update(func(s *DocumentUpsert) {
+		s.UpdateTags()
+	})
+}
+
+// ClearTags clears the value of the "tags" field.
+func (u *DocumentUpsertOne) ClearTags() *DocumentUpsertOne {
+	return u.Update(func(s *DocumentUpsert) {
+		s.ClearTags()
+	})
 }
 
 // Exec executes the query.
@@ -325,6 +389,7 @@ func (dcb *DocumentCreateBulk) Save(ctx context.Context) ([]*Document, error) {
 	for i := range dcb.builders {
 		func(i int, root context.Context) {
 			builder := dcb.builders[i]
+			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*DocumentMutation)
 				if !ok {
@@ -400,6 +465,11 @@ func (dcb *DocumentCreateBulk) ExecX(ctx context.Context) {
 //			// the was proposed for insertion.
 //			sql.ResolveWithNewValues(),
 //		).
+//		// Override some of the fields with custom
+//		// update values.
+//		Update(func(u *ent.DocumentUpsert) {
+//			SetTags(v+v).
+//		}).
 //		Exec(ctx)
 func (dcb *DocumentCreateBulk) OnConflict(opts ...sql.ConflictOption) *DocumentUpsertBulk {
 	dcb.conflict = opts
@@ -475,6 +545,27 @@ func (u *DocumentUpsertBulk) Update(set func(*DocumentUpsert)) *DocumentUpsertBu
 		set(&DocumentUpsert{UpdateSet: update})
 	}))
 	return u
+}
+
+// SetTags sets the "tags" field.
+func (u *DocumentUpsertBulk) SetTags(v []string) *DocumentUpsertBulk {
+	return u.Update(func(s *DocumentUpsert) {
+		s.SetTags(v)
+	})
+}
+
+// UpdateTags sets the "tags" field to the value that was provided on create.
+func (u *DocumentUpsertBulk) UpdateTags() *DocumentUpsertBulk {
+	return u.Update(func(s *DocumentUpsert) {
+		s.UpdateTags()
+	})
+}
+
+// ClearTags clears the value of the "tags" field.
+func (u *DocumentUpsertBulk) ClearTags() *DocumentUpsertBulk {
+	return u.Update(func(s *DocumentUpsert) {
+		s.ClearTags()
+	})
 }
 
 // Exec executes the query.

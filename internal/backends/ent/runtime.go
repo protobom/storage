@@ -7,6 +7,7 @@
 package ent
 
 import (
+	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/metadata"
 	"github.com/protobom/storage/internal/backends/ent/node"
 	"github.com/protobom/storage/internal/backends/ent/schema"
@@ -16,6 +17,12 @@ import (
 // (default values, validators, hooks and policies) and stitches it
 // to their package variables.
 func init() {
+	documentFields := schema.Document{}.Fields()
+	_ = documentFields
+	// documentDescTags is the schema descriptor for tags field.
+	documentDescTags := documentFields[1].Descriptor()
+	// document.DefaultTags holds the default value on creation for the tags field.
+	document.DefaultTags = documentDescTags.Default.([]string)
 	metadataFields := schema.Metadata{}.Fields()
 	_ = metadataFields
 	// metadataDescID is the schema descriptor for id field.

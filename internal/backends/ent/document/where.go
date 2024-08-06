@@ -68,6 +68,16 @@ func IDContainsFold(id string) predicate.Document {
 	return predicate.Document(sql.FieldContainsFold(FieldID, id))
 }
 
+// TagsIsNil applies the IsNil predicate on the "tags" field.
+func TagsIsNil() predicate.Document {
+	return predicate.Document(sql.FieldIsNull(FieldTags))
+}
+
+// TagsNotNil applies the NotNil predicate on the "tags" field.
+func TagsNotNil() predicate.Document {
+	return predicate.Document(sql.FieldNotNull(FieldTags))
+}
+
 // HasMetadata applies the HasEdge predicate on the "metadata" edge.
 func HasMetadata() predicate.Document {
 	return predicate.Document(func(s *sql.Selector) {

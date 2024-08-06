@@ -13,6 +13,7 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/dialect/sql/sqljson"
 	"entgo.io/ent/schema/field"
 	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/predicate"
@@ -28,6 +29,24 @@ type DocumentUpdate struct {
 // Where appends a list predicates to the DocumentUpdate builder.
 func (du *DocumentUpdate) Where(ps ...predicate.Document) *DocumentUpdate {
 	du.mutation.Where(ps...)
+	return du
+}
+
+// SetTags sets the "tags" field.
+func (du *DocumentUpdate) SetTags(s []string) *DocumentUpdate {
+	du.mutation.SetTags(s)
+	return du
+}
+
+// AppendTags appends s to the "tags" field.
+func (du *DocumentUpdate) AppendTags(s []string) *DocumentUpdate {
+	du.mutation.AppendTags(s)
+	return du
+}
+
+// ClearTags clears the value of the "tags" field.
+func (du *DocumentUpdate) ClearTags() *DocumentUpdate {
+	du.mutation.ClearTags()
 	return du
 }
 
@@ -72,6 +91,17 @@ func (du *DocumentUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
+	if value, ok := du.mutation.Tags(); ok {
+		_spec.SetField(document.FieldTags, field.TypeJSON, value)
+	}
+	if value, ok := du.mutation.AppendedTags(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, document.FieldTags, value)
+		})
+	}
+	if du.mutation.TagsCleared() {
+		_spec.ClearField(document.FieldTags, field.TypeJSON)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, du.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{document.Label}
@@ -90,6 +120,24 @@ type DocumentUpdateOne struct {
 	fields   []string
 	hooks    []Hook
 	mutation *DocumentMutation
+}
+
+// SetTags sets the "tags" field.
+func (duo *DocumentUpdateOne) SetTags(s []string) *DocumentUpdateOne {
+	duo.mutation.SetTags(s)
+	return duo
+}
+
+// AppendTags appends s to the "tags" field.
+func (duo *DocumentUpdateOne) AppendTags(s []string) *DocumentUpdateOne {
+	duo.mutation.AppendTags(s)
+	return duo
+}
+
+// ClearTags clears the value of the "tags" field.
+func (duo *DocumentUpdateOne) ClearTags() *DocumentUpdateOne {
+	duo.mutation.ClearTags()
+	return duo
 }
 
 // Mutation returns the DocumentMutation object of the builder.
@@ -162,6 +210,17 @@ func (duo *DocumentUpdateOne) sqlSave(ctx context.Context) (_node *Document, err
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := duo.mutation.Tags(); ok {
+		_spec.SetField(document.FieldTags, field.TypeJSON, value)
+	}
+	if value, ok := duo.mutation.AppendedTags(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, document.FieldTags, value)
+		})
+	}
+	if duo.mutation.TagsCleared() {
+		_spec.ClearField(document.FieldTags, field.TypeJSON)
 	}
 	_node = &Document{config: duo.config}
 	_spec.Assign = _node.assignValues
