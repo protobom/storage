@@ -7,11 +7,14 @@
 package ent
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/protobom/protobom/pkg/sbom"
+	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/metadata"
 	"github.com/protobom/storage/internal/backends/ent/node"
 	"github.com/protobom/storage/internal/backends/ent/person"
@@ -22,6 +25,8 @@ type Person struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID int `json:"id,omitempty"`
+	// ProtoMessage holds the value of the "proto_message" field.
+	ProtoMessage *sbom.Person `json:"proto_message,omitempty"`
 	// MetadataID holds the value of the "metadata_id" field.
 	MetadataID string `json:"metadata_id,omitempty"`
 	// NodeID holds the value of the "node_id" field.
@@ -40,12 +45,15 @@ type Person struct {
 	// The values are being populated by the PersonQuery when eager-loading is set.
 	Edges           PersonEdges `json:"edges"`
 	node_suppliers  *string
+	document_id     *string
 	person_contacts *int
 	selectValues    sql.SelectValues
 }
 
 // PersonEdges holds the relations/edges for other nodes in the graph.
 type PersonEdges struct {
+	// Document holds the value of the document edge.
+	Document *Document `json:"document,omitempty"`
 	// ContactOwner holds the value of the contact_owner edge.
 	ContactOwner *Person `json:"contact_owner,omitempty"`
 	// Contacts holds the value of the contacts edge.
@@ -56,7 +64,18 @@ type PersonEdges struct {
 	Node *Node `json:"node,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [4]bool
+	loadedTypes [5]bool
+}
+
+// DocumentOrErr returns the Document value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e PersonEdges) DocumentOrErr() (*Document, error) {
+	if e.Document != nil {
+		return e.Document, nil
+	} else if e.loadedTypes[0] {
+		return nil, &NotFoundError{label: document.Label}
+	}
+	return nil, &NotLoadedError{edge: "document"}
 }
 
 // ContactOwnerOrErr returns the ContactOwner value or an error if the edge
@@ -64,7 +83,7 @@ type PersonEdges struct {
 func (e PersonEdges) ContactOwnerOrErr() (*Person, error) {
 	if e.ContactOwner != nil {
 		return e.ContactOwner, nil
-	} else if e.loadedTypes[0] {
+	} else if e.loadedTypes[1] {
 		return nil, &NotFoundError{label: person.Label}
 	}
 	return nil, &NotLoadedError{edge: "contact_owner"}
@@ -73,7 +92,7 @@ func (e PersonEdges) ContactOwnerOrErr() (*Person, error) {
 // ContactsOrErr returns the Contacts value or an error if the edge
 // was not loaded in eager-loading.
 func (e PersonEdges) ContactsOrErr() ([]*Person, error) {
-	if e.loadedTypes[1] {
+	if e.loadedTypes[2] {
 		return e.Contacts, nil
 	}
 	return nil, &NotLoadedError{edge: "contacts"}
@@ -84,7 +103,7 @@ func (e PersonEdges) ContactsOrErr() ([]*Person, error) {
 func (e PersonEdges) MetadataOrErr() (*Metadata, error) {
 	if e.Metadata != nil {
 		return e.Metadata, nil
-	} else if e.loadedTypes[2] {
+	} else if e.loadedTypes[3] {
 		return nil, &NotFoundError{label: metadata.Label}
 	}
 	return nil, &NotLoadedError{edge: "metadata"}
@@ -95,7 +114,7 @@ func (e PersonEdges) MetadataOrErr() (*Metadata, error) {
 func (e PersonEdges) NodeOrErr() (*Node, error) {
 	if e.Node != nil {
 		return e.Node, nil
-	} else if e.loadedTypes[3] {
+	} else if e.loadedTypes[4] {
 		return nil, &NotFoundError{label: node.Label}
 	}
 	return nil, &NotLoadedError{edge: "node"}
@@ -106,6 +125,8 @@ func (*Person) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case person.FieldProtoMessage:
+			values[i] = new([]byte)
 		case person.FieldIsOrg:
 			values[i] = new(sql.NullBool)
 		case person.FieldID:
@@ -114,7 +135,9 @@ func (*Person) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullString)
 		case person.ForeignKeys[0]: // node_suppliers
 			values[i] = new(sql.NullString)
-		case person.ForeignKeys[1]: // person_contacts
+		case person.ForeignKeys[1]: // document_id
+			values[i] = new(sql.NullString)
+		case person.ForeignKeys[2]: // person_contacts
 			values[i] = new(sql.NullInt64)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -137,6 +160,14 @@ func (pe *Person) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", value)
 			}
 			pe.ID = int(value.Int64)
+		case person.FieldProtoMessage:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field proto_message", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &pe.ProtoMessage); err != nil {
+					return fmt.Errorf("unmarshal field proto_message: %w", err)
+				}
+			}
 		case person.FieldMetadataID:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field metadata_id", values[i])
@@ -187,6 +218,13 @@ func (pe *Person) assignValues(columns []string, values []any) error {
 				*pe.node_suppliers = value.String
 			}
 		case person.ForeignKeys[1]:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field document_id", values[i])
+			} else if value.Valid {
+				pe.document_id = new(string)
+				*pe.document_id = value.String
+			}
+		case person.ForeignKeys[2]:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for edge-field person_contacts", value)
 			} else if value.Valid {
@@ -204,6 +242,11 @@ func (pe *Person) assignValues(columns []string, values []any) error {
 // This includes values selected through modifiers, order, etc.
 func (pe *Person) Value(name string) (ent.Value, error) {
 	return pe.selectValues.Get(name)
+}
+
+// QueryDocument queries the "document" edge of the Person entity.
+func (pe *Person) QueryDocument() *DocumentQuery {
+	return NewPersonClient(pe.config).QueryDocument(pe)
 }
 
 // QueryContactOwner queries the "contact_owner" edge of the Person entity.
@@ -249,6 +292,9 @@ func (pe *Person) String() string {
 	var builder strings.Builder
 	builder.WriteString("Person(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", pe.ID))
+	builder.WriteString("proto_message=")
+	builder.WriteString(fmt.Sprintf("%v", pe.ProtoMessage))
+	builder.WriteString(", ")
 	builder.WriteString("metadata_id=")
 	builder.WriteString(pe.MetadataID)
 	builder.WriteString(", ")

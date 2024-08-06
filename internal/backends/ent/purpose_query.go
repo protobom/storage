@@ -14,6 +14,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/node"
 	"github.com/protobom/storage/internal/backends/ent/predicate"
 	"github.com/protobom/storage/internal/backends/ent/purpose"
@@ -22,11 +23,13 @@ import (
 // PurposeQuery is the builder for querying Purpose entities.
 type PurposeQuery struct {
 	config
-	ctx        *QueryContext
-	order      []purpose.OrderOption
-	inters     []Interceptor
-	predicates []predicate.Purpose
-	withNode   *NodeQuery
+	ctx          *QueryContext
+	order        []purpose.OrderOption
+	inters       []Interceptor
+	predicates   []predicate.Purpose
+	withDocument *DocumentQuery
+	withNode     *NodeQuery
+	withFKs      bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -61,6 +64,28 @@ func (pq *PurposeQuery) Unique(unique bool) *PurposeQuery {
 func (pq *PurposeQuery) Order(o ...purpose.OrderOption) *PurposeQuery {
 	pq.order = append(pq.order, o...)
 	return pq
+}
+
+// QueryDocument chains the current query on the "document" edge.
+func (pq *PurposeQuery) QueryDocument() *DocumentQuery {
+	query := (&DocumentClient{config: pq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := pq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := pq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(purpose.Table, purpose.FieldID, selector),
+			sqlgraph.To(document.Table, document.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, purpose.DocumentTable, purpose.DocumentColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(pq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
 }
 
 // QueryNode chains the current query on the "node" edge.
@@ -272,16 +297,28 @@ func (pq *PurposeQuery) Clone() *PurposeQuery {
 		return nil
 	}
 	return &PurposeQuery{
-		config:     pq.config,
-		ctx:        pq.ctx.Clone(),
-		order:      append([]purpose.OrderOption{}, pq.order...),
-		inters:     append([]Interceptor{}, pq.inters...),
-		predicates: append([]predicate.Purpose{}, pq.predicates...),
-		withNode:   pq.withNode.Clone(),
+		config:       pq.config,
+		ctx:          pq.ctx.Clone(),
+		order:        append([]purpose.OrderOption{}, pq.order...),
+		inters:       append([]Interceptor{}, pq.inters...),
+		predicates:   append([]predicate.Purpose{}, pq.predicates...),
+		withDocument: pq.withDocument.Clone(),
+		withNode:     pq.withNode.Clone(),
 		// clone intermediate query.
 		sql:  pq.sql.Clone(),
 		path: pq.path,
 	}
+}
+
+// WithDocument tells the query-builder to eager-load the nodes that are connected to
+// the "document" edge. The optional arguments are used to configure the query builder of the edge.
+func (pq *PurposeQuery) WithDocument(opts ...func(*DocumentQuery)) *PurposeQuery {
+	query := (&DocumentClient{config: pq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	pq.withDocument = query
+	return pq
 }
 
 // WithNode tells the query-builder to eager-load the nodes that are connected to
@@ -372,11 +409,19 @@ func (pq *PurposeQuery) prepareQuery(ctx context.Context) error {
 func (pq *PurposeQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Purpose, error) {
 	var (
 		nodes       = []*Purpose{}
+		withFKs     = pq.withFKs
 		_spec       = pq.querySpec()
-		loadedTypes = [1]bool{
+		loadedTypes = [2]bool{
+			pq.withDocument != nil,
 			pq.withNode != nil,
 		}
 	)
+	if pq.withDocument != nil {
+		withFKs = true
+	}
+	if withFKs {
+		_spec.Node.Columns = append(_spec.Node.Columns, purpose.ForeignKeys...)
+	}
 	_spec.ScanValues = func(columns []string) ([]any, error) {
 		return (*Purpose).scanValues(nil, columns)
 	}
@@ -395,6 +440,12 @@ func (pq *PurposeQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Purp
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
+	if query := pq.withDocument; query != nil {
+		if err := pq.loadDocument(ctx, query, nodes, nil,
+			func(n *Purpose, e *Document) { n.Edges.Document = e }); err != nil {
+			return nil, err
+		}
+	}
 	if query := pq.withNode; query != nil {
 		if err := pq.loadNode(ctx, query, nodes, nil,
 			func(n *Purpose, e *Node) { n.Edges.Node = e }); err != nil {
@@ -404,6 +455,38 @@ func (pq *PurposeQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Purp
 	return nodes, nil
 }
 
+func (pq *PurposeQuery) loadDocument(ctx context.Context, query *DocumentQuery, nodes []*Purpose, init func(*Purpose), assign func(*Purpose, *Document)) error {
+	ids := make([]string, 0, len(nodes))
+	nodeids := make(map[string][]*Purpose)
+	for i := range nodes {
+		if nodes[i].document_id == nil {
+			continue
+		}
+		fk := *nodes[i].document_id
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(document.IDIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "document_id" returned %v`, n.ID)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
+	}
+	return nil
+}
 func (pq *PurposeQuery) loadNode(ctx context.Context, query *NodeQuery, nodes []*Purpose, init func(*Purpose), assign func(*Purpose, *Node)) error {
 	ids := make([]string, 0, len(nodes))
 	nodeids := make(map[string][]*Purpose)

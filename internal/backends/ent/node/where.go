@@ -150,6 +150,16 @@ func ValidUntilDate(v time.Time) predicate.Node {
 	return predicate.Node(sql.FieldEQ(FieldValidUntilDate, v))
 }
 
+// ProtoMessageIsNil applies the IsNil predicate on the "proto_message" field.
+func ProtoMessageIsNil() predicate.Node {
+	return predicate.Node(sql.FieldIsNull(FieldProtoMessage))
+}
+
+// ProtoMessageNotNil applies the NotNil predicate on the "proto_message" field.
+func ProtoMessageNotNil() predicate.Node {
+	return predicate.Node(sql.FieldNotNull(FieldProtoMessage))
+}
+
 // NodeListIDEQ applies the EQ predicate on the "node_list_id" field.
 func NodeListIDEQ(v int) predicate.Node {
 	return predicate.Node(sql.FieldEQ(FieldNodeListID, v))
@@ -1098,6 +1108,29 @@ func ValidUntilDateLT(v time.Time) predicate.Node {
 // ValidUntilDateLTE applies the LTE predicate on the "valid_until_date" field.
 func ValidUntilDateLTE(v time.Time) predicate.Node {
 	return predicate.Node(sql.FieldLTE(FieldValidUntilDate, v))
+}
+
+// HasDocument applies the HasEdge predicate on the "document" edge.
+func HasDocument() predicate.Node {
+	return predicate.Node(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, DocumentTable, DocumentColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasDocumentWith applies the HasEdge predicate on the "document" edge with a given conditions (other predicates).
+func HasDocumentWith(preds ...predicate.Document) predicate.Node {
+	return predicate.Node(func(s *sql.Selector) {
+		step := newDocumentStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
 }
 
 // HasSuppliers applies the HasEdge predicate on the "suppliers" edge.

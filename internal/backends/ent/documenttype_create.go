@@ -14,6 +14,8 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/protobom/protobom/pkg/sbom"
+	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/documenttype"
 	"github.com/protobom/storage/internal/backends/ent/metadata"
 )
@@ -24,6 +26,12 @@ type DocumentTypeCreate struct {
 	mutation *DocumentTypeMutation
 	hooks    []Hook
 	conflict []sql.ConflictOption
+}
+
+// SetProtoMessage sets the "proto_message" field.
+func (dtc *DocumentTypeCreate) SetProtoMessage(st *sbom.DocumentType) *DocumentTypeCreate {
+	dtc.mutation.SetProtoMessage(st)
+	return dtc
 }
 
 // SetMetadataID sets the "metadata_id" field.
@@ -80,6 +88,25 @@ func (dtc *DocumentTypeCreate) SetNillableDescription(s *string) *DocumentTypeCr
 		dtc.SetDescription(*s)
 	}
 	return dtc
+}
+
+// SetDocumentID sets the "document" edge to the Document entity by ID.
+func (dtc *DocumentTypeCreate) SetDocumentID(id string) *DocumentTypeCreate {
+	dtc.mutation.SetDocumentID(id)
+	return dtc
+}
+
+// SetNillableDocumentID sets the "document" edge to the Document entity by ID if the given value is not nil.
+func (dtc *DocumentTypeCreate) SetNillableDocumentID(id *string) *DocumentTypeCreate {
+	if id != nil {
+		dtc = dtc.SetDocumentID(*id)
+	}
+	return dtc
+}
+
+// SetDocument sets the "document" edge to the Document entity.
+func (dtc *DocumentTypeCreate) SetDocument(d *Document) *DocumentTypeCreate {
+	return dtc.SetDocumentID(d.ID)
 }
 
 // SetMetadata sets the "metadata" edge to the Metadata entity.
@@ -153,6 +180,10 @@ func (dtc *DocumentTypeCreate) createSpec() (*DocumentType, *sqlgraph.CreateSpec
 		_spec = sqlgraph.NewCreateSpec(documenttype.Table, sqlgraph.NewFieldSpec(documenttype.FieldID, field.TypeInt))
 	)
 	_spec.OnConflict = dtc.conflict
+	if value, ok := dtc.mutation.ProtoMessage(); ok {
+		_spec.SetField(documenttype.FieldProtoMessage, field.TypeJSON, value)
+		_node.ProtoMessage = value
+	}
 	if value, ok := dtc.mutation.GetType(); ok {
 		_spec.SetField(documenttype.FieldType, field.TypeEnum, value)
 		_node.Type = &value
@@ -164,6 +195,23 @@ func (dtc *DocumentTypeCreate) createSpec() (*DocumentType, *sqlgraph.CreateSpec
 	if value, ok := dtc.mutation.Description(); ok {
 		_spec.SetField(documenttype.FieldDescription, field.TypeString, value)
 		_node.Description = &value
+	}
+	if nodes := dtc.mutation.DocumentIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   documenttype.DocumentTable,
+			Columns: []string{documenttype.DocumentColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(document.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.document_id = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := dtc.mutation.MetadataIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -189,7 +237,7 @@ func (dtc *DocumentTypeCreate) createSpec() (*DocumentType, *sqlgraph.CreateSpec
 // of the `INSERT` statement. For example:
 //
 //	client.DocumentType.Create().
-//		SetMetadataID(v).
+//		SetProtoMessage(v).
 //		OnConflict(
 //			// Update the row with the new values
 //			// the was proposed for insertion.
@@ -198,7 +246,7 @@ func (dtc *DocumentTypeCreate) createSpec() (*DocumentType, *sqlgraph.CreateSpec
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.DocumentTypeUpsert) {
-//			SetMetadataID(v+v).
+//			SetProtoMessage(v+v).
 //		}).
 //		Exec(ctx)
 func (dtc *DocumentTypeCreate) OnConflict(opts ...sql.ConflictOption) *DocumentTypeUpsertOne {
@@ -233,6 +281,24 @@ type (
 		*sql.UpdateSet
 	}
 )
+
+// SetProtoMessage sets the "proto_message" field.
+func (u *DocumentTypeUpsert) SetProtoMessage(v *sbom.DocumentType) *DocumentTypeUpsert {
+	u.Set(documenttype.FieldProtoMessage, v)
+	return u
+}
+
+// UpdateProtoMessage sets the "proto_message" field to the value that was provided on create.
+func (u *DocumentTypeUpsert) UpdateProtoMessage() *DocumentTypeUpsert {
+	u.SetExcluded(documenttype.FieldProtoMessage)
+	return u
+}
+
+// ClearProtoMessage clears the value of the "proto_message" field.
+func (u *DocumentTypeUpsert) ClearProtoMessage() *DocumentTypeUpsert {
+	u.SetNull(documenttype.FieldProtoMessage)
+	return u
+}
 
 // SetMetadataID sets the "metadata_id" field.
 func (u *DocumentTypeUpsert) SetMetadataID(v string) *DocumentTypeUpsert {
@@ -344,6 +410,27 @@ func (u *DocumentTypeUpsertOne) Update(set func(*DocumentTypeUpsert)) *DocumentT
 		set(&DocumentTypeUpsert{UpdateSet: update})
 	}))
 	return u
+}
+
+// SetProtoMessage sets the "proto_message" field.
+func (u *DocumentTypeUpsertOne) SetProtoMessage(v *sbom.DocumentType) *DocumentTypeUpsertOne {
+	return u.Update(func(s *DocumentTypeUpsert) {
+		s.SetProtoMessage(v)
+	})
+}
+
+// UpdateProtoMessage sets the "proto_message" field to the value that was provided on create.
+func (u *DocumentTypeUpsertOne) UpdateProtoMessage() *DocumentTypeUpsertOne {
+	return u.Update(func(s *DocumentTypeUpsert) {
+		s.UpdateProtoMessage()
+	})
+}
+
+// ClearProtoMessage clears the value of the "proto_message" field.
+func (u *DocumentTypeUpsertOne) ClearProtoMessage() *DocumentTypeUpsertOne {
+	return u.Update(func(s *DocumentTypeUpsert) {
+		s.ClearProtoMessage()
+	})
 }
 
 // SetMetadataID sets the "metadata_id" field.
@@ -564,7 +651,7 @@ func (dtcb *DocumentTypeCreateBulk) ExecX(ctx context.Context) {
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.DocumentTypeUpsert) {
-//			SetMetadataID(v+v).
+//			SetProtoMessage(v+v).
 //		}).
 //		Exec(ctx)
 func (dtcb *DocumentTypeCreateBulk) OnConflict(opts ...sql.ConflictOption) *DocumentTypeUpsertBulk {
@@ -631,6 +718,27 @@ func (u *DocumentTypeUpsertBulk) Update(set func(*DocumentTypeUpsert)) *Document
 		set(&DocumentTypeUpsert{UpdateSet: update})
 	}))
 	return u
+}
+
+// SetProtoMessage sets the "proto_message" field.
+func (u *DocumentTypeUpsertBulk) SetProtoMessage(v *sbom.DocumentType) *DocumentTypeUpsertBulk {
+	return u.Update(func(s *DocumentTypeUpsert) {
+		s.SetProtoMessage(v)
+	})
+}
+
+// UpdateProtoMessage sets the "proto_message" field to the value that was provided on create.
+func (u *DocumentTypeUpsertBulk) UpdateProtoMessage() *DocumentTypeUpsertBulk {
+	return u.Update(func(s *DocumentTypeUpsert) {
+		s.UpdateProtoMessage()
+	})
+}
+
+// ClearProtoMessage clears the value of the "proto_message" field.
+func (u *DocumentTypeUpsertBulk) ClearProtoMessage() *DocumentTypeUpsertBulk {
+	return u.Update(func(s *DocumentTypeUpsert) {
+		s.ClearProtoMessage()
+	})
 }
 
 // SetMetadataID sets the "metadata_id" field.

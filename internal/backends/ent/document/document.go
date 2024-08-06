@@ -17,6 +17,8 @@ const (
 	Label = "document"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
+	// FieldProtoMessage holds the string denoting the proto_message field in the database.
+	FieldProtoMessage = "proto_message"
 	// EdgeMetadata holds the string denoting the metadata edge name in mutations.
 	EdgeMetadata = "metadata"
 	// EdgeNodeList holds the string denoting the node_list edge name in mutations.
@@ -31,7 +33,7 @@ const (
 	// MetadataColumn is the table column denoting the metadata relation/edge.
 	MetadataColumn = "id"
 	// NodeListTable is the table that holds the node_list relation/edge.
-	NodeListTable = "node_lists"
+	NodeListTable = "documents"
 	// NodeListInverseTable is the table name for the NodeList entity.
 	// It exists in this package in order to avoid circular dependency with the "nodelist" package.
 	NodeListInverseTable = "node_lists"
@@ -42,12 +44,24 @@ const (
 // Columns holds all SQL columns for document fields.
 var Columns = []string{
 	FieldID,
+	FieldProtoMessage,
+}
+
+// ForeignKeys holds the SQL foreign-keys that are owned by the "documents"
+// table and are not defined as standalone fields in the schema.
+var ForeignKeys = []string{
+	"document_id",
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {
 	for i := range Columns {
 		if column == Columns[i] {
+			return true
+		}
+	}
+	for i := range ForeignKeys {
+		if column == ForeignKeys[i] {
 			return true
 		}
 	}
@@ -86,6 +100,6 @@ func newNodeListStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(NodeListInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2O, false, NodeListTable, NodeListColumn),
+		sqlgraph.Edge(sqlgraph.O2O, true, NodeListTable, NodeListColumn),
 	)
 }

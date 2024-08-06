@@ -30,6 +30,7 @@ type DocumentQuery struct {
 	predicates   []predicate.Document
 	withMetadata *MetadataQuery
 	withNodeList *NodeListQuery
+	withFKs      bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -102,7 +103,7 @@ func (dq *DocumentQuery) QueryNodeList() *NodeListQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(document.Table, document.FieldID, selector),
 			sqlgraph.To(nodelist.Table, nodelist.FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, false, document.NodeListTable, document.NodeListColumn),
+			sqlgraph.Edge(sqlgraph.O2O, true, document.NodeListTable, document.NodeListColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(dq.driver.Dialect(), step)
 		return fromU, nil
@@ -334,6 +335,18 @@ func (dq *DocumentQuery) WithNodeList(opts ...func(*NodeListQuery)) *DocumentQue
 
 // GroupBy is used to group vertices by one or more fields/columns.
 // It is often used with aggregate functions, like: count, max, mean, min, sum.
+//
+// Example:
+//
+//	var v []struct {
+//		ProtoMessage *sbom.Document `json:"proto_message,omitempty"`
+//		Count int `json:"count,omitempty"`
+//	}
+//
+//	client.Document.Query().
+//		GroupBy(document.FieldProtoMessage).
+//		Aggregate(ent.Count()).
+//		Scan(ctx, &v)
 func (dq *DocumentQuery) GroupBy(field string, fields ...string) *DocumentGroupBy {
 	dq.ctx.Fields = append([]string{field}, fields...)
 	grbuild := &DocumentGroupBy{build: dq}
@@ -345,6 +358,16 @@ func (dq *DocumentQuery) GroupBy(field string, fields ...string) *DocumentGroupB
 
 // Select allows the selection one or more fields/columns for the given query,
 // instead of selecting all fields in the entity.
+//
+// Example:
+//
+//	var v []struct {
+//		ProtoMessage *sbom.Document `json:"proto_message,omitempty"`
+//	}
+//
+//	client.Document.Query().
+//		Select(document.FieldProtoMessage).
+//		Scan(ctx, &v)
 func (dq *DocumentQuery) Select(fields ...string) *DocumentSelect {
 	dq.ctx.Fields = append(dq.ctx.Fields, fields...)
 	sbuild := &DocumentSelect{DocumentQuery: dq}
@@ -387,12 +410,19 @@ func (dq *DocumentQuery) prepareQuery(ctx context.Context) error {
 func (dq *DocumentQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Document, error) {
 	var (
 		nodes       = []*Document{}
+		withFKs     = dq.withFKs
 		_spec       = dq.querySpec()
 		loadedTypes = [2]bool{
 			dq.withMetadata != nil,
 			dq.withNodeList != nil,
 		}
 	)
+	if dq.withNodeList != nil {
+		withFKs = true
+	}
+	if withFKs {
+		_spec.Node.Columns = append(_spec.Node.Columns, document.ForeignKeys...)
+	}
 	_spec.ScanValues = func(columns []string) ([]any, error) {
 		return (*Document).scanValues(nil, columns)
 	}
@@ -451,29 +481,34 @@ func (dq *DocumentQuery) loadMetadata(ctx context.Context, query *MetadataQuery,
 	return nil
 }
 func (dq *DocumentQuery) loadNodeList(ctx context.Context, query *NodeListQuery, nodes []*Document, init func(*Document), assign func(*Document, *NodeList)) error {
-	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[string]*Document)
+	ids := make([]int, 0, len(nodes))
+	nodeids := make(map[int][]*Document)
 	for i := range nodes {
-		fks = append(fks, nodes[i].ID)
-		nodeids[nodes[i].ID] = nodes[i]
+		if nodes[i].document_id == nil {
+			continue
+		}
+		fk := *nodes[i].document_id
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
 	}
-	if len(query.ctx.Fields) > 0 {
-		query.ctx.AppendFieldOnce(nodelist.FieldDocumentID)
+	if len(ids) == 0 {
+		return nil
 	}
-	query.Where(predicate.NodeList(func(s *sql.Selector) {
-		s.Where(sql.InValues(s.C(document.NodeListColumn), fks...))
-	}))
+	query.Where(nodelist.IDIn(ids...))
 	neighbors, err := query.All(ctx)
 	if err != nil {
 		return err
 	}
 	for _, n := range neighbors {
-		fk := n.DocumentID
-		node, ok := nodeids[fk]
+		nodes, ok := nodeids[n.ID]
 		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "document_id" returned %v for node %v`, fk, n.ID)
+			return fmt.Errorf(`unexpected foreign-key "document_id" returned %v`, n.ID)
 		}
-		assign(node, n)
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
 	}
 	return nil
 }

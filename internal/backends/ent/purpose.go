@@ -12,6 +12,7 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/node"
 	"github.com/protobom/storage/internal/backends/ent/purpose"
 )
@@ -28,16 +29,30 @@ type Purpose struct {
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the PurposeQuery when eager-loading is set.
 	Edges        PurposeEdges `json:"edges"`
+	document_id  *string
 	selectValues sql.SelectValues
 }
 
 // PurposeEdges holds the relations/edges for other nodes in the graph.
 type PurposeEdges struct {
+	// Document holds the value of the document edge.
+	Document *Document `json:"document,omitempty"`
 	// Node holds the value of the node edge.
 	Node *Node `json:"node,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [1]bool
+	loadedTypes [2]bool
+}
+
+// DocumentOrErr returns the Document value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e PurposeEdges) DocumentOrErr() (*Document, error) {
+	if e.Document != nil {
+		return e.Document, nil
+	} else if e.loadedTypes[0] {
+		return nil, &NotFoundError{label: document.Label}
+	}
+	return nil, &NotLoadedError{edge: "document"}
 }
 
 // NodeOrErr returns the Node value or an error if the edge
@@ -45,7 +60,7 @@ type PurposeEdges struct {
 func (e PurposeEdges) NodeOrErr() (*Node, error) {
 	if e.Node != nil {
 		return e.Node, nil
-	} else if e.loadedTypes[0] {
+	} else if e.loadedTypes[1] {
 		return nil, &NotFoundError{label: node.Label}
 	}
 	return nil, &NotLoadedError{edge: "node"}
@@ -59,6 +74,8 @@ func (*Purpose) scanValues(columns []string) ([]any, error) {
 		case purpose.FieldID:
 			values[i] = new(sql.NullInt64)
 		case purpose.FieldNodeID, purpose.FieldPrimaryPurpose:
+			values[i] = new(sql.NullString)
+		case purpose.ForeignKeys[0]: // document_id
 			values[i] = new(sql.NullString)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -93,6 +110,13 @@ func (pu *Purpose) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				pu.PrimaryPurpose = purpose.PrimaryPurpose(value.String)
 			}
+		case purpose.ForeignKeys[0]:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field document_id", values[i])
+			} else if value.Valid {
+				pu.document_id = new(string)
+				*pu.document_id = value.String
+			}
 		default:
 			pu.selectValues.Set(columns[i], values[i])
 		}
@@ -104,6 +128,11 @@ func (pu *Purpose) assignValues(columns []string, values []any) error {
 // This includes values selected through modifiers, order, etc.
 func (pu *Purpose) Value(name string) (ent.Value, error) {
 	return pu.selectValues.Get(name)
+}
+
+// QueryDocument queries the "document" edge of the Purpose entity.
+func (pu *Purpose) QueryDocument() *DocumentQuery {
+	return NewPurposeClient(pu.config).QueryDocument(pu)
 }
 
 // QueryNode queries the "node" edge of the Purpose entity.

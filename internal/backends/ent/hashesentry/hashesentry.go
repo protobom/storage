@@ -27,12 +27,21 @@ const (
 	FieldHashAlgorithmType = "hash_algorithm_type"
 	// FieldHashData holds the string denoting the hash_data field in the database.
 	FieldHashData = "hash_data"
+	// EdgeDocument holds the string denoting the document edge name in mutations.
+	EdgeDocument = "document"
 	// EdgeExternalReference holds the string denoting the external_reference edge name in mutations.
 	EdgeExternalReference = "external_reference"
 	// EdgeNode holds the string denoting the node edge name in mutations.
 	EdgeNode = "node"
 	// Table holds the table name of the hashesentry in the database.
 	Table = "hashes_entries"
+	// DocumentTable is the table that holds the document relation/edge.
+	DocumentTable = "hashes_entries"
+	// DocumentInverseTable is the table name for the Document entity.
+	// It exists in this package in order to avoid circular dependency with the "document" package.
+	DocumentInverseTable = "documents"
+	// DocumentColumn is the table column denoting the document relation/edge.
+	DocumentColumn = "document_id"
 	// ExternalReferenceTable is the table that holds the external_reference relation/edge.
 	ExternalReferenceTable = "hashes_entries"
 	// ExternalReferenceInverseTable is the table name for the ExternalReference entity.
@@ -58,10 +67,21 @@ var Columns = []string{
 	FieldHashData,
 }
 
+// ForeignKeys holds the SQL foreign-keys that are owned by the "hashes_entries"
+// table and are not defined as standalone fields in the schema.
+var ForeignKeys = []string{
+	"document_id",
+}
+
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {
 	for i := range Columns {
 		if column == Columns[i] {
+			return true
+		}
+	}
+	for i := range ForeignKeys {
+		if column == ForeignKeys[i] {
 			return true
 		}
 	}
@@ -135,6 +155,13 @@ func ByHashData(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldHashData, opts...).ToFunc()
 }
 
+// ByDocumentField orders the results by document field.
+func ByDocumentField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newDocumentStep(), sql.OrderByField(field, opts...))
+	}
+}
+
 // ByExternalReferenceField orders the results by external_reference field.
 func ByExternalReferenceField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -147,6 +174,13 @@ func ByNodeField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
 		sqlgraph.OrderByNeighborTerms(s, newNodeStep(), sql.OrderByField(field, opts...))
 	}
+}
+func newDocumentStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(DocumentInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, false, DocumentTable, DocumentColumn),
+	)
 }
 func newExternalReferenceStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(

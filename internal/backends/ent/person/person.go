@@ -17,6 +17,8 @@ const (
 	Label = "person"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
+	// FieldProtoMessage holds the string denoting the proto_message field in the database.
+	FieldProtoMessage = "proto_message"
 	// FieldMetadataID holds the string denoting the metadata_id field in the database.
 	FieldMetadataID = "metadata_id"
 	// FieldNodeID holds the string denoting the node_id field in the database.
@@ -31,6 +33,8 @@ const (
 	FieldURL = "url"
 	// FieldPhone holds the string denoting the phone field in the database.
 	FieldPhone = "phone"
+	// EdgeDocument holds the string denoting the document edge name in mutations.
+	EdgeDocument = "document"
 	// EdgeContactOwner holds the string denoting the contact_owner edge name in mutations.
 	EdgeContactOwner = "contact_owner"
 	// EdgeContacts holds the string denoting the contacts edge name in mutations.
@@ -41,6 +45,13 @@ const (
 	EdgeNode = "node"
 	// Table holds the table name of the person in the database.
 	Table = "persons"
+	// DocumentTable is the table that holds the document relation/edge.
+	DocumentTable = "persons"
+	// DocumentInverseTable is the table name for the Document entity.
+	// It exists in this package in order to avoid circular dependency with the "document" package.
+	DocumentInverseTable = "documents"
+	// DocumentColumn is the table column denoting the document relation/edge.
+	DocumentColumn = "document_id"
 	// ContactOwnerTable is the table that holds the contact_owner relation/edge.
 	ContactOwnerTable = "persons"
 	// ContactOwnerColumn is the table column denoting the contact_owner relation/edge.
@@ -68,6 +79,7 @@ const (
 // Columns holds all SQL columns for person fields.
 var Columns = []string{
 	FieldID,
+	FieldProtoMessage,
 	FieldMetadataID,
 	FieldNodeID,
 	FieldName,
@@ -81,6 +93,7 @@ var Columns = []string{
 // table and are not defined as standalone fields in the schema.
 var ForeignKeys = []string{
 	"node_suppliers",
+	"document_id",
 	"person_contacts",
 }
 
@@ -142,6 +155,13 @@ func ByPhone(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldPhone, opts...).ToFunc()
 }
 
+// ByDocumentField orders the results by document field.
+func ByDocumentField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newDocumentStep(), sql.OrderByField(field, opts...))
+	}
+}
+
 // ByContactOwnerField orders the results by contact_owner field.
 func ByContactOwnerField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -175,6 +195,13 @@ func ByNodeField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
 		sqlgraph.OrderByNeighborTerms(s, newNodeStep(), sql.OrderByField(field, opts...))
 	}
+}
+func newDocumentStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(DocumentInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, false, DocumentTable, DocumentColumn),
+	)
 }
 func newContactOwnerStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(

@@ -93,6 +93,16 @@ func Phone(v string) predicate.Person {
 	return predicate.Person(sql.FieldEQ(FieldPhone, v))
 }
 
+// ProtoMessageIsNil applies the IsNil predicate on the "proto_message" field.
+func ProtoMessageIsNil() predicate.Person {
+	return predicate.Person(sql.FieldIsNull(FieldProtoMessage))
+}
+
+// ProtoMessageNotNil applies the NotNil predicate on the "proto_message" field.
+func ProtoMessageNotNil() predicate.Person {
+	return predicate.Person(sql.FieldNotNull(FieldProtoMessage))
+}
+
 // MetadataIDEQ applies the EQ predicate on the "metadata_id" field.
 func MetadataIDEQ(v string) predicate.Person {
 	return predicate.Person(sql.FieldEQ(FieldMetadataID, v))
@@ -511,6 +521,29 @@ func PhoneEqualFold(v string) predicate.Person {
 // PhoneContainsFold applies the ContainsFold predicate on the "phone" field.
 func PhoneContainsFold(v string) predicate.Person {
 	return predicate.Person(sql.FieldContainsFold(FieldPhone, v))
+}
+
+// HasDocument applies the HasEdge predicate on the "document" edge.
+func HasDocument() predicate.Person {
+	return predicate.Person(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, DocumentTable, DocumentColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasDocumentWith applies the HasEdge predicate on the "document" edge with a given conditions (other predicates).
+func HasDocumentWith(preds ...predicate.Document) predicate.Person {
+	return predicate.Person(func(s *sql.Selector) {
+		step := newDocumentStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
 }
 
 // HasContactOwner applies the HasEdge predicate on the "contact_owner" edge.

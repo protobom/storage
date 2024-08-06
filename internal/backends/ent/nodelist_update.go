@@ -15,6 +15,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/dialect/sql/sqljson"
 	"entgo.io/ent/schema/field"
+	"github.com/protobom/protobom/pkg/sbom"
 	"github.com/protobom/storage/internal/backends/ent/node"
 	"github.com/protobom/storage/internal/backends/ent/nodelist"
 	"github.com/protobom/storage/internal/backends/ent/predicate"
@@ -30,6 +31,18 @@ type NodeListUpdate struct {
 // Where appends a list predicates to the NodeListUpdate builder.
 func (nlu *NodeListUpdate) Where(ps ...predicate.NodeList) *NodeListUpdate {
 	nlu.mutation.Where(ps...)
+	return nlu
+}
+
+// SetProtoMessage sets the "proto_message" field.
+func (nlu *NodeListUpdate) SetProtoMessage(sl *sbom.NodeList) *NodeListUpdate {
+	nlu.mutation.SetProtoMessage(sl)
+	return nlu
+}
+
+// ClearProtoMessage clears the value of the "proto_message" field.
+func (nlu *NodeListUpdate) ClearProtoMessage() *NodeListUpdate {
+	nlu.mutation.ClearProtoMessage()
 	return nlu
 }
 
@@ -113,18 +126,7 @@ func (nlu *NodeListUpdate) ExecX(ctx context.Context) {
 	}
 }
 
-// check runs all checks and user-defined validators on the builder.
-func (nlu *NodeListUpdate) check() error {
-	if _, ok := nlu.mutation.DocumentID(); nlu.mutation.DocumentCleared() && !ok {
-		return errors.New(`ent: clearing a required unique edge "NodeList.document"`)
-	}
-	return nil
-}
-
 func (nlu *NodeListUpdate) sqlSave(ctx context.Context) (n int, err error) {
-	if err := nlu.check(); err != nil {
-		return n, err
-	}
 	_spec := sqlgraph.NewUpdateSpec(nodelist.Table, nodelist.Columns, sqlgraph.NewFieldSpec(nodelist.FieldID, field.TypeInt))
 	if ps := nlu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
@@ -132,6 +134,12 @@ func (nlu *NodeListUpdate) sqlSave(ctx context.Context) (n int, err error) {
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := nlu.mutation.ProtoMessage(); ok {
+		_spec.SetField(nodelist.FieldProtoMessage, field.TypeJSON, value)
+	}
+	if nlu.mutation.ProtoMessageCleared() {
+		_spec.ClearField(nodelist.FieldProtoMessage, field.TypeJSON)
 	}
 	if value, ok := nlu.mutation.RootElements(); ok {
 		_spec.SetField(nodelist.FieldRootElements, field.TypeJSON, value)
@@ -204,6 +212,18 @@ type NodeListUpdateOne struct {
 	fields   []string
 	hooks    []Hook
 	mutation *NodeListMutation
+}
+
+// SetProtoMessage sets the "proto_message" field.
+func (nluo *NodeListUpdateOne) SetProtoMessage(sl *sbom.NodeList) *NodeListUpdateOne {
+	nluo.mutation.SetProtoMessage(sl)
+	return nluo
+}
+
+// ClearProtoMessage clears the value of the "proto_message" field.
+func (nluo *NodeListUpdateOne) ClearProtoMessage() *NodeListUpdateOne {
+	nluo.mutation.ClearProtoMessage()
+	return nluo
 }
 
 // SetRootElements sets the "root_elements" field.
@@ -299,18 +319,7 @@ func (nluo *NodeListUpdateOne) ExecX(ctx context.Context) {
 	}
 }
 
-// check runs all checks and user-defined validators on the builder.
-func (nluo *NodeListUpdateOne) check() error {
-	if _, ok := nluo.mutation.DocumentID(); nluo.mutation.DocumentCleared() && !ok {
-		return errors.New(`ent: clearing a required unique edge "NodeList.document"`)
-	}
-	return nil
-}
-
 func (nluo *NodeListUpdateOne) sqlSave(ctx context.Context) (_node *NodeList, err error) {
-	if err := nluo.check(); err != nil {
-		return _node, err
-	}
 	_spec := sqlgraph.NewUpdateSpec(nodelist.Table, nodelist.Columns, sqlgraph.NewFieldSpec(nodelist.FieldID, field.TypeInt))
 	id, ok := nluo.mutation.ID()
 	if !ok {
@@ -335,6 +344,12 @@ func (nluo *NodeListUpdateOne) sqlSave(ctx context.Context) (_node *NodeList, er
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := nluo.mutation.ProtoMessage(); ok {
+		_spec.SetField(nodelist.FieldProtoMessage, field.TypeJSON, value)
+	}
+	if nluo.mutation.ProtoMessageCleared() {
+		_spec.ClearField(nodelist.FieldProtoMessage, field.TypeJSON)
 	}
 	if value, ok := nluo.mutation.RootElements(); ok {
 		_spec.SetField(nodelist.FieldRootElements, field.TypeJSON, value)

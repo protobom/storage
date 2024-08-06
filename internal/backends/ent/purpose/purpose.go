@@ -23,10 +23,19 @@ const (
 	FieldNodeID = "node_id"
 	// FieldPrimaryPurpose holds the string denoting the primary_purpose field in the database.
 	FieldPrimaryPurpose = "primary_purpose"
+	// EdgeDocument holds the string denoting the document edge name in mutations.
+	EdgeDocument = "document"
 	// EdgeNode holds the string denoting the node edge name in mutations.
 	EdgeNode = "node"
 	// Table holds the table name of the purpose in the database.
 	Table = "purposes"
+	// DocumentTable is the table that holds the document relation/edge.
+	DocumentTable = "purposes"
+	// DocumentInverseTable is the table name for the Document entity.
+	// It exists in this package in order to avoid circular dependency with the "document" package.
+	DocumentInverseTable = "documents"
+	// DocumentColumn is the table column denoting the document relation/edge.
+	DocumentColumn = "document_id"
 	// NodeTable is the table that holds the node relation/edge.
 	NodeTable = "purposes"
 	// NodeInverseTable is the table name for the Node entity.
@@ -43,10 +52,21 @@ var Columns = []string{
 	FieldPrimaryPurpose,
 }
 
+// ForeignKeys holds the SQL foreign-keys that are owned by the "purposes"
+// table and are not defined as standalone fields in the schema.
+var ForeignKeys = []string{
+	"document_id",
+}
+
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {
 	for i := range Columns {
 		if column == Columns[i] {
+			return true
+		}
+	}
+	for i := range ForeignKeys {
+		if column == ForeignKeys[i] {
 			return true
 		}
 	}
@@ -121,11 +141,25 @@ func ByPrimaryPurpose(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldPrimaryPurpose, opts...).ToFunc()
 }
 
+// ByDocumentField orders the results by document field.
+func ByDocumentField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newDocumentStep(), sql.OrderByField(field, opts...))
+	}
+}
+
 // ByNodeField orders the results by node field.
 func ByNodeField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
 		sqlgraph.OrderByNeighborTerms(s, newNodeStep(), sql.OrderByField(field, opts...))
 	}
+}
+func newDocumentStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(DocumentInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, false, DocumentTable, DocumentColumn),
+	)
 }
 func newNodeStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(

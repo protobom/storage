@@ -14,6 +14,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/protobom/protobom/pkg/sbom"
 	"github.com/protobom/storage/internal/backends/ent/documenttype"
 	"github.com/protobom/storage/internal/backends/ent/metadata"
 	"github.com/protobom/storage/internal/backends/ent/predicate"
@@ -29,6 +30,18 @@ type DocumentTypeUpdate struct {
 // Where appends a list predicates to the DocumentTypeUpdate builder.
 func (dtu *DocumentTypeUpdate) Where(ps ...predicate.DocumentType) *DocumentTypeUpdate {
 	dtu.mutation.Where(ps...)
+	return dtu
+}
+
+// SetProtoMessage sets the "proto_message" field.
+func (dtu *DocumentTypeUpdate) SetProtoMessage(st *sbom.DocumentType) *DocumentTypeUpdate {
+	dtu.mutation.SetProtoMessage(st)
+	return dtu
+}
+
+// ClearProtoMessage clears the value of the "proto_message" field.
+func (dtu *DocumentTypeUpdate) ClearProtoMessage() *DocumentTypeUpdate {
+	dtu.mutation.ClearProtoMessage()
 	return dtu
 }
 
@@ -177,6 +190,12 @@ func (dtu *DocumentTypeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
+	if value, ok := dtu.mutation.ProtoMessage(); ok {
+		_spec.SetField(documenttype.FieldProtoMessage, field.TypeJSON, value)
+	}
+	if dtu.mutation.ProtoMessageCleared() {
+		_spec.ClearField(documenttype.FieldProtoMessage, field.TypeJSON)
+	}
 	if value, ok := dtu.mutation.GetType(); ok {
 		_spec.SetField(documenttype.FieldType, field.TypeEnum, value)
 	}
@@ -242,6 +261,18 @@ type DocumentTypeUpdateOne struct {
 	fields   []string
 	hooks    []Hook
 	mutation *DocumentTypeMutation
+}
+
+// SetProtoMessage sets the "proto_message" field.
+func (dtuo *DocumentTypeUpdateOne) SetProtoMessage(st *sbom.DocumentType) *DocumentTypeUpdateOne {
+	dtuo.mutation.SetProtoMessage(st)
+	return dtuo
+}
+
+// ClearProtoMessage clears the value of the "proto_message" field.
+func (dtuo *DocumentTypeUpdateOne) ClearProtoMessage() *DocumentTypeUpdateOne {
+	dtuo.mutation.ClearProtoMessage()
+	return dtuo
 }
 
 // SetMetadataID sets the "metadata_id" field.
@@ -418,6 +449,12 @@ func (dtuo *DocumentTypeUpdateOne) sqlSave(ctx context.Context) (_node *Document
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := dtuo.mutation.ProtoMessage(); ok {
+		_spec.SetField(documenttype.FieldProtoMessage, field.TypeJSON, value)
+	}
+	if dtuo.mutation.ProtoMessageCleared() {
+		_spec.ClearField(documenttype.FieldProtoMessage, field.TypeJSON)
 	}
 	if value, ok := dtuo.mutation.GetType(); ok {
 		_spec.SetField(documenttype.FieldType, field.TypeEnum, value)

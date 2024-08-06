@@ -19,6 +19,8 @@ const (
 	Label = "node"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
+	// FieldProtoMessage holds the string denoting the proto_message field in the database.
+	FieldProtoMessage = "proto_message"
 	// FieldNodeListID holds the string denoting the node_list_id field in the database.
 	FieldNodeListID = "node_list_id"
 	// FieldType holds the string denoting the type field in the database.
@@ -59,6 +61,8 @@ const (
 	FieldAttribution = "attribution"
 	// FieldFileTypes holds the string denoting the file_types field in the database.
 	FieldFileTypes = "file_types"
+	// EdgeDocument holds the string denoting the document edge name in mutations.
+	EdgeDocument = "document"
 	// EdgeSuppliers holds the string denoting the suppliers edge name in mutations.
 	EdgeSuppliers = "suppliers"
 	// EdgeOriginators holds the string denoting the originators edge name in mutations.
@@ -81,6 +85,13 @@ const (
 	EdgeEdgeTypes = "edge_types"
 	// Table holds the table name of the node in the database.
 	Table = "nodes"
+	// DocumentTable is the table that holds the document relation/edge.
+	DocumentTable = "nodes"
+	// DocumentInverseTable is the table name for the Document entity.
+	// It exists in this package in order to avoid circular dependency with the "document" package.
+	DocumentInverseTable = "documents"
+	// DocumentColumn is the table column denoting the document relation/edge.
+	DocumentColumn = "document_id"
 	// SuppliersTable is the table that holds the suppliers relation/edge.
 	SuppliersTable = "persons"
 	// SuppliersInverseTable is the table name for the Person entity.
@@ -146,6 +157,7 @@ const (
 // Columns holds all SQL columns for node fields.
 var Columns = []string{
 	FieldID,
+	FieldProtoMessage,
 	FieldNodeListID,
 	FieldType,
 	FieldName,
@@ -168,6 +180,12 @@ var Columns = []string{
 	FieldFileTypes,
 }
 
+// ForeignKeys holds the SQL foreign-keys that are owned by the "nodes"
+// table and are not defined as standalone fields in the schema.
+var ForeignKeys = []string{
+	"document_id",
+}
+
 var (
 	// ToNodesPrimaryKey and ToNodesColumn2 are the table columns denoting the
 	// primary key for the to_nodes relation (M2M).
@@ -181,6 +199,11 @@ var (
 func ValidColumn(column string) bool {
 	for i := range Columns {
 		if column == Columns[i] {
+			return true
+		}
+	}
+	for i := range ForeignKeys {
+		if column == ForeignKeys[i] {
 			return true
 		}
 	}
@@ -306,6 +329,13 @@ func ByBuildDate(opts ...sql.OrderTermOption) OrderOption {
 // ByValidUntilDate orders the results by the valid_until_date field.
 func ByValidUntilDate(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldValidUntilDate, opts...).ToFunc()
+}
+
+// ByDocumentField orders the results by document field.
+func ByDocumentField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newDocumentStep(), sql.OrderByField(field, opts...))
+	}
 }
 
 // BySuppliersCount orders the results by suppliers count.
@@ -439,6 +469,13 @@ func ByEdgeTypes(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	return func(s *sql.Selector) {
 		sqlgraph.OrderByNeighborTerms(s, newEdgeTypesStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
+}
+func newDocumentStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(DocumentInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, false, DocumentTable, DocumentColumn),
+	)
 }
 func newSuppliersStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(

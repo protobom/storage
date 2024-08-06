@@ -16,6 +16,8 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/protobom/protobom/pkg/sbom"
+	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/edgetype"
 	"github.com/protobom/storage/internal/backends/ent/externalreference"
 	"github.com/protobom/storage/internal/backends/ent/hashesentry"
@@ -32,6 +34,12 @@ type NodeCreate struct {
 	mutation *NodeMutation
 	hooks    []Hook
 	conflict []sql.ConflictOption
+}
+
+// SetProtoMessage sets the "proto_message" field.
+func (nc *NodeCreate) SetProtoMessage(s *sbom.Node) *NodeCreate {
+	nc.mutation.SetProtoMessage(s)
+	return nc
 }
 
 // SetNodeListID sets the "node_list_id" field.
@@ -166,6 +174,25 @@ func (nc *NodeCreate) SetFileTypes(s []string) *NodeCreate {
 func (nc *NodeCreate) SetID(s string) *NodeCreate {
 	nc.mutation.SetID(s)
 	return nc
+}
+
+// SetDocumentID sets the "document" edge to the Document entity by ID.
+func (nc *NodeCreate) SetDocumentID(id string) *NodeCreate {
+	nc.mutation.SetDocumentID(id)
+	return nc
+}
+
+// SetNillableDocumentID sets the "document" edge to the Document entity by ID if the given value is not nil.
+func (nc *NodeCreate) SetNillableDocumentID(id *string) *NodeCreate {
+	if id != nil {
+		nc = nc.SetDocumentID(*id)
+	}
+	return nc
+}
+
+// SetDocument sets the "document" edge to the Document entity.
+func (nc *NodeCreate) SetDocument(d *Document) *NodeCreate {
+	return nc.SetDocumentID(d.ID)
 }
 
 // AddSupplierIDs adds the "suppliers" edge to the Person entity by IDs.
@@ -445,6 +472,10 @@ func (nc *NodeCreate) createSpec() (*Node, *sqlgraph.CreateSpec) {
 		_node.ID = id
 		_spec.ID.Value = id
 	}
+	if value, ok := nc.mutation.ProtoMessage(); ok {
+		_spec.SetField(node.FieldProtoMessage, field.TypeJSON, value)
+		_node.ProtoMessage = value
+	}
 	if value, ok := nc.mutation.GetType(); ok {
 		_spec.SetField(node.FieldType, field.TypeEnum, value)
 		_node.Type = value
@@ -520,6 +551,23 @@ func (nc *NodeCreate) createSpec() (*Node, *sqlgraph.CreateSpec) {
 	if value, ok := nc.mutation.FileTypes(); ok {
 		_spec.SetField(node.FieldFileTypes, field.TypeJSON, value)
 		_node.FileTypes = value
+	}
+	if nodes := nc.mutation.DocumentIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   node.DocumentTable,
+			Columns: []string{node.DocumentColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(document.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.document_id = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := nc.mutation.SuppliersIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -689,7 +737,7 @@ func (nc *NodeCreate) createSpec() (*Node, *sqlgraph.CreateSpec) {
 // of the `INSERT` statement. For example:
 //
 //	client.Node.Create().
-//		SetNodeListID(v).
+//		SetProtoMessage(v).
 //		OnConflict(
 //			// Update the row with the new values
 //			// the was proposed for insertion.
@@ -698,7 +746,7 @@ func (nc *NodeCreate) createSpec() (*Node, *sqlgraph.CreateSpec) {
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.NodeUpsert) {
-//			SetNodeListID(v+v).
+//			SetProtoMessage(v+v).
 //		}).
 //		Exec(ctx)
 func (nc *NodeCreate) OnConflict(opts ...sql.ConflictOption) *NodeUpsertOne {
@@ -733,6 +781,24 @@ type (
 		*sql.UpdateSet
 	}
 )
+
+// SetProtoMessage sets the "proto_message" field.
+func (u *NodeUpsert) SetProtoMessage(v *sbom.Node) *NodeUpsert {
+	u.Set(node.FieldProtoMessage, v)
+	return u
+}
+
+// UpdateProtoMessage sets the "proto_message" field to the value that was provided on create.
+func (u *NodeUpsert) UpdateProtoMessage() *NodeUpsert {
+	u.SetExcluded(node.FieldProtoMessage)
+	return u
+}
+
+// ClearProtoMessage clears the value of the "proto_message" field.
+func (u *NodeUpsert) ClearProtoMessage() *NodeUpsert {
+	u.SetNull(node.FieldProtoMessage)
+	return u
+}
 
 // SetNodeListID sets the "node_list_id" field.
 func (u *NodeUpsert) SetNodeListID(v int) *NodeUpsert {
@@ -1026,6 +1092,27 @@ func (u *NodeUpsertOne) Update(set func(*NodeUpsert)) *NodeUpsertOne {
 		set(&NodeUpsert{UpdateSet: update})
 	}))
 	return u
+}
+
+// SetProtoMessage sets the "proto_message" field.
+func (u *NodeUpsertOne) SetProtoMessage(v *sbom.Node) *NodeUpsertOne {
+	return u.Update(func(s *NodeUpsert) {
+		s.SetProtoMessage(v)
+	})
+}
+
+// UpdateProtoMessage sets the "proto_message" field to the value that was provided on create.
+func (u *NodeUpsertOne) UpdateProtoMessage() *NodeUpsertOne {
+	return u.Update(func(s *NodeUpsert) {
+		s.UpdateProtoMessage()
+	})
+}
+
+// ClearProtoMessage clears the value of the "proto_message" field.
+func (u *NodeUpsertOne) ClearProtoMessage() *NodeUpsertOne {
+	return u.Update(func(s *NodeUpsert) {
+		s.ClearProtoMessage()
+	})
 }
 
 // SetNodeListID sets the "node_list_id" field.
@@ -1450,7 +1537,7 @@ func (ncb *NodeCreateBulk) ExecX(ctx context.Context) {
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.NodeUpsert) {
-//			SetNodeListID(v+v).
+//			SetProtoMessage(v+v).
 //		}).
 //		Exec(ctx)
 func (ncb *NodeCreateBulk) OnConflict(opts ...sql.ConflictOption) *NodeUpsertBulk {
@@ -1527,6 +1614,27 @@ func (u *NodeUpsertBulk) Update(set func(*NodeUpsert)) *NodeUpsertBulk {
 		set(&NodeUpsert{UpdateSet: update})
 	}))
 	return u
+}
+
+// SetProtoMessage sets the "proto_message" field.
+func (u *NodeUpsertBulk) SetProtoMessage(v *sbom.Node) *NodeUpsertBulk {
+	return u.Update(func(s *NodeUpsert) {
+		s.SetProtoMessage(v)
+	})
+}
+
+// UpdateProtoMessage sets the "proto_message" field to the value that was provided on create.
+func (u *NodeUpsertBulk) UpdateProtoMessage() *NodeUpsertBulk {
+	return u.Update(func(s *NodeUpsert) {
+		s.UpdateProtoMessage()
+	})
+}
+
+// ClearProtoMessage clears the value of the "proto_message" field.
+func (u *NodeUpsertBulk) ClearProtoMessage() *NodeUpsertBulk {
+	return u.Update(func(s *NodeUpsert) {
+		s.ClearProtoMessage()
+	})
 }
 
 // SetNodeListID sets the "node_list_id" field.

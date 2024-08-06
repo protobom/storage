@@ -9,15 +9,22 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
+	"github.com/protobom/protobom/pkg/sbom"
 )
 
 type NodeList struct {
 	ent.Schema
 }
 
+func (NodeList) Mixin() []ent.Mixin {
+	return []ent.Mixin{
+		DocumentMixin{},
+		ProtoMessageMixin{ProtoMessageType: &sbom.NodeList{}},
+	}
+}
+
 func (NodeList) Fields() []ent.Field {
 	return []ent.Field{
-		field.String("document_id").Unique().Immutable(),
 		field.Strings("root_elements"),
 	}
 }
@@ -25,11 +32,5 @@ func (NodeList) Fields() []ent.Field {
 func (NodeList) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("nodes", Node.Type),
-		edge.From("document", Document.Type).
-			Ref("node_list").
-			Required().
-			Unique().
-			Immutable().
-			Field("document_id"),
 	}
 }

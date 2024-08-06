@@ -433,7 +433,7 @@ func (c *DocumentClient) QueryNodeList(d *Document) *NodeListQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(document.Table, document.FieldID, id),
 			sqlgraph.To(nodelist.Table, nodelist.FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, false, document.NodeListTable, document.NodeListColumn),
+			sqlgraph.Edge(sqlgraph.O2O, true, document.NodeListTable, document.NodeListColumn),
 		)
 		fromV = sqlgraph.Neighbors(d.driver.Dialect(), step)
 		return fromV, nil
@@ -572,6 +572,22 @@ func (c *DocumentTypeClient) GetX(ctx context.Context, id int) *DocumentType {
 		panic(err)
 	}
 	return obj
+}
+
+// QueryDocument queries the document edge of a DocumentType.
+func (c *DocumentTypeClient) QueryDocument(dt *DocumentType) *DocumentQuery {
+	query := (&DocumentClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := dt.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(documenttype.Table, documenttype.FieldID, id),
+			sqlgraph.To(document.Table, document.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, documenttype.DocumentTable, documenttype.DocumentColumn),
+		)
+		fromV = sqlgraph.Neighbors(dt.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
 }
 
 // QueryMetadata queries the metadata edge of a DocumentType.
@@ -721,6 +737,22 @@ func (c *EdgeTypeClient) GetX(ctx context.Context, id int) *EdgeType {
 		panic(err)
 	}
 	return obj
+}
+
+// QueryDocument queries the document edge of a EdgeType.
+func (c *EdgeTypeClient) QueryDocument(et *EdgeType) *DocumentQuery {
+	query := (&DocumentClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := et.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(edgetype.Table, edgetype.FieldID, id),
+			sqlgraph.To(document.Table, document.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, edgetype.DocumentTable, edgetype.DocumentColumn),
+		)
+		fromV = sqlgraph.Neighbors(et.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
 }
 
 // QueryFrom queries the from edge of a EdgeType.
@@ -888,6 +920,22 @@ func (c *ExternalReferenceClient) GetX(ctx context.Context, id int) *ExternalRef
 	return obj
 }
 
+// QueryDocument queries the document edge of a ExternalReference.
+func (c *ExternalReferenceClient) QueryDocument(er *ExternalReference) *DocumentQuery {
+	query := (&DocumentClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := er.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(externalreference.Table, externalreference.FieldID, id),
+			sqlgraph.To(document.Table, document.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, externalreference.DocumentTable, externalreference.DocumentColumn),
+		)
+		fromV = sqlgraph.Neighbors(er.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QueryHashes queries the hashes edge of a ExternalReference.
 func (c *ExternalReferenceClient) QueryHashes(er *ExternalReference) *HashesEntryQuery {
 	query := (&HashesEntryClient{config: c.config}).Query()
@@ -1053,6 +1101,22 @@ func (c *HashesEntryClient) GetX(ctx context.Context, id int) *HashesEntry {
 	return obj
 }
 
+// QueryDocument queries the document edge of a HashesEntry.
+func (c *HashesEntryClient) QueryDocument(he *HashesEntry) *DocumentQuery {
+	query := (&DocumentClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := he.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(hashesentry.Table, hashesentry.FieldID, id),
+			sqlgraph.To(document.Table, document.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, hashesentry.DocumentTable, hashesentry.DocumentColumn),
+		)
+		fromV = sqlgraph.Neighbors(he.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QueryExternalReference queries the external_reference edge of a HashesEntry.
 func (c *HashesEntryClient) QueryExternalReference(he *HashesEntry) *ExternalReferenceQuery {
 	query := (&ExternalReferenceClient{config: c.config}).Query()
@@ -1216,6 +1280,22 @@ func (c *IdentifiersEntryClient) GetX(ctx context.Context, id int) *IdentifiersE
 		panic(err)
 	}
 	return obj
+}
+
+// QueryDocument queries the document edge of a IdentifiersEntry.
+func (c *IdentifiersEntryClient) QueryDocument(ie *IdentifiersEntry) *DocumentQuery {
+	query := (&DocumentClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := ie.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(identifiersentry.Table, identifiersentry.FieldID, id),
+			sqlgraph.To(document.Table, document.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, identifiersentry.DocumentTable, identifiersentry.DocumentColumn),
+		)
+		fromV = sqlgraph.Neighbors(ie.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
 }
 
 // QueryNode queries the node edge of a IdentifiersEntry.
@@ -1564,6 +1644,22 @@ func (c *NodeClient) GetX(ctx context.Context, id string) *Node {
 	return obj
 }
 
+// QueryDocument queries the document edge of a Node.
+func (c *NodeClient) QueryDocument(n *Node) *DocumentQuery {
+	query := (&DocumentClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := n.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(node.Table, node.FieldID, id),
+			sqlgraph.To(document.Table, document.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, node.DocumentTable, node.DocumentColumn),
+		)
+		fromV = sqlgraph.Neighbors(n.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QuerySuppliers queries the suppliers edge of a Node.
 func (c *NodeClient) QuerySuppliers(n *Node) *PersonQuery {
 	query := (&PersonClient{config: c.config}).Query()
@@ -1857,6 +1953,22 @@ func (c *NodeListClient) GetX(ctx context.Context, id int) *NodeList {
 	return obj
 }
 
+// QueryDocument queries the document edge of a NodeList.
+func (c *NodeListClient) QueryDocument(nl *NodeList) *DocumentQuery {
+	query := (&DocumentClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := nl.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(nodelist.Table, nodelist.FieldID, id),
+			sqlgraph.To(document.Table, document.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, nodelist.DocumentTable, nodelist.DocumentColumn),
+		)
+		fromV = sqlgraph.Neighbors(nl.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QueryNodes queries the nodes edge of a NodeList.
 func (c *NodeListClient) QueryNodes(nl *NodeList) *NodeQuery {
 	query := (&NodeClient{config: c.config}).Query()
@@ -1866,22 +1978,6 @@ func (c *NodeListClient) QueryNodes(nl *NodeList) *NodeQuery {
 			sqlgraph.From(nodelist.Table, nodelist.FieldID, id),
 			sqlgraph.To(node.Table, node.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, nodelist.NodesTable, nodelist.NodesColumn),
-		)
-		fromV = sqlgraph.Neighbors(nl.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QueryDocument queries the document edge of a NodeList.
-func (c *NodeListClient) QueryDocument(nl *NodeList) *DocumentQuery {
-	query := (&DocumentClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := nl.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(nodelist.Table, nodelist.FieldID, id),
-			sqlgraph.To(document.Table, document.FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, true, nodelist.DocumentTable, nodelist.DocumentColumn),
 		)
 		fromV = sqlgraph.Neighbors(nl.driver.Dialect(), step)
 		return fromV, nil
@@ -2020,6 +2116,22 @@ func (c *PersonClient) GetX(ctx context.Context, id int) *Person {
 		panic(err)
 	}
 	return obj
+}
+
+// QueryDocument queries the document edge of a Person.
+func (c *PersonClient) QueryDocument(pe *Person) *DocumentQuery {
+	query := (&DocumentClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := pe.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(person.Table, person.FieldID, id),
+			sqlgraph.To(document.Table, document.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, person.DocumentTable, person.DocumentColumn),
+		)
+		fromV = sqlgraph.Neighbors(pe.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
 }
 
 // QueryContactOwner queries the contact_owner edge of a Person.
@@ -2219,6 +2331,22 @@ func (c *PurposeClient) GetX(ctx context.Context, id int) *Purpose {
 	return obj
 }
 
+// QueryDocument queries the document edge of a Purpose.
+func (c *PurposeClient) QueryDocument(pu *Purpose) *DocumentQuery {
+	query := (&DocumentClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := pu.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(purpose.Table, purpose.FieldID, id),
+			sqlgraph.To(document.Table, document.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, purpose.DocumentTable, purpose.DocumentColumn),
+		)
+		fromV = sqlgraph.Neighbors(pu.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QueryNode queries the node edge of a Purpose.
 func (c *PurposeClient) QueryNode(pu *Purpose) *NodeQuery {
 	query := (&NodeClient{config: c.config}).Query()
@@ -2366,6 +2494,22 @@ func (c *ToolClient) GetX(ctx context.Context, id int) *Tool {
 		panic(err)
 	}
 	return obj
+}
+
+// QueryDocument queries the document edge of a Tool.
+func (c *ToolClient) QueryDocument(t *Tool) *DocumentQuery {
+	query := (&DocumentClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := t.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(tool.Table, tool.FieldID, id),
+			sqlgraph.To(document.Table, document.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, tool.DocumentTable, tool.DocumentColumn),
+		)
+		fromV = sqlgraph.Neighbors(t.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
 }
 
 // QueryMetadata queries the metadata edge of a Tool.

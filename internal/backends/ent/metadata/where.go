@@ -90,6 +90,16 @@ func Comment(v string) predicate.Metadata {
 	return predicate.Metadata(sql.FieldEQ(FieldComment, v))
 }
 
+// ProtoMessageIsNil applies the IsNil predicate on the "proto_message" field.
+func ProtoMessageIsNil() predicate.Metadata {
+	return predicate.Metadata(sql.FieldIsNull(FieldProtoMessage))
+}
+
+// ProtoMessageNotNil applies the NotNil predicate on the "proto_message" field.
+func ProtoMessageNotNil() predicate.Metadata {
+	return predicate.Metadata(sql.FieldNotNull(FieldProtoMessage))
+}
+
 // VersionEQ applies the EQ predicate on the "version" field.
 func VersionEQ(v string) predicate.Metadata {
 	return predicate.Metadata(sql.FieldEQ(FieldVersion, v))

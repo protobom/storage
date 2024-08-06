@@ -218,6 +218,29 @@ func ToNodeIDContainsFold(v string) predicate.EdgeType {
 	return predicate.EdgeType(sql.FieldContainsFold(FieldToNodeID, v))
 }
 
+// HasDocument applies the HasEdge predicate on the "document" edge.
+func HasDocument() predicate.EdgeType {
+	return predicate.EdgeType(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, DocumentTable, DocumentColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasDocumentWith applies the HasEdge predicate on the "document" edge with a given conditions (other predicates).
+func HasDocumentWith(preds ...predicate.Document) predicate.EdgeType {
+	return predicate.EdgeType(func(s *sql.Selector) {
+		step := newDocumentStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // HasFrom applies the HasEdge predicate on the "from" edge.
 func HasFrom() predicate.EdgeType {
 	return predicate.EdgeType(func(s *sql.Selector) {

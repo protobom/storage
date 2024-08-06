@@ -14,6 +14,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/externalreference"
 	"github.com/protobom/storage/internal/backends/ent/hashesentry"
 	"github.com/protobom/storage/internal/backends/ent/node"
@@ -27,8 +28,10 @@ type HashesEntryQuery struct {
 	order                 []hashesentry.OrderOption
 	inters                []Interceptor
 	predicates            []predicate.HashesEntry
+	withDocument          *DocumentQuery
 	withExternalReference *ExternalReferenceQuery
 	withNode              *NodeQuery
+	withFKs               bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -63,6 +66,28 @@ func (heq *HashesEntryQuery) Unique(unique bool) *HashesEntryQuery {
 func (heq *HashesEntryQuery) Order(o ...hashesentry.OrderOption) *HashesEntryQuery {
 	heq.order = append(heq.order, o...)
 	return heq
+}
+
+// QueryDocument chains the current query on the "document" edge.
+func (heq *HashesEntryQuery) QueryDocument() *DocumentQuery {
+	query := (&DocumentClient{config: heq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := heq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := heq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(hashesentry.Table, hashesentry.FieldID, selector),
+			sqlgraph.To(document.Table, document.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, hashesentry.DocumentTable, hashesentry.DocumentColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(heq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
 }
 
 // QueryExternalReference chains the current query on the "external_reference" edge.
@@ -301,12 +326,24 @@ func (heq *HashesEntryQuery) Clone() *HashesEntryQuery {
 		order:                 append([]hashesentry.OrderOption{}, heq.order...),
 		inters:                append([]Interceptor{}, heq.inters...),
 		predicates:            append([]predicate.HashesEntry{}, heq.predicates...),
+		withDocument:          heq.withDocument.Clone(),
 		withExternalReference: heq.withExternalReference.Clone(),
 		withNode:              heq.withNode.Clone(),
 		// clone intermediate query.
 		sql:  heq.sql.Clone(),
 		path: heq.path,
 	}
+}
+
+// WithDocument tells the query-builder to eager-load the nodes that are connected to
+// the "document" edge. The optional arguments are used to configure the query builder of the edge.
+func (heq *HashesEntryQuery) WithDocument(opts ...func(*DocumentQuery)) *HashesEntryQuery {
+	query := (&DocumentClient{config: heq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	heq.withDocument = query
+	return heq
 }
 
 // WithExternalReference tells the query-builder to eager-load the nodes that are connected to
@@ -408,12 +445,20 @@ func (heq *HashesEntryQuery) prepareQuery(ctx context.Context) error {
 func (heq *HashesEntryQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*HashesEntry, error) {
 	var (
 		nodes       = []*HashesEntry{}
+		withFKs     = heq.withFKs
 		_spec       = heq.querySpec()
-		loadedTypes = [2]bool{
+		loadedTypes = [3]bool{
+			heq.withDocument != nil,
 			heq.withExternalReference != nil,
 			heq.withNode != nil,
 		}
 	)
+	if heq.withDocument != nil {
+		withFKs = true
+	}
+	if withFKs {
+		_spec.Node.Columns = append(_spec.Node.Columns, hashesentry.ForeignKeys...)
+	}
 	_spec.ScanValues = func(columns []string) ([]any, error) {
 		return (*HashesEntry).scanValues(nil, columns)
 	}
@@ -432,6 +477,12 @@ func (heq *HashesEntryQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
+	if query := heq.withDocument; query != nil {
+		if err := heq.loadDocument(ctx, query, nodes, nil,
+			func(n *HashesEntry, e *Document) { n.Edges.Document = e }); err != nil {
+			return nil, err
+		}
+	}
 	if query := heq.withExternalReference; query != nil {
 		if err := heq.loadExternalReference(ctx, query, nodes, nil,
 			func(n *HashesEntry, e *ExternalReference) { n.Edges.ExternalReference = e }); err != nil {
@@ -447,6 +498,38 @@ func (heq *HashesEntryQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]
 	return nodes, nil
 }
 
+func (heq *HashesEntryQuery) loadDocument(ctx context.Context, query *DocumentQuery, nodes []*HashesEntry, init func(*HashesEntry), assign func(*HashesEntry, *Document)) error {
+	ids := make([]string, 0, len(nodes))
+	nodeids := make(map[string][]*HashesEntry)
+	for i := range nodes {
+		if nodes[i].document_id == nil {
+			continue
+		}
+		fk := *nodes[i].document_id
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(document.IDIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "document_id" returned %v`, n.ID)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
+	}
+	return nil
+}
 func (heq *HashesEntryQuery) loadExternalReference(ctx context.Context, query *ExternalReferenceQuery, nodes []*HashesEntry, init func(*HashesEntry), assign func(*HashesEntry, *ExternalReference)) error {
 	ids := make([]int, 0, len(nodes))
 	nodeids := make(map[int][]*HashesEntry)

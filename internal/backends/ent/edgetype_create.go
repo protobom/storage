@@ -14,6 +14,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/edgetype"
 	"github.com/protobom/storage/internal/backends/ent/node"
 )
@@ -42,6 +43,25 @@ func (etc *EdgeTypeCreate) SetNodeID(s string) *EdgeTypeCreate {
 func (etc *EdgeTypeCreate) SetToNodeID(s string) *EdgeTypeCreate {
 	etc.mutation.SetToNodeID(s)
 	return etc
+}
+
+// SetDocumentID sets the "document" edge to the Document entity by ID.
+func (etc *EdgeTypeCreate) SetDocumentID(id string) *EdgeTypeCreate {
+	etc.mutation.SetDocumentID(id)
+	return etc
+}
+
+// SetNillableDocumentID sets the "document" edge to the Document entity by ID if the given value is not nil.
+func (etc *EdgeTypeCreate) SetNillableDocumentID(id *string) *EdgeTypeCreate {
+	if id != nil {
+		etc = etc.SetDocumentID(*id)
+	}
+	return etc
+}
+
+// SetDocument sets the "document" edge to the Document entity.
+func (etc *EdgeTypeCreate) SetDocument(d *Document) *EdgeTypeCreate {
+	return etc.SetDocumentID(d.ID)
 }
 
 // SetFromID sets the "from" edge to the Node entity by ID.
@@ -150,6 +170,23 @@ func (etc *EdgeTypeCreate) createSpec() (*EdgeType, *sqlgraph.CreateSpec) {
 	if value, ok := etc.mutation.GetType(); ok {
 		_spec.SetField(edgetype.FieldType, field.TypeEnum, value)
 		_node.Type = value
+	}
+	if nodes := etc.mutation.DocumentIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   edgetype.DocumentTable,
+			Columns: []string{edgetype.DocumentColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(document.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.document_id = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := etc.mutation.FromIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

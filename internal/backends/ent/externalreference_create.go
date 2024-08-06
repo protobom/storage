@@ -14,6 +14,8 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/protobom/protobom/pkg/sbom"
+	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/externalreference"
 	"github.com/protobom/storage/internal/backends/ent/hashesentry"
 	"github.com/protobom/storage/internal/backends/ent/node"
@@ -25,6 +27,12 @@ type ExternalReferenceCreate struct {
 	mutation *ExternalReferenceMutation
 	hooks    []Hook
 	conflict []sql.ConflictOption
+}
+
+// SetProtoMessage sets the "proto_message" field.
+func (erc *ExternalReferenceCreate) SetProtoMessage(sr *sbom.ExternalReference) *ExternalReferenceCreate {
+	erc.mutation.SetProtoMessage(sr)
+	return erc
 }
 
 // SetNodeID sets the "node_id" field.
@@ -71,6 +79,25 @@ func (erc *ExternalReferenceCreate) SetNillableAuthority(s *string) *ExternalRef
 func (erc *ExternalReferenceCreate) SetType(e externalreference.Type) *ExternalReferenceCreate {
 	erc.mutation.SetType(e)
 	return erc
+}
+
+// SetDocumentID sets the "document" edge to the Document entity by ID.
+func (erc *ExternalReferenceCreate) SetDocumentID(id string) *ExternalReferenceCreate {
+	erc.mutation.SetDocumentID(id)
+	return erc
+}
+
+// SetNillableDocumentID sets the "document" edge to the Document entity by ID if the given value is not nil.
+func (erc *ExternalReferenceCreate) SetNillableDocumentID(id *string) *ExternalReferenceCreate {
+	if id != nil {
+		erc = erc.SetDocumentID(*id)
+	}
+	return erc
+}
+
+// SetDocument sets the "document" edge to the Document entity.
+func (erc *ExternalReferenceCreate) SetDocument(d *Document) *ExternalReferenceCreate {
+	return erc.SetDocumentID(d.ID)
 }
 
 // AddHashIDs adds the "hashes" edge to the HashesEntry entity by IDs.
@@ -168,6 +195,10 @@ func (erc *ExternalReferenceCreate) createSpec() (*ExternalReference, *sqlgraph.
 		_spec = sqlgraph.NewCreateSpec(externalreference.Table, sqlgraph.NewFieldSpec(externalreference.FieldID, field.TypeInt))
 	)
 	_spec.OnConflict = erc.conflict
+	if value, ok := erc.mutation.ProtoMessage(); ok {
+		_spec.SetField(externalreference.FieldProtoMessage, field.TypeJSON, value)
+		_node.ProtoMessage = value
+	}
 	if value, ok := erc.mutation.URL(); ok {
 		_spec.SetField(externalreference.FieldURL, field.TypeString, value)
 		_node.URL = value
@@ -183,6 +214,23 @@ func (erc *ExternalReferenceCreate) createSpec() (*ExternalReference, *sqlgraph.
 	if value, ok := erc.mutation.GetType(); ok {
 		_spec.SetField(externalreference.FieldType, field.TypeEnum, value)
 		_node.Type = value
+	}
+	if nodes := erc.mutation.DocumentIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   externalreference.DocumentTable,
+			Columns: []string{externalreference.DocumentColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(document.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.document_id = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := erc.mutation.HashesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -224,7 +272,7 @@ func (erc *ExternalReferenceCreate) createSpec() (*ExternalReference, *sqlgraph.
 // of the `INSERT` statement. For example:
 //
 //	client.ExternalReference.Create().
-//		SetNodeID(v).
+//		SetProtoMessage(v).
 //		OnConflict(
 //			// Update the row with the new values
 //			// the was proposed for insertion.
@@ -233,7 +281,7 @@ func (erc *ExternalReferenceCreate) createSpec() (*ExternalReference, *sqlgraph.
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.ExternalReferenceUpsert) {
-//			SetNodeID(v+v).
+//			SetProtoMessage(v+v).
 //		}).
 //		Exec(ctx)
 func (erc *ExternalReferenceCreate) OnConflict(opts ...sql.ConflictOption) *ExternalReferenceUpsertOne {
@@ -268,6 +316,24 @@ type (
 		*sql.UpdateSet
 	}
 )
+
+// SetProtoMessage sets the "proto_message" field.
+func (u *ExternalReferenceUpsert) SetProtoMessage(v *sbom.ExternalReference) *ExternalReferenceUpsert {
+	u.Set(externalreference.FieldProtoMessage, v)
+	return u
+}
+
+// UpdateProtoMessage sets the "proto_message" field to the value that was provided on create.
+func (u *ExternalReferenceUpsert) UpdateProtoMessage() *ExternalReferenceUpsert {
+	u.SetExcluded(externalreference.FieldProtoMessage)
+	return u
+}
+
+// ClearProtoMessage clears the value of the "proto_message" field.
+func (u *ExternalReferenceUpsert) ClearProtoMessage() *ExternalReferenceUpsert {
+	u.SetNull(externalreference.FieldProtoMessage)
+	return u
+}
 
 // SetNodeID sets the "node_id" field.
 func (u *ExternalReferenceUpsert) SetNodeID(v string) *ExternalReferenceUpsert {
@@ -379,6 +445,27 @@ func (u *ExternalReferenceUpsertOne) Update(set func(*ExternalReferenceUpsert)) 
 		set(&ExternalReferenceUpsert{UpdateSet: update})
 	}))
 	return u
+}
+
+// SetProtoMessage sets the "proto_message" field.
+func (u *ExternalReferenceUpsertOne) SetProtoMessage(v *sbom.ExternalReference) *ExternalReferenceUpsertOne {
+	return u.Update(func(s *ExternalReferenceUpsert) {
+		s.SetProtoMessage(v)
+	})
+}
+
+// UpdateProtoMessage sets the "proto_message" field to the value that was provided on create.
+func (u *ExternalReferenceUpsertOne) UpdateProtoMessage() *ExternalReferenceUpsertOne {
+	return u.Update(func(s *ExternalReferenceUpsert) {
+		s.UpdateProtoMessage()
+	})
+}
+
+// ClearProtoMessage clears the value of the "proto_message" field.
+func (u *ExternalReferenceUpsertOne) ClearProtoMessage() *ExternalReferenceUpsertOne {
+	return u.Update(func(s *ExternalReferenceUpsert) {
+		s.ClearProtoMessage()
+	})
 }
 
 // SetNodeID sets the "node_id" field.
@@ -599,7 +686,7 @@ func (ercb *ExternalReferenceCreateBulk) ExecX(ctx context.Context) {
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.ExternalReferenceUpsert) {
-//			SetNodeID(v+v).
+//			SetProtoMessage(v+v).
 //		}).
 //		Exec(ctx)
 func (ercb *ExternalReferenceCreateBulk) OnConflict(opts ...sql.ConflictOption) *ExternalReferenceUpsertBulk {
@@ -666,6 +753,27 @@ func (u *ExternalReferenceUpsertBulk) Update(set func(*ExternalReferenceUpsert))
 		set(&ExternalReferenceUpsert{UpdateSet: update})
 	}))
 	return u
+}
+
+// SetProtoMessage sets the "proto_message" field.
+func (u *ExternalReferenceUpsertBulk) SetProtoMessage(v *sbom.ExternalReference) *ExternalReferenceUpsertBulk {
+	return u.Update(func(s *ExternalReferenceUpsert) {
+		s.SetProtoMessage(v)
+	})
+}
+
+// UpdateProtoMessage sets the "proto_message" field to the value that was provided on create.
+func (u *ExternalReferenceUpsertBulk) UpdateProtoMessage() *ExternalReferenceUpsertBulk {
+	return u.Update(func(s *ExternalReferenceUpsert) {
+		s.UpdateProtoMessage()
+	})
+}
+
+// ClearProtoMessage clears the value of the "proto_message" field.
+func (u *ExternalReferenceUpsertBulk) ClearProtoMessage() *ExternalReferenceUpsertBulk {
+	return u.Update(func(s *ExternalReferenceUpsert) {
+		s.ClearProtoMessage()
+	})
 }
 
 // SetNodeID sets the "node_id" field.

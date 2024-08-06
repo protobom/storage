@@ -14,6 +14,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/identifiersentry"
 	"github.com/protobom/storage/internal/backends/ent/node"
 )
@@ -50,6 +51,25 @@ func (iec *IdentifiersEntryCreate) SetSoftwareIdentifierType(iit identifiersentr
 func (iec *IdentifiersEntryCreate) SetSoftwareIdentifierValue(s string) *IdentifiersEntryCreate {
 	iec.mutation.SetSoftwareIdentifierValue(s)
 	return iec
+}
+
+// SetDocumentID sets the "document" edge to the Document entity by ID.
+func (iec *IdentifiersEntryCreate) SetDocumentID(id string) *IdentifiersEntryCreate {
+	iec.mutation.SetDocumentID(id)
+	return iec
+}
+
+// SetNillableDocumentID sets the "document" edge to the Document entity by ID if the given value is not nil.
+func (iec *IdentifiersEntryCreate) SetNillableDocumentID(id *string) *IdentifiersEntryCreate {
+	if id != nil {
+		iec = iec.SetDocumentID(*id)
+	}
+	return iec
+}
+
+// SetDocument sets the "document" edge to the Document entity.
+func (iec *IdentifiersEntryCreate) SetDocument(d *Document) *IdentifiersEntryCreate {
+	return iec.SetDocumentID(d.ID)
 }
 
 // SetNode sets the "node" edge to the Node entity.
@@ -136,6 +156,23 @@ func (iec *IdentifiersEntryCreate) createSpec() (*IdentifiersEntry, *sqlgraph.Cr
 	if value, ok := iec.mutation.SoftwareIdentifierValue(); ok {
 		_spec.SetField(identifiersentry.FieldSoftwareIdentifierValue, field.TypeString, value)
 		_node.SoftwareIdentifierValue = value
+	}
+	if nodes := iec.mutation.DocumentIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   identifiersentry.DocumentTable,
+			Columns: []string{identifiersentry.DocumentColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(document.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.document_id = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := iec.mutation.NodeIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

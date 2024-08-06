@@ -12,6 +12,7 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/externalreference"
 	"github.com/protobom/storage/internal/backends/ent/hashesentry"
 	"github.com/protobom/storage/internal/backends/ent/node"
@@ -33,18 +34,32 @@ type HashesEntry struct {
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the HashesEntryQuery when eager-loading is set.
 	Edges        HashesEntryEdges `json:"edges"`
+	document_id  *string
 	selectValues sql.SelectValues
 }
 
 // HashesEntryEdges holds the relations/edges for other nodes in the graph.
 type HashesEntryEdges struct {
+	// Document holds the value of the document edge.
+	Document *Document `json:"document,omitempty"`
 	// ExternalReference holds the value of the external_reference edge.
 	ExternalReference *ExternalReference `json:"external_reference,omitempty"`
 	// Node holds the value of the node edge.
 	Node *Node `json:"node,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [3]bool
+}
+
+// DocumentOrErr returns the Document value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e HashesEntryEdges) DocumentOrErr() (*Document, error) {
+	if e.Document != nil {
+		return e.Document, nil
+	} else if e.loadedTypes[0] {
+		return nil, &NotFoundError{label: document.Label}
+	}
+	return nil, &NotLoadedError{edge: "document"}
 }
 
 // ExternalReferenceOrErr returns the ExternalReference value or an error if the edge
@@ -52,7 +67,7 @@ type HashesEntryEdges struct {
 func (e HashesEntryEdges) ExternalReferenceOrErr() (*ExternalReference, error) {
 	if e.ExternalReference != nil {
 		return e.ExternalReference, nil
-	} else if e.loadedTypes[0] {
+	} else if e.loadedTypes[1] {
 		return nil, &NotFoundError{label: externalreference.Label}
 	}
 	return nil, &NotLoadedError{edge: "external_reference"}
@@ -63,7 +78,7 @@ func (e HashesEntryEdges) ExternalReferenceOrErr() (*ExternalReference, error) {
 func (e HashesEntryEdges) NodeOrErr() (*Node, error) {
 	if e.Node != nil {
 		return e.Node, nil
-	} else if e.loadedTypes[1] {
+	} else if e.loadedTypes[2] {
 		return nil, &NotFoundError{label: node.Label}
 	}
 	return nil, &NotLoadedError{edge: "node"}
@@ -77,6 +92,8 @@ func (*HashesEntry) scanValues(columns []string) ([]any, error) {
 		case hashesentry.FieldID, hashesentry.FieldExternalReferenceID:
 			values[i] = new(sql.NullInt64)
 		case hashesentry.FieldNodeID, hashesentry.FieldHashAlgorithmType, hashesentry.FieldHashData:
+			values[i] = new(sql.NullString)
+		case hashesentry.ForeignKeys[0]: // document_id
 			values[i] = new(sql.NullString)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -123,6 +140,13 @@ func (he *HashesEntry) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				he.HashData = value.String
 			}
+		case hashesentry.ForeignKeys[0]:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field document_id", values[i])
+			} else if value.Valid {
+				he.document_id = new(string)
+				*he.document_id = value.String
+			}
 		default:
 			he.selectValues.Set(columns[i], values[i])
 		}
@@ -134,6 +158,11 @@ func (he *HashesEntry) assignValues(columns []string, values []any) error {
 // This includes values selected through modifiers, order, etc.
 func (he *HashesEntry) Value(name string) (ent.Value, error) {
 	return he.selectValues.Get(name)
+}
+
+// QueryDocument queries the "document" edge of the HashesEntry entity.
+func (he *HashesEntry) QueryDocument() *DocumentQuery {
+	return NewHashesEntryClient(he.config).QueryDocument(he)
 }
 
 // QueryExternalReference queries the "external_reference" edge of the HashesEntry entity.

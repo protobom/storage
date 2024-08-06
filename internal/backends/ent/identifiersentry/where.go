@@ -228,6 +228,29 @@ func SoftwareIdentifierValueContainsFold(v string) predicate.IdentifiersEntry {
 	return predicate.IdentifiersEntry(sql.FieldContainsFold(FieldSoftwareIdentifierValue, v))
 }
 
+// HasDocument applies the HasEdge predicate on the "document" edge.
+func HasDocument() predicate.IdentifiersEntry {
+	return predicate.IdentifiersEntry(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, DocumentTable, DocumentColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasDocumentWith applies the HasEdge predicate on the "document" edge with a given conditions (other predicates).
+func HasDocumentWith(preds ...predicate.Document) predicate.IdentifiersEntry {
+	return predicate.IdentifiersEntry(func(s *sql.Selector) {
+		step := newDocumentStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // HasNode applies the HasEdge predicate on the "node" edge.
 func HasNode() predicate.IdentifiersEntry {
 	return predicate.IdentifiersEntry(func(s *sql.Selector) {

@@ -410,12 +410,12 @@ func (mq *MetadataQuery) WithDocument(opts ...func(*DocumentQuery)) *MetadataQue
 // Example:
 //
 //	var v []struct {
-//		Version string `json:"version,omitempty"`
+//		ProtoMessage *sbom.Metadata `json:"proto_message,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.Metadata.Query().
-//		GroupBy(metadata.FieldVersion).
+//		GroupBy(metadata.FieldProtoMessage).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (mq *MetadataQuery) GroupBy(field string, fields ...string) *MetadataGroupBy {
@@ -433,11 +433,11 @@ func (mq *MetadataQuery) GroupBy(field string, fields ...string) *MetadataGroupB
 // Example:
 //
 //	var v []struct {
-//		Version string `json:"version,omitempty"`
+//		ProtoMessage *sbom.Metadata `json:"proto_message,omitempty"`
 //	}
 //
 //	client.Metadata.Query().
-//		Select(metadata.FieldVersion).
+//		Select(metadata.FieldProtoMessage).
 //		Scan(ctx, &v)
 func (mq *MetadataQuery) Select(fields ...string) *MetadataSelect {
 	mq.ctx.Fields = append(mq.ctx.Fields, fields...)
@@ -547,6 +547,7 @@ func (mq *MetadataQuery) loadTools(ctx context.Context, query *ToolQuery, nodes 
 			init(nodes[i])
 		}
 	}
+	query.withFKs = true
 	if len(query.ctx.Fields) > 0 {
 		query.ctx.AppendFieldOnce(tool.FieldMetadataID)
 	}
@@ -608,6 +609,7 @@ func (mq *MetadataQuery) loadDocumentTypes(ctx context.Context, query *DocumentT
 			init(nodes[i])
 		}
 	}
+	query.withFKs = true
 	if len(query.ctx.Fields) > 0 {
 		query.ctx.AppendFieldOnce(documenttype.FieldMetadataID)
 	}

@@ -14,6 +14,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/identifiersentry"
 	"github.com/protobom/storage/internal/backends/ent/node"
 	"github.com/protobom/storage/internal/backends/ent/predicate"
@@ -22,11 +23,13 @@ import (
 // IdentifiersEntryQuery is the builder for querying IdentifiersEntry entities.
 type IdentifiersEntryQuery struct {
 	config
-	ctx        *QueryContext
-	order      []identifiersentry.OrderOption
-	inters     []Interceptor
-	predicates []predicate.IdentifiersEntry
-	withNode   *NodeQuery
+	ctx          *QueryContext
+	order        []identifiersentry.OrderOption
+	inters       []Interceptor
+	predicates   []predicate.IdentifiersEntry
+	withDocument *DocumentQuery
+	withNode     *NodeQuery
+	withFKs      bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -61,6 +64,28 @@ func (ieq *IdentifiersEntryQuery) Unique(unique bool) *IdentifiersEntryQuery {
 func (ieq *IdentifiersEntryQuery) Order(o ...identifiersentry.OrderOption) *IdentifiersEntryQuery {
 	ieq.order = append(ieq.order, o...)
 	return ieq
+}
+
+// QueryDocument chains the current query on the "document" edge.
+func (ieq *IdentifiersEntryQuery) QueryDocument() *DocumentQuery {
+	query := (&DocumentClient{config: ieq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := ieq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := ieq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(identifiersentry.Table, identifiersentry.FieldID, selector),
+			sqlgraph.To(document.Table, document.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, identifiersentry.DocumentTable, identifiersentry.DocumentColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(ieq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
 }
 
 // QueryNode chains the current query on the "node" edge.
@@ -272,16 +297,28 @@ func (ieq *IdentifiersEntryQuery) Clone() *IdentifiersEntryQuery {
 		return nil
 	}
 	return &IdentifiersEntryQuery{
-		config:     ieq.config,
-		ctx:        ieq.ctx.Clone(),
-		order:      append([]identifiersentry.OrderOption{}, ieq.order...),
-		inters:     append([]Interceptor{}, ieq.inters...),
-		predicates: append([]predicate.IdentifiersEntry{}, ieq.predicates...),
-		withNode:   ieq.withNode.Clone(),
+		config:       ieq.config,
+		ctx:          ieq.ctx.Clone(),
+		order:        append([]identifiersentry.OrderOption{}, ieq.order...),
+		inters:       append([]Interceptor{}, ieq.inters...),
+		predicates:   append([]predicate.IdentifiersEntry{}, ieq.predicates...),
+		withDocument: ieq.withDocument.Clone(),
+		withNode:     ieq.withNode.Clone(),
 		// clone intermediate query.
 		sql:  ieq.sql.Clone(),
 		path: ieq.path,
 	}
+}
+
+// WithDocument tells the query-builder to eager-load the nodes that are connected to
+// the "document" edge. The optional arguments are used to configure the query builder of the edge.
+func (ieq *IdentifiersEntryQuery) WithDocument(opts ...func(*DocumentQuery)) *IdentifiersEntryQuery {
+	query := (&DocumentClient{config: ieq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	ieq.withDocument = query
+	return ieq
 }
 
 // WithNode tells the query-builder to eager-load the nodes that are connected to
@@ -372,11 +409,19 @@ func (ieq *IdentifiersEntryQuery) prepareQuery(ctx context.Context) error {
 func (ieq *IdentifiersEntryQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*IdentifiersEntry, error) {
 	var (
 		nodes       = []*IdentifiersEntry{}
+		withFKs     = ieq.withFKs
 		_spec       = ieq.querySpec()
-		loadedTypes = [1]bool{
+		loadedTypes = [2]bool{
+			ieq.withDocument != nil,
 			ieq.withNode != nil,
 		}
 	)
+	if ieq.withDocument != nil {
+		withFKs = true
+	}
+	if withFKs {
+		_spec.Node.Columns = append(_spec.Node.Columns, identifiersentry.ForeignKeys...)
+	}
 	_spec.ScanValues = func(columns []string) ([]any, error) {
 		return (*IdentifiersEntry).scanValues(nil, columns)
 	}
@@ -395,6 +440,12 @@ func (ieq *IdentifiersEntryQuery) sqlAll(ctx context.Context, hooks ...queryHook
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
+	if query := ieq.withDocument; query != nil {
+		if err := ieq.loadDocument(ctx, query, nodes, nil,
+			func(n *IdentifiersEntry, e *Document) { n.Edges.Document = e }); err != nil {
+			return nil, err
+		}
+	}
 	if query := ieq.withNode; query != nil {
 		if err := ieq.loadNode(ctx, query, nodes, nil,
 			func(n *IdentifiersEntry, e *Node) { n.Edges.Node = e }); err != nil {
@@ -404,6 +455,38 @@ func (ieq *IdentifiersEntryQuery) sqlAll(ctx context.Context, hooks ...queryHook
 	return nodes, nil
 }
 
+func (ieq *IdentifiersEntryQuery) loadDocument(ctx context.Context, query *DocumentQuery, nodes []*IdentifiersEntry, init func(*IdentifiersEntry), assign func(*IdentifiersEntry, *Document)) error {
+	ids := make([]string, 0, len(nodes))
+	nodeids := make(map[string][]*IdentifiersEntry)
+	for i := range nodes {
+		if nodes[i].document_id == nil {
+			continue
+		}
+		fk := *nodes[i].document_id
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(document.IDIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "document_id" returned %v`, n.ID)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
+	}
+	return nil
+}
 func (ieq *IdentifiersEntryQuery) loadNode(ctx context.Context, query *NodeQuery, nodes []*IdentifiersEntry, init func(*IdentifiersEntry), assign func(*IdentifiersEntry, *Node)) error {
 	ids := make([]string, 0, len(nodes))
 	nodeids := make(map[string][]*IdentifiersEntry)

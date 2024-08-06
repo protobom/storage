@@ -24,8 +24,8 @@ import (
 
 type (
 	contactOwnerIDKey      struct{}
+	documentIDKey          struct{}
 	externalReferenceIDKey struct{}
-	metadataIDKey          struct{}
 	nodeIDKey              struct{}
 	nodeListIDKey          struct{}
 )
@@ -55,6 +55,7 @@ func (backend *Backend) Store(doc *sbom.Document, opts *storage.StoreOptions) er
 
 	if err := tx.Document.Create().
 		SetID(doc.Metadata.Id).
+		SetProtoMessage(doc).
 		OnConflict().
 		Ignore().
 		Exec(backend.ctx); err != nil && !ent.IsConstraintError(err) {
@@ -87,12 +88,14 @@ func (backend *Backend) saveDocumentTypes(docTypes []*sbom.DocumentType) error {
 		typeName := documenttype.Type(dt.Type.String())
 
 		newDocType := tx.DocumentType.Create().
+			SetProtoMessage(dt).
 			SetNillableType(&typeName).
 			SetNillableName(dt.Name).
 			SetNillableDescription(dt.Description)
 
-		if metadataID, ok := backend.ctx.Value(metadataIDKey{}).(string); ok {
-			newDocType.SetMetadataID(metadataID)
+		if documentID, ok := backend.ctx.Value(documentIDKey{}).(string); ok {
+			newDocType.SetDocumentID(documentID)
+			newDocType.SetMetadataID(documentID)
 		}
 
 		err := newDocType.OnConflict().Ignore().Exec(backend.ctx)
@@ -118,6 +121,10 @@ func (backend *Backend) saveEdges(edges []*sbom.Edge) error {
 				SetFromID(edge.From).
 				SetToID(toID)
 
+			if documentID, ok := backend.ctx.Value(documentIDKey{}).(string); ok {
+				newEdgeType.SetDocumentID(documentID)
+			}
+
 			err := newEdgeType.OnConflict().Ignore().Exec(backend.ctx)
 			if err != nil && !ent.IsConstraintError(err) {
 				return fmt.Errorf("ent.Node: %w", err)
@@ -137,6 +144,7 @@ func (backend *Backend) saveExternalReferences(refs []*sbom.ExternalReference) e
 
 	for _, ref := range refs {
 		newRef := tx.ExternalReference.Create().
+			SetProtoMessage(ref).
 			SetURL(ref.Url).
 			SetComment(ref.Comment).
 			SetAuthority(ref.Authority).
@@ -144,6 +152,10 @@ func (backend *Backend) saveExternalReferences(refs []*sbom.ExternalReference) e
 
 		if nodeID, ok := backend.ctx.Value(nodeIDKey{}).(string); ok {
 			newRef.SetNodeID(nodeID)
+		}
+
+		if documentID, ok := backend.ctx.Value(documentIDKey{}).(string); ok {
+			newRef.SetDocumentID(documentID)
 		}
 
 		id, err := newRef.OnConflict().Ignore().ID(backend.ctx)
@@ -184,6 +196,10 @@ func (backend *Backend) saveHashesEntries(hashes map[int32]string) error {
 			entry.SetNodeID(nodeID)
 		}
 
+		if documentID, ok := backend.ctx.Value(documentIDKey{}).(string); ok {
+			entry.SetDocumentID(documentID)
+		}
+
 		entries = append(entries, entry)
 	}
 
@@ -214,6 +230,10 @@ func (backend *Backend) saveIdentifiersEntries(idents map[int32]string) error {
 			entry.SetNodeID(nodeID)
 		}
 
+		if documentID, ok := backend.ctx.Value(documentIDKey{}).(string); ok {
+			entry.SetDocumentID(documentID)
+		}
+
 		entries = append(entries, entry)
 	}
 
@@ -235,6 +255,7 @@ func (backend *Backend) saveMetadata(md *sbom.Metadata) error {
 	newMetadata := tx.Metadata.Create().
 		SetID(md.Id).
 		SetDocumentID(md.Id).
+		SetProtoMessage(md).
 		SetVersion(md.Version).
 		SetName(md.Name).
 		SetComment(md.Comment).
@@ -245,7 +266,7 @@ func (backend *Backend) saveMetadata(md *sbom.Metadata) error {
 		return fmt.Errorf("ent.Metadata: %w", err)
 	}
 
-	backend.ctx = context.WithValue(backend.ctx, metadataIDKey{}, md.Id)
+	backend.ctx = context.WithValue(backend.ctx, documentIDKey{}, md.Id)
 
 	if err := backend.savePersons(md.Authors); err != nil {
 		return err
@@ -269,9 +290,10 @@ func (backend *Backend) saveNodeList(nodeList *sbom.NodeList) error {
 
 	tx := ent.TxFromContext(backend.ctx)
 	newNodeList := tx.NodeList.Create().
+		SetProtoMessage(nodeList).
 		SetRootElements(nodeList.RootElements)
 
-	if documentID, ok := backend.ctx.Value(metadataIDKey{}).(string); ok {
+	if documentID, ok := backend.ctx.Value(documentIDKey{}).(string); ok {
 		newNodeList.SetDocumentID(documentID)
 	}
 
@@ -345,6 +367,7 @@ func (backend *Backend) savePersons(persons []*sbom.Person) error {
 
 	for _, p := range persons {
 		newPerson := tx.Person.Create().
+			SetProtoMessage(p).
 			SetName(p.Name).
 			SetEmail(p.Email).
 			SetIsOrg(p.IsOrg).
@@ -355,8 +378,9 @@ func (backend *Backend) savePersons(persons []*sbom.Person) error {
 			newPerson.SetContactOwnerID(contactOwnerID)
 		}
 
-		if metadataID, ok := backend.ctx.Value(metadataIDKey{}).(string); ok {
-			newPerson.SetMetadataID(metadataID)
+		if documentID, ok := backend.ctx.Value(documentIDKey{}).(string); ok {
+			newPerson.SetDocumentID(documentID)
+			newPerson.SetMetadataID(documentID)
 		}
 
 		id, err := newPerson.OnConflict().Ignore().ID(backend.ctx)
@@ -390,6 +414,10 @@ func (backend *Backend) savePurposes(purposes []sbom.Purpose) error {
 			newPurpose.SetNodeID(nodeID)
 		}
 
+		if documentID, ok := backend.ctx.Value(documentIDKey{}).(string); ok {
+			newPurpose.SetDocumentID(documentID)
+		}
+
 		builders = append(builders, newPurpose)
 	}
 
@@ -414,12 +442,14 @@ func (backend *Backend) saveTools(tools []*sbom.Tool) error {
 
 	for _, t := range tools {
 		newTool := tx.Tool.Create().
+			SetProtoMessage(t).
 			SetName(t.Name).
 			SetVersion(t.Version).
 			SetVendor(t.Vendor)
 
-		if metadataID, ok := backend.ctx.Value(metadataIDKey{}).(string); ok {
-			newTool.SetMetadataID(metadataID)
+		if documentID, ok := backend.ctx.Value(documentIDKey{}).(string); ok {
+			newTool.SetDocumentID(documentID)
+			newTool.SetMetadataID(documentID)
 		}
 
 		builders = append(builders, newTool)
@@ -441,6 +471,7 @@ func (backend *Backend) newNodeCreate(n *sbom.Node) *ent.NodeCreate {
 
 	newNode := tx.Node.Create().
 		SetID(n.Id).
+		SetProtoMessage(n).
 		SetAttribution(n.Attribution).
 		SetBuildDate(n.BuildDate.AsTime()).
 		SetComment(n.Comment).
@@ -463,6 +494,10 @@ func (backend *Backend) newNodeCreate(n *sbom.Node) *ent.NodeCreate {
 
 	if nodeListID, ok := backend.ctx.Value(nodeListIDKey{}).(int); ok {
 		newNode.SetNodeListID(nodeListID)
+	}
+
+	if documentID, ok := backend.ctx.Value(documentIDKey{}).(string); ok {
+		newNode.SetDocumentID(documentID)
 	}
 
 	return newNode

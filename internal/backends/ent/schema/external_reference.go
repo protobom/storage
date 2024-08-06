@@ -17,6 +17,13 @@ type ExternalReference struct {
 	ent.Schema
 }
 
+func (ExternalReference) Mixin() []ent.Mixin {
+	return []ent.Mixin{
+		DocumentMixin{},
+		ProtoMessageMixin{ProtoMessageType: &sbom.ExternalReference{}},
+	}
+}
+
 func (ExternalReference) Fields() []ent.Field {
 	values := []string{}
 	for idx := range len(sbom.ExternalReference_ExternalReferenceType_name) {

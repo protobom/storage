@@ -17,6 +17,12 @@ type IdentifiersEntry struct {
 	ent.Schema
 }
 
+func (IdentifiersEntry) Mixin() []ent.Mixin {
+	return []ent.Mixin{
+		DocumentMixin{},
+	}
+}
+
 func (IdentifiersEntry) Fields() []ent.Field {
 	values := []string{}
 	for idx := range len(sbom.SoftwareIdentifierType_name) {

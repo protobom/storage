@@ -14,6 +14,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/externalreference"
 	"github.com/protobom/storage/internal/backends/ent/hashesentry"
 	"github.com/protobom/storage/internal/backends/ent/node"
@@ -65,6 +66,25 @@ func (hec *HashesEntryCreate) SetHashAlgorithmType(hat hashesentry.HashAlgorithm
 func (hec *HashesEntryCreate) SetHashData(s string) *HashesEntryCreate {
 	hec.mutation.SetHashData(s)
 	return hec
+}
+
+// SetDocumentID sets the "document" edge to the Document entity by ID.
+func (hec *HashesEntryCreate) SetDocumentID(id string) *HashesEntryCreate {
+	hec.mutation.SetDocumentID(id)
+	return hec
+}
+
+// SetNillableDocumentID sets the "document" edge to the Document entity by ID if the given value is not nil.
+func (hec *HashesEntryCreate) SetNillableDocumentID(id *string) *HashesEntryCreate {
+	if id != nil {
+		hec = hec.SetDocumentID(*id)
+	}
+	return hec
+}
+
+// SetDocument sets the "document" edge to the Document entity.
+func (hec *HashesEntryCreate) SetDocument(d *Document) *HashesEntryCreate {
+	return hec.SetDocumentID(d.ID)
 }
 
 // SetExternalReference sets the "external_reference" edge to the ExternalReference entity.
@@ -156,6 +176,23 @@ func (hec *HashesEntryCreate) createSpec() (*HashesEntry, *sqlgraph.CreateSpec) 
 	if value, ok := hec.mutation.HashData(); ok {
 		_spec.SetField(hashesentry.FieldHashData, field.TypeString, value)
 		_node.HashData = value
+	}
+	if nodes := hec.mutation.DocumentIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   hashesentry.DocumentTable,
+			Columns: []string{hashesentry.DocumentColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(document.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.document_id = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := hec.mutation.ExternalReferenceIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

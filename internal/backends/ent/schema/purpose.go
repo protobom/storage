@@ -17,6 +17,12 @@ type Purpose struct {
 	ent.Schema
 }
 
+func (Purpose) Mixin() []ent.Mixin {
+	return []ent.Mixin{
+		DocumentMixin{},
+	}
+}
+
 func (Purpose) Fields() []ent.Field {
 	values := []string{}
 	for idx := range len(sbom.Purpose_name) {

@@ -15,6 +15,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/edgetype"
 	"github.com/protobom/storage/internal/backends/ent/externalreference"
 	"github.com/protobom/storage/internal/backends/ent/hashesentry"
@@ -33,6 +34,7 @@ type NodeQuery struct {
 	order                  []node.OrderOption
 	inters                 []Interceptor
 	predicates             []predicate.Node
+	withDocument           *DocumentQuery
 	withSuppliers          *PersonQuery
 	withOriginators        *PersonQuery
 	withExternalReferences *ExternalReferenceQuery
@@ -43,6 +45,7 @@ type NodeQuery struct {
 	withNodes              *NodeQuery
 	withNodeList           *NodeListQuery
 	withEdgeTypes          *EdgeTypeQuery
+	withFKs                bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -77,6 +80,28 @@ func (nq *NodeQuery) Unique(unique bool) *NodeQuery {
 func (nq *NodeQuery) Order(o ...node.OrderOption) *NodeQuery {
 	nq.order = append(nq.order, o...)
 	return nq
+}
+
+// QueryDocument chains the current query on the "document" edge.
+func (nq *NodeQuery) QueryDocument() *DocumentQuery {
+	query := (&DocumentClient{config: nq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := nq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := nq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(node.Table, node.FieldID, selector),
+			sqlgraph.To(document.Table, document.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, node.DocumentTable, node.DocumentColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(nq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
 }
 
 // QuerySuppliers chains the current query on the "suppliers" edge.
@@ -491,6 +516,7 @@ func (nq *NodeQuery) Clone() *NodeQuery {
 		order:                  append([]node.OrderOption{}, nq.order...),
 		inters:                 append([]Interceptor{}, nq.inters...),
 		predicates:             append([]predicate.Node{}, nq.predicates...),
+		withDocument:           nq.withDocument.Clone(),
 		withSuppliers:          nq.withSuppliers.Clone(),
 		withOriginators:        nq.withOriginators.Clone(),
 		withExternalReferences: nq.withExternalReferences.Clone(),
@@ -505,6 +531,17 @@ func (nq *NodeQuery) Clone() *NodeQuery {
 		sql:  nq.sql.Clone(),
 		path: nq.path,
 	}
+}
+
+// WithDocument tells the query-builder to eager-load the nodes that are connected to
+// the "document" edge. The optional arguments are used to configure the query builder of the edge.
+func (nq *NodeQuery) WithDocument(opts ...func(*DocumentQuery)) *NodeQuery {
+	query := (&DocumentClient{config: nq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	nq.withDocument = query
+	return nq
 }
 
 // WithSuppliers tells the query-builder to eager-load the nodes that are connected to
@@ -623,12 +660,12 @@ func (nq *NodeQuery) WithEdgeTypes(opts ...func(*EdgeTypeQuery)) *NodeQuery {
 // Example:
 //
 //	var v []struct {
-//		NodeListID int `json:"node_list_id,omitempty"`
+//		ProtoMessage *sbom.Node `json:"proto_message,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.Node.Query().
-//		GroupBy(node.FieldNodeListID).
+//		GroupBy(node.FieldProtoMessage).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (nq *NodeQuery) GroupBy(field string, fields ...string) *NodeGroupBy {
@@ -646,11 +683,11 @@ func (nq *NodeQuery) GroupBy(field string, fields ...string) *NodeGroupBy {
 // Example:
 //
 //	var v []struct {
-//		NodeListID int `json:"node_list_id,omitempty"`
+//		ProtoMessage *sbom.Node `json:"proto_message,omitempty"`
 //	}
 //
 //	client.Node.Query().
-//		Select(node.FieldNodeListID).
+//		Select(node.FieldProtoMessage).
 //		Scan(ctx, &v)
 func (nq *NodeQuery) Select(fields ...string) *NodeSelect {
 	nq.ctx.Fields = append(nq.ctx.Fields, fields...)
@@ -694,8 +731,10 @@ func (nq *NodeQuery) prepareQuery(ctx context.Context) error {
 func (nq *NodeQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Node, error) {
 	var (
 		nodes       = []*Node{}
+		withFKs     = nq.withFKs
 		_spec       = nq.querySpec()
-		loadedTypes = [10]bool{
+		loadedTypes = [11]bool{
+			nq.withDocument != nil,
 			nq.withSuppliers != nil,
 			nq.withOriginators != nil,
 			nq.withExternalReferences != nil,
@@ -708,6 +747,12 @@ func (nq *NodeQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Node, e
 			nq.withEdgeTypes != nil,
 		}
 	)
+	if nq.withDocument != nil {
+		withFKs = true
+	}
+	if withFKs {
+		_spec.Node.Columns = append(_spec.Node.Columns, node.ForeignKeys...)
+	}
 	_spec.ScanValues = func(columns []string) ([]any, error) {
 		return (*Node).scanValues(nil, columns)
 	}
@@ -725,6 +770,12 @@ func (nq *NodeQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Node, e
 	}
 	if len(nodes) == 0 {
 		return nodes, nil
+	}
+	if query := nq.withDocument; query != nil {
+		if err := nq.loadDocument(ctx, query, nodes, nil,
+			func(n *Node, e *Document) { n.Edges.Document = e }); err != nil {
+			return nil, err
+		}
 	}
 	if query := nq.withSuppliers; query != nil {
 		if err := nq.loadSuppliers(ctx, query, nodes,
@@ -800,6 +851,38 @@ func (nq *NodeQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Node, e
 	return nodes, nil
 }
 
+func (nq *NodeQuery) loadDocument(ctx context.Context, query *DocumentQuery, nodes []*Node, init func(*Node), assign func(*Node, *Document)) error {
+	ids := make([]string, 0, len(nodes))
+	nodeids := make(map[string][]*Node)
+	for i := range nodes {
+		if nodes[i].document_id == nil {
+			continue
+		}
+		fk := *nodes[i].document_id
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(document.IDIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "document_id" returned %v`, n.ID)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
+	}
+	return nil
+}
 func (nq *NodeQuery) loadSuppliers(ctx context.Context, query *PersonQuery, nodes []*Node, init func(*Node), assign func(*Node, *Person)) error {
 	fks := make([]driver.Value, 0, len(nodes))
 	nodeids := make(map[string]*Node)
@@ -872,6 +955,7 @@ func (nq *NodeQuery) loadExternalReferences(ctx context.Context, query *External
 			init(nodes[i])
 		}
 	}
+	query.withFKs = true
 	if len(query.ctx.Fields) > 0 {
 		query.ctx.AppendFieldOnce(externalreference.FieldNodeID)
 	}
@@ -902,6 +986,7 @@ func (nq *NodeQuery) loadIdentifiers(ctx context.Context, query *IdentifiersEntr
 			init(nodes[i])
 		}
 	}
+	query.withFKs = true
 	if len(query.ctx.Fields) > 0 {
 		query.ctx.AppendFieldOnce(identifiersentry.FieldNodeID)
 	}
@@ -932,6 +1017,7 @@ func (nq *NodeQuery) loadHashes(ctx context.Context, query *HashesEntryQuery, no
 			init(nodes[i])
 		}
 	}
+	query.withFKs = true
 	if len(query.ctx.Fields) > 0 {
 		query.ctx.AppendFieldOnce(hashesentry.FieldNodeID)
 	}
@@ -962,6 +1048,7 @@ func (nq *NodeQuery) loadPrimaryPurpose(ctx context.Context, query *PurposeQuery
 			init(nodes[i])
 		}
 	}
+	query.withFKs = true
 	if len(query.ctx.Fields) > 0 {
 		query.ctx.AppendFieldOnce(purpose.FieldNodeID)
 	}
@@ -1143,6 +1230,7 @@ func (nq *NodeQuery) loadEdgeTypes(ctx context.Context, query *EdgeTypeQuery, no
 			init(nodes[i])
 		}
 	}
+	query.withFKs = true
 	if len(query.ctx.Fields) > 0 {
 		query.ctx.AppendFieldOnce(edgetype.FieldToNodeID)
 	}

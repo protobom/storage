@@ -14,6 +14,8 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/protobom/protobom/pkg/sbom"
+	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/metadata"
 	"github.com/protobom/storage/internal/backends/ent/tool"
 )
@@ -24,6 +26,12 @@ type ToolCreate struct {
 	mutation *ToolMutation
 	hooks    []Hook
 	conflict []sql.ConflictOption
+}
+
+// SetProtoMessage sets the "proto_message" field.
+func (tc *ToolCreate) SetProtoMessage(s *sbom.Tool) *ToolCreate {
+	tc.mutation.SetProtoMessage(s)
+	return tc
 }
 
 // SetMetadataID sets the "metadata_id" field.
@@ -56,6 +64,25 @@ func (tc *ToolCreate) SetVersion(s string) *ToolCreate {
 func (tc *ToolCreate) SetVendor(s string) *ToolCreate {
 	tc.mutation.SetVendor(s)
 	return tc
+}
+
+// SetDocumentID sets the "document" edge to the Document entity by ID.
+func (tc *ToolCreate) SetDocumentID(id string) *ToolCreate {
+	tc.mutation.SetDocumentID(id)
+	return tc
+}
+
+// SetNillableDocumentID sets the "document" edge to the Document entity by ID if the given value is not nil.
+func (tc *ToolCreate) SetNillableDocumentID(id *string) *ToolCreate {
+	if id != nil {
+		tc = tc.SetDocumentID(*id)
+	}
+	return tc
+}
+
+// SetDocument sets the "document" edge to the Document entity.
+func (tc *ToolCreate) SetDocument(d *Document) *ToolCreate {
+	return tc.SetDocumentID(d.ID)
 }
 
 // SetMetadata sets the "metadata" edge to the Metadata entity.
@@ -133,6 +160,10 @@ func (tc *ToolCreate) createSpec() (*Tool, *sqlgraph.CreateSpec) {
 		_spec = sqlgraph.NewCreateSpec(tool.Table, sqlgraph.NewFieldSpec(tool.FieldID, field.TypeInt))
 	)
 	_spec.OnConflict = tc.conflict
+	if value, ok := tc.mutation.ProtoMessage(); ok {
+		_spec.SetField(tool.FieldProtoMessage, field.TypeJSON, value)
+		_node.ProtoMessage = value
+	}
 	if value, ok := tc.mutation.Name(); ok {
 		_spec.SetField(tool.FieldName, field.TypeString, value)
 		_node.Name = value
@@ -144,6 +175,23 @@ func (tc *ToolCreate) createSpec() (*Tool, *sqlgraph.CreateSpec) {
 	if value, ok := tc.mutation.Vendor(); ok {
 		_spec.SetField(tool.FieldVendor, field.TypeString, value)
 		_node.Vendor = value
+	}
+	if nodes := tc.mutation.DocumentIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   tool.DocumentTable,
+			Columns: []string{tool.DocumentColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(document.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.document_id = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := tc.mutation.MetadataIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -169,7 +217,7 @@ func (tc *ToolCreate) createSpec() (*Tool, *sqlgraph.CreateSpec) {
 // of the `INSERT` statement. For example:
 //
 //	client.Tool.Create().
-//		SetMetadataID(v).
+//		SetProtoMessage(v).
 //		OnConflict(
 //			// Update the row with the new values
 //			// the was proposed for insertion.
@@ -178,7 +226,7 @@ func (tc *ToolCreate) createSpec() (*Tool, *sqlgraph.CreateSpec) {
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.ToolUpsert) {
-//			SetMetadataID(v+v).
+//			SetProtoMessage(v+v).
 //		}).
 //		Exec(ctx)
 func (tc *ToolCreate) OnConflict(opts ...sql.ConflictOption) *ToolUpsertOne {
@@ -213,6 +261,24 @@ type (
 		*sql.UpdateSet
 	}
 )
+
+// SetProtoMessage sets the "proto_message" field.
+func (u *ToolUpsert) SetProtoMessage(v *sbom.Tool) *ToolUpsert {
+	u.Set(tool.FieldProtoMessage, v)
+	return u
+}
+
+// UpdateProtoMessage sets the "proto_message" field to the value that was provided on create.
+func (u *ToolUpsert) UpdateProtoMessage() *ToolUpsert {
+	u.SetExcluded(tool.FieldProtoMessage)
+	return u
+}
+
+// ClearProtoMessage clears the value of the "proto_message" field.
+func (u *ToolUpsert) ClearProtoMessage() *ToolUpsert {
+	u.SetNull(tool.FieldProtoMessage)
+	return u
+}
 
 // SetMetadataID sets the "metadata_id" field.
 func (u *ToolUpsert) SetMetadataID(v string) *ToolUpsert {
@@ -306,6 +372,27 @@ func (u *ToolUpsertOne) Update(set func(*ToolUpsert)) *ToolUpsertOne {
 		set(&ToolUpsert{UpdateSet: update})
 	}))
 	return u
+}
+
+// SetProtoMessage sets the "proto_message" field.
+func (u *ToolUpsertOne) SetProtoMessage(v *sbom.Tool) *ToolUpsertOne {
+	return u.Update(func(s *ToolUpsert) {
+		s.SetProtoMessage(v)
+	})
+}
+
+// UpdateProtoMessage sets the "proto_message" field to the value that was provided on create.
+func (u *ToolUpsertOne) UpdateProtoMessage() *ToolUpsertOne {
+	return u.Update(func(s *ToolUpsert) {
+		s.UpdateProtoMessage()
+	})
+}
+
+// ClearProtoMessage clears the value of the "proto_message" field.
+func (u *ToolUpsertOne) ClearProtoMessage() *ToolUpsertOne {
+	return u.Update(func(s *ToolUpsert) {
+		s.ClearProtoMessage()
+	})
 }
 
 // SetMetadataID sets the "metadata_id" field.
@@ -505,7 +592,7 @@ func (tcb *ToolCreateBulk) ExecX(ctx context.Context) {
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.ToolUpsert) {
-//			SetMetadataID(v+v).
+//			SetProtoMessage(v+v).
 //		}).
 //		Exec(ctx)
 func (tcb *ToolCreateBulk) OnConflict(opts ...sql.ConflictOption) *ToolUpsertBulk {
@@ -572,6 +659,27 @@ func (u *ToolUpsertBulk) Update(set func(*ToolUpsert)) *ToolUpsertBulk {
 		set(&ToolUpsert{UpdateSet: update})
 	}))
 	return u
+}
+
+// SetProtoMessage sets the "proto_message" field.
+func (u *ToolUpsertBulk) SetProtoMessage(v *sbom.Tool) *ToolUpsertBulk {
+	return u.Update(func(s *ToolUpsert) {
+		s.SetProtoMessage(v)
+	})
+}
+
+// UpdateProtoMessage sets the "proto_message" field to the value that was provided on create.
+func (u *ToolUpsertBulk) UpdateProtoMessage() *ToolUpsertBulk {
+	return u.Update(func(s *ToolUpsert) {
+		s.UpdateProtoMessage()
+	})
+}
+
+// ClearProtoMessage clears the value of the "proto_message" field.
+func (u *ToolUpsertBulk) ClearProtoMessage() *ToolUpsertBulk {
+	return u.Update(func(s *ToolUpsert) {
+		s.ClearProtoMessage()
+	})
 }
 
 // SetMetadataID sets the "metadata_id" field.

@@ -78,6 +78,16 @@ func Vendor(v string) predicate.Tool {
 	return predicate.Tool(sql.FieldEQ(FieldVendor, v))
 }
 
+// ProtoMessageIsNil applies the IsNil predicate on the "proto_message" field.
+func ProtoMessageIsNil() predicate.Tool {
+	return predicate.Tool(sql.FieldIsNull(FieldProtoMessage))
+}
+
+// ProtoMessageNotNil applies the NotNil predicate on the "proto_message" field.
+func ProtoMessageNotNil() predicate.Tool {
+	return predicate.Tool(sql.FieldNotNull(FieldProtoMessage))
+}
+
 // MetadataIDEQ applies the EQ predicate on the "metadata_id" field.
 func MetadataIDEQ(v string) predicate.Tool {
 	return predicate.Tool(sql.FieldEQ(FieldMetadataID, v))
@@ -346,6 +356,29 @@ func VendorEqualFold(v string) predicate.Tool {
 // VendorContainsFold applies the ContainsFold predicate on the "vendor" field.
 func VendorContainsFold(v string) predicate.Tool {
 	return predicate.Tool(sql.FieldContainsFold(FieldVendor, v))
+}
+
+// HasDocument applies the HasEdge predicate on the "document" edge.
+func HasDocument() predicate.Tool {
+	return predicate.Tool(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, DocumentTable, DocumentColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasDocumentWith applies the HasEdge predicate on the "document" edge with a given conditions (other predicates).
+func HasDocumentWith(preds ...predicate.Document) predicate.Tool {
+	return predicate.Tool(func(s *sql.Selector) {
+		step := newDocumentStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
 }
 
 // HasMetadata applies the HasEdge predicate on the "metadata" edge.

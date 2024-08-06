@@ -78,6 +78,16 @@ func Authority(v string) predicate.ExternalReference {
 	return predicate.ExternalReference(sql.FieldEQ(FieldAuthority, v))
 }
 
+// ProtoMessageIsNil applies the IsNil predicate on the "proto_message" field.
+func ProtoMessageIsNil() predicate.ExternalReference {
+	return predicate.ExternalReference(sql.FieldIsNull(FieldProtoMessage))
+}
+
+// ProtoMessageNotNil applies the NotNil predicate on the "proto_message" field.
+func ProtoMessageNotNil() predicate.ExternalReference {
+	return predicate.ExternalReference(sql.FieldNotNull(FieldProtoMessage))
+}
+
 // NodeIDEQ applies the EQ predicate on the "node_id" field.
 func NodeIDEQ(v string) predicate.ExternalReference {
 	return predicate.ExternalReference(sql.FieldEQ(FieldNodeID, v))
@@ -376,6 +386,29 @@ func TypeIn(vs ...Type) predicate.ExternalReference {
 // TypeNotIn applies the NotIn predicate on the "type" field.
 func TypeNotIn(vs ...Type) predicate.ExternalReference {
 	return predicate.ExternalReference(sql.FieldNotIn(FieldType, vs...))
+}
+
+// HasDocument applies the HasEdge predicate on the "document" edge.
+func HasDocument() predicate.ExternalReference {
+	return predicate.ExternalReference(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, DocumentTable, DocumentColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasDocumentWith applies the HasEdge predicate on the "document" edge with a given conditions (other predicates).
+func HasDocumentWith(preds ...predicate.Document) predicate.ExternalReference {
+	return predicate.ExternalReference(func(s *sql.Selector) {
+		step := newDocumentStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
 }
 
 // HasHashes applies the HasEdge predicate on the "hashes" edge.

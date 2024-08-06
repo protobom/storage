@@ -73,6 +73,16 @@ func Description(v string) predicate.DocumentType {
 	return predicate.DocumentType(sql.FieldEQ(FieldDescription, v))
 }
 
+// ProtoMessageIsNil applies the IsNil predicate on the "proto_message" field.
+func ProtoMessageIsNil() predicate.DocumentType {
+	return predicate.DocumentType(sql.FieldIsNull(FieldProtoMessage))
+}
+
+// ProtoMessageNotNil applies the NotNil predicate on the "proto_message" field.
+func ProtoMessageNotNil() predicate.DocumentType {
+	return predicate.DocumentType(sql.FieldNotNull(FieldProtoMessage))
+}
+
 // MetadataIDEQ applies the EQ predicate on the "metadata_id" field.
 func MetadataIDEQ(v string) predicate.DocumentType {
 	return predicate.DocumentType(sql.FieldEQ(FieldMetadataID, v))
@@ -326,6 +336,29 @@ func DescriptionEqualFold(v string) predicate.DocumentType {
 // DescriptionContainsFold applies the ContainsFold predicate on the "description" field.
 func DescriptionContainsFold(v string) predicate.DocumentType {
 	return predicate.DocumentType(sql.FieldContainsFold(FieldDescription, v))
+}
+
+// HasDocument applies the HasEdge predicate on the "document" edge.
+func HasDocument() predicate.DocumentType {
+	return predicate.DocumentType(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, DocumentTable, DocumentColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasDocumentWith applies the HasEdge predicate on the "document" edge with a given conditions (other predicates).
+func HasDocumentWith(preds ...predicate.Document) predicate.DocumentType {
+	return predicate.DocumentType(func(s *sql.Selector) {
+		step := newDocumentStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
 }
 
 // HasMetadata applies the HasEdge predicate on the "metadata" edge.

@@ -14,6 +14,8 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/protobom/protobom/pkg/sbom"
+	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/metadata"
 	"github.com/protobom/storage/internal/backends/ent/node"
 	"github.com/protobom/storage/internal/backends/ent/person"
@@ -25,6 +27,12 @@ type PersonCreate struct {
 	mutation *PersonMutation
 	hooks    []Hook
 	conflict []sql.ConflictOption
+}
+
+// SetProtoMessage sets the "proto_message" field.
+func (pc *PersonCreate) SetProtoMessage(s *sbom.Person) *PersonCreate {
+	pc.mutation.SetProtoMessage(s)
+	return pc
 }
 
 // SetMetadataID sets the "metadata_id" field.
@@ -83,6 +91,25 @@ func (pc *PersonCreate) SetURL(s string) *PersonCreate {
 func (pc *PersonCreate) SetPhone(s string) *PersonCreate {
 	pc.mutation.SetPhone(s)
 	return pc
+}
+
+// SetDocumentID sets the "document" edge to the Document entity by ID.
+func (pc *PersonCreate) SetDocumentID(id string) *PersonCreate {
+	pc.mutation.SetDocumentID(id)
+	return pc
+}
+
+// SetNillableDocumentID sets the "document" edge to the Document entity by ID if the given value is not nil.
+func (pc *PersonCreate) SetNillableDocumentID(id *string) *PersonCreate {
+	if id != nil {
+		pc = pc.SetDocumentID(*id)
+	}
+	return pc
+}
+
+// SetDocument sets the "document" edge to the Document entity.
+func (pc *PersonCreate) SetDocument(d *Document) *PersonCreate {
+	return pc.SetDocumentID(d.ID)
 }
 
 // SetContactOwnerID sets the "contact_owner" edge to the Person entity by ID.
@@ -205,6 +232,10 @@ func (pc *PersonCreate) createSpec() (*Person, *sqlgraph.CreateSpec) {
 		_spec = sqlgraph.NewCreateSpec(person.Table, sqlgraph.NewFieldSpec(person.FieldID, field.TypeInt))
 	)
 	_spec.OnConflict = pc.conflict
+	if value, ok := pc.mutation.ProtoMessage(); ok {
+		_spec.SetField(person.FieldProtoMessage, field.TypeJSON, value)
+		_node.ProtoMessage = value
+	}
 	if value, ok := pc.mutation.Name(); ok {
 		_spec.SetField(person.FieldName, field.TypeString, value)
 		_node.Name = value
@@ -224,6 +255,23 @@ func (pc *PersonCreate) createSpec() (*Person, *sqlgraph.CreateSpec) {
 	if value, ok := pc.mutation.Phone(); ok {
 		_spec.SetField(person.FieldPhone, field.TypeString, value)
 		_node.Phone = value
+	}
+	if nodes := pc.mutation.DocumentIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   person.DocumentTable,
+			Columns: []string{person.DocumentColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(document.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.document_id = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := pc.mutation.ContactOwnerIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -299,7 +347,7 @@ func (pc *PersonCreate) createSpec() (*Person, *sqlgraph.CreateSpec) {
 // of the `INSERT` statement. For example:
 //
 //	client.Person.Create().
-//		SetMetadataID(v).
+//		SetProtoMessage(v).
 //		OnConflict(
 //			// Update the row with the new values
 //			// the was proposed for insertion.
@@ -308,7 +356,7 @@ func (pc *PersonCreate) createSpec() (*Person, *sqlgraph.CreateSpec) {
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.PersonUpsert) {
-//			SetMetadataID(v+v).
+//			SetProtoMessage(v+v).
 //		}).
 //		Exec(ctx)
 func (pc *PersonCreate) OnConflict(opts ...sql.ConflictOption) *PersonUpsertOne {
@@ -343,6 +391,24 @@ type (
 		*sql.UpdateSet
 	}
 )
+
+// SetProtoMessage sets the "proto_message" field.
+func (u *PersonUpsert) SetProtoMessage(v *sbom.Person) *PersonUpsert {
+	u.Set(person.FieldProtoMessage, v)
+	return u
+}
+
+// UpdateProtoMessage sets the "proto_message" field to the value that was provided on create.
+func (u *PersonUpsert) UpdateProtoMessage() *PersonUpsert {
+	u.SetExcluded(person.FieldProtoMessage)
+	return u
+}
+
+// ClearProtoMessage clears the value of the "proto_message" field.
+func (u *PersonUpsert) ClearProtoMessage() *PersonUpsert {
+	u.SetNull(person.FieldProtoMessage)
+	return u
+}
 
 // SetMetadataID sets the "metadata_id" field.
 func (u *PersonUpsert) SetMetadataID(v string) *PersonUpsert {
@@ -478,6 +544,27 @@ func (u *PersonUpsertOne) Update(set func(*PersonUpsert)) *PersonUpsertOne {
 		set(&PersonUpsert{UpdateSet: update})
 	}))
 	return u
+}
+
+// SetProtoMessage sets the "proto_message" field.
+func (u *PersonUpsertOne) SetProtoMessage(v *sbom.Person) *PersonUpsertOne {
+	return u.Update(func(s *PersonUpsert) {
+		s.SetProtoMessage(v)
+	})
+}
+
+// UpdateProtoMessage sets the "proto_message" field to the value that was provided on create.
+func (u *PersonUpsertOne) UpdateProtoMessage() *PersonUpsertOne {
+	return u.Update(func(s *PersonUpsert) {
+		s.UpdateProtoMessage()
+	})
+}
+
+// ClearProtoMessage clears the value of the "proto_message" field.
+func (u *PersonUpsertOne) ClearProtoMessage() *PersonUpsertOne {
+	return u.Update(func(s *PersonUpsert) {
+		s.ClearProtoMessage()
+	})
 }
 
 // SetMetadataID sets the "metadata_id" field.
@@ -726,7 +813,7 @@ func (pcb *PersonCreateBulk) ExecX(ctx context.Context) {
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.PersonUpsert) {
-//			SetMetadataID(v+v).
+//			SetProtoMessage(v+v).
 //		}).
 //		Exec(ctx)
 func (pcb *PersonCreateBulk) OnConflict(opts ...sql.ConflictOption) *PersonUpsertBulk {
@@ -793,6 +880,27 @@ func (u *PersonUpsertBulk) Update(set func(*PersonUpsert)) *PersonUpsertBulk {
 		set(&PersonUpsert{UpdateSet: update})
 	}))
 	return u
+}
+
+// SetProtoMessage sets the "proto_message" field.
+func (u *PersonUpsertBulk) SetProtoMessage(v *sbom.Person) *PersonUpsertBulk {
+	return u.Update(func(s *PersonUpsert) {
+		s.SetProtoMessage(v)
+	})
+}
+
+// UpdateProtoMessage sets the "proto_message" field to the value that was provided on create.
+func (u *PersonUpsertBulk) UpdateProtoMessage() *PersonUpsertBulk {
+	return u.Update(func(s *PersonUpsert) {
+		s.UpdateProtoMessage()
+	})
+}
+
+// ClearProtoMessage clears the value of the "proto_message" field.
+func (u *PersonUpsertBulk) ClearProtoMessage() *PersonUpsertBulk {
+	return u.Update(func(s *PersonUpsert) {
+		s.ClearProtoMessage()
+	})
 }
 
 // SetMetadataID sets the "metadata_id" field.

@@ -10,10 +10,17 @@ import (
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
+	"github.com/protobom/protobom/pkg/sbom"
 )
 
 type Metadata struct {
 	ent.Schema
+}
+
+func (Metadata) Mixin() []ent.Mixin {
+	return []ent.Mixin{
+		ProtoMessageMixin{ProtoMessageType: &sbom.Metadata{}},
+	}
 }
 
 func (Metadata) Fields() []ent.Field {

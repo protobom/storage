@@ -7,11 +7,13 @@
 package ent
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/protobom/protobom/pkg/sbom"
 	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/metadata"
 	"github.com/protobom/storage/internal/backends/ent/nodelist"
@@ -19,12 +21,15 @@ import (
 
 // Document is the model entity for the Document schema.
 type Document struct {
-	config
+	config `json:"-"`
 	// ID of the ent.
 	ID string `json:"id,omitempty"`
+	// ProtoMessage holds the value of the "proto_message" field.
+	ProtoMessage *sbom.Document `json:"proto_message,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the DocumentQuery when eager-loading is set.
 	Edges        DocumentEdges `json:"edges"`
+	document_id  *int
 	selectValues sql.SelectValues
 }
 
@@ -66,8 +71,12 @@ func (*Document) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case document.FieldProtoMessage:
+			values[i] = new([]byte)
 		case document.FieldID:
 			values[i] = new(sql.NullString)
+		case document.ForeignKeys[0]: // document_id
+			values[i] = new(sql.NullInt64)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -88,6 +97,21 @@ func (d *Document) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value.Valid {
 				d.ID = value.String
+			}
+		case document.FieldProtoMessage:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field proto_message", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &d.ProtoMessage); err != nil {
+					return fmt.Errorf("unmarshal field proto_message: %w", err)
+				}
+			}
+		case document.ForeignKeys[0]:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for edge-field document_id", value)
+			} else if value.Valid {
+				d.document_id = new(int)
+				*d.document_id = int(value.Int64)
 			}
 		default:
 			d.selectValues.Set(columns[i], values[i])
@@ -134,7 +158,9 @@ func (d *Document) Unwrap() *Document {
 func (d *Document) String() string {
 	var builder strings.Builder
 	builder.WriteString("Document(")
-	builder.WriteString(fmt.Sprintf("id=%v", d.ID))
+	builder.WriteString(fmt.Sprintf("id=%v, ", d.ID))
+	builder.WriteString("proto_message=")
+	builder.WriteString(fmt.Sprintf("%v", d.ProtoMessage))
 	builder.WriteByte(')')
 	return builder.String()
 }

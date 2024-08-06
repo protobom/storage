@@ -7,11 +7,14 @@
 package ent
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/protobom/protobom/pkg/sbom"
+	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/externalreference"
 	"github.com/protobom/storage/internal/backends/ent/node"
 )
@@ -21,6 +24,8 @@ type ExternalReference struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID int `json:"id,omitempty"`
+	// ProtoMessage holds the value of the "proto_message" field.
+	ProtoMessage *sbom.ExternalReference `json:"proto_message,omitempty"`
 	// NodeID holds the value of the "node_id" field.
 	NodeID string `json:"node_id,omitempty"`
 	// URL holds the value of the "url" field.
@@ -34,24 +39,38 @@ type ExternalReference struct {
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the ExternalReferenceQuery when eager-loading is set.
 	Edges        ExternalReferenceEdges `json:"edges"`
+	document_id  *string
 	selectValues sql.SelectValues
 }
 
 // ExternalReferenceEdges holds the relations/edges for other nodes in the graph.
 type ExternalReferenceEdges struct {
+	// Document holds the value of the document edge.
+	Document *Document `json:"document,omitempty"`
 	// Hashes holds the value of the hashes edge.
 	Hashes []*HashesEntry `json:"hashes,omitempty"`
 	// Node holds the value of the node edge.
 	Node *Node `json:"node,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [3]bool
+}
+
+// DocumentOrErr returns the Document value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e ExternalReferenceEdges) DocumentOrErr() (*Document, error) {
+	if e.Document != nil {
+		return e.Document, nil
+	} else if e.loadedTypes[0] {
+		return nil, &NotFoundError{label: document.Label}
+	}
+	return nil, &NotLoadedError{edge: "document"}
 }
 
 // HashesOrErr returns the Hashes value or an error if the edge
 // was not loaded in eager-loading.
 func (e ExternalReferenceEdges) HashesOrErr() ([]*HashesEntry, error) {
-	if e.loadedTypes[0] {
+	if e.loadedTypes[1] {
 		return e.Hashes, nil
 	}
 	return nil, &NotLoadedError{edge: "hashes"}
@@ -62,7 +81,7 @@ func (e ExternalReferenceEdges) HashesOrErr() ([]*HashesEntry, error) {
 func (e ExternalReferenceEdges) NodeOrErr() (*Node, error) {
 	if e.Node != nil {
 		return e.Node, nil
-	} else if e.loadedTypes[1] {
+	} else if e.loadedTypes[2] {
 		return nil, &NotFoundError{label: node.Label}
 	}
 	return nil, &NotLoadedError{edge: "node"}
@@ -73,9 +92,13 @@ func (*ExternalReference) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case externalreference.FieldProtoMessage:
+			values[i] = new([]byte)
 		case externalreference.FieldID:
 			values[i] = new(sql.NullInt64)
 		case externalreference.FieldNodeID, externalreference.FieldURL, externalreference.FieldComment, externalreference.FieldAuthority, externalreference.FieldType:
+			values[i] = new(sql.NullString)
+		case externalreference.ForeignKeys[0]: // document_id
 			values[i] = new(sql.NullString)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -98,6 +121,14 @@ func (er *ExternalReference) assignValues(columns []string, values []any) error 
 				return fmt.Errorf("unexpected type %T for field id", value)
 			}
 			er.ID = int(value.Int64)
+		case externalreference.FieldProtoMessage:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field proto_message", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &er.ProtoMessage); err != nil {
+					return fmt.Errorf("unmarshal field proto_message: %w", err)
+				}
+			}
 		case externalreference.FieldNodeID:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field node_id", values[i])
@@ -128,6 +159,13 @@ func (er *ExternalReference) assignValues(columns []string, values []any) error 
 			} else if value.Valid {
 				er.Type = externalreference.Type(value.String)
 			}
+		case externalreference.ForeignKeys[0]:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field document_id", values[i])
+			} else if value.Valid {
+				er.document_id = new(string)
+				*er.document_id = value.String
+			}
 		default:
 			er.selectValues.Set(columns[i], values[i])
 		}
@@ -139,6 +177,11 @@ func (er *ExternalReference) assignValues(columns []string, values []any) error 
 // This includes values selected through modifiers, order, etc.
 func (er *ExternalReference) Value(name string) (ent.Value, error) {
 	return er.selectValues.Get(name)
+}
+
+// QueryDocument queries the "document" edge of the ExternalReference entity.
+func (er *ExternalReference) QueryDocument() *DocumentQuery {
+	return NewExternalReferenceClient(er.config).QueryDocument(er)
 }
 
 // QueryHashes queries the "hashes" edge of the ExternalReference entity.
@@ -174,6 +217,9 @@ func (er *ExternalReference) String() string {
 	var builder strings.Builder
 	builder.WriteString("ExternalReference(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", er.ID))
+	builder.WriteString("proto_message=")
+	builder.WriteString(fmt.Sprintf("%v", er.ProtoMessage))
+	builder.WriteString(", ")
 	builder.WriteString("node_id=")
 	builder.WriteString(er.NodeID)
 	builder.WriteString(", ")

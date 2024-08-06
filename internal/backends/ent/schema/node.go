@@ -10,10 +10,18 @@ import (
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
+	"github.com/protobom/protobom/pkg/sbom"
 )
 
 type Node struct {
 	ent.Schema
+}
+
+func (Node) Mixin() []ent.Mixin {
+	return []ent.Mixin{
+		DocumentMixin{},
+		ProtoMessageMixin{ProtoMessageType: &sbom.Node{}},
+	}
 }
 
 func (Node) Fields() []ent.Field {

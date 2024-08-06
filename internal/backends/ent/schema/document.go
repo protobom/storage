@@ -9,13 +9,20 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
+	"github.com/protobom/protobom/pkg/sbom"
 )
 
 type Document struct {
 	ent.Schema
 }
 
-func (Document) Fields() []ent.Field {
+func (Document) Mixin() []ent.Mixin {
+	return []ent.Mixin{
+		ProtoMessageMixin{ProtoMessageType: &sbom.Document{}},
+	}
+}
+
+func (d Document) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("id").Unique().Immutable(),
 	}
@@ -27,7 +34,8 @@ func (Document) Edges() []ent.Edge {
 			Unique().
 			Immutable().
 			StorageKey(edge.Column("id")),
-		edge.To("node_list", NodeList.Type).
+		edge.From("node_list", NodeList.Type).
+			Ref("document").
 			Unique().
 			Immutable(),
 	}

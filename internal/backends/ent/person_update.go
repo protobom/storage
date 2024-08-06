@@ -14,6 +14,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/protobom/protobom/pkg/sbom"
 	"github.com/protobom/storage/internal/backends/ent/metadata"
 	"github.com/protobom/storage/internal/backends/ent/node"
 	"github.com/protobom/storage/internal/backends/ent/person"
@@ -30,6 +31,18 @@ type PersonUpdate struct {
 // Where appends a list predicates to the PersonUpdate builder.
 func (pu *PersonUpdate) Where(ps ...predicate.Person) *PersonUpdate {
 	pu.mutation.Where(ps...)
+	return pu
+}
+
+// SetProtoMessage sets the "proto_message" field.
+func (pu *PersonUpdate) SetProtoMessage(s *sbom.Person) *PersonUpdate {
+	pu.mutation.SetProtoMessage(s)
+	return pu
+}
+
+// ClearProtoMessage clears the value of the "proto_message" field.
+func (pu *PersonUpdate) ClearProtoMessage() *PersonUpdate {
+	pu.mutation.ClearProtoMessage()
 	return pu
 }
 
@@ -267,6 +280,12 @@ func (pu *PersonUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
+	if value, ok := pu.mutation.ProtoMessage(); ok {
+		_spec.SetField(person.FieldProtoMessage, field.TypeJSON, value)
+	}
+	if pu.mutation.ProtoMessageCleared() {
+		_spec.ClearField(person.FieldProtoMessage, field.TypeJSON)
+	}
 	if value, ok := pu.mutation.Name(); ok {
 		_spec.SetField(person.FieldName, field.TypeString, value)
 	}
@@ -432,6 +451,18 @@ type PersonUpdateOne struct {
 	fields   []string
 	hooks    []Hook
 	mutation *PersonMutation
+}
+
+// SetProtoMessage sets the "proto_message" field.
+func (puo *PersonUpdateOne) SetProtoMessage(s *sbom.Person) *PersonUpdateOne {
+	puo.mutation.SetProtoMessage(s)
+	return puo
+}
+
+// ClearProtoMessage clears the value of the "proto_message" field.
+func (puo *PersonUpdateOne) ClearProtoMessage() *PersonUpdateOne {
+	puo.mutation.ClearProtoMessage()
+	return puo
 }
 
 // SetMetadataID sets the "metadata_id" field.
@@ -697,6 +728,12 @@ func (puo *PersonUpdateOne) sqlSave(ctx context.Context) (_node *Person, err err
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := puo.mutation.ProtoMessage(); ok {
+		_spec.SetField(person.FieldProtoMessage, field.TypeJSON, value)
+	}
+	if puo.mutation.ProtoMessageCleared() {
+		_spec.ClearField(person.FieldProtoMessage, field.TypeJSON)
 	}
 	if value, ok := puo.mutation.Name(); ok {
 		_spec.SetField(person.FieldName, field.TypeString, value)

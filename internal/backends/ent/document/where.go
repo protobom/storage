@@ -68,6 +68,16 @@ func IDContainsFold(id string) predicate.Document {
 	return predicate.Document(sql.FieldContainsFold(FieldID, id))
 }
 
+// ProtoMessageIsNil applies the IsNil predicate on the "proto_message" field.
+func ProtoMessageIsNil() predicate.Document {
+	return predicate.Document(sql.FieldIsNull(FieldProtoMessage))
+}
+
+// ProtoMessageNotNil applies the NotNil predicate on the "proto_message" field.
+func ProtoMessageNotNil() predicate.Document {
+	return predicate.Document(sql.FieldNotNull(FieldProtoMessage))
+}
+
 // HasMetadata applies the HasEdge predicate on the "metadata" edge.
 func HasMetadata() predicate.Document {
 	return predicate.Document(func(s *sql.Selector) {
@@ -96,7 +106,7 @@ func HasNodeList() predicate.Document {
 	return predicate.Document(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, false, NodeListTable, NodeListColumn),
+			sqlgraph.Edge(sqlgraph.O2O, true, NodeListTable, NodeListColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})

@@ -16,6 +16,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/dialect/sql/sqljson"
 	"entgo.io/ent/schema/field"
+	"github.com/protobom/protobom/pkg/sbom"
 	"github.com/protobom/storage/internal/backends/ent/edgetype"
 	"github.com/protobom/storage/internal/backends/ent/externalreference"
 	"github.com/protobom/storage/internal/backends/ent/hashesentry"
@@ -37,6 +38,18 @@ type NodeUpdate struct {
 // Where appends a list predicates to the NodeUpdate builder.
 func (nu *NodeUpdate) Where(ps ...predicate.Node) *NodeUpdate {
 	nu.mutation.Where(ps...)
+	return nu
+}
+
+// SetProtoMessage sets the "proto_message" field.
+func (nu *NodeUpdate) SetProtoMessage(s *sbom.Node) *NodeUpdate {
+	nu.mutation.SetProtoMessage(s)
+	return nu
+}
+
+// ClearProtoMessage clears the value of the "proto_message" field.
+func (nu *NodeUpdate) ClearProtoMessage() *NodeUpdate {
+	nu.mutation.ClearProtoMessage()
 	return nu
 }
 
@@ -709,6 +722,12 @@ func (nu *NodeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
+	if value, ok := nu.mutation.ProtoMessage(); ok {
+		_spec.SetField(node.FieldProtoMessage, field.TypeJSON, value)
+	}
+	if nu.mutation.ProtoMessageCleared() {
+		_spec.ClearField(node.FieldProtoMessage, field.TypeJSON)
+	}
 	if value, ok := nu.mutation.GetType(); ok {
 		_spec.SetField(node.FieldType, field.TypeEnum, value)
 	}
@@ -1233,6 +1252,18 @@ type NodeUpdateOne struct {
 	fields   []string
 	hooks    []Hook
 	mutation *NodeMutation
+}
+
+// SetProtoMessage sets the "proto_message" field.
+func (nuo *NodeUpdateOne) SetProtoMessage(s *sbom.Node) *NodeUpdateOne {
+	nuo.mutation.SetProtoMessage(s)
+	return nuo
+}
+
+// ClearProtoMessage clears the value of the "proto_message" field.
+func (nuo *NodeUpdateOne) ClearProtoMessage() *NodeUpdateOne {
+	nuo.mutation.ClearProtoMessage()
+	return nuo
 }
 
 // SetNodeListID sets the "node_list_id" field.
@@ -1933,6 +1964,12 @@ func (nuo *NodeUpdateOne) sqlSave(ctx context.Context) (_node *Node, err error) 
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := nuo.mutation.ProtoMessage(); ok {
+		_spec.SetField(node.FieldProtoMessage, field.TypeJSON, value)
+	}
+	if nuo.mutation.ProtoMessageCleared() {
+		_spec.ClearField(node.FieldProtoMessage, field.TypeJSON)
 	}
 	if value, ok := nuo.mutation.GetType(); ok {
 		_spec.SetField(node.FieldType, field.TypeEnum, value)

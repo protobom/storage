@@ -17,6 +17,13 @@ type DocumentType struct {
 	ent.Schema
 }
 
+func (DocumentType) Mixin() []ent.Mixin {
+	return []ent.Mixin{
+		DocumentMixin{},
+		ProtoMessageMixin{ProtoMessageType: &sbom.DocumentType{}},
+	}
+}
+
 func (DocumentType) Fields() []ent.Field {
 	values := []string{}
 	for idx := range len(sbom.DocumentType_SBOMType_name) {

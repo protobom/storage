@@ -14,6 +14,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/node"
 	"github.com/protobom/storage/internal/backends/ent/purpose"
 )
@@ -44,6 +45,25 @@ func (pc *PurposeCreate) SetNillableNodeID(s *string) *PurposeCreate {
 func (pc *PurposeCreate) SetPrimaryPurpose(pp purpose.PrimaryPurpose) *PurposeCreate {
 	pc.mutation.SetPrimaryPurpose(pp)
 	return pc
+}
+
+// SetDocumentID sets the "document" edge to the Document entity by ID.
+func (pc *PurposeCreate) SetDocumentID(id string) *PurposeCreate {
+	pc.mutation.SetDocumentID(id)
+	return pc
+}
+
+// SetNillableDocumentID sets the "document" edge to the Document entity by ID if the given value is not nil.
+func (pc *PurposeCreate) SetNillableDocumentID(id *string) *PurposeCreate {
+	if id != nil {
+		pc = pc.SetDocumentID(*id)
+	}
+	return pc
+}
+
+// SetDocument sets the "document" edge to the Document entity.
+func (pc *PurposeCreate) SetDocument(d *Document) *PurposeCreate {
+	return pc.SetDocumentID(d.ID)
 }
 
 // SetNode sets the "node" edge to the Node entity.
@@ -123,6 +143,23 @@ func (pc *PurposeCreate) createSpec() (*Purpose, *sqlgraph.CreateSpec) {
 	if value, ok := pc.mutation.PrimaryPurpose(); ok {
 		_spec.SetField(purpose.FieldPrimaryPurpose, field.TypeEnum, value)
 		_node.PrimaryPurpose = value
+	}
+	if nodes := pc.mutation.DocumentIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   purpose.DocumentTable,
+			Columns: []string{purpose.DocumentColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(document.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.document_id = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := pc.mutation.NodeIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

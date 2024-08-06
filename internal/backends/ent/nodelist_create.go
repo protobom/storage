@@ -14,6 +14,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/protobom/protobom/pkg/sbom"
 	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/node"
 	"github.com/protobom/storage/internal/backends/ent/nodelist"
@@ -27,9 +28,9 @@ type NodeListCreate struct {
 	conflict []sql.ConflictOption
 }
 
-// SetDocumentID sets the "document_id" field.
-func (nlc *NodeListCreate) SetDocumentID(s string) *NodeListCreate {
-	nlc.mutation.SetDocumentID(s)
+// SetProtoMessage sets the "proto_message" field.
+func (nlc *NodeListCreate) SetProtoMessage(sl *sbom.NodeList) *NodeListCreate {
+	nlc.mutation.SetProtoMessage(sl)
 	return nlc
 }
 
@@ -37,6 +38,25 @@ func (nlc *NodeListCreate) SetDocumentID(s string) *NodeListCreate {
 func (nlc *NodeListCreate) SetRootElements(s []string) *NodeListCreate {
 	nlc.mutation.SetRootElements(s)
 	return nlc
+}
+
+// SetDocumentID sets the "document" edge to the Document entity by ID.
+func (nlc *NodeListCreate) SetDocumentID(id string) *NodeListCreate {
+	nlc.mutation.SetDocumentID(id)
+	return nlc
+}
+
+// SetNillableDocumentID sets the "document" edge to the Document entity by ID if the given value is not nil.
+func (nlc *NodeListCreate) SetNillableDocumentID(id *string) *NodeListCreate {
+	if id != nil {
+		nlc = nlc.SetDocumentID(*id)
+	}
+	return nlc
+}
+
+// SetDocument sets the "document" edge to the Document entity.
+func (nlc *NodeListCreate) SetDocument(d *Document) *NodeListCreate {
+	return nlc.SetDocumentID(d.ID)
 }
 
 // AddNodeIDs adds the "nodes" edge to the Node entity by IDs.
@@ -52,11 +72,6 @@ func (nlc *NodeListCreate) AddNodes(n ...*Node) *NodeListCreate {
 		ids[i] = n[i].ID
 	}
 	return nlc.AddNodeIDs(ids...)
-}
-
-// SetDocument sets the "document" edge to the Document entity.
-func (nlc *NodeListCreate) SetDocument(d *Document) *NodeListCreate {
-	return nlc.SetDocumentID(d.ID)
 }
 
 // Mutation returns the NodeListMutation object of the builder.
@@ -93,14 +108,8 @@ func (nlc *NodeListCreate) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (nlc *NodeListCreate) check() error {
-	if _, ok := nlc.mutation.DocumentID(); !ok {
-		return &ValidationError{Name: "document_id", err: errors.New(`ent: missing required field "NodeList.document_id"`)}
-	}
 	if _, ok := nlc.mutation.RootElements(); !ok {
 		return &ValidationError{Name: "root_elements", err: errors.New(`ent: missing required field "NodeList.root_elements"`)}
-	}
-	if _, ok := nlc.mutation.DocumentID(); !ok {
-		return &ValidationError{Name: "document", err: errors.New(`ent: missing required edge "NodeList.document"`)}
 	}
 	return nil
 }
@@ -129,9 +138,29 @@ func (nlc *NodeListCreate) createSpec() (*NodeList, *sqlgraph.CreateSpec) {
 		_spec = sqlgraph.NewCreateSpec(nodelist.Table, sqlgraph.NewFieldSpec(nodelist.FieldID, field.TypeInt))
 	)
 	_spec.OnConflict = nlc.conflict
+	if value, ok := nlc.mutation.ProtoMessage(); ok {
+		_spec.SetField(nodelist.FieldProtoMessage, field.TypeJSON, value)
+		_node.ProtoMessage = value
+	}
 	if value, ok := nlc.mutation.RootElements(); ok {
 		_spec.SetField(nodelist.FieldRootElements, field.TypeJSON, value)
 		_node.RootElements = value
+	}
+	if nodes := nlc.mutation.DocumentIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   nodelist.DocumentTable,
+			Columns: []string{nodelist.DocumentColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(document.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := nlc.mutation.NodesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -149,23 +178,6 @@ func (nlc *NodeListCreate) createSpec() (*NodeList, *sqlgraph.CreateSpec) {
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := nlc.mutation.DocumentIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2O,
-			Inverse: true,
-			Table:   nodelist.DocumentTable,
-			Columns: []string{nodelist.DocumentColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(document.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_node.DocumentID = nodes[0]
-		_spec.Edges = append(_spec.Edges, edge)
-	}
 	return _node, _spec
 }
 
@@ -173,7 +185,7 @@ func (nlc *NodeListCreate) createSpec() (*NodeList, *sqlgraph.CreateSpec) {
 // of the `INSERT` statement. For example:
 //
 //	client.NodeList.Create().
-//		SetDocumentID(v).
+//		SetProtoMessage(v).
 //		OnConflict(
 //			// Update the row with the new values
 //			// the was proposed for insertion.
@@ -182,7 +194,7 @@ func (nlc *NodeListCreate) createSpec() (*NodeList, *sqlgraph.CreateSpec) {
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.NodeListUpsert) {
-//			SetDocumentID(v+v).
+//			SetProtoMessage(v+v).
 //		}).
 //		Exec(ctx)
 func (nlc *NodeListCreate) OnConflict(opts ...sql.ConflictOption) *NodeListUpsertOne {
@@ -218,6 +230,24 @@ type (
 	}
 )
 
+// SetProtoMessage sets the "proto_message" field.
+func (u *NodeListUpsert) SetProtoMessage(v *sbom.NodeList) *NodeListUpsert {
+	u.Set(nodelist.FieldProtoMessage, v)
+	return u
+}
+
+// UpdateProtoMessage sets the "proto_message" field to the value that was provided on create.
+func (u *NodeListUpsert) UpdateProtoMessage() *NodeListUpsert {
+	u.SetExcluded(nodelist.FieldProtoMessage)
+	return u
+}
+
+// ClearProtoMessage clears the value of the "proto_message" field.
+func (u *NodeListUpsert) ClearProtoMessage() *NodeListUpsert {
+	u.SetNull(nodelist.FieldProtoMessage)
+	return u
+}
+
 // SetRootElements sets the "root_elements" field.
 func (u *NodeListUpsert) SetRootElements(v []string) *NodeListUpsert {
 	u.Set(nodelist.FieldRootElements, v)
@@ -240,11 +270,6 @@ func (u *NodeListUpsert) UpdateRootElements() *NodeListUpsert {
 //		Exec(ctx)
 func (u *NodeListUpsertOne) UpdateNewValues() *NodeListUpsertOne {
 	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
-	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
-		if _, exists := u.create.mutation.DocumentID(); exists {
-			s.SetIgnore(nodelist.FieldDocumentID)
-		}
-	}))
 	return u
 }
 
@@ -273,6 +298,27 @@ func (u *NodeListUpsertOne) Update(set func(*NodeListUpsert)) *NodeListUpsertOne
 		set(&NodeListUpsert{UpdateSet: update})
 	}))
 	return u
+}
+
+// SetProtoMessage sets the "proto_message" field.
+func (u *NodeListUpsertOne) SetProtoMessage(v *sbom.NodeList) *NodeListUpsertOne {
+	return u.Update(func(s *NodeListUpsert) {
+		s.SetProtoMessage(v)
+	})
+}
+
+// UpdateProtoMessage sets the "proto_message" field to the value that was provided on create.
+func (u *NodeListUpsertOne) UpdateProtoMessage() *NodeListUpsertOne {
+	return u.Update(func(s *NodeListUpsert) {
+		s.UpdateProtoMessage()
+	})
+}
+
+// ClearProtoMessage clears the value of the "proto_message" field.
+func (u *NodeListUpsertOne) ClearProtoMessage() *NodeListUpsertOne {
+	return u.Update(func(s *NodeListUpsert) {
+		s.ClearProtoMessage()
+	})
 }
 
 // SetRootElements sets the "root_elements" field.
@@ -423,7 +469,7 @@ func (nlcb *NodeListCreateBulk) ExecX(ctx context.Context) {
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.NodeListUpsert) {
-//			SetDocumentID(v+v).
+//			SetProtoMessage(v+v).
 //		}).
 //		Exec(ctx)
 func (nlcb *NodeListCreateBulk) OnConflict(opts ...sql.ConflictOption) *NodeListUpsertBulk {
@@ -462,13 +508,6 @@ type NodeListUpsertBulk struct {
 //		Exec(ctx)
 func (u *NodeListUpsertBulk) UpdateNewValues() *NodeListUpsertBulk {
 	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
-	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
-		for _, b := range u.create.builders {
-			if _, exists := b.mutation.DocumentID(); exists {
-				s.SetIgnore(nodelist.FieldDocumentID)
-			}
-		}
-	}))
 	return u
 }
 
@@ -497,6 +536,27 @@ func (u *NodeListUpsertBulk) Update(set func(*NodeListUpsert)) *NodeListUpsertBu
 		set(&NodeListUpsert{UpdateSet: update})
 	}))
 	return u
+}
+
+// SetProtoMessage sets the "proto_message" field.
+func (u *NodeListUpsertBulk) SetProtoMessage(v *sbom.NodeList) *NodeListUpsertBulk {
+	return u.Update(func(s *NodeListUpsert) {
+		s.SetProtoMessage(v)
+	})
+}
+
+// UpdateProtoMessage sets the "proto_message" field to the value that was provided on create.
+func (u *NodeListUpsertBulk) UpdateProtoMessage() *NodeListUpsertBulk {
+	return u.Update(func(s *NodeListUpsert) {
+		s.UpdateProtoMessage()
+	})
+}
+
+// ClearProtoMessage clears the value of the "proto_message" field.
+func (u *NodeListUpsertBulk) ClearProtoMessage() *NodeListUpsertBulk {
+	return u.Update(func(s *NodeListUpsert) {
+		s.ClearProtoMessage()
+	})
 }
 
 // SetRootElements sets the "root_elements" field.

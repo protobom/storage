@@ -17,6 +17,12 @@ type HashesEntry struct {
 	ent.Schema
 }
 
+func (HashesEntry) Mixin() []ent.Mixin {
+	return []ent.Mixin{
+		DocumentMixin{},
+	}
+}
+
 func (HashesEntry) Fields() []ent.Field {
 	values := []string{}
 	for idx := range len(sbom.HashAlgorithm_name) {

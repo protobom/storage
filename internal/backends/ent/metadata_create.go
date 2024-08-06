@@ -16,6 +16,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/protobom/protobom/pkg/sbom"
 	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/documenttype"
 	"github.com/protobom/storage/internal/backends/ent/metadata"
@@ -29,6 +30,12 @@ type MetadataCreate struct {
 	mutation *MetadataMutation
 	hooks    []Hook
 	conflict []sql.ConflictOption
+}
+
+// SetProtoMessage sets the "proto_message" field.
+func (mc *MetadataCreate) SetProtoMessage(s *sbom.Metadata) *MetadataCreate {
+	mc.mutation.SetProtoMessage(s)
+	return mc
 }
 
 // SetVersion sets the "version" field.
@@ -207,6 +214,10 @@ func (mc *MetadataCreate) createSpec() (*Metadata, *sqlgraph.CreateSpec) {
 		_node.ID = id
 		_spec.ID.Value = id
 	}
+	if value, ok := mc.mutation.ProtoMessage(); ok {
+		_spec.SetField(metadata.FieldProtoMessage, field.TypeJSON, value)
+		_node.ProtoMessage = value
+	}
 	if value, ok := mc.mutation.Version(); ok {
 		_spec.SetField(metadata.FieldVersion, field.TypeString, value)
 		_node.Version = value
@@ -295,7 +306,7 @@ func (mc *MetadataCreate) createSpec() (*Metadata, *sqlgraph.CreateSpec) {
 // of the `INSERT` statement. For example:
 //
 //	client.Metadata.Create().
-//		SetVersion(v).
+//		SetProtoMessage(v).
 //		OnConflict(
 //			// Update the row with the new values
 //			// the was proposed for insertion.
@@ -304,7 +315,7 @@ func (mc *MetadataCreate) createSpec() (*Metadata, *sqlgraph.CreateSpec) {
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.MetadataUpsert) {
-//			SetVersion(v+v).
+//			SetProtoMessage(v+v).
 //		}).
 //		Exec(ctx)
 func (mc *MetadataCreate) OnConflict(opts ...sql.ConflictOption) *MetadataUpsertOne {
@@ -339,6 +350,24 @@ type (
 		*sql.UpdateSet
 	}
 )
+
+// SetProtoMessage sets the "proto_message" field.
+func (u *MetadataUpsert) SetProtoMessage(v *sbom.Metadata) *MetadataUpsert {
+	u.Set(metadata.FieldProtoMessage, v)
+	return u
+}
+
+// UpdateProtoMessage sets the "proto_message" field to the value that was provided on create.
+func (u *MetadataUpsert) UpdateProtoMessage() *MetadataUpsert {
+	u.SetExcluded(metadata.FieldProtoMessage)
+	return u
+}
+
+// ClearProtoMessage clears the value of the "proto_message" field.
+func (u *MetadataUpsert) ClearProtoMessage() *MetadataUpsert {
+	u.SetNull(metadata.FieldProtoMessage)
+	return u
+}
 
 // SetVersion sets the "version" field.
 func (u *MetadataUpsert) SetVersion(v string) *MetadataUpsert {
@@ -434,6 +463,27 @@ func (u *MetadataUpsertOne) Update(set func(*MetadataUpsert)) *MetadataUpsertOne
 		set(&MetadataUpsert{UpdateSet: update})
 	}))
 	return u
+}
+
+// SetProtoMessage sets the "proto_message" field.
+func (u *MetadataUpsertOne) SetProtoMessage(v *sbom.Metadata) *MetadataUpsertOne {
+	return u.Update(func(s *MetadataUpsert) {
+		s.SetProtoMessage(v)
+	})
+}
+
+// UpdateProtoMessage sets the "proto_message" field to the value that was provided on create.
+func (u *MetadataUpsertOne) UpdateProtoMessage() *MetadataUpsertOne {
+	return u.Update(func(s *MetadataUpsert) {
+		s.UpdateProtoMessage()
+	})
+}
+
+// ClearProtoMessage clears the value of the "proto_message" field.
+func (u *MetadataUpsertOne) ClearProtoMessage() *MetadataUpsertOne {
+	return u.Update(func(s *MetadataUpsert) {
+		s.ClearProtoMessage()
+	})
 }
 
 // SetVersion sets the "version" field.
@@ -627,7 +677,7 @@ func (mcb *MetadataCreateBulk) ExecX(ctx context.Context) {
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.MetadataUpsert) {
-//			SetVersion(v+v).
+//			SetProtoMessage(v+v).
 //		}).
 //		Exec(ctx)
 func (mcb *MetadataCreateBulk) OnConflict(opts ...sql.ConflictOption) *MetadataUpsertBulk {
@@ -704,6 +754,27 @@ func (u *MetadataUpsertBulk) Update(set func(*MetadataUpsert)) *MetadataUpsertBu
 		set(&MetadataUpsert{UpdateSet: update})
 	}))
 	return u
+}
+
+// SetProtoMessage sets the "proto_message" field.
+func (u *MetadataUpsertBulk) SetProtoMessage(v *sbom.Metadata) *MetadataUpsertBulk {
+	return u.Update(func(s *MetadataUpsert) {
+		s.SetProtoMessage(v)
+	})
+}
+
+// UpdateProtoMessage sets the "proto_message" field to the value that was provided on create.
+func (u *MetadataUpsertBulk) UpdateProtoMessage() *MetadataUpsertBulk {
+	return u.Update(func(s *MetadataUpsert) {
+		s.UpdateProtoMessage()
+	})
+}
+
+// ClearProtoMessage clears the value of the "proto_message" field.
+func (u *MetadataUpsertBulk) ClearProtoMessage() *MetadataUpsertBulk {
+	return u.Update(func(s *MetadataUpsert) {
+		s.ClearProtoMessage()
+	})
 }
 
 // SetVersion sets the "version" field.

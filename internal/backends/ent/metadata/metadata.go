@@ -17,6 +17,8 @@ const (
 	Label = "metadata"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
+	// FieldProtoMessage holds the string denoting the proto_message field in the database.
+	FieldProtoMessage = "proto_message"
 	// FieldVersion holds the string denoting the version field in the database.
 	FieldVersion = "version"
 	// FieldName holds the string denoting the name field in the database.
@@ -68,6 +70,7 @@ const (
 // Columns holds all SQL columns for metadata fields.
 var Columns = []string{
 	FieldID,
+	FieldProtoMessage,
 	FieldVersion,
 	FieldName,
 	FieldDate,

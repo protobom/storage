@@ -14,6 +14,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/edgetype"
 	"github.com/protobom/storage/internal/backends/ent/node"
 	"github.com/protobom/storage/internal/backends/ent/predicate"
@@ -22,12 +23,14 @@ import (
 // EdgeTypeQuery is the builder for querying EdgeType entities.
 type EdgeTypeQuery struct {
 	config
-	ctx        *QueryContext
-	order      []edgetype.OrderOption
-	inters     []Interceptor
-	predicates []predicate.EdgeType
-	withFrom   *NodeQuery
-	withTo     *NodeQuery
+	ctx          *QueryContext
+	order        []edgetype.OrderOption
+	inters       []Interceptor
+	predicates   []predicate.EdgeType
+	withDocument *DocumentQuery
+	withFrom     *NodeQuery
+	withTo       *NodeQuery
+	withFKs      bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -62,6 +65,28 @@ func (etq *EdgeTypeQuery) Unique(unique bool) *EdgeTypeQuery {
 func (etq *EdgeTypeQuery) Order(o ...edgetype.OrderOption) *EdgeTypeQuery {
 	etq.order = append(etq.order, o...)
 	return etq
+}
+
+// QueryDocument chains the current query on the "document" edge.
+func (etq *EdgeTypeQuery) QueryDocument() *DocumentQuery {
+	query := (&DocumentClient{config: etq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := etq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := etq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(edgetype.Table, edgetype.FieldID, selector),
+			sqlgraph.To(document.Table, document.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, edgetype.DocumentTable, edgetype.DocumentColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(etq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
 }
 
 // QueryFrom chains the current query on the "from" edge.
@@ -295,17 +320,29 @@ func (etq *EdgeTypeQuery) Clone() *EdgeTypeQuery {
 		return nil
 	}
 	return &EdgeTypeQuery{
-		config:     etq.config,
-		ctx:        etq.ctx.Clone(),
-		order:      append([]edgetype.OrderOption{}, etq.order...),
-		inters:     append([]Interceptor{}, etq.inters...),
-		predicates: append([]predicate.EdgeType{}, etq.predicates...),
-		withFrom:   etq.withFrom.Clone(),
-		withTo:     etq.withTo.Clone(),
+		config:       etq.config,
+		ctx:          etq.ctx.Clone(),
+		order:        append([]edgetype.OrderOption{}, etq.order...),
+		inters:       append([]Interceptor{}, etq.inters...),
+		predicates:   append([]predicate.EdgeType{}, etq.predicates...),
+		withDocument: etq.withDocument.Clone(),
+		withFrom:     etq.withFrom.Clone(),
+		withTo:       etq.withTo.Clone(),
 		// clone intermediate query.
 		sql:  etq.sql.Clone(),
 		path: etq.path,
 	}
+}
+
+// WithDocument tells the query-builder to eager-load the nodes that are connected to
+// the "document" edge. The optional arguments are used to configure the query builder of the edge.
+func (etq *EdgeTypeQuery) WithDocument(opts ...func(*DocumentQuery)) *EdgeTypeQuery {
+	query := (&DocumentClient{config: etq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	etq.withDocument = query
+	return etq
 }
 
 // WithFrom tells the query-builder to eager-load the nodes that are connected to
@@ -407,12 +444,20 @@ func (etq *EdgeTypeQuery) prepareQuery(ctx context.Context) error {
 func (etq *EdgeTypeQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*EdgeType, error) {
 	var (
 		nodes       = []*EdgeType{}
+		withFKs     = etq.withFKs
 		_spec       = etq.querySpec()
-		loadedTypes = [2]bool{
+		loadedTypes = [3]bool{
+			etq.withDocument != nil,
 			etq.withFrom != nil,
 			etq.withTo != nil,
 		}
 	)
+	if etq.withDocument != nil {
+		withFKs = true
+	}
+	if withFKs {
+		_spec.Node.Columns = append(_spec.Node.Columns, edgetype.ForeignKeys...)
+	}
 	_spec.ScanValues = func(columns []string) ([]any, error) {
 		return (*EdgeType).scanValues(nil, columns)
 	}
@@ -431,6 +476,12 @@ func (etq *EdgeTypeQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Ed
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
+	if query := etq.withDocument; query != nil {
+		if err := etq.loadDocument(ctx, query, nodes, nil,
+			func(n *EdgeType, e *Document) { n.Edges.Document = e }); err != nil {
+			return nil, err
+		}
+	}
 	if query := etq.withFrom; query != nil {
 		if err := etq.loadFrom(ctx, query, nodes, nil,
 			func(n *EdgeType, e *Node) { n.Edges.From = e }); err != nil {
@@ -446,6 +497,38 @@ func (etq *EdgeTypeQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Ed
 	return nodes, nil
 }
 
+func (etq *EdgeTypeQuery) loadDocument(ctx context.Context, query *DocumentQuery, nodes []*EdgeType, init func(*EdgeType), assign func(*EdgeType, *Document)) error {
+	ids := make([]string, 0, len(nodes))
+	nodeids := make(map[string][]*EdgeType)
+	for i := range nodes {
+		if nodes[i].document_id == nil {
+			continue
+		}
+		fk := *nodes[i].document_id
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(document.IDIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "document_id" returned %v`, n.ID)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
+	}
+	return nil
+}
 func (etq *EdgeTypeQuery) loadFrom(ctx context.Context, query *NodeQuery, nodes []*EdgeType, init func(*EdgeType), assign func(*EdgeType, *Node)) error {
 	ids := make([]string, 0, len(nodes))
 	nodeids := make(map[string][]*EdgeType)

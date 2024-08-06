@@ -14,6 +14,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/protobom/protobom/pkg/sbom"
 	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/predicate"
 )
@@ -28,6 +29,18 @@ type DocumentUpdate struct {
 // Where appends a list predicates to the DocumentUpdate builder.
 func (du *DocumentUpdate) Where(ps ...predicate.Document) *DocumentUpdate {
 	du.mutation.Where(ps...)
+	return du
+}
+
+// SetProtoMessage sets the "proto_message" field.
+func (du *DocumentUpdate) SetProtoMessage(s *sbom.Document) *DocumentUpdate {
+	du.mutation.SetProtoMessage(s)
+	return du
+}
+
+// ClearProtoMessage clears the value of the "proto_message" field.
+func (du *DocumentUpdate) ClearProtoMessage() *DocumentUpdate {
+	du.mutation.ClearProtoMessage()
 	return du
 }
 
@@ -72,6 +85,12 @@ func (du *DocumentUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
+	if value, ok := du.mutation.ProtoMessage(); ok {
+		_spec.SetField(document.FieldProtoMessage, field.TypeJSON, value)
+	}
+	if du.mutation.ProtoMessageCleared() {
+		_spec.ClearField(document.FieldProtoMessage, field.TypeJSON)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, du.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{document.Label}
@@ -90,6 +109,18 @@ type DocumentUpdateOne struct {
 	fields   []string
 	hooks    []Hook
 	mutation *DocumentMutation
+}
+
+// SetProtoMessage sets the "proto_message" field.
+func (duo *DocumentUpdateOne) SetProtoMessage(s *sbom.Document) *DocumentUpdateOne {
+	duo.mutation.SetProtoMessage(s)
+	return duo
+}
+
+// ClearProtoMessage clears the value of the "proto_message" field.
+func (duo *DocumentUpdateOne) ClearProtoMessage() *DocumentUpdateOne {
+	duo.mutation.ClearProtoMessage()
+	return duo
 }
 
 // Mutation returns the DocumentMutation object of the builder.
@@ -162,6 +193,12 @@ func (duo *DocumentUpdateOne) sqlSave(ctx context.Context) (_node *Document, err
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := duo.mutation.ProtoMessage(); ok {
+		_spec.SetField(document.FieldProtoMessage, field.TypeJSON, value)
+	}
+	if duo.mutation.ProtoMessageCleared() {
+		_spec.ClearField(document.FieldProtoMessage, field.TypeJSON)
 	}
 	_node = &Document{config: duo.config}
 	_spec.Assign = _node.assignValues

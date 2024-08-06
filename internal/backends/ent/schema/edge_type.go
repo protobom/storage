@@ -17,6 +17,12 @@ type EdgeType struct {
 	ent.Schema
 }
 
+func (EdgeType) Mixin() []ent.Mixin {
+	return []ent.Mixin{
+		DocumentMixin{},
+	}
+}
+
 func (EdgeType) Fields() []ent.Field {
 	values := []string{}
 	for idx := range len(sbom.Edge_Type_name) {

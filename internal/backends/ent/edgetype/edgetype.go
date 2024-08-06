@@ -25,12 +25,21 @@ const (
 	FieldNodeID = "node_id"
 	// FieldToNodeID holds the string denoting the to_node_id field in the database.
 	FieldToNodeID = "to_node_id"
+	// EdgeDocument holds the string denoting the document edge name in mutations.
+	EdgeDocument = "document"
 	// EdgeFrom holds the string denoting the from edge name in mutations.
 	EdgeFrom = "from"
 	// EdgeTo holds the string denoting the to edge name in mutations.
 	EdgeTo = "to"
 	// Table holds the table name of the edgetype in the database.
 	Table = "edge_types"
+	// DocumentTable is the table that holds the document relation/edge.
+	DocumentTable = "edge_types"
+	// DocumentInverseTable is the table name for the Document entity.
+	// It exists in this package in order to avoid circular dependency with the "document" package.
+	DocumentInverseTable = "documents"
+	// DocumentColumn is the table column denoting the document relation/edge.
+	DocumentColumn = "document_id"
 	// FromTable is the table that holds the from relation/edge.
 	FromTable = "edge_types"
 	// FromInverseTable is the table name for the Node entity.
@@ -55,10 +64,21 @@ var Columns = []string{
 	FieldToNodeID,
 }
 
+// ForeignKeys holds the SQL foreign-keys that are owned by the "edge_types"
+// table and are not defined as standalone fields in the schema.
+var ForeignKeys = []string{
+	"document_id",
+}
+
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {
 	for i := range Columns {
 		if column == Columns[i] {
+			return true
+		}
+	}
+	for i := range ForeignKeys {
+		if column == ForeignKeys[i] {
 			return true
 		}
 	}
@@ -154,6 +174,13 @@ func ByToNodeID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldToNodeID, opts...).ToFunc()
 }
 
+// ByDocumentField orders the results by document field.
+func ByDocumentField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newDocumentStep(), sql.OrderByField(field, opts...))
+	}
+}
+
 // ByFromField orders the results by from field.
 func ByFromField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -166,6 +193,13 @@ func ByToField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
 		sqlgraph.OrderByNeighborTerms(s, newToStep(), sql.OrderByField(field, opts...))
 	}
+}
+func newDocumentStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(DocumentInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, false, DocumentTable, DocumentColumn),
+	)
 }
 func newFromStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(

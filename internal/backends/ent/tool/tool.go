@@ -17,6 +17,8 @@ const (
 	Label = "tool"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
+	// FieldProtoMessage holds the string denoting the proto_message field in the database.
+	FieldProtoMessage = "proto_message"
 	// FieldMetadataID holds the string denoting the metadata_id field in the database.
 	FieldMetadataID = "metadata_id"
 	// FieldName holds the string denoting the name field in the database.
@@ -25,10 +27,19 @@ const (
 	FieldVersion = "version"
 	// FieldVendor holds the string denoting the vendor field in the database.
 	FieldVendor = "vendor"
+	// EdgeDocument holds the string denoting the document edge name in mutations.
+	EdgeDocument = "document"
 	// EdgeMetadata holds the string denoting the metadata edge name in mutations.
 	EdgeMetadata = "metadata"
 	// Table holds the table name of the tool in the database.
 	Table = "tools"
+	// DocumentTable is the table that holds the document relation/edge.
+	DocumentTable = "tools"
+	// DocumentInverseTable is the table name for the Document entity.
+	// It exists in this package in order to avoid circular dependency with the "document" package.
+	DocumentInverseTable = "documents"
+	// DocumentColumn is the table column denoting the document relation/edge.
+	DocumentColumn = "document_id"
 	// MetadataTable is the table that holds the metadata relation/edge.
 	MetadataTable = "tools"
 	// MetadataInverseTable is the table name for the Metadata entity.
@@ -41,16 +52,28 @@ const (
 // Columns holds all SQL columns for tool fields.
 var Columns = []string{
 	FieldID,
+	FieldProtoMessage,
 	FieldMetadataID,
 	FieldName,
 	FieldVersion,
 	FieldVendor,
 }
 
+// ForeignKeys holds the SQL foreign-keys that are owned by the "tools"
+// table and are not defined as standalone fields in the schema.
+var ForeignKeys = []string{
+	"document_id",
+}
+
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {
 	for i := range Columns {
 		if column == Columns[i] {
+			return true
+		}
+	}
+	for i := range ForeignKeys {
+		if column == ForeignKeys[i] {
 			return true
 		}
 	}
@@ -85,11 +108,25 @@ func ByVendor(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldVendor, opts...).ToFunc()
 }
 
+// ByDocumentField orders the results by document field.
+func ByDocumentField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newDocumentStep(), sql.OrderByField(field, opts...))
+	}
+}
+
 // ByMetadataField orders the results by metadata field.
 func ByMetadataField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
 		sqlgraph.OrderByNeighborTerms(s, newMetadataStep(), sql.OrderByField(field, opts...))
 	}
+}
+func newDocumentStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(DocumentInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, false, DocumentTable, DocumentColumn),
+	)
 }
 func newMetadataStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
