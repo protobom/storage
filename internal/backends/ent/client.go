@@ -1692,15 +1692,15 @@ func (c *NodeClient) QueryNodes(n *Node) *NodeQuery {
 	return query
 }
 
-// QueryNodeList queries the node_list edge of a Node.
-func (c *NodeClient) QueryNodeList(n *Node) *NodeListQuery {
+// QueryNodeLists queries the node_lists edge of a Node.
+func (c *NodeClient) QueryNodeLists(n *Node) *NodeListQuery {
 	query := (&NodeListClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := n.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(node.Table, node.FieldID, id),
 			sqlgraph.To(nodelist.Table, nodelist.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, node.NodeListTable, node.NodeListColumn),
+			sqlgraph.Edge(sqlgraph.M2M, true, node.NodeListsTable, node.NodeListsPrimaryKey...),
 		)
 		fromV = sqlgraph.Neighbors(n.driver.Dialect(), step)
 		return fromV, nil
@@ -1865,7 +1865,7 @@ func (c *NodeListClient) QueryNodes(nl *NodeList) *NodeQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(nodelist.Table, nodelist.FieldID, id),
 			sqlgraph.To(node.Table, node.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, nodelist.NodesTable, nodelist.NodesColumn),
+			sqlgraph.Edge(sqlgraph.M2M, false, nodelist.NodesTable, nodelist.NodesPrimaryKey...),
 		)
 		fromV = sqlgraph.Neighbors(nl.driver.Dialect(), step)
 		return fromV, nil

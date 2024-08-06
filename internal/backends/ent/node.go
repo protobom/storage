@@ -15,7 +15,6 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/protobom/storage/internal/backends/ent/node"
-	"github.com/protobom/storage/internal/backends/ent/nodelist"
 )
 
 // Node is the model entity for the Node schema.
@@ -23,8 +22,6 @@ type Node struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID string `json:"id,omitempty"`
-	// NodeListID holds the value of the "node_list_id" field.
-	NodeListID int `json:"node_list_id,omitempty"`
 	// Type holds the value of the "type" field.
 	Type node.Type `json:"type,omitempty"`
 	// Name holds the value of the "name" field.
@@ -87,8 +84,8 @@ type NodeEdges struct {
 	ToNodes []*Node `json:"to_nodes,omitempty"`
 	// Nodes holds the value of the nodes edge.
 	Nodes []*Node `json:"nodes,omitempty"`
-	// NodeList holds the value of the node_list edge.
-	NodeList *NodeList `json:"node_list,omitempty"`
+	// NodeLists holds the value of the node_lists edge.
+	NodeLists []*NodeList `json:"node_lists,omitempty"`
 	// EdgeTypes holds the value of the edge_types edge.
 	EdgeTypes []*EdgeType `json:"edge_types,omitempty"`
 	// loadedTypes holds the information for reporting if a
@@ -168,15 +165,13 @@ func (e NodeEdges) NodesOrErr() ([]*Node, error) {
 	return nil, &NotLoadedError{edge: "nodes"}
 }
 
-// NodeListOrErr returns the NodeList value or an error if the edge
-// was not loaded in eager-loading, or loaded but was not found.
-func (e NodeEdges) NodeListOrErr() (*NodeList, error) {
-	if e.NodeList != nil {
-		return e.NodeList, nil
-	} else if e.loadedTypes[8] {
-		return nil, &NotFoundError{label: nodelist.Label}
+// NodeListsOrErr returns the NodeLists value or an error if the edge
+// was not loaded in eager-loading.
+func (e NodeEdges) NodeListsOrErr() ([]*NodeList, error) {
+	if e.loadedTypes[8] {
+		return e.NodeLists, nil
 	}
-	return nil, &NotLoadedError{edge: "node_list"}
+	return nil, &NotLoadedError{edge: "node_lists"}
 }
 
 // EdgeTypesOrErr returns the EdgeTypes value or an error if the edge
@@ -195,8 +190,6 @@ func (*Node) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case node.FieldLicenses, node.FieldAttribution, node.FieldFileTypes:
 			values[i] = new([]byte)
-		case node.FieldNodeListID:
-			values[i] = new(sql.NullInt64)
 		case node.FieldID, node.FieldType, node.FieldName, node.FieldVersion, node.FieldFileName, node.FieldURLHome, node.FieldURLDownload, node.FieldLicenseConcluded, node.FieldLicenseComments, node.FieldCopyright, node.FieldSourceInfo, node.FieldComment, node.FieldSummary, node.FieldDescription:
 			values[i] = new(sql.NullString)
 		case node.FieldReleaseDate, node.FieldBuildDate, node.FieldValidUntilDate:
@@ -221,12 +214,6 @@ func (n *Node) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value.Valid {
 				n.ID = value.String
-			}
-		case node.FieldNodeListID:
-			if value, ok := values[i].(*sql.NullInt64); !ok {
-				return fmt.Errorf("unexpected type %T for field node_list_id", values[i])
-			} else if value.Valid {
-				n.NodeListID = int(value.Int64)
 			}
 		case node.FieldType:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -401,9 +388,9 @@ func (n *Node) QueryNodes() *NodeQuery {
 	return NewNodeClient(n.config).QueryNodes(n)
 }
 
-// QueryNodeList queries the "node_list" edge of the Node entity.
-func (n *Node) QueryNodeList() *NodeListQuery {
-	return NewNodeClient(n.config).QueryNodeList(n)
+// QueryNodeLists queries the "node_lists" edge of the Node entity.
+func (n *Node) QueryNodeLists() *NodeListQuery {
+	return NewNodeClient(n.config).QueryNodeLists(n)
 }
 
 // QueryEdgeTypes queries the "edge_types" edge of the Node entity.
@@ -434,9 +421,6 @@ func (n *Node) String() string {
 	var builder strings.Builder
 	builder.WriteString("Node(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", n.ID))
-	builder.WriteString("node_list_id=")
-	builder.WriteString(fmt.Sprintf("%v", n.NodeListID))
-	builder.WriteString(", ")
 	builder.WriteString("type=")
 	builder.WriteString(fmt.Sprintf("%v", n.Type))
 	builder.WriteString(", ")

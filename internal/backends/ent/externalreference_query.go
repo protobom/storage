@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"math"
 
+	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
@@ -113,7 +114,7 @@ func (erq *ExternalReferenceQuery) QueryNode() *NodeQuery {
 // First returns the first ExternalReference entity from the query.
 // Returns a *NotFoundError when no ExternalReference was found.
 func (erq *ExternalReferenceQuery) First(ctx context.Context) (*ExternalReference, error) {
-	nodes, err := erq.Limit(1).All(setContextOp(ctx, erq.ctx, "First"))
+	nodes, err := erq.Limit(1).All(setContextOp(ctx, erq.ctx, ent.OpQueryFirst))
 	if err != nil {
 		return nil, err
 	}
@@ -136,7 +137,7 @@ func (erq *ExternalReferenceQuery) FirstX(ctx context.Context) *ExternalReferenc
 // Returns a *NotFoundError when no ExternalReference ID was found.
 func (erq *ExternalReferenceQuery) FirstID(ctx context.Context) (id int, err error) {
 	var ids []int
-	if ids, err = erq.Limit(1).IDs(setContextOp(ctx, erq.ctx, "FirstID")); err != nil {
+	if ids, err = erq.Limit(1).IDs(setContextOp(ctx, erq.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
 	if len(ids) == 0 {
@@ -159,7 +160,7 @@ func (erq *ExternalReferenceQuery) FirstIDX(ctx context.Context) int {
 // Returns a *NotSingularError when more than one ExternalReference entity is found.
 // Returns a *NotFoundError when no ExternalReference entities are found.
 func (erq *ExternalReferenceQuery) Only(ctx context.Context) (*ExternalReference, error) {
-	nodes, err := erq.Limit(2).All(setContextOp(ctx, erq.ctx, "Only"))
+	nodes, err := erq.Limit(2).All(setContextOp(ctx, erq.ctx, ent.OpQueryOnly))
 	if err != nil {
 		return nil, err
 	}
@@ -187,7 +188,7 @@ func (erq *ExternalReferenceQuery) OnlyX(ctx context.Context) *ExternalReference
 // Returns a *NotFoundError when no entities are found.
 func (erq *ExternalReferenceQuery) OnlyID(ctx context.Context) (id int, err error) {
 	var ids []int
-	if ids, err = erq.Limit(2).IDs(setContextOp(ctx, erq.ctx, "OnlyID")); err != nil {
+	if ids, err = erq.Limit(2).IDs(setContextOp(ctx, erq.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
 	switch len(ids) {
@@ -212,7 +213,7 @@ func (erq *ExternalReferenceQuery) OnlyIDX(ctx context.Context) int {
 
 // All executes the query and returns a list of ExternalReferences.
 func (erq *ExternalReferenceQuery) All(ctx context.Context) ([]*ExternalReference, error) {
-	ctx = setContextOp(ctx, erq.ctx, "All")
+	ctx = setContextOp(ctx, erq.ctx, ent.OpQueryAll)
 	if err := erq.prepareQuery(ctx); err != nil {
 		return nil, err
 	}
@@ -234,7 +235,7 @@ func (erq *ExternalReferenceQuery) IDs(ctx context.Context) (ids []int, err erro
 	if erq.ctx.Unique == nil && erq.path != nil {
 		erq.Unique(true)
 	}
-	ctx = setContextOp(ctx, erq.ctx, "IDs")
+	ctx = setContextOp(ctx, erq.ctx, ent.OpQueryIDs)
 	if err = erq.Select(externalreference.FieldID).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
@@ -252,7 +253,7 @@ func (erq *ExternalReferenceQuery) IDsX(ctx context.Context) []int {
 
 // Count returns the count of the given query.
 func (erq *ExternalReferenceQuery) Count(ctx context.Context) (int, error) {
-	ctx = setContextOp(ctx, erq.ctx, "Count")
+	ctx = setContextOp(ctx, erq.ctx, ent.OpQueryCount)
 	if err := erq.prepareQuery(ctx); err != nil {
 		return 0, err
 	}
@@ -270,7 +271,7 @@ func (erq *ExternalReferenceQuery) CountX(ctx context.Context) int {
 
 // Exist returns true if the query has elements in the graph.
 func (erq *ExternalReferenceQuery) Exist(ctx context.Context) (bool, error) {
-	ctx = setContextOp(ctx, erq.ctx, "Exist")
+	ctx = setContextOp(ctx, erq.ctx, ent.OpQueryExist)
 	switch _, err := erq.FirstID(ctx); {
 	case IsNotFound(err):
 		return false, nil
@@ -607,7 +608,7 @@ func (ergb *ExternalReferenceGroupBy) Aggregate(fns ...AggregateFunc) *ExternalR
 
 // Scan applies the selector query and scans the result into the given value.
 func (ergb *ExternalReferenceGroupBy) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, ergb.build.ctx, "GroupBy")
+	ctx = setContextOp(ctx, ergb.build.ctx, ent.OpQueryGroupBy)
 	if err := ergb.build.prepareQuery(ctx); err != nil {
 		return err
 	}
@@ -655,7 +656,7 @@ func (ers *ExternalReferenceSelect) Aggregate(fns ...AggregateFunc) *ExternalRef
 
 // Scan applies the selector query and scans the result into the given value.
 func (ers *ExternalReferenceSelect) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, ers.ctx, "Select")
+	ctx = setContextOp(ctx, ers.ctx, ent.OpQuerySelect)
 	if err := ers.prepareQuery(ctx); err != nil {
 		return err
 	}

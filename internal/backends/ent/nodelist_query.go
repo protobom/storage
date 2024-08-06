@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"math"
 
+	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
@@ -80,7 +81,7 @@ func (nlq *NodeListQuery) QueryNodes() *NodeQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(nodelist.Table, nodelist.FieldID, selector),
 			sqlgraph.To(node.Table, node.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, nodelist.NodesTable, nodelist.NodesColumn),
+			sqlgraph.Edge(sqlgraph.M2M, false, nodelist.NodesTable, nodelist.NodesPrimaryKey...),
 		)
 		fromU = sqlgraph.SetNeighbors(nlq.driver.Dialect(), step)
 		return fromU, nil
@@ -113,7 +114,7 @@ func (nlq *NodeListQuery) QueryDocument() *DocumentQuery {
 // First returns the first NodeList entity from the query.
 // Returns a *NotFoundError when no NodeList was found.
 func (nlq *NodeListQuery) First(ctx context.Context) (*NodeList, error) {
-	nodes, err := nlq.Limit(1).All(setContextOp(ctx, nlq.ctx, "First"))
+	nodes, err := nlq.Limit(1).All(setContextOp(ctx, nlq.ctx, ent.OpQueryFirst))
 	if err != nil {
 		return nil, err
 	}
@@ -136,7 +137,7 @@ func (nlq *NodeListQuery) FirstX(ctx context.Context) *NodeList {
 // Returns a *NotFoundError when no NodeList ID was found.
 func (nlq *NodeListQuery) FirstID(ctx context.Context) (id int, err error) {
 	var ids []int
-	if ids, err = nlq.Limit(1).IDs(setContextOp(ctx, nlq.ctx, "FirstID")); err != nil {
+	if ids, err = nlq.Limit(1).IDs(setContextOp(ctx, nlq.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
 	if len(ids) == 0 {
@@ -159,7 +160,7 @@ func (nlq *NodeListQuery) FirstIDX(ctx context.Context) int {
 // Returns a *NotSingularError when more than one NodeList entity is found.
 // Returns a *NotFoundError when no NodeList entities are found.
 func (nlq *NodeListQuery) Only(ctx context.Context) (*NodeList, error) {
-	nodes, err := nlq.Limit(2).All(setContextOp(ctx, nlq.ctx, "Only"))
+	nodes, err := nlq.Limit(2).All(setContextOp(ctx, nlq.ctx, ent.OpQueryOnly))
 	if err != nil {
 		return nil, err
 	}
@@ -187,7 +188,7 @@ func (nlq *NodeListQuery) OnlyX(ctx context.Context) *NodeList {
 // Returns a *NotFoundError when no entities are found.
 func (nlq *NodeListQuery) OnlyID(ctx context.Context) (id int, err error) {
 	var ids []int
-	if ids, err = nlq.Limit(2).IDs(setContextOp(ctx, nlq.ctx, "OnlyID")); err != nil {
+	if ids, err = nlq.Limit(2).IDs(setContextOp(ctx, nlq.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
 	switch len(ids) {
@@ -212,7 +213,7 @@ func (nlq *NodeListQuery) OnlyIDX(ctx context.Context) int {
 
 // All executes the query and returns a list of NodeLists.
 func (nlq *NodeListQuery) All(ctx context.Context) ([]*NodeList, error) {
-	ctx = setContextOp(ctx, nlq.ctx, "All")
+	ctx = setContextOp(ctx, nlq.ctx, ent.OpQueryAll)
 	if err := nlq.prepareQuery(ctx); err != nil {
 		return nil, err
 	}
@@ -234,7 +235,7 @@ func (nlq *NodeListQuery) IDs(ctx context.Context) (ids []int, err error) {
 	if nlq.ctx.Unique == nil && nlq.path != nil {
 		nlq.Unique(true)
 	}
-	ctx = setContextOp(ctx, nlq.ctx, "IDs")
+	ctx = setContextOp(ctx, nlq.ctx, ent.OpQueryIDs)
 	if err = nlq.Select(nodelist.FieldID).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
@@ -252,7 +253,7 @@ func (nlq *NodeListQuery) IDsX(ctx context.Context) []int {
 
 // Count returns the count of the given query.
 func (nlq *NodeListQuery) Count(ctx context.Context) (int, error) {
-	ctx = setContextOp(ctx, nlq.ctx, "Count")
+	ctx = setContextOp(ctx, nlq.ctx, ent.OpQueryCount)
 	if err := nlq.prepareQuery(ctx); err != nil {
 		return 0, err
 	}
@@ -270,7 +271,7 @@ func (nlq *NodeListQuery) CountX(ctx context.Context) int {
 
 // Exist returns true if the query has elements in the graph.
 func (nlq *NodeListQuery) Exist(ctx context.Context) (bool, error) {
-	ctx = setContextOp(ctx, nlq.ctx, "Exist")
+	ctx = setContextOp(ctx, nlq.ctx, ent.OpQueryExist)
 	switch _, err := nlq.FirstID(ctx); {
 	case IsNotFound(err):
 		return false, nil
@@ -450,32 +451,63 @@ func (nlq *NodeListQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*No
 }
 
 func (nlq *NodeListQuery) loadNodes(ctx context.Context, query *NodeQuery, nodes []*NodeList, init func(*NodeList), assign func(*NodeList, *Node)) error {
-	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[int]*NodeList)
-	for i := range nodes {
-		fks = append(fks, nodes[i].ID)
-		nodeids[nodes[i].ID] = nodes[i]
+	edgeIDs := make([]driver.Value, len(nodes))
+	byID := make(map[int]*NodeList)
+	nids := make(map[string]map[*NodeList]struct{})
+	for i, node := range nodes {
+		edgeIDs[i] = node.ID
+		byID[node.ID] = node
 		if init != nil {
-			init(nodes[i])
+			init(node)
 		}
 	}
-	if len(query.ctx.Fields) > 0 {
-		query.ctx.AppendFieldOnce(node.FieldNodeListID)
+	query.Where(func(s *sql.Selector) {
+		joinT := sql.Table(nodelist.NodesTable)
+		s.Join(joinT).On(s.C(node.FieldID), joinT.C(nodelist.NodesPrimaryKey[1]))
+		s.Where(sql.InValues(joinT.C(nodelist.NodesPrimaryKey[0]), edgeIDs...))
+		columns := s.SelectedColumns()
+		s.Select(joinT.C(nodelist.NodesPrimaryKey[0]))
+		s.AppendSelect(columns...)
+		s.SetDistinct(false)
+	})
+	if err := query.prepareQuery(ctx); err != nil {
+		return err
 	}
-	query.Where(predicate.Node(func(s *sql.Selector) {
-		s.Where(sql.InValues(s.C(nodelist.NodesColumn), fks...))
-	}))
-	neighbors, err := query.All(ctx)
+	qr := QuerierFunc(func(ctx context.Context, q Query) (Value, error) {
+		return query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
+			assign := spec.Assign
+			values := spec.ScanValues
+			spec.ScanValues = func(columns []string) ([]any, error) {
+				values, err := values(columns[1:])
+				if err != nil {
+					return nil, err
+				}
+				return append([]any{new(sql.NullInt64)}, values...), nil
+			}
+			spec.Assign = func(columns []string, values []any) error {
+				outValue := int(values[0].(*sql.NullInt64).Int64)
+				inValue := values[1].(*sql.NullString).String
+				if nids[inValue] == nil {
+					nids[inValue] = map[*NodeList]struct{}{byID[outValue]: {}}
+					return assign(columns[1:], values[1:])
+				}
+				nids[inValue][byID[outValue]] = struct{}{}
+				return nil
+			}
+		})
+	})
+	neighbors, err := withInterceptors[[]*Node](ctx, query, qr, query.inters)
 	if err != nil {
 		return err
 	}
 	for _, n := range neighbors {
-		fk := n.NodeListID
-		node, ok := nodeids[fk]
+		nodes, ok := nids[n.ID]
 		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "node_list_id" returned %v for node %v`, fk, n.ID)
+			return fmt.Errorf(`unexpected "nodes" node returned %v`, n.ID)
 		}
-		assign(node, n)
+		for kn := range nodes {
+			assign(kn, n)
+		}
 	}
 	return nil
 }
@@ -607,7 +639,7 @@ func (nlgb *NodeListGroupBy) Aggregate(fns ...AggregateFunc) *NodeListGroupBy {
 
 // Scan applies the selector query and scans the result into the given value.
 func (nlgb *NodeListGroupBy) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, nlgb.build.ctx, "GroupBy")
+	ctx = setContextOp(ctx, nlgb.build.ctx, ent.OpQueryGroupBy)
 	if err := nlgb.build.prepareQuery(ctx); err != nil {
 		return err
 	}
@@ -655,7 +687,7 @@ func (nls *NodeListSelect) Aggregate(fns ...AggregateFunc) *NodeListSelect {
 
 // Scan applies the selector query and scans the result into the given value.
 func (nls *NodeListSelect) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, nls.ctx, "Select")
+	ctx = setContextOp(ctx, nls.ctx, ent.OpQuerySelect)
 	if err := nls.prepareQuery(ctx); err != nil {
 		return err
 	}

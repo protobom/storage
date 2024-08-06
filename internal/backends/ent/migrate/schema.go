@@ -216,7 +216,7 @@ var (
 	}
 	// NodesColumns holds the columns for the "nodes" table.
 	NodesColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeString, Unique: true},
+		{Name: "id", Type: field.TypeString},
 		{Name: "type", Type: field.TypeEnum, Enums: []string{"PACKAGE", "FILE"}},
 		{Name: "name", Type: field.TypeString},
 		{Name: "version", Type: field.TypeString},
@@ -236,28 +236,12 @@ var (
 		{Name: "valid_until_date", Type: field.TypeTime},
 		{Name: "attribution", Type: field.TypeJSON},
 		{Name: "file_types", Type: field.TypeJSON},
-		{Name: "node_list_id", Type: field.TypeInt, Nullable: true},
 	}
 	// NodesTable holds the schema information for the "nodes" table.
 	NodesTable = &schema.Table{
 		Name:       "nodes",
 		Columns:    NodesColumns,
 		PrimaryKey: []*schema.Column{NodesColumns[0]},
-		ForeignKeys: []*schema.ForeignKey{
-			{
-				Symbol:     "nodes_node_lists_nodes",
-				Columns:    []*schema.Column{NodesColumns[20]},
-				RefColumns: []*schema.Column{NodeListsColumns[0]},
-				OnDelete:   schema.SetNull,
-			},
-		},
-		Indexes: []*schema.Index{
-			{
-				Name:    "idx_nodes",
-				Unique:  true,
-				Columns: []*schema.Column{NodesColumns[0], NodesColumns[20]},
-			},
-		},
 	}
 	// NodeListsColumns holds the columns for the "node_lists" table.
 	NodeListsColumns = []*schema.Column{
@@ -398,6 +382,31 @@ var (
 			},
 		},
 	}
+	// NodeListNodesColumns holds the columns for the "node_list_nodes" table.
+	NodeListNodesColumns = []*schema.Column{
+		{Name: "node_list_id", Type: field.TypeInt},
+		{Name: "node_id", Type: field.TypeString},
+	}
+	// NodeListNodesTable holds the schema information for the "node_list_nodes" table.
+	NodeListNodesTable = &schema.Table{
+		Name:       "node_list_nodes",
+		Columns:    NodeListNodesColumns,
+		PrimaryKey: []*schema.Column{NodeListNodesColumns[0], NodeListNodesColumns[1]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "node_list_nodes_node_list_id",
+				Columns:    []*schema.Column{NodeListNodesColumns[0]},
+				RefColumns: []*schema.Column{NodeListsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "node_list_nodes_node_id",
+				Columns:    []*schema.Column{NodeListNodesColumns[1]},
+				RefColumns: []*schema.Column{NodesColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
 		DocumentsTable,
@@ -412,6 +421,7 @@ var (
 		PersonsTable,
 		PurposesTable,
 		ToolsTable,
+		NodeListNodesTable,
 	}
 )
 
@@ -424,7 +434,6 @@ func init() {
 	HashesEntriesTable.ForeignKeys[1].RefTable = NodesTable
 	IdentifiersEntriesTable.ForeignKeys[0].RefTable = NodesTable
 	MetadataTable.ForeignKeys[0].RefTable = DocumentsTable
-	NodesTable.ForeignKeys[0].RefTable = NodeListsTable
 	NodeListsTable.ForeignKeys[0].RefTable = DocumentsTable
 	PersonsTable.ForeignKeys[0].RefTable = MetadataTable
 	PersonsTable.ForeignKeys[1].RefTable = NodesTable
@@ -432,4 +441,6 @@ func init() {
 	PersonsTable.ForeignKeys[3].RefTable = PersonsTable
 	PurposesTable.ForeignKeys[0].RefTable = NodesTable
 	ToolsTable.ForeignKeys[0].RefTable = MetadataTable
+	NodeListNodesTable.ForeignKeys[0].RefTable = NodeListsTable
+	NodeListNodesTable.ForeignKeys[1].RefTable = NodesTable
 }
