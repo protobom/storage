@@ -15,6 +15,7 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/protobom/storage/internal/backends/ent/annotation"
 	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/documenttype"
 	"github.com/protobom/storage/internal/backends/ent/edgetype"
@@ -39,6 +40,7 @@ const (
 	OpUpdateOne = ent.OpUpdateOne
 
 	// Node types.
+	TypeAnnotation        = "Annotation"
 	TypeDocument          = "Document"
 	TypeDocumentType      = "DocumentType"
 	TypeEdgeType          = "EdgeType"
@@ -53,22 +55,511 @@ const (
 	TypeTool              = "Tool"
 )
 
+// AnnotationMutation represents an operation that mutates the Annotation nodes in the graph.
+type AnnotationMutation struct {
+	config
+	op              Op
+	typ             string
+	id              *int
+	name            *string
+	value           *string
+	clearedFields   map[string]struct{}
+	document        *string
+	cleareddocument bool
+	done            bool
+	oldValue        func(context.Context) (*Annotation, error)
+	predicates      []predicate.Annotation
+}
+
+var _ ent.Mutation = (*AnnotationMutation)(nil)
+
+// annotationOption allows management of the mutation configuration using functional options.
+type annotationOption func(*AnnotationMutation)
+
+// newAnnotationMutation creates new mutation for the Annotation entity.
+func newAnnotationMutation(c config, op Op, opts ...annotationOption) *AnnotationMutation {
+	m := &AnnotationMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeAnnotation,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withAnnotationID sets the ID field of the mutation.
+func withAnnotationID(id int) annotationOption {
+	return func(m *AnnotationMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *Annotation
+		)
+		m.oldValue = func(ctx context.Context) (*Annotation, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().Annotation.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withAnnotation sets the old Annotation of the mutation.
+func withAnnotation(node *Annotation) annotationOption {
+	return func(m *AnnotationMutation) {
+		m.oldValue = func(context.Context) (*Annotation, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m AnnotationMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m AnnotationMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *AnnotationMutation) ID() (id int, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *AnnotationMutation) IDs(ctx context.Context) ([]int, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().Annotation.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetDocumentID sets the "document_id" field.
+func (m *AnnotationMutation) SetDocumentID(s string) {
+	m.document = &s
+}
+
+// DocumentID returns the value of the "document_id" field in the mutation.
+func (m *AnnotationMutation) DocumentID() (r string, exists bool) {
+	v := m.document
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDocumentID returns the old "document_id" field's value of the Annotation entity.
+// If the Annotation object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AnnotationMutation) OldDocumentID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDocumentID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDocumentID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDocumentID: %w", err)
+	}
+	return oldValue.DocumentID, nil
+}
+
+// ResetDocumentID resets all changes to the "document_id" field.
+func (m *AnnotationMutation) ResetDocumentID() {
+	m.document = nil
+}
+
+// SetName sets the "name" field.
+func (m *AnnotationMutation) SetName(s string) {
+	m.name = &s
+}
+
+// Name returns the value of the "name" field in the mutation.
+func (m *AnnotationMutation) Name() (r string, exists bool) {
+	v := m.name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldName returns the old "name" field's value of the Annotation entity.
+// If the Annotation object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AnnotationMutation) OldName(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldName: %w", err)
+	}
+	return oldValue.Name, nil
+}
+
+// ResetName resets all changes to the "name" field.
+func (m *AnnotationMutation) ResetName() {
+	m.name = nil
+}
+
+// SetValue sets the "value" field.
+func (m *AnnotationMutation) SetValue(s string) {
+	m.value = &s
+}
+
+// Value returns the value of the "value" field in the mutation.
+func (m *AnnotationMutation) Value() (r string, exists bool) {
+	v := m.value
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldValue returns the old "value" field's value of the Annotation entity.
+// If the Annotation object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AnnotationMutation) OldValue(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldValue is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldValue requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldValue: %w", err)
+	}
+	return oldValue.Value, nil
+}
+
+// ResetValue resets all changes to the "value" field.
+func (m *AnnotationMutation) ResetValue() {
+	m.value = nil
+}
+
+// ClearDocument clears the "document" edge to the Document entity.
+func (m *AnnotationMutation) ClearDocument() {
+	m.cleareddocument = true
+	m.clearedFields[annotation.FieldDocumentID] = struct{}{}
+}
+
+// DocumentCleared reports if the "document" edge to the Document entity was cleared.
+func (m *AnnotationMutation) DocumentCleared() bool {
+	return m.cleareddocument
+}
+
+// DocumentIDs returns the "document" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// DocumentID instead. It exists only for internal usage by the builders.
+func (m *AnnotationMutation) DocumentIDs() (ids []string) {
+	if id := m.document; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetDocument resets all changes to the "document" edge.
+func (m *AnnotationMutation) ResetDocument() {
+	m.document = nil
+	m.cleareddocument = false
+}
+
+// Where appends a list predicates to the AnnotationMutation builder.
+func (m *AnnotationMutation) Where(ps ...predicate.Annotation) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the AnnotationMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *AnnotationMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.Annotation, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *AnnotationMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *AnnotationMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (Annotation).
+func (m *AnnotationMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *AnnotationMutation) Fields() []string {
+	fields := make([]string, 0, 3)
+	if m.document != nil {
+		fields = append(fields, annotation.FieldDocumentID)
+	}
+	if m.name != nil {
+		fields = append(fields, annotation.FieldName)
+	}
+	if m.value != nil {
+		fields = append(fields, annotation.FieldValue)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *AnnotationMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case annotation.FieldDocumentID:
+		return m.DocumentID()
+	case annotation.FieldName:
+		return m.Name()
+	case annotation.FieldValue:
+		return m.Value()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *AnnotationMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case annotation.FieldDocumentID:
+		return m.OldDocumentID(ctx)
+	case annotation.FieldName:
+		return m.OldName(ctx)
+	case annotation.FieldValue:
+		return m.OldValue(ctx)
+	}
+	return nil, fmt.Errorf("unknown Annotation field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *AnnotationMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case annotation.FieldDocumentID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDocumentID(v)
+		return nil
+	case annotation.FieldName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetName(v)
+		return nil
+	case annotation.FieldValue:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetValue(v)
+		return nil
+	}
+	return fmt.Errorf("unknown Annotation field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *AnnotationMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *AnnotationMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *AnnotationMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown Annotation numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *AnnotationMutation) ClearedFields() []string {
+	return nil
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *AnnotationMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *AnnotationMutation) ClearField(name string) error {
+	return fmt.Errorf("unknown Annotation nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *AnnotationMutation) ResetField(name string) error {
+	switch name {
+	case annotation.FieldDocumentID:
+		m.ResetDocumentID()
+		return nil
+	case annotation.FieldName:
+		m.ResetName()
+		return nil
+	case annotation.FieldValue:
+		m.ResetValue()
+		return nil
+	}
+	return fmt.Errorf("unknown Annotation field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *AnnotationMutation) AddedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.document != nil {
+		edges = append(edges, annotation.EdgeDocument)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *AnnotationMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case annotation.EdgeDocument:
+		if id := m.document; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *AnnotationMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 1)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *AnnotationMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *AnnotationMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.cleareddocument {
+		edges = append(edges, annotation.EdgeDocument)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *AnnotationMutation) EdgeCleared(name string) bool {
+	switch name {
+	case annotation.EdgeDocument:
+		return m.cleareddocument
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *AnnotationMutation) ClearEdge(name string) error {
+	switch name {
+	case annotation.EdgeDocument:
+		m.ClearDocument()
+		return nil
+	}
+	return fmt.Errorf("unknown Annotation unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *AnnotationMutation) ResetEdge(name string) error {
+	switch name {
+	case annotation.EdgeDocument:
+		m.ResetDocument()
+		return nil
+	}
+	return fmt.Errorf("unknown Annotation edge %s", name)
+}
+
 // DocumentMutation represents an operation that mutates the Document nodes in the graph.
 type DocumentMutation struct {
 	config
-	op               Op
-	typ              string
-	id               *string
-	tags             *[]string
-	appendtags       []string
-	clearedFields    map[string]struct{}
-	metadata         *string
-	clearedmetadata  bool
-	node_list        *int
-	clearednode_list bool
-	done             bool
-	oldValue         func(context.Context) (*Document, error)
-	predicates       []predicate.Document
+	op                 Op
+	typ                string
+	id                 *string
+	clearedFields      map[string]struct{}
+	metadata           *string
+	clearedmetadata    bool
+	node_list          *int
+	clearednode_list   bool
+	annotations        map[int]struct{}
+	removedannotations map[int]struct{}
+	clearedannotations bool
+	done               bool
+	oldValue           func(context.Context) (*Document, error)
+	predicates         []predicate.Document
 }
 
 var _ ent.Mutation = (*DocumentMutation)(nil)
@@ -175,71 +666,6 @@ func (m *DocumentMutation) IDs(ctx context.Context) ([]string, error) {
 	}
 }
 
-// SetTags sets the "tags" field.
-func (m *DocumentMutation) SetTags(s []string) {
-	m.tags = &s
-	m.appendtags = nil
-}
-
-// Tags returns the value of the "tags" field in the mutation.
-func (m *DocumentMutation) Tags() (r []string, exists bool) {
-	v := m.tags
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldTags returns the old "tags" field's value of the Document entity.
-// If the Document object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *DocumentMutation) OldTags(ctx context.Context) (v []string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldTags is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldTags requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldTags: %w", err)
-	}
-	return oldValue.Tags, nil
-}
-
-// AppendTags adds s to the "tags" field.
-func (m *DocumentMutation) AppendTags(s []string) {
-	m.appendtags = append(m.appendtags, s...)
-}
-
-// AppendedTags returns the list of values that were appended to the "tags" field in this mutation.
-func (m *DocumentMutation) AppendedTags() ([]string, bool) {
-	if len(m.appendtags) == 0 {
-		return nil, false
-	}
-	return m.appendtags, true
-}
-
-// ClearTags clears the value of the "tags" field.
-func (m *DocumentMutation) ClearTags() {
-	m.tags = nil
-	m.appendtags = nil
-	m.clearedFields[document.FieldTags] = struct{}{}
-}
-
-// TagsCleared returns if the "tags" field was cleared in this mutation.
-func (m *DocumentMutation) TagsCleared() bool {
-	_, ok := m.clearedFields[document.FieldTags]
-	return ok
-}
-
-// ResetTags resets all changes to the "tags" field.
-func (m *DocumentMutation) ResetTags() {
-	m.tags = nil
-	m.appendtags = nil
-	delete(m.clearedFields, document.FieldTags)
-}
-
 // SetMetadataID sets the "metadata" edge to the Metadata entity by id.
 func (m *DocumentMutation) SetMetadataID(id string) {
 	m.metadata = &id
@@ -318,6 +744,60 @@ func (m *DocumentMutation) ResetNodeList() {
 	m.clearednode_list = false
 }
 
+// AddAnnotationIDs adds the "annotations" edge to the Annotation entity by ids.
+func (m *DocumentMutation) AddAnnotationIDs(ids ...int) {
+	if m.annotations == nil {
+		m.annotations = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.annotations[ids[i]] = struct{}{}
+	}
+}
+
+// ClearAnnotations clears the "annotations" edge to the Annotation entity.
+func (m *DocumentMutation) ClearAnnotations() {
+	m.clearedannotations = true
+}
+
+// AnnotationsCleared reports if the "annotations" edge to the Annotation entity was cleared.
+func (m *DocumentMutation) AnnotationsCleared() bool {
+	return m.clearedannotations
+}
+
+// RemoveAnnotationIDs removes the "annotations" edge to the Annotation entity by IDs.
+func (m *DocumentMutation) RemoveAnnotationIDs(ids ...int) {
+	if m.removedannotations == nil {
+		m.removedannotations = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.annotations, ids[i])
+		m.removedannotations[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedAnnotations returns the removed IDs of the "annotations" edge to the Annotation entity.
+func (m *DocumentMutation) RemovedAnnotationsIDs() (ids []int) {
+	for id := range m.removedannotations {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// AnnotationsIDs returns the "annotations" edge IDs in the mutation.
+func (m *DocumentMutation) AnnotationsIDs() (ids []int) {
+	for id := range m.annotations {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetAnnotations resets all changes to the "annotations" edge.
+func (m *DocumentMutation) ResetAnnotations() {
+	m.annotations = nil
+	m.clearedannotations = false
+	m.removedannotations = nil
+}
+
 // Where appends a list predicates to the DocumentMutation builder.
 func (m *DocumentMutation) Where(ps ...predicate.Document) {
 	m.predicates = append(m.predicates, ps...)
@@ -352,10 +832,7 @@ func (m *DocumentMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *DocumentMutation) Fields() []string {
-	fields := make([]string, 0, 1)
-	if m.tags != nil {
-		fields = append(fields, document.FieldTags)
-	}
+	fields := make([]string, 0, 0)
 	return fields
 }
 
@@ -363,10 +840,6 @@ func (m *DocumentMutation) Fields() []string {
 // return value indicates that this field was not set, or was not defined in the
 // schema.
 func (m *DocumentMutation) Field(name string) (ent.Value, bool) {
-	switch name {
-	case document.FieldTags:
-		return m.Tags()
-	}
 	return nil, false
 }
 
@@ -374,10 +847,6 @@ func (m *DocumentMutation) Field(name string) (ent.Value, bool) {
 // returned if the mutation operation is not UpdateOne, or the query to the
 // database failed.
 func (m *DocumentMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
-	switch name {
-	case document.FieldTags:
-		return m.OldTags(ctx)
-	}
 	return nil, fmt.Errorf("unknown Document field %s", name)
 }
 
@@ -386,13 +855,6 @@ func (m *DocumentMutation) OldField(ctx context.Context, name string) (ent.Value
 // type.
 func (m *DocumentMutation) SetField(name string, value ent.Value) error {
 	switch name {
-	case document.FieldTags:
-		v, ok := value.([]string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetTags(v)
-		return nil
 	}
 	return fmt.Errorf("unknown Document field %s", name)
 }
@@ -414,19 +876,13 @@ func (m *DocumentMutation) AddedField(name string) (ent.Value, bool) {
 // the field is not defined in the schema, or if the type mismatched the field
 // type.
 func (m *DocumentMutation) AddField(name string, value ent.Value) error {
-	switch name {
-	}
 	return fmt.Errorf("unknown Document numeric field %s", name)
 }
 
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *DocumentMutation) ClearedFields() []string {
-	var fields []string
-	if m.FieldCleared(document.FieldTags) {
-		fields = append(fields, document.FieldTags)
-	}
-	return fields
+	return nil
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -439,33 +895,26 @@ func (m *DocumentMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *DocumentMutation) ClearField(name string) error {
-	switch name {
-	case document.FieldTags:
-		m.ClearTags()
-		return nil
-	}
 	return fmt.Errorf("unknown Document nullable field %s", name)
 }
 
 // ResetField resets all changes in the mutation for the field with the given name.
 // It returns an error if the field is not defined in the schema.
 func (m *DocumentMutation) ResetField(name string) error {
-	switch name {
-	case document.FieldTags:
-		m.ResetTags()
-		return nil
-	}
 	return fmt.Errorf("unknown Document field %s", name)
 }
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *DocumentMutation) AddedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.metadata != nil {
 		edges = append(edges, document.EdgeMetadata)
 	}
 	if m.node_list != nil {
 		edges = append(edges, document.EdgeNodeList)
+	}
+	if m.annotations != nil {
+		edges = append(edges, document.EdgeAnnotations)
 	}
 	return edges
 }
@@ -482,30 +931,50 @@ func (m *DocumentMutation) AddedIDs(name string) []ent.Value {
 		if id := m.node_list; id != nil {
 			return []ent.Value{*id}
 		}
+	case document.EdgeAnnotations:
+		ids := make([]ent.Value, 0, len(m.annotations))
+		for id := range m.annotations {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *DocumentMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
+	if m.removedannotations != nil {
+		edges = append(edges, document.EdgeAnnotations)
+	}
 	return edges
 }
 
 // RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
 // the given name in this mutation.
 func (m *DocumentMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case document.EdgeAnnotations:
+		ids := make([]ent.Value, 0, len(m.removedannotations))
+		for id := range m.removedannotations {
+			ids = append(ids, id)
+		}
+		return ids
+	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *DocumentMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.clearedmetadata {
 		edges = append(edges, document.EdgeMetadata)
 	}
 	if m.clearednode_list {
 		edges = append(edges, document.EdgeNodeList)
+	}
+	if m.clearedannotations {
+		edges = append(edges, document.EdgeAnnotations)
 	}
 	return edges
 }
@@ -518,6 +987,8 @@ func (m *DocumentMutation) EdgeCleared(name string) bool {
 		return m.clearedmetadata
 	case document.EdgeNodeList:
 		return m.clearednode_list
+	case document.EdgeAnnotations:
+		return m.clearedannotations
 	}
 	return false
 }
@@ -545,6 +1016,9 @@ func (m *DocumentMutation) ResetEdge(name string) error {
 		return nil
 	case document.EdgeNodeList:
 		m.ResetNodeList()
+		return nil
+	case document.EdgeAnnotations:
+		m.ResetAnnotations()
 		return nil
 	}
 	return fmt.Errorf("unknown Document edge %s", name)

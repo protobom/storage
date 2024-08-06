@@ -115,7 +115,7 @@ func (nlu *NodeListUpdate) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (nlu *NodeListUpdate) check() error {
-	if _, ok := nlu.mutation.DocumentID(); nlu.mutation.DocumentCleared() && !ok {
+	if nlu.mutation.DocumentCleared() && len(nlu.mutation.DocumentIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "NodeList.document"`)
 	}
 	return nil
@@ -301,7 +301,7 @@ func (nluo *NodeListUpdateOne) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (nluo *NodeListUpdateOne) check() error {
-	if _, ok := nluo.mutation.DocumentID(); nluo.mutation.DocumentCleared() && !ok {
+	if nluo.mutation.DocumentCleared() && len(nluo.mutation.DocumentIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "NodeList.document"`)
 	}
 	return nil

@@ -14,23 +14,51 @@ import (
 )
 
 var (
+	// AnnotationsColumns holds the columns for the "annotations" table.
+	AnnotationsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "name", Type: field.TypeString},
+		{Name: "value", Type: field.TypeString},
+		{Name: "document_id", Type: field.TypeString},
+	}
+	// AnnotationsTable holds the schema information for the "annotations" table.
+	AnnotationsTable = &schema.Table{
+		Name:       "annotations",
+		Columns:    AnnotationsColumns,
+		PrimaryKey: []*schema.Column{AnnotationsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "annotations_documents_annotations",
+				Columns:    []*schema.Column{AnnotationsColumns[3]},
+				RefColumns: []*schema.Column{DocumentsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "idx_annotation",
+				Unique:  true,
+				Columns: []*schema.Column{AnnotationsColumns[3], AnnotationsColumns[1], AnnotationsColumns[2]},
+			},
+			{
+				Name:    "idx_document_alias",
+				Unique:  true,
+				Columns: []*schema.Column{AnnotationsColumns[3], AnnotationsColumns[1]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "name = 'alias'",
+				},
+			},
+		},
+	}
 	// DocumentsColumns holds the columns for the "documents" table.
 	DocumentsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeString, Unique: true},
-		{Name: "tags", Type: field.TypeJSON, Nullable: true},
 	}
 	// DocumentsTable holds the schema information for the "documents" table.
 	DocumentsTable = &schema.Table{
 		Name:       "documents",
 		Columns:    DocumentsColumns,
 		PrimaryKey: []*schema.Column{DocumentsColumns[0]},
-		Indexes: []*schema.Index{
-			{
-				Name:    "idx_document_tags",
-				Unique:  true,
-				Columns: []*schema.Column{DocumentsColumns[1]},
-			},
-		},
 	}
 	// DocumentTypesColumns holds the columns for the "document_types" table.
 	DocumentTypesColumns = []*schema.Column{
@@ -408,6 +436,7 @@ var (
 	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
+		AnnotationsTable,
 		DocumentsTable,
 		DocumentTypesTable,
 		EdgeTypesTable,
@@ -424,6 +453,7 @@ var (
 )
 
 func init() {
+	AnnotationsTable.ForeignKeys[0].RefTable = DocumentsTable
 	DocumentTypesTable.ForeignKeys[0].RefTable = MetadataTable
 	EdgeTypesTable.ForeignKeys[0].RefTable = NodesTable
 	EdgeTypesTable.ForeignKeys[1].RefTable = NodesTable

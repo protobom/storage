@@ -13,8 +13,8 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
-	"entgo.io/ent/dialect/sql/sqljson"
 	"entgo.io/ent/schema/field"
+	"github.com/protobom/storage/internal/backends/ent/annotation"
 	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/predicate"
 )
@@ -32,27 +32,45 @@ func (du *DocumentUpdate) Where(ps ...predicate.Document) *DocumentUpdate {
 	return du
 }
 
-// SetTags sets the "tags" field.
-func (du *DocumentUpdate) SetTags(s []string) *DocumentUpdate {
-	du.mutation.SetTags(s)
+// AddAnnotationIDs adds the "annotations" edge to the Annotation entity by IDs.
+func (du *DocumentUpdate) AddAnnotationIDs(ids ...int) *DocumentUpdate {
+	du.mutation.AddAnnotationIDs(ids...)
 	return du
 }
 
-// AppendTags appends s to the "tags" field.
-func (du *DocumentUpdate) AppendTags(s []string) *DocumentUpdate {
-	du.mutation.AppendTags(s)
-	return du
-}
-
-// ClearTags clears the value of the "tags" field.
-func (du *DocumentUpdate) ClearTags() *DocumentUpdate {
-	du.mutation.ClearTags()
-	return du
+// AddAnnotations adds the "annotations" edges to the Annotation entity.
+func (du *DocumentUpdate) AddAnnotations(a ...*Annotation) *DocumentUpdate {
+	ids := make([]int, len(a))
+	for i := range a {
+		ids[i] = a[i].ID
+	}
+	return du.AddAnnotationIDs(ids...)
 }
 
 // Mutation returns the DocumentMutation object of the builder.
 func (du *DocumentUpdate) Mutation() *DocumentMutation {
 	return du.mutation
+}
+
+// ClearAnnotations clears all "annotations" edges to the Annotation entity.
+func (du *DocumentUpdate) ClearAnnotations() *DocumentUpdate {
+	du.mutation.ClearAnnotations()
+	return du
+}
+
+// RemoveAnnotationIDs removes the "annotations" edge to Annotation entities by IDs.
+func (du *DocumentUpdate) RemoveAnnotationIDs(ids ...int) *DocumentUpdate {
+	du.mutation.RemoveAnnotationIDs(ids...)
+	return du
+}
+
+// RemoveAnnotations removes "annotations" edges to Annotation entities.
+func (du *DocumentUpdate) RemoveAnnotations(a ...*Annotation) *DocumentUpdate {
+	ids := make([]int, len(a))
+	for i := range a {
+		ids[i] = a[i].ID
+	}
+	return du.RemoveAnnotationIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -91,16 +109,50 @@ func (du *DocumentUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
-	if value, ok := du.mutation.Tags(); ok {
-		_spec.SetField(document.FieldTags, field.TypeJSON, value)
+	if du.mutation.AnnotationsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   document.AnnotationsTable,
+			Columns: []string{document.AnnotationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(annotation.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if value, ok := du.mutation.AppendedTags(); ok {
-		_spec.AddModifier(func(u *sql.UpdateBuilder) {
-			sqljson.Append(u, document.FieldTags, value)
-		})
+	if nodes := du.mutation.RemovedAnnotationsIDs(); len(nodes) > 0 && !du.mutation.AnnotationsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   document.AnnotationsTable,
+			Columns: []string{document.AnnotationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(annotation.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if du.mutation.TagsCleared() {
-		_spec.ClearField(document.FieldTags, field.TypeJSON)
+	if nodes := du.mutation.AnnotationsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   document.AnnotationsTable,
+			Columns: []string{document.AnnotationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(annotation.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if n, err = sqlgraph.UpdateNodes(ctx, du.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -122,27 +174,45 @@ type DocumentUpdateOne struct {
 	mutation *DocumentMutation
 }
 
-// SetTags sets the "tags" field.
-func (duo *DocumentUpdateOne) SetTags(s []string) *DocumentUpdateOne {
-	duo.mutation.SetTags(s)
+// AddAnnotationIDs adds the "annotations" edge to the Annotation entity by IDs.
+func (duo *DocumentUpdateOne) AddAnnotationIDs(ids ...int) *DocumentUpdateOne {
+	duo.mutation.AddAnnotationIDs(ids...)
 	return duo
 }
 
-// AppendTags appends s to the "tags" field.
-func (duo *DocumentUpdateOne) AppendTags(s []string) *DocumentUpdateOne {
-	duo.mutation.AppendTags(s)
-	return duo
-}
-
-// ClearTags clears the value of the "tags" field.
-func (duo *DocumentUpdateOne) ClearTags() *DocumentUpdateOne {
-	duo.mutation.ClearTags()
-	return duo
+// AddAnnotations adds the "annotations" edges to the Annotation entity.
+func (duo *DocumentUpdateOne) AddAnnotations(a ...*Annotation) *DocumentUpdateOne {
+	ids := make([]int, len(a))
+	for i := range a {
+		ids[i] = a[i].ID
+	}
+	return duo.AddAnnotationIDs(ids...)
 }
 
 // Mutation returns the DocumentMutation object of the builder.
 func (duo *DocumentUpdateOne) Mutation() *DocumentMutation {
 	return duo.mutation
+}
+
+// ClearAnnotations clears all "annotations" edges to the Annotation entity.
+func (duo *DocumentUpdateOne) ClearAnnotations() *DocumentUpdateOne {
+	duo.mutation.ClearAnnotations()
+	return duo
+}
+
+// RemoveAnnotationIDs removes the "annotations" edge to Annotation entities by IDs.
+func (duo *DocumentUpdateOne) RemoveAnnotationIDs(ids ...int) *DocumentUpdateOne {
+	duo.mutation.RemoveAnnotationIDs(ids...)
+	return duo
+}
+
+// RemoveAnnotations removes "annotations" edges to Annotation entities.
+func (duo *DocumentUpdateOne) RemoveAnnotations(a ...*Annotation) *DocumentUpdateOne {
+	ids := make([]int, len(a))
+	for i := range a {
+		ids[i] = a[i].ID
+	}
+	return duo.RemoveAnnotationIDs(ids...)
 }
 
 // Where appends a list predicates to the DocumentUpdate builder.
@@ -211,16 +281,50 @@ func (duo *DocumentUpdateOne) sqlSave(ctx context.Context) (_node *Document, err
 			}
 		}
 	}
-	if value, ok := duo.mutation.Tags(); ok {
-		_spec.SetField(document.FieldTags, field.TypeJSON, value)
+	if duo.mutation.AnnotationsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   document.AnnotationsTable,
+			Columns: []string{document.AnnotationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(annotation.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if value, ok := duo.mutation.AppendedTags(); ok {
-		_spec.AddModifier(func(u *sql.UpdateBuilder) {
-			sqljson.Append(u, document.FieldTags, value)
-		})
+	if nodes := duo.mutation.RemovedAnnotationsIDs(); len(nodes) > 0 && !duo.mutation.AnnotationsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   document.AnnotationsTable,
+			Columns: []string{document.AnnotationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(annotation.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if duo.mutation.TagsCleared() {
-		_spec.ClearField(document.FieldTags, field.TypeJSON)
+	if nodes := duo.mutation.AnnotationsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   document.AnnotationsTable,
+			Columns: []string{document.AnnotationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(annotation.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_node = &Document{config: duo.config}
 	_spec.Assign = _node.assignValues

@@ -76,16 +76,6 @@ func (backend *Backend) Store(doc *sbom.Document, opts *storage.StoreOptions) er
 	return nil
 }
 
-func (backend *Backend) SetTags(tags ...string) error {
-	if err := backend.client.Document.Update().
-		SetTags(tags).
-		Exec(backend.ctx); err != nil {
-		return fmt.Errorf("setting tags: %w", err)
-	}
-
-	return nil
-}
-
 func (backend *Backend) saveDocumentTypes(docTypes []*sbom.DocumentType) error {
 	if backend.client == nil {
 		return fmt.Errorf("%w", errUninitializedClient)

@@ -12,9 +12,11 @@ import (
 	"fmt"
 	"math"
 
+	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/protobom/storage/internal/backends/ent/annotation"
 	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/metadata"
 	"github.com/protobom/storage/internal/backends/ent/nodelist"
@@ -24,12 +26,13 @@ import (
 // DocumentQuery is the builder for querying Document entities.
 type DocumentQuery struct {
 	config
-	ctx          *QueryContext
-	order        []document.OrderOption
-	inters       []Interceptor
-	predicates   []predicate.Document
-	withMetadata *MetadataQuery
-	withNodeList *NodeListQuery
+	ctx             *QueryContext
+	order           []document.OrderOption
+	inters          []Interceptor
+	predicates      []predicate.Document
+	withMetadata    *MetadataQuery
+	withNodeList    *NodeListQuery
+	withAnnotations *AnnotationQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -110,10 +113,32 @@ func (dq *DocumentQuery) QueryNodeList() *NodeListQuery {
 	return query
 }
 
+// QueryAnnotations chains the current query on the "annotations" edge.
+func (dq *DocumentQuery) QueryAnnotations() *AnnotationQuery {
+	query := (&AnnotationClient{config: dq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := dq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := dq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(document.Table, document.FieldID, selector),
+			sqlgraph.To(annotation.Table, annotation.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, document.AnnotationsTable, document.AnnotationsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(dq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
 // First returns the first Document entity from the query.
 // Returns a *NotFoundError when no Document was found.
 func (dq *DocumentQuery) First(ctx context.Context) (*Document, error) {
-	nodes, err := dq.Limit(1).All(setContextOp(ctx, dq.ctx, "First"))
+	nodes, err := dq.Limit(1).All(setContextOp(ctx, dq.ctx, ent.OpQueryFirst))
 	if err != nil {
 		return nil, err
 	}
@@ -136,7 +161,7 @@ func (dq *DocumentQuery) FirstX(ctx context.Context) *Document {
 // Returns a *NotFoundError when no Document ID was found.
 func (dq *DocumentQuery) FirstID(ctx context.Context) (id string, err error) {
 	var ids []string
-	if ids, err = dq.Limit(1).IDs(setContextOp(ctx, dq.ctx, "FirstID")); err != nil {
+	if ids, err = dq.Limit(1).IDs(setContextOp(ctx, dq.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
 	if len(ids) == 0 {
@@ -159,7 +184,7 @@ func (dq *DocumentQuery) FirstIDX(ctx context.Context) string {
 // Returns a *NotSingularError when more than one Document entity is found.
 // Returns a *NotFoundError when no Document entities are found.
 func (dq *DocumentQuery) Only(ctx context.Context) (*Document, error) {
-	nodes, err := dq.Limit(2).All(setContextOp(ctx, dq.ctx, "Only"))
+	nodes, err := dq.Limit(2).All(setContextOp(ctx, dq.ctx, ent.OpQueryOnly))
 	if err != nil {
 		return nil, err
 	}
@@ -187,7 +212,7 @@ func (dq *DocumentQuery) OnlyX(ctx context.Context) *Document {
 // Returns a *NotFoundError when no entities are found.
 func (dq *DocumentQuery) OnlyID(ctx context.Context) (id string, err error) {
 	var ids []string
-	if ids, err = dq.Limit(2).IDs(setContextOp(ctx, dq.ctx, "OnlyID")); err != nil {
+	if ids, err = dq.Limit(2).IDs(setContextOp(ctx, dq.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
 	switch len(ids) {
@@ -212,7 +237,7 @@ func (dq *DocumentQuery) OnlyIDX(ctx context.Context) string {
 
 // All executes the query and returns a list of Documents.
 func (dq *DocumentQuery) All(ctx context.Context) ([]*Document, error) {
-	ctx = setContextOp(ctx, dq.ctx, "All")
+	ctx = setContextOp(ctx, dq.ctx, ent.OpQueryAll)
 	if err := dq.prepareQuery(ctx); err != nil {
 		return nil, err
 	}
@@ -234,7 +259,7 @@ func (dq *DocumentQuery) IDs(ctx context.Context) (ids []string, err error) {
 	if dq.ctx.Unique == nil && dq.path != nil {
 		dq.Unique(true)
 	}
-	ctx = setContextOp(ctx, dq.ctx, "IDs")
+	ctx = setContextOp(ctx, dq.ctx, ent.OpQueryIDs)
 	if err = dq.Select(document.FieldID).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
@@ -252,7 +277,7 @@ func (dq *DocumentQuery) IDsX(ctx context.Context) []string {
 
 // Count returns the count of the given query.
 func (dq *DocumentQuery) Count(ctx context.Context) (int, error) {
-	ctx = setContextOp(ctx, dq.ctx, "Count")
+	ctx = setContextOp(ctx, dq.ctx, ent.OpQueryCount)
 	if err := dq.prepareQuery(ctx); err != nil {
 		return 0, err
 	}
@@ -270,7 +295,7 @@ func (dq *DocumentQuery) CountX(ctx context.Context) int {
 
 // Exist returns true if the query has elements in the graph.
 func (dq *DocumentQuery) Exist(ctx context.Context) (bool, error) {
-	ctx = setContextOp(ctx, dq.ctx, "Exist")
+	ctx = setContextOp(ctx, dq.ctx, ent.OpQueryExist)
 	switch _, err := dq.FirstID(ctx); {
 	case IsNotFound(err):
 		return false, nil
@@ -297,13 +322,14 @@ func (dq *DocumentQuery) Clone() *DocumentQuery {
 		return nil
 	}
 	return &DocumentQuery{
-		config:       dq.config,
-		ctx:          dq.ctx.Clone(),
-		order:        append([]document.OrderOption{}, dq.order...),
-		inters:       append([]Interceptor{}, dq.inters...),
-		predicates:   append([]predicate.Document{}, dq.predicates...),
-		withMetadata: dq.withMetadata.Clone(),
-		withNodeList: dq.withNodeList.Clone(),
+		config:          dq.config,
+		ctx:             dq.ctx.Clone(),
+		order:           append([]document.OrderOption{}, dq.order...),
+		inters:          append([]Interceptor{}, dq.inters...),
+		predicates:      append([]predicate.Document{}, dq.predicates...),
+		withMetadata:    dq.withMetadata.Clone(),
+		withNodeList:    dq.withNodeList.Clone(),
+		withAnnotations: dq.withAnnotations.Clone(),
 		// clone intermediate query.
 		sql:  dq.sql.Clone(),
 		path: dq.path,
@@ -332,20 +358,19 @@ func (dq *DocumentQuery) WithNodeList(opts ...func(*NodeListQuery)) *DocumentQue
 	return dq
 }
 
+// WithAnnotations tells the query-builder to eager-load the nodes that are connected to
+// the "annotations" edge. The optional arguments are used to configure the query builder of the edge.
+func (dq *DocumentQuery) WithAnnotations(opts ...func(*AnnotationQuery)) *DocumentQuery {
+	query := (&AnnotationClient{config: dq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	dq.withAnnotations = query
+	return dq
+}
+
 // GroupBy is used to group vertices by one or more fields/columns.
 // It is often used with aggregate functions, like: count, max, mean, min, sum.
-//
-// Example:
-//
-//	var v []struct {
-//		Tags []string `json:"tags,omitempty"`
-//		Count int `json:"count,omitempty"`
-//	}
-//
-//	client.Document.Query().
-//		GroupBy(document.FieldTags).
-//		Aggregate(ent.Count()).
-//		Scan(ctx, &v)
 func (dq *DocumentQuery) GroupBy(field string, fields ...string) *DocumentGroupBy {
 	dq.ctx.Fields = append([]string{field}, fields...)
 	grbuild := &DocumentGroupBy{build: dq}
@@ -357,16 +382,6 @@ func (dq *DocumentQuery) GroupBy(field string, fields ...string) *DocumentGroupB
 
 // Select allows the selection one or more fields/columns for the given query,
 // instead of selecting all fields in the entity.
-//
-// Example:
-//
-//	var v []struct {
-//		Tags []string `json:"tags,omitempty"`
-//	}
-//
-//	client.Document.Query().
-//		Select(document.FieldTags).
-//		Scan(ctx, &v)
 func (dq *DocumentQuery) Select(fields ...string) *DocumentSelect {
 	dq.ctx.Fields = append(dq.ctx.Fields, fields...)
 	sbuild := &DocumentSelect{DocumentQuery: dq}
@@ -410,9 +425,10 @@ func (dq *DocumentQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Doc
 	var (
 		nodes       = []*Document{}
 		_spec       = dq.querySpec()
-		loadedTypes = [2]bool{
+		loadedTypes = [3]bool{
 			dq.withMetadata != nil,
 			dq.withNodeList != nil,
+			dq.withAnnotations != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -442,6 +458,13 @@ func (dq *DocumentQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Doc
 	if query := dq.withNodeList; query != nil {
 		if err := dq.loadNodeList(ctx, query, nodes, nil,
 			func(n *Document, e *NodeList) { n.Edges.NodeList = e }); err != nil {
+			return nil, err
+		}
+	}
+	if query := dq.withAnnotations; query != nil {
+		if err := dq.loadAnnotations(ctx, query, nodes,
+			func(n *Document) { n.Edges.Annotations = []*Annotation{} },
+			func(n *Document, e *Annotation) { n.Edges.Annotations = append(n.Edges.Annotations, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -484,6 +507,36 @@ func (dq *DocumentQuery) loadNodeList(ctx context.Context, query *NodeListQuery,
 	}
 	query.Where(predicate.NodeList(func(s *sql.Selector) {
 		s.Where(sql.InValues(s.C(document.NodeListColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.DocumentID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "document_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (dq *DocumentQuery) loadAnnotations(ctx context.Context, query *AnnotationQuery, nodes []*Document, init func(*Document), assign func(*Document, *Annotation)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[string]*Document)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(annotation.FieldDocumentID)
+	}
+	query.Where(predicate.Annotation(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(document.AnnotationsColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {
@@ -595,7 +648,7 @@ func (dgb *DocumentGroupBy) Aggregate(fns ...AggregateFunc) *DocumentGroupBy {
 
 // Scan applies the selector query and scans the result into the given value.
 func (dgb *DocumentGroupBy) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, dgb.build.ctx, "GroupBy")
+	ctx = setContextOp(ctx, dgb.build.ctx, ent.OpQueryGroupBy)
 	if err := dgb.build.prepareQuery(ctx); err != nil {
 		return err
 	}
@@ -643,7 +696,7 @@ func (ds *DocumentSelect) Aggregate(fns ...AggregateFunc) *DocumentSelect {
 
 // Scan applies the selector query and scans the result into the given value.
 func (ds *DocumentSelect) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, ds.ctx, "Select")
+	ctx = setContextOp(ctx, ds.ctx, ent.OpQuerySelect)
 	if err := ds.prepareQuery(ctx); err != nil {
 		return err
 	}

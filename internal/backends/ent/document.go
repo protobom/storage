@@ -7,7 +7,6 @@
 package ent
 
 import (
-	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -20,11 +19,9 @@ import (
 
 // Document is the model entity for the Document schema.
 type Document struct {
-	config `json:"-"`
+	config
 	// ID of the ent.
 	ID string `json:"id,omitempty"`
-	// Tags holds the value of the "tags" field.
-	Tags []string `json:"tags,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the DocumentQuery when eager-loading is set.
 	Edges        DocumentEdges `json:"edges"`
@@ -37,9 +34,11 @@ type DocumentEdges struct {
 	Metadata *Metadata `json:"metadata,omitempty"`
 	// NodeList holds the value of the node_list edge.
 	NodeList *NodeList `json:"node_list,omitempty"`
+	// Annotations holds the value of the annotations edge.
+	Annotations []*Annotation `json:"annotations,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [3]bool
 }
 
 // MetadataOrErr returns the Metadata value or an error if the edge
@@ -64,13 +63,20 @@ func (e DocumentEdges) NodeListOrErr() (*NodeList, error) {
 	return nil, &NotLoadedError{edge: "node_list"}
 }
 
+// AnnotationsOrErr returns the Annotations value or an error if the edge
+// was not loaded in eager-loading.
+func (e DocumentEdges) AnnotationsOrErr() ([]*Annotation, error) {
+	if e.loadedTypes[2] {
+		return e.Annotations, nil
+	}
+	return nil, &NotLoadedError{edge: "annotations"}
+}
+
 // scanValues returns the types for scanning values from sql.Rows.
 func (*Document) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case document.FieldTags:
-			values[i] = new([]byte)
 		case document.FieldID:
 			values[i] = new(sql.NullString)
 		default:
@@ -93,14 +99,6 @@ func (d *Document) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value.Valid {
 				d.ID = value.String
-			}
-		case document.FieldTags:
-			if value, ok := values[i].(*[]byte); !ok {
-				return fmt.Errorf("unexpected type %T for field tags", values[i])
-			} else if value != nil && len(*value) > 0 {
-				if err := json.Unmarshal(*value, &d.Tags); err != nil {
-					return fmt.Errorf("unmarshal field tags: %w", err)
-				}
 			}
 		default:
 			d.selectValues.Set(columns[i], values[i])
@@ -125,6 +123,11 @@ func (d *Document) QueryNodeList() *NodeListQuery {
 	return NewDocumentClient(d.config).QueryNodeList(d)
 }
 
+// QueryAnnotations queries the "annotations" edge of the Document entity.
+func (d *Document) QueryAnnotations() *AnnotationQuery {
+	return NewDocumentClient(d.config).QueryAnnotations(d)
+}
+
 // Update returns a builder for updating this Document.
 // Note that you need to call Document.Unwrap() before calling this method if this Document
 // was returned from a transaction, and the transaction was committed or rolled back.
@@ -147,9 +150,7 @@ func (d *Document) Unwrap() *Document {
 func (d *Document) String() string {
 	var builder strings.Builder
 	builder.WriteString("Document(")
-	builder.WriteString(fmt.Sprintf("id=%v, ", d.ID))
-	builder.WriteString("tags=")
-	builder.WriteString(fmt.Sprintf("%v", d.Tags))
+	builder.WriteString(fmt.Sprintf("id=%v", d.ID))
 	builder.WriteByte(')')
 	return builder.String()
 }

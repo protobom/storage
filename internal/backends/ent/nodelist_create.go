@@ -99,7 +99,7 @@ func (nlc *NodeListCreate) check() error {
 	if _, ok := nlc.mutation.RootElements(); !ok {
 		return &ValidationError{Name: "root_elements", err: errors.New(`ent: missing required field "NodeList.root_elements"`)}
 	}
-	if _, ok := nlc.mutation.DocumentID(); !ok {
+	if len(nlc.mutation.DocumentIDs()) == 0 {
 		return &ValidationError{Name: "document", err: errors.New(`ent: missing required edge "NodeList.document"`)}
 	}
 	return nil

@@ -16,6 +16,8 @@ import (
 // Tx is a transactional client that is created by calling Client.Tx().
 type Tx struct {
 	config
+	// Annotation is the client for interacting with the Annotation builders.
+	Annotation *AnnotationClient
 	// Document is the client for interacting with the Document builders.
 	Document *DocumentClient
 	// DocumentType is the client for interacting with the DocumentType builders.
@@ -171,6 +173,7 @@ func (tx *Tx) Client() *Client {
 }
 
 func (tx *Tx) init() {
+	tx.Annotation = NewAnnotationClient(tx.config)
 	tx.Document = NewDocumentClient(tx.config)
 	tx.DocumentType = NewDocumentTypeClient(tx.config)
 	tx.EdgeType = NewEdgeTypeClient(tx.config)
@@ -192,7 +195,7 @@ func (tx *Tx) init() {
 // of them in order to commit or rollback the transaction.
 //
 // If a closed transaction is embedded in one of the generated entities, and the entity
-// applies a query, for example: Document.QueryXXX(), the query will be executed
+// applies a query, for example: Annotation.QueryXXX(), the query will be executed
 // through the driver which created this transaction.
 //
 // Note that txDriver is not goroutine safe.

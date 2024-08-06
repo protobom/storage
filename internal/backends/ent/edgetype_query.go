@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"math"
 
+	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
@@ -111,7 +112,7 @@ func (etq *EdgeTypeQuery) QueryTo() *NodeQuery {
 // First returns the first EdgeType entity from the query.
 // Returns a *NotFoundError when no EdgeType was found.
 func (etq *EdgeTypeQuery) First(ctx context.Context) (*EdgeType, error) {
-	nodes, err := etq.Limit(1).All(setContextOp(ctx, etq.ctx, "First"))
+	nodes, err := etq.Limit(1).All(setContextOp(ctx, etq.ctx, ent.OpQueryFirst))
 	if err != nil {
 		return nil, err
 	}
@@ -134,7 +135,7 @@ func (etq *EdgeTypeQuery) FirstX(ctx context.Context) *EdgeType {
 // Returns a *NotFoundError when no EdgeType ID was found.
 func (etq *EdgeTypeQuery) FirstID(ctx context.Context) (id int, err error) {
 	var ids []int
-	if ids, err = etq.Limit(1).IDs(setContextOp(ctx, etq.ctx, "FirstID")); err != nil {
+	if ids, err = etq.Limit(1).IDs(setContextOp(ctx, etq.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
 	if len(ids) == 0 {
@@ -157,7 +158,7 @@ func (etq *EdgeTypeQuery) FirstIDX(ctx context.Context) int {
 // Returns a *NotSingularError when more than one EdgeType entity is found.
 // Returns a *NotFoundError when no EdgeType entities are found.
 func (etq *EdgeTypeQuery) Only(ctx context.Context) (*EdgeType, error) {
-	nodes, err := etq.Limit(2).All(setContextOp(ctx, etq.ctx, "Only"))
+	nodes, err := etq.Limit(2).All(setContextOp(ctx, etq.ctx, ent.OpQueryOnly))
 	if err != nil {
 		return nil, err
 	}
@@ -185,7 +186,7 @@ func (etq *EdgeTypeQuery) OnlyX(ctx context.Context) *EdgeType {
 // Returns a *NotFoundError when no entities are found.
 func (etq *EdgeTypeQuery) OnlyID(ctx context.Context) (id int, err error) {
 	var ids []int
-	if ids, err = etq.Limit(2).IDs(setContextOp(ctx, etq.ctx, "OnlyID")); err != nil {
+	if ids, err = etq.Limit(2).IDs(setContextOp(ctx, etq.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
 	switch len(ids) {
@@ -210,7 +211,7 @@ func (etq *EdgeTypeQuery) OnlyIDX(ctx context.Context) int {
 
 // All executes the query and returns a list of EdgeTypes.
 func (etq *EdgeTypeQuery) All(ctx context.Context) ([]*EdgeType, error) {
-	ctx = setContextOp(ctx, etq.ctx, "All")
+	ctx = setContextOp(ctx, etq.ctx, ent.OpQueryAll)
 	if err := etq.prepareQuery(ctx); err != nil {
 		return nil, err
 	}
@@ -232,7 +233,7 @@ func (etq *EdgeTypeQuery) IDs(ctx context.Context) (ids []int, err error) {
 	if etq.ctx.Unique == nil && etq.path != nil {
 		etq.Unique(true)
 	}
-	ctx = setContextOp(ctx, etq.ctx, "IDs")
+	ctx = setContextOp(ctx, etq.ctx, ent.OpQueryIDs)
 	if err = etq.Select(edgetype.FieldID).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
@@ -250,7 +251,7 @@ func (etq *EdgeTypeQuery) IDsX(ctx context.Context) []int {
 
 // Count returns the count of the given query.
 func (etq *EdgeTypeQuery) Count(ctx context.Context) (int, error) {
-	ctx = setContextOp(ctx, etq.ctx, "Count")
+	ctx = setContextOp(ctx, etq.ctx, ent.OpQueryCount)
 	if err := etq.prepareQuery(ctx); err != nil {
 		return 0, err
 	}
@@ -268,7 +269,7 @@ func (etq *EdgeTypeQuery) CountX(ctx context.Context) int {
 
 // Exist returns true if the query has elements in the graph.
 func (etq *EdgeTypeQuery) Exist(ctx context.Context) (bool, error) {
-	ctx = setContextOp(ctx, etq.ctx, "Exist")
+	ctx = setContextOp(ctx, etq.ctx, ent.OpQueryExist)
 	switch _, err := etq.FirstID(ctx); {
 	case IsNotFound(err):
 		return false, nil
@@ -606,7 +607,7 @@ func (etgb *EdgeTypeGroupBy) Aggregate(fns ...AggregateFunc) *EdgeTypeGroupBy {
 
 // Scan applies the selector query and scans the result into the given value.
 func (etgb *EdgeTypeGroupBy) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, etgb.build.ctx, "GroupBy")
+	ctx = setContextOp(ctx, etgb.build.ctx, ent.OpQueryGroupBy)
 	if err := etgb.build.prepareQuery(ctx); err != nil {
 		return err
 	}
@@ -654,7 +655,7 @@ func (ets *EdgeTypeSelect) Aggregate(fns ...AggregateFunc) *EdgeTypeSelect {
 
 // Scan applies the selector query and scans the result into the given value.
 func (ets *EdgeTypeSelect) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, ets.ctx, "Select")
+	ctx = setContextOp(ctx, ets.ctx, ent.OpQuerySelect)
 	if err := ets.prepareQuery(ctx); err != nil {
 		return err
 	}

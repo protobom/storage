@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"math"
 
+	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
@@ -113,7 +114,7 @@ func (nlq *NodeListQuery) QueryDocument() *DocumentQuery {
 // First returns the first NodeList entity from the query.
 // Returns a *NotFoundError when no NodeList was found.
 func (nlq *NodeListQuery) First(ctx context.Context) (*NodeList, error) {
-	nodes, err := nlq.Limit(1).All(setContextOp(ctx, nlq.ctx, "First"))
+	nodes, err := nlq.Limit(1).All(setContextOp(ctx, nlq.ctx, ent.OpQueryFirst))
 	if err != nil {
 		return nil, err
 	}
@@ -136,7 +137,7 @@ func (nlq *NodeListQuery) FirstX(ctx context.Context) *NodeList {
 // Returns a *NotFoundError when no NodeList ID was found.
 func (nlq *NodeListQuery) FirstID(ctx context.Context) (id int, err error) {
 	var ids []int
-	if ids, err = nlq.Limit(1).IDs(setContextOp(ctx, nlq.ctx, "FirstID")); err != nil {
+	if ids, err = nlq.Limit(1).IDs(setContextOp(ctx, nlq.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
 	if len(ids) == 0 {
@@ -159,7 +160,7 @@ func (nlq *NodeListQuery) FirstIDX(ctx context.Context) int {
 // Returns a *NotSingularError when more than one NodeList entity is found.
 // Returns a *NotFoundError when no NodeList entities are found.
 func (nlq *NodeListQuery) Only(ctx context.Context) (*NodeList, error) {
-	nodes, err := nlq.Limit(2).All(setContextOp(ctx, nlq.ctx, "Only"))
+	nodes, err := nlq.Limit(2).All(setContextOp(ctx, nlq.ctx, ent.OpQueryOnly))
 	if err != nil {
 		return nil, err
 	}
@@ -187,7 +188,7 @@ func (nlq *NodeListQuery) OnlyX(ctx context.Context) *NodeList {
 // Returns a *NotFoundError when no entities are found.
 func (nlq *NodeListQuery) OnlyID(ctx context.Context) (id int, err error) {
 	var ids []int
-	if ids, err = nlq.Limit(2).IDs(setContextOp(ctx, nlq.ctx, "OnlyID")); err != nil {
+	if ids, err = nlq.Limit(2).IDs(setContextOp(ctx, nlq.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
 	switch len(ids) {
@@ -212,7 +213,7 @@ func (nlq *NodeListQuery) OnlyIDX(ctx context.Context) int {
 
 // All executes the query and returns a list of NodeLists.
 func (nlq *NodeListQuery) All(ctx context.Context) ([]*NodeList, error) {
-	ctx = setContextOp(ctx, nlq.ctx, "All")
+	ctx = setContextOp(ctx, nlq.ctx, ent.OpQueryAll)
 	if err := nlq.prepareQuery(ctx); err != nil {
 		return nil, err
 	}
@@ -234,7 +235,7 @@ func (nlq *NodeListQuery) IDs(ctx context.Context) (ids []int, err error) {
 	if nlq.ctx.Unique == nil && nlq.path != nil {
 		nlq.Unique(true)
 	}
-	ctx = setContextOp(ctx, nlq.ctx, "IDs")
+	ctx = setContextOp(ctx, nlq.ctx, ent.OpQueryIDs)
 	if err = nlq.Select(nodelist.FieldID).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
@@ -252,7 +253,7 @@ func (nlq *NodeListQuery) IDsX(ctx context.Context) []int {
 
 // Count returns the count of the given query.
 func (nlq *NodeListQuery) Count(ctx context.Context) (int, error) {
-	ctx = setContextOp(ctx, nlq.ctx, "Count")
+	ctx = setContextOp(ctx, nlq.ctx, ent.OpQueryCount)
 	if err := nlq.prepareQuery(ctx); err != nil {
 		return 0, err
 	}
@@ -270,7 +271,7 @@ func (nlq *NodeListQuery) CountX(ctx context.Context) int {
 
 // Exist returns true if the query has elements in the graph.
 func (nlq *NodeListQuery) Exist(ctx context.Context) (bool, error) {
-	ctx = setContextOp(ctx, nlq.ctx, "Exist")
+	ctx = setContextOp(ctx, nlq.ctx, ent.OpQueryExist)
 	switch _, err := nlq.FirstID(ctx); {
 	case IsNotFound(err):
 		return false, nil
@@ -607,7 +608,7 @@ func (nlgb *NodeListGroupBy) Aggregate(fns ...AggregateFunc) *NodeListGroupBy {
 
 // Scan applies the selector query and scans the result into the given value.
 func (nlgb *NodeListGroupBy) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, nlgb.build.ctx, "GroupBy")
+	ctx = setContextOp(ctx, nlgb.build.ctx, ent.OpQueryGroupBy)
 	if err := nlgb.build.prepareQuery(ctx); err != nil {
 		return err
 	}
@@ -655,7 +656,7 @@ func (nls *NodeListSelect) Aggregate(fns ...AggregateFunc) *NodeListSelect {
 
 // Scan applies the selector query and scans the result into the given value.
 func (nls *NodeListSelect) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, nls.ctx, "Select")
+	ctx = setContextOp(ctx, nls.ctx, ent.OpQuerySelect)
 	if err := nls.prepareQuery(ctx); err != nil {
 		return err
 	}

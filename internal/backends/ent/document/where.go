@@ -68,16 +68,6 @@ func IDContainsFold(id string) predicate.Document {
 	return predicate.Document(sql.FieldContainsFold(FieldID, id))
 }
 
-// TagsIsNil applies the IsNil predicate on the "tags" field.
-func TagsIsNil() predicate.Document {
-	return predicate.Document(sql.FieldIsNull(FieldTags))
-}
-
-// TagsNotNil applies the NotNil predicate on the "tags" field.
-func TagsNotNil() predicate.Document {
-	return predicate.Document(sql.FieldNotNull(FieldTags))
-}
-
 // HasMetadata applies the HasEdge predicate on the "metadata" edge.
 func HasMetadata() predicate.Document {
 	return predicate.Document(func(s *sql.Selector) {
@@ -116,6 +106,29 @@ func HasNodeList() predicate.Document {
 func HasNodeListWith(preds ...predicate.NodeList) predicate.Document {
 	return predicate.Document(func(s *sql.Selector) {
 		step := newNodeListStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasAnnotations applies the HasEdge predicate on the "annotations" edge.
+func HasAnnotations() predicate.Document {
+	return predicate.Document(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, AnnotationsTable, AnnotationsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasAnnotationsWith applies the HasEdge predicate on the "annotations" edge with a given conditions (other predicates).
+func HasAnnotationsWith(preds ...predicate.Annotation) predicate.Document {
+	return predicate.Document(func(s *sql.Selector) {
+		step := newAnnotationsStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)
