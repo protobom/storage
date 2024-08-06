@@ -10,6 +10,7 @@ import (
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
+	"github.com/protobom/protobom/pkg/sbom"
 )
 
 type DocumentType struct {
@@ -17,19 +18,14 @@ type DocumentType struct {
 }
 
 func (DocumentType) Fields() []ent.Field {
+	values := []string{}
+	for idx := range len(sbom.DocumentType_SBOMType_name) {
+		values = append(values, sbom.DocumentType_SBOMType_name[int32(idx)])
+	}
+
 	return []ent.Field{
 		field.String("metadata_id").Optional(),
-		field.Enum("type").Values(
-			"OTHER",
-			"DESIGN",
-			"SOURCE",
-			"BUILD",
-			"ANALYZED",
-			"DEPLOYED",
-			"RUNTIME",
-			"DISCOVERY",
-			"DECOMISSION",
-		).Optional().Nillable(),
+		field.Enum("type").Values(values...).Optional().Nillable(),
 		field.String("name").Optional().Nillable(),
 		field.String("description").Optional().Nillable(),
 	}

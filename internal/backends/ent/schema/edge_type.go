@@ -10,6 +10,7 @@ import (
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
+	"github.com/protobom/protobom/pkg/sbom"
 )
 
 type EdgeType struct {
@@ -17,54 +18,13 @@ type EdgeType struct {
 }
 
 func (EdgeType) Fields() []ent.Field {
+	values := []string{}
+	for idx := range len(sbom.Edge_Type_name) {
+		values = append(values, sbom.Edge_Type_name[int32(idx)])
+	}
+
 	return []ent.Field{
-		field.Enum("type").Values(
-			"UNKNOWN",
-			"amends",
-			"ancestor",
-			"buildDependency",
-			"buildTool",
-			"contains",
-			"contained_by",
-			"copy",
-			"dataFile",
-			"dependencyManifest",
-			"dependsOn",
-			"dependencyOf",
-			"descendant",
-			"describes",
-			"describedBy",
-			"devDependency",
-			"devTool",
-			"distributionArtifact",
-			"documentation",
-			"dynamicLink",
-			"example",
-			"expandedFromArchive",
-			"fileAdded",
-			"fileDeleted",
-			"fileModified",
-			"generates",
-			"generatedFrom",
-			"metafile",
-			"optionalComponent",
-			"optionalDependency",
-			"other",
-			"packages",
-			"patch",
-			"prerequisite",
-			"prerequisiteFor",
-			"providedDependency",
-			"requirementFor",
-			"runtimeDependency",
-			"specificationFor",
-			"staticLink",
-			"test",
-			"testCase",
-			"testDependency",
-			"testTool",
-			"variant",
-		),
+		field.Enum("type").Values(values...),
 		field.String("node_id"),
 		field.String("to_node_id"),
 	}

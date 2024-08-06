@@ -10,6 +10,7 @@ import (
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
+	"github.com/protobom/protobom/pkg/sbom"
 )
 
 type Purpose struct {
@@ -17,45 +18,23 @@ type Purpose struct {
 }
 
 func (Purpose) Fields() []ent.Field {
+	values := []string{}
+	for idx := range len(sbom.Purpose_name) {
+		values = append(values, sbom.Purpose_name[int32(idx)])
+	}
+
 	return []ent.Field{
 		field.String("node_id").Optional(),
-		field.Enum("primary_purpose").Values(
-			"UNKNOWN_PURPOSE",
-			"APPLICATION",
-			"ARCHIVE",
-			"BOM",
-			"CONFIGURATION",
-			"CONTAINER",
-			"DATA",
-			"DEVICE",
-			"DEVICE_DRIVER",
-			"DOCUMENTATION",
-			"EVIDENCE",
-			"EXECUTABLE",
-			"FILE",
-			"FIRMWARE",
-			"FRAMEWORK",
-			"INSTALL",
-			"LIBRARY",
-			"MACHINE_LEARNING_MODEL",
-			"MANIFEST",
-			"MODEL",
-			"MODULE",
-			"OPERATING_SYSTEM",
-			"OTHER",
-			"PATCH",
-			"PLATFORM",
-			"REQUIREMENT",
-			"SOURCE",
-			"SPECIFICATION",
-			"TEST",
-		),
+		field.Enum("primary_purpose").Values(values...),
 	}
 }
 
 func (Purpose) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("node", Node.Type).Ref("primary_purpose").Unique().Field("node_id"),
+		edge.From("node", Node.Type).
+			Ref("primary_purpose").
+			Unique().
+			Field("node_id"),
 	}
 }
 

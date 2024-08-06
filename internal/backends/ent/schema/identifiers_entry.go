@@ -10,6 +10,7 @@ import (
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
+	"github.com/protobom/protobom/pkg/sbom"
 )
 
 type IdentifiersEntry struct {
@@ -17,15 +18,14 @@ type IdentifiersEntry struct {
 }
 
 func (IdentifiersEntry) Fields() []ent.Field {
+	values := []string{}
+	for idx := range len(sbom.SoftwareIdentifierType_name) {
+		values = append(values, sbom.SoftwareIdentifierType_name[int32(idx)])
+	}
+
 	return []ent.Field{
 		field.String("node_id").Optional(),
-		field.Enum("software_identifier_type").Values(
-			"UNKNOWN_IDENTIFIER_TYPE",
-			"PURL",
-			"CPE22",
-			"CPE23",
-			"GITOID",
-		),
+		field.Enum("software_identifier_type").Values(values...),
 		field.String("software_identifier_value"),
 	}
 }

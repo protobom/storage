@@ -10,6 +10,7 @@ import (
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
+	"github.com/protobom/protobom/pkg/sbom"
 )
 
 type HashesEntry struct {
@@ -17,29 +18,15 @@ type HashesEntry struct {
 }
 
 func (HashesEntry) Fields() []ent.Field {
+	values := []string{}
+	for idx := range len(sbom.HashAlgorithm_name) {
+		values = append(values, sbom.HashAlgorithm_name[int32(idx)])
+	}
+
 	return []ent.Field{
 		field.Int("external_reference_id").Optional(),
 		field.String("node_id").Optional(),
-		field.Enum("hash_algorithm_type").Values(
-			"UNKNOWN",
-			"MD5",
-			"SHA1",
-			"SHA256",
-			"SHA384",
-			"SHA512",
-			"SHA3_256",
-			"SHA3_384",
-			"SHA3_512",
-			"BLAKE2B_256",
-			"BLAKE2B_384",
-			"BLAKE2B_512",
-			"BLAKE3",
-			"MD2",
-			"ADLER32",
-			"MD4",
-			"MD6",
-			"SHA224",
-		),
+		field.Enum("hash_algorithm_type").Values(values...),
 		field.String("hash_data"),
 	}
 }
