@@ -15,7 +15,7 @@ import (
 	"github.com/protobom/storage/internal/backends/ent/document"
 )
 
-func (backend *Backend) AddAnnotations(documentID, name string, values ...string) error {
+func (backend *Backend) createAnnotations(data ...*ent.Annotation) error {
 	tx, err := backend.txClient()
 	if err != nil {
 		return err
@@ -23,18 +23,18 @@ func (backend *Backend) AddAnnotations(documentID, name string, values ...string
 
 	builders := []*ent.AnnotationCreate{}
 
-	for _, value := range values {
+	for idx := range data {
 		builder := tx.Annotation.Create().
-			SetDocumentID(documentID).
-			SetName(name).
-			SetValue(value)
+			SetDocumentID(data[idx].DocumentID).
+			SetName(data[idx].Name).
+			SetValue(data[idx].Value)
 
 		builders = append(builders, builder)
 	}
 
 	err = tx.Annotation.CreateBulk(builders...).
 		OnConflict().
-		Ignore().
+		UpdateNewValues().
 		Exec(backend.ctx)
 	if err != nil && !ent.IsConstraintError(err) {
 		return rollback(tx, fmt.Errorf("creating annotations: %w", err))
@@ -47,6 +47,35 @@ func (backend *Backend) AddAnnotations(documentID, name string, values ...string
 	return nil
 }
 
+// AddAnnotations applies multiple named annotation values to a single document.
+func (backend *Backend) AddAnnotations(documentID, name string, values ...string) error {
+	data := ent.Annotations{}
+	for _, value := range values {
+		data = append(data, &ent.Annotation{
+			DocumentID: documentID,
+			Name:       name,
+			Value:      value,
+		})
+	}
+
+	return backend.createAnnotations(data...)
+}
+
+// AddAnnotationToDocuments applies a single named annotation value to multiple documents.
+func (backend *Backend) AddAnnotationToDocuments(name, value string, documentIDs ...string) error {
+	data := ent.Annotations{}
+	for _, documentID := range documentIDs {
+		data = append(data, &ent.Annotation{
+			DocumentID: documentID,
+			Name:       name,
+			Value:      value,
+		})
+	}
+
+	return backend.createAnnotations(data...)
+}
+
+// ClearAnnotations removes all annotations from the specified documents.
 func (backend *Backend) ClearAnnotations(documentIDs ...string) error {
 	tx, err := backend.txClient()
 	if err != nil {
@@ -67,6 +96,8 @@ func (backend *Backend) ClearAnnotations(documentIDs ...string) error {
 	return nil
 }
 
+// GetDocumentAnnotations gets all annotations for the specified
+// document, limited to a set of annotation names if specified.
 func (backend *Backend) GetDocumentAnnotations(documentID string, names ...string) (ent.Annotations, error) {
 	if backend.client == nil {
 		return nil, errUninitializedClient
@@ -87,6 +118,8 @@ func (backend *Backend) GetDocumentAnnotations(documentID string, names ...strin
 	return annotations, nil
 }
 
+// GetDocumentsByAnnotation gets all documents having the specified named
+// annotation, limited to a set of annotation values if specified.
 func (backend *Backend) GetDocumentsByAnnotation(name string, values ...string) ([]*sbom.Document, error) {
 	if backend.client == nil {
 		return nil, errUninitializedClient
@@ -109,6 +142,8 @@ func (backend *Backend) GetDocumentsByAnnotation(name string, values ...string) 
 	return backend.GetDocumentsByID(ids...)
 }
 
+// RemoveAnnotations removes all annotations with the specified name from
+// the document, limited to a set of annotation values if specified.
 func (backend *Backend) RemoveAnnotations(documentID, name string, values ...string) error {
 	tx, err := backend.txClient()
 	if err != nil {
@@ -135,6 +170,7 @@ func (backend *Backend) RemoveAnnotations(documentID, name string, values ...str
 	return nil
 }
 
+// SetAnnotations explicitly sets the named annotations for the specified document.
 func (backend *Backend) SetAnnotations(documentID, name string, values ...string) error {
 	if err := backend.ClearAnnotations(documentID); err != nil {
 		return err
