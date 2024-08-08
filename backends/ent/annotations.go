@@ -96,6 +96,32 @@ func (backend *Backend) ClearAnnotations(documentIDs ...string) error {
 	return nil
 }
 
+// GetDocumentAlias gets the value for the annotation named "alias".
+func (backend *Backend) GetDocumentAlias(documentID string) (string, error) {
+	if backend.client == nil {
+		return "", errUninitializedClient
+	}
+
+	query := backend.client.Annotation.Query().
+		Where(
+			annotation.And(
+				annotation.HasDocumentWith(document.IDEQ(documentID)),
+				annotation.NameEQ("alias"),
+			),
+		)
+
+	result, err := query.Only(backend.ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return "", nil
+		}
+
+		return "", fmt.Errorf("retrieving document alias: %w", err)
+	}
+
+	return result.Value, nil
+}
+
 // GetDocumentAnnotations gets all annotations for the specified
 // document, limited to a set of annotation names if specified.
 func (backend *Backend) GetDocumentAnnotations(documentID string, names ...string) (ent.Annotations, error) {
@@ -170,15 +196,20 @@ func (backend *Backend) RemoveAnnotations(documentID, name string, values ...str
 	return nil
 }
 
+// SetDocumentAlias set the value for the annotation named "alias".
+func (backend *Backend) SetDocumentAlias(documentID, value string) error {
+	if err := backend.RemoveAnnotations(documentID, "alias"); err != nil {
+		return err
+	}
+
+	return backend.AddAnnotations(documentID, "alias", value)
+}
+
 // SetAnnotations explicitly sets the named annotations for the specified document.
 func (backend *Backend) SetAnnotations(documentID, name string, values ...string) error {
 	if err := backend.ClearAnnotations(documentID); err != nil {
 		return err
 	}
 
-	if err := backend.AddAnnotations(documentID, name, values...); err != nil {
-		return err
-	}
-
-	return nil
+	return backend.AddAnnotations(documentID, name, values...)
 }
