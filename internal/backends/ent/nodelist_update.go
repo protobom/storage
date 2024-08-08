@@ -115,7 +115,7 @@ func (nlu *NodeListUpdate) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (nlu *NodeListUpdate) check() error {
-	if _, ok := nlu.mutation.DocumentID(); nlu.mutation.DocumentCleared() && !ok {
+	if nlu.mutation.DocumentCleared() && len(nlu.mutation.DocumentIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "NodeList.document"`)
 	}
 	return nil
@@ -143,10 +143,10 @@ func (nlu *NodeListUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if nlu.mutation.NodesCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   nodelist.NodesTable,
-			Columns: []string{nodelist.NodesColumn},
+			Columns: nodelist.NodesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeString),
@@ -156,10 +156,10 @@ func (nlu *NodeListUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if nodes := nlu.mutation.RemovedNodesIDs(); len(nodes) > 0 && !nlu.mutation.NodesCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   nodelist.NodesTable,
-			Columns: []string{nodelist.NodesColumn},
+			Columns: nodelist.NodesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeString),
@@ -172,10 +172,10 @@ func (nlu *NodeListUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if nodes := nlu.mutation.NodesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   nodelist.NodesTable,
-			Columns: []string{nodelist.NodesColumn},
+			Columns: nodelist.NodesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeString),
@@ -301,7 +301,7 @@ func (nluo *NodeListUpdateOne) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (nluo *NodeListUpdateOne) check() error {
-	if _, ok := nluo.mutation.DocumentID(); nluo.mutation.DocumentCleared() && !ok {
+	if nluo.mutation.DocumentCleared() && len(nluo.mutation.DocumentIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "NodeList.document"`)
 	}
 	return nil
@@ -346,10 +346,10 @@ func (nluo *NodeListUpdateOne) sqlSave(ctx context.Context) (_node *NodeList, er
 	}
 	if nluo.mutation.NodesCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   nodelist.NodesTable,
-			Columns: []string{nodelist.NodesColumn},
+			Columns: nodelist.NodesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeString),
@@ -359,10 +359,10 @@ func (nluo *NodeListUpdateOne) sqlSave(ctx context.Context) (_node *NodeList, er
 	}
 	if nodes := nluo.mutation.RemovedNodesIDs(); len(nodes) > 0 && !nluo.mutation.NodesCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   nodelist.NodesTable,
-			Columns: []string{nodelist.NodesColumn},
+			Columns: nodelist.NodesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeString),
@@ -375,10 +375,10 @@ func (nluo *NodeListUpdateOne) sqlSave(ctx context.Context) (_node *NodeList, er
 	}
 	if nodes := nluo.mutation.NodesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   nodelist.NodesTable,
-			Columns: []string{nodelist.NodesColumn},
+			Columns: nodelist.NodesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeString),

@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"math"
 
+	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
@@ -88,7 +89,7 @@ func (ieq *IdentifiersEntryQuery) QueryNode() *NodeQuery {
 // First returns the first IdentifiersEntry entity from the query.
 // Returns a *NotFoundError when no IdentifiersEntry was found.
 func (ieq *IdentifiersEntryQuery) First(ctx context.Context) (*IdentifiersEntry, error) {
-	nodes, err := ieq.Limit(1).All(setContextOp(ctx, ieq.ctx, "First"))
+	nodes, err := ieq.Limit(1).All(setContextOp(ctx, ieq.ctx, ent.OpQueryFirst))
 	if err != nil {
 		return nil, err
 	}
@@ -111,7 +112,7 @@ func (ieq *IdentifiersEntryQuery) FirstX(ctx context.Context) *IdentifiersEntry 
 // Returns a *NotFoundError when no IdentifiersEntry ID was found.
 func (ieq *IdentifiersEntryQuery) FirstID(ctx context.Context) (id int, err error) {
 	var ids []int
-	if ids, err = ieq.Limit(1).IDs(setContextOp(ctx, ieq.ctx, "FirstID")); err != nil {
+	if ids, err = ieq.Limit(1).IDs(setContextOp(ctx, ieq.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
 	if len(ids) == 0 {
@@ -134,7 +135,7 @@ func (ieq *IdentifiersEntryQuery) FirstIDX(ctx context.Context) int {
 // Returns a *NotSingularError when more than one IdentifiersEntry entity is found.
 // Returns a *NotFoundError when no IdentifiersEntry entities are found.
 func (ieq *IdentifiersEntryQuery) Only(ctx context.Context) (*IdentifiersEntry, error) {
-	nodes, err := ieq.Limit(2).All(setContextOp(ctx, ieq.ctx, "Only"))
+	nodes, err := ieq.Limit(2).All(setContextOp(ctx, ieq.ctx, ent.OpQueryOnly))
 	if err != nil {
 		return nil, err
 	}
@@ -162,7 +163,7 @@ func (ieq *IdentifiersEntryQuery) OnlyX(ctx context.Context) *IdentifiersEntry {
 // Returns a *NotFoundError when no entities are found.
 func (ieq *IdentifiersEntryQuery) OnlyID(ctx context.Context) (id int, err error) {
 	var ids []int
-	if ids, err = ieq.Limit(2).IDs(setContextOp(ctx, ieq.ctx, "OnlyID")); err != nil {
+	if ids, err = ieq.Limit(2).IDs(setContextOp(ctx, ieq.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
 	switch len(ids) {
@@ -187,7 +188,7 @@ func (ieq *IdentifiersEntryQuery) OnlyIDX(ctx context.Context) int {
 
 // All executes the query and returns a list of IdentifiersEntries.
 func (ieq *IdentifiersEntryQuery) All(ctx context.Context) ([]*IdentifiersEntry, error) {
-	ctx = setContextOp(ctx, ieq.ctx, "All")
+	ctx = setContextOp(ctx, ieq.ctx, ent.OpQueryAll)
 	if err := ieq.prepareQuery(ctx); err != nil {
 		return nil, err
 	}
@@ -209,7 +210,7 @@ func (ieq *IdentifiersEntryQuery) IDs(ctx context.Context) (ids []int, err error
 	if ieq.ctx.Unique == nil && ieq.path != nil {
 		ieq.Unique(true)
 	}
-	ctx = setContextOp(ctx, ieq.ctx, "IDs")
+	ctx = setContextOp(ctx, ieq.ctx, ent.OpQueryIDs)
 	if err = ieq.Select(identifiersentry.FieldID).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
@@ -227,7 +228,7 @@ func (ieq *IdentifiersEntryQuery) IDsX(ctx context.Context) []int {
 
 // Count returns the count of the given query.
 func (ieq *IdentifiersEntryQuery) Count(ctx context.Context) (int, error) {
-	ctx = setContextOp(ctx, ieq.ctx, "Count")
+	ctx = setContextOp(ctx, ieq.ctx, ent.OpQueryCount)
 	if err := ieq.prepareQuery(ctx); err != nil {
 		return 0, err
 	}
@@ -245,7 +246,7 @@ func (ieq *IdentifiersEntryQuery) CountX(ctx context.Context) int {
 
 // Exist returns true if the query has elements in the graph.
 func (ieq *IdentifiersEntryQuery) Exist(ctx context.Context) (bool, error) {
-	ctx = setContextOp(ctx, ieq.ctx, "Exist")
+	ctx = setContextOp(ctx, ieq.ctx, ent.OpQueryExist)
 	switch _, err := ieq.FirstID(ctx); {
 	case IsNotFound(err):
 		return false, nil
@@ -532,7 +533,7 @@ func (iegb *IdentifiersEntryGroupBy) Aggregate(fns ...AggregateFunc) *Identifier
 
 // Scan applies the selector query and scans the result into the given value.
 func (iegb *IdentifiersEntryGroupBy) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, iegb.build.ctx, "GroupBy")
+	ctx = setContextOp(ctx, iegb.build.ctx, ent.OpQueryGroupBy)
 	if err := iegb.build.prepareQuery(ctx); err != nil {
 		return err
 	}
@@ -580,7 +581,7 @@ func (ies *IdentifiersEntrySelect) Aggregate(fns ...AggregateFunc) *IdentifiersE
 
 // Scan applies the selector query and scans the result into the given value.
 func (ies *IdentifiersEntrySelect) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, ies.ctx, "Select")
+	ctx = setContextOp(ctx, ies.ctx, ent.OpQuerySelect)
 	if err := ies.prepareQuery(ctx); err != nil {
 		return err
 	}

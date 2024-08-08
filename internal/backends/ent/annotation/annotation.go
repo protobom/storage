@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // --------------------------------------------------------------
 
-package nodelist
+package annotation
 
 import (
 	"entgo.io/ent/dialect/sql"
@@ -13,27 +13,22 @@ import (
 )
 
 const (
-	// Label holds the string label denoting the nodelist type in the database.
-	Label = "node_list"
+	// Label holds the string label denoting the annotation type in the database.
+	Label = "annotation"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
 	// FieldDocumentID holds the string denoting the document_id field in the database.
 	FieldDocumentID = "document_id"
-	// FieldRootElements holds the string denoting the root_elements field in the database.
-	FieldRootElements = "root_elements"
-	// EdgeNodes holds the string denoting the nodes edge name in mutations.
-	EdgeNodes = "nodes"
+	// FieldName holds the string denoting the name field in the database.
+	FieldName = "name"
+	// FieldValue holds the string denoting the value field in the database.
+	FieldValue = "value"
 	// EdgeDocument holds the string denoting the document edge name in mutations.
 	EdgeDocument = "document"
-	// Table holds the table name of the nodelist in the database.
-	Table = "node_lists"
-	// NodesTable is the table that holds the nodes relation/edge. The primary key declared below.
-	NodesTable = "node_list_nodes"
-	// NodesInverseTable is the table name for the Node entity.
-	// It exists in this package in order to avoid circular dependency with the "node" package.
-	NodesInverseTable = "nodes"
+	// Table holds the table name of the annotation in the database.
+	Table = "annotations"
 	// DocumentTable is the table that holds the document relation/edge.
-	DocumentTable = "node_lists"
+	DocumentTable = "annotations"
 	// DocumentInverseTable is the table name for the Document entity.
 	// It exists in this package in order to avoid circular dependency with the "document" package.
 	DocumentInverseTable = "documents"
@@ -41,18 +36,13 @@ const (
 	DocumentColumn = "document_id"
 )
 
-// Columns holds all SQL columns for nodelist fields.
+// Columns holds all SQL columns for annotation fields.
 var Columns = []string{
 	FieldID,
 	FieldDocumentID,
-	FieldRootElements,
+	FieldName,
+	FieldValue,
 }
-
-var (
-	// NodesPrimaryKey and NodesColumn2 are the table columns denoting the
-	// primary key for the nodes relation (M2M).
-	NodesPrimaryKey = []string{"node_list_id", "node_id"}
-)
 
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {
@@ -64,7 +54,7 @@ func ValidColumn(column string) bool {
 	return false
 }
 
-// OrderOption defines the ordering options for the NodeList queries.
+// OrderOption defines the ordering options for the Annotation queries.
 type OrderOption func(*sql.Selector)
 
 // ByID orders the results by the id field.
@@ -77,18 +67,14 @@ func ByDocumentID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDocumentID, opts...).ToFunc()
 }
 
-// ByNodesCount orders the results by nodes count.
-func ByNodesCount(opts ...sql.OrderTermOption) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborsCount(s, newNodesStep(), opts...)
-	}
+// ByName orders the results by the name field.
+func ByName(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldName, opts...).ToFunc()
 }
 
-// ByNodes orders the results by nodes terms.
-func ByNodes(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newNodesStep(), append([]sql.OrderTerm{term}, terms...)...)
-	}
+// ByValue orders the results by the value field.
+func ByValue(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldValue, opts...).ToFunc()
 }
 
 // ByDocumentField orders the results by document field.
@@ -97,17 +83,10 @@ func ByDocumentField(field string, opts ...sql.OrderTermOption) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newDocumentStep(), sql.OrderByField(field, opts...))
 	}
 }
-func newNodesStep() *sqlgraph.Step {
-	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(NodesInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.M2M, false, NodesTable, NodesPrimaryKey...),
-	)
-}
 func newDocumentStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(DocumentInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2O, true, DocumentTable, DocumentColumn),
+		sqlgraph.Edge(sqlgraph.M2O, true, DocumentTable, DocumentColumn),
 	)
 }

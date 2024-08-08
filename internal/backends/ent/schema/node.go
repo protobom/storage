@@ -9,7 +9,6 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
-	"entgo.io/ent/schema/index"
 )
 
 type Node struct {
@@ -18,8 +17,7 @@ type Node struct {
 
 func (Node) Fields() []ent.Field {
 	return []ent.Field{
-		field.String("id").NotEmpty().Unique().Immutable(),
-		field.Int("node_list_id").Optional(),
+		field.String("id").NotEmpty().Immutable(),
 		field.Enum("type").Values("PACKAGE", "FILE"),
 		field.String("name"),
 		field.String("version"),
@@ -51,14 +49,6 @@ func (Node) Edges() []ent.Edge {
 		edge.To("hashes", HashesEntry.Type),
 		edge.To("primary_purpose", Purpose.Type),
 		edge.To("nodes", Node.Type).From("to_nodes").Through("edge_types", EdgeType.Type),
-		edge.From("node_list", NodeList.Type).Ref("nodes").Unique().Field("node_list_id"),
-	}
-}
-
-func (Node) Indexes() []ent.Index {
-	return []ent.Index{
-		index.Fields("id", "node_list_id").
-			Unique().
-			StorageKey("idx_nodes"),
+		edge.From("node_lists", NodeList.Type).Ref("nodes"),
 	}
 }

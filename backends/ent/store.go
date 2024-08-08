@@ -462,7 +462,7 @@ func (backend *Backend) newNodeCreate(n *sbom.Node) *ent.NodeCreate {
 		SetVersion(n.Version)
 
 	if nodeListID, ok := backend.ctx.Value(nodeListIDKey{}).(int); ok {
-		newNode.SetNodeListID(nodeListID)
+		newNode.AddNodeListIDs(nodeListID)
 	}
 
 	return newNode

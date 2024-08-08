@@ -233,7 +233,7 @@ func (mu *MetadataUpdate) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (mu *MetadataUpdate) check() error {
-	if _, ok := mu.mutation.DocumentID(); mu.mutation.DocumentCleared() && !ok {
+	if mu.mutation.DocumentCleared() && len(mu.mutation.DocumentIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "Metadata.document"`)
 	}
 	return nil
@@ -629,7 +629,7 @@ func (muo *MetadataUpdateOne) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (muo *MetadataUpdateOne) check() error {
-	if _, ok := muo.mutation.DocumentID(); muo.mutation.DocumentCleared() && !ok {
+	if muo.mutation.DocumentCleared() && len(muo.mutation.DocumentIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "Metadata.document"`)
 	}
 	return nil

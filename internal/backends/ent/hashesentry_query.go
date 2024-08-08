@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"math"
 
+	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
@@ -112,7 +113,7 @@ func (heq *HashesEntryQuery) QueryNode() *NodeQuery {
 // First returns the first HashesEntry entity from the query.
 // Returns a *NotFoundError when no HashesEntry was found.
 func (heq *HashesEntryQuery) First(ctx context.Context) (*HashesEntry, error) {
-	nodes, err := heq.Limit(1).All(setContextOp(ctx, heq.ctx, "First"))
+	nodes, err := heq.Limit(1).All(setContextOp(ctx, heq.ctx, ent.OpQueryFirst))
 	if err != nil {
 		return nil, err
 	}
@@ -135,7 +136,7 @@ func (heq *HashesEntryQuery) FirstX(ctx context.Context) *HashesEntry {
 // Returns a *NotFoundError when no HashesEntry ID was found.
 func (heq *HashesEntryQuery) FirstID(ctx context.Context) (id int, err error) {
 	var ids []int
-	if ids, err = heq.Limit(1).IDs(setContextOp(ctx, heq.ctx, "FirstID")); err != nil {
+	if ids, err = heq.Limit(1).IDs(setContextOp(ctx, heq.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
 	if len(ids) == 0 {
@@ -158,7 +159,7 @@ func (heq *HashesEntryQuery) FirstIDX(ctx context.Context) int {
 // Returns a *NotSingularError when more than one HashesEntry entity is found.
 // Returns a *NotFoundError when no HashesEntry entities are found.
 func (heq *HashesEntryQuery) Only(ctx context.Context) (*HashesEntry, error) {
-	nodes, err := heq.Limit(2).All(setContextOp(ctx, heq.ctx, "Only"))
+	nodes, err := heq.Limit(2).All(setContextOp(ctx, heq.ctx, ent.OpQueryOnly))
 	if err != nil {
 		return nil, err
 	}
@@ -186,7 +187,7 @@ func (heq *HashesEntryQuery) OnlyX(ctx context.Context) *HashesEntry {
 // Returns a *NotFoundError when no entities are found.
 func (heq *HashesEntryQuery) OnlyID(ctx context.Context) (id int, err error) {
 	var ids []int
-	if ids, err = heq.Limit(2).IDs(setContextOp(ctx, heq.ctx, "OnlyID")); err != nil {
+	if ids, err = heq.Limit(2).IDs(setContextOp(ctx, heq.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
 	switch len(ids) {
@@ -211,7 +212,7 @@ func (heq *HashesEntryQuery) OnlyIDX(ctx context.Context) int {
 
 // All executes the query and returns a list of HashesEntries.
 func (heq *HashesEntryQuery) All(ctx context.Context) ([]*HashesEntry, error) {
-	ctx = setContextOp(ctx, heq.ctx, "All")
+	ctx = setContextOp(ctx, heq.ctx, ent.OpQueryAll)
 	if err := heq.prepareQuery(ctx); err != nil {
 		return nil, err
 	}
@@ -233,7 +234,7 @@ func (heq *HashesEntryQuery) IDs(ctx context.Context) (ids []int, err error) {
 	if heq.ctx.Unique == nil && heq.path != nil {
 		heq.Unique(true)
 	}
-	ctx = setContextOp(ctx, heq.ctx, "IDs")
+	ctx = setContextOp(ctx, heq.ctx, ent.OpQueryIDs)
 	if err = heq.Select(hashesentry.FieldID).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
@@ -251,7 +252,7 @@ func (heq *HashesEntryQuery) IDsX(ctx context.Context) []int {
 
 // Count returns the count of the given query.
 func (heq *HashesEntryQuery) Count(ctx context.Context) (int, error) {
-	ctx = setContextOp(ctx, heq.ctx, "Count")
+	ctx = setContextOp(ctx, heq.ctx, ent.OpQueryCount)
 	if err := heq.prepareQuery(ctx); err != nil {
 		return 0, err
 	}
@@ -269,7 +270,7 @@ func (heq *HashesEntryQuery) CountX(ctx context.Context) int {
 
 // Exist returns true if the query has elements in the graph.
 func (heq *HashesEntryQuery) Exist(ctx context.Context) (bool, error) {
-	ctx = setContextOp(ctx, heq.ctx, "Exist")
+	ctx = setContextOp(ctx, heq.ctx, ent.OpQueryExist)
 	switch _, err := heq.FirstID(ctx); {
 	case IsNotFound(err):
 		return false, nil
@@ -607,7 +608,7 @@ func (hegb *HashesEntryGroupBy) Aggregate(fns ...AggregateFunc) *HashesEntryGrou
 
 // Scan applies the selector query and scans the result into the given value.
 func (hegb *HashesEntryGroupBy) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, hegb.build.ctx, "GroupBy")
+	ctx = setContextOp(ctx, hegb.build.ctx, ent.OpQueryGroupBy)
 	if err := hegb.build.prepareQuery(ctx); err != nil {
 		return err
 	}
@@ -655,7 +656,7 @@ func (hes *HashesEntrySelect) Aggregate(fns ...AggregateFunc) *HashesEntrySelect
 
 // Scan applies the selector query and scans the result into the given value.
 func (hes *HashesEntrySelect) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, hes.ctx, "Select")
+	ctx = setContextOp(ctx, hes.ctx, ent.OpQuerySelect)
 	if err := hes.prepareQuery(ctx); err != nil {
 		return err
 	}

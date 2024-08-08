@@ -40,26 +40,6 @@ func (nu *NodeUpdate) Where(ps ...predicate.Node) *NodeUpdate {
 	return nu
 }
 
-// SetNodeListID sets the "node_list_id" field.
-func (nu *NodeUpdate) SetNodeListID(i int) *NodeUpdate {
-	nu.mutation.SetNodeListID(i)
-	return nu
-}
-
-// SetNillableNodeListID sets the "node_list_id" field if the given value is not nil.
-func (nu *NodeUpdate) SetNillableNodeListID(i *int) *NodeUpdate {
-	if i != nil {
-		nu.SetNodeListID(*i)
-	}
-	return nu
-}
-
-// ClearNodeListID clears the value of the "node_list_id" field.
-func (nu *NodeUpdate) ClearNodeListID() *NodeUpdate {
-	nu.mutation.ClearNodeListID()
-	return nu
-}
-
 // SetType sets the "type" field.
 func (nu *NodeUpdate) SetType(n node.Type) *NodeUpdate {
 	nu.mutation.SetType(n)
@@ -440,9 +420,19 @@ func (nu *NodeUpdate) AddNodes(n ...*Node) *NodeUpdate {
 	return nu.AddNodeIDs(ids...)
 }
 
-// SetNodeList sets the "node_list" edge to the NodeList entity.
-func (nu *NodeUpdate) SetNodeList(n *NodeList) *NodeUpdate {
-	return nu.SetNodeListID(n.ID)
+// AddNodeListIDs adds the "node_lists" edge to the NodeList entity by IDs.
+func (nu *NodeUpdate) AddNodeListIDs(ids ...int) *NodeUpdate {
+	nu.mutation.AddNodeListIDs(ids...)
+	return nu
+}
+
+// AddNodeLists adds the "node_lists" edges to the NodeList entity.
+func (nu *NodeUpdate) AddNodeLists(n ...*NodeList) *NodeUpdate {
+	ids := make([]int, len(n))
+	for i := range n {
+		ids[i] = n[i].ID
+	}
+	return nu.AddNodeListIDs(ids...)
 }
 
 // AddEdgeTypeIDs adds the "edge_types" edge to the EdgeType entity by IDs.
@@ -633,10 +623,25 @@ func (nu *NodeUpdate) RemoveNodes(n ...*Node) *NodeUpdate {
 	return nu.RemoveNodeIDs(ids...)
 }
 
-// ClearNodeList clears the "node_list" edge to the NodeList entity.
-func (nu *NodeUpdate) ClearNodeList() *NodeUpdate {
-	nu.mutation.ClearNodeList()
+// ClearNodeLists clears all "node_lists" edges to the NodeList entity.
+func (nu *NodeUpdate) ClearNodeLists() *NodeUpdate {
+	nu.mutation.ClearNodeLists()
 	return nu
+}
+
+// RemoveNodeListIDs removes the "node_lists" edge to NodeList entities by IDs.
+func (nu *NodeUpdate) RemoveNodeListIDs(ids ...int) *NodeUpdate {
+	nu.mutation.RemoveNodeListIDs(ids...)
+	return nu
+}
+
+// RemoveNodeLists removes "node_lists" edges to NodeList entities.
+func (nu *NodeUpdate) RemoveNodeLists(n ...*NodeList) *NodeUpdate {
+	ids := make([]int, len(n))
+	for i := range n {
+		ids[i] = n[i].ID
+	}
+	return nu.RemoveNodeListIDs(ids...)
 }
 
 // ClearEdgeTypes clears all "edge_types" edges to the EdgeType entity.
@@ -1141,12 +1146,12 @@ func (nu *NodeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if nu.mutation.NodeListCleared() {
+	if nu.mutation.NodeListsCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.M2M,
 			Inverse: true,
-			Table:   node.NodeListTable,
-			Columns: []string{node.NodeListColumn},
+			Table:   node.NodeListsTable,
+			Columns: node.NodeListsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(nodelist.FieldID, field.TypeInt),
@@ -1154,12 +1159,28 @@ func (nu *NodeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := nu.mutation.NodeListIDs(); len(nodes) > 0 {
+	if nodes := nu.mutation.RemovedNodeListsIDs(); len(nodes) > 0 && !nu.mutation.NodeListsCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.M2M,
 			Inverse: true,
-			Table:   node.NodeListTable,
-			Columns: []string{node.NodeListColumn},
+			Table:   node.NodeListsTable,
+			Columns: node.NodeListsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(nodelist.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := nu.mutation.NodeListsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   node.NodeListsTable,
+			Columns: node.NodeListsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(nodelist.FieldID, field.TypeInt),
@@ -1233,26 +1254,6 @@ type NodeUpdateOne struct {
 	fields   []string
 	hooks    []Hook
 	mutation *NodeMutation
-}
-
-// SetNodeListID sets the "node_list_id" field.
-func (nuo *NodeUpdateOne) SetNodeListID(i int) *NodeUpdateOne {
-	nuo.mutation.SetNodeListID(i)
-	return nuo
-}
-
-// SetNillableNodeListID sets the "node_list_id" field if the given value is not nil.
-func (nuo *NodeUpdateOne) SetNillableNodeListID(i *int) *NodeUpdateOne {
-	if i != nil {
-		nuo.SetNodeListID(*i)
-	}
-	return nuo
-}
-
-// ClearNodeListID clears the value of the "node_list_id" field.
-func (nuo *NodeUpdateOne) ClearNodeListID() *NodeUpdateOne {
-	nuo.mutation.ClearNodeListID()
-	return nuo
 }
 
 // SetType sets the "type" field.
@@ -1635,9 +1636,19 @@ func (nuo *NodeUpdateOne) AddNodes(n ...*Node) *NodeUpdateOne {
 	return nuo.AddNodeIDs(ids...)
 }
 
-// SetNodeList sets the "node_list" edge to the NodeList entity.
-func (nuo *NodeUpdateOne) SetNodeList(n *NodeList) *NodeUpdateOne {
-	return nuo.SetNodeListID(n.ID)
+// AddNodeListIDs adds the "node_lists" edge to the NodeList entity by IDs.
+func (nuo *NodeUpdateOne) AddNodeListIDs(ids ...int) *NodeUpdateOne {
+	nuo.mutation.AddNodeListIDs(ids...)
+	return nuo
+}
+
+// AddNodeLists adds the "node_lists" edges to the NodeList entity.
+func (nuo *NodeUpdateOne) AddNodeLists(n ...*NodeList) *NodeUpdateOne {
+	ids := make([]int, len(n))
+	for i := range n {
+		ids[i] = n[i].ID
+	}
+	return nuo.AddNodeListIDs(ids...)
 }
 
 // AddEdgeTypeIDs adds the "edge_types" edge to the EdgeType entity by IDs.
@@ -1828,10 +1839,25 @@ func (nuo *NodeUpdateOne) RemoveNodes(n ...*Node) *NodeUpdateOne {
 	return nuo.RemoveNodeIDs(ids...)
 }
 
-// ClearNodeList clears the "node_list" edge to the NodeList entity.
-func (nuo *NodeUpdateOne) ClearNodeList() *NodeUpdateOne {
-	nuo.mutation.ClearNodeList()
+// ClearNodeLists clears all "node_lists" edges to the NodeList entity.
+func (nuo *NodeUpdateOne) ClearNodeLists() *NodeUpdateOne {
+	nuo.mutation.ClearNodeLists()
 	return nuo
+}
+
+// RemoveNodeListIDs removes the "node_lists" edge to NodeList entities by IDs.
+func (nuo *NodeUpdateOne) RemoveNodeListIDs(ids ...int) *NodeUpdateOne {
+	nuo.mutation.RemoveNodeListIDs(ids...)
+	return nuo
+}
+
+// RemoveNodeLists removes "node_lists" edges to NodeList entities.
+func (nuo *NodeUpdateOne) RemoveNodeLists(n ...*NodeList) *NodeUpdateOne {
+	ids := make([]int, len(n))
+	for i := range n {
+		ids[i] = n[i].ID
+	}
+	return nuo.RemoveNodeListIDs(ids...)
 }
 
 // ClearEdgeTypes clears all "edge_types" edges to the EdgeType entity.
@@ -2366,12 +2392,12 @@ func (nuo *NodeUpdateOne) sqlSave(ctx context.Context) (_node *Node, err error) 
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if nuo.mutation.NodeListCleared() {
+	if nuo.mutation.NodeListsCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.M2M,
 			Inverse: true,
-			Table:   node.NodeListTable,
-			Columns: []string{node.NodeListColumn},
+			Table:   node.NodeListsTable,
+			Columns: node.NodeListsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(nodelist.FieldID, field.TypeInt),
@@ -2379,12 +2405,28 @@ func (nuo *NodeUpdateOne) sqlSave(ctx context.Context) (_node *Node, err error) 
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := nuo.mutation.NodeListIDs(); len(nodes) > 0 {
+	if nodes := nuo.mutation.RemovedNodeListsIDs(); len(nodes) > 0 && !nuo.mutation.NodeListsCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.M2M,
 			Inverse: true,
-			Table:   node.NodeListTable,
-			Columns: []string{node.NodeListColumn},
+			Table:   node.NodeListsTable,
+			Columns: node.NodeListsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(nodelist.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := nuo.mutation.NodeListsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   node.NodeListsTable,
+			Columns: node.NodeListsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(nodelist.FieldID, field.TypeInt),

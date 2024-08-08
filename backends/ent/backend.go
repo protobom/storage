@@ -92,3 +92,18 @@ func (backend *Backend) WithDatabaseFile(file string) *Backend {
 
 	return backend
 }
+
+func (backend *Backend) txClient() (*ent.Tx, error) {
+	if backend.client == nil {
+		return nil, fmt.Errorf("%w", errUninitializedClient)
+	}
+
+	tx, err := backend.client.Tx(backend.ctx)
+	if err != nil {
+		return nil, fmt.Errorf("creating transactional client: %w", err)
+	}
+
+	backend.ctx = ent.NewTxContext(backend.ctx, tx)
+
+	return tx, nil
+}

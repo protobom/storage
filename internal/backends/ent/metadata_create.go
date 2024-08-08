@@ -168,7 +168,7 @@ func (mc *MetadataCreate) check() error {
 			return &ValidationError{Name: "id", err: fmt.Errorf(`ent: validator failed for field "Metadata.id": %w`, err)}
 		}
 	}
-	if _, ok := mc.mutation.DocumentID(); !ok {
+	if len(mc.mutation.DocumentIDs()) == 0 {
 		return &ValidationError{Name: "document", err: errors.New(`ent: missing required edge "Metadata.document"`)}
 	}
 	return nil
