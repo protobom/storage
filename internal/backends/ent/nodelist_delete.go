@@ -44,7 +44,7 @@ func (nld *NodeListDelete) ExecX(ctx context.Context) int {
 }
 
 func (nld *NodeListDelete) sqlExec(ctx context.Context) (int, error) {
-	_spec := sqlgraph.NewDeleteSpec(nodelist.Table, sqlgraph.NewFieldSpec(nodelist.FieldID, field.TypeInt))
+	_spec := sqlgraph.NewDeleteSpec(nodelist.Table, sqlgraph.NewFieldSpec(nodelist.FieldID, field.TypeUUID))
 	if ps := nld.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {

@@ -13,6 +13,7 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/google/uuid"
 	"github.com/protobom/protobom/pkg/sbom"
 	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/externalreference"
@@ -23,7 +24,9 @@ import (
 type ExternalReference struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID int `json:"id,omitempty"`
+	ID uuid.UUID `json:"id,omitempty"`
+	// DocumentID holds the value of the "document_id" field.
+	DocumentID uuid.UUID `json:"document_id,omitempty"`
 	// ProtoMessage holds the value of the "proto_message" field.
 	ProtoMessage *sbom.ExternalReference `json:"proto_message,omitempty"`
 	// NodeID holds the value of the "node_id" field.
@@ -41,7 +44,6 @@ type ExternalReference struct {
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the ExternalReferenceQuery when eager-loading is set.
 	Edges        ExternalReferenceEdges `json:"edges"`
-	document_id  *string
 	selectValues sql.SelectValues
 }
 
@@ -85,12 +87,10 @@ func (*ExternalReference) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case externalreference.FieldProtoMessage, externalreference.FieldHashes:
 			values[i] = new([]byte)
-		case externalreference.FieldID:
-			values[i] = new(sql.NullInt64)
 		case externalreference.FieldNodeID, externalreference.FieldURL, externalreference.FieldComment, externalreference.FieldAuthority, externalreference.FieldType:
 			values[i] = new(sql.NullString)
-		case externalreference.ForeignKeys[0]: // document_id
-			values[i] = new(sql.NullString)
+		case externalreference.FieldID, externalreference.FieldDocumentID:
+			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -107,11 +107,17 @@ func (er *ExternalReference) assignValues(columns []string, values []any) error 
 	for i := range columns {
 		switch columns[i] {
 		case externalreference.FieldID:
-			value, ok := values[i].(*sql.NullInt64)
-			if !ok {
-				return fmt.Errorf("unexpected type %T for field id", value)
+			if value, ok := values[i].(*uuid.UUID); !ok {
+				return fmt.Errorf("unexpected type %T for field id", values[i])
+			} else if value != nil {
+				er.ID = *value
 			}
-			er.ID = int(value.Int64)
+		case externalreference.FieldDocumentID:
+			if value, ok := values[i].(*uuid.UUID); !ok {
+				return fmt.Errorf("unexpected type %T for field document_id", values[i])
+			} else if value != nil {
+				er.DocumentID = *value
+			}
 		case externalreference.FieldProtoMessage:
 			if value, ok := values[i].(*[]byte); !ok {
 				return fmt.Errorf("unexpected type %T for field proto_message", values[i])
@@ -157,13 +163,6 @@ func (er *ExternalReference) assignValues(columns []string, values []any) error 
 				if err := json.Unmarshal(*value, &er.Hashes); err != nil {
 					return fmt.Errorf("unmarshal field hashes: %w", err)
 				}
-			}
-		case externalreference.ForeignKeys[0]:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field document_id", values[i])
-			} else if value.Valid {
-				er.document_id = new(string)
-				*er.document_id = value.String
 			}
 		default:
 			er.selectValues.Set(columns[i], values[i])
@@ -211,6 +210,9 @@ func (er *ExternalReference) String() string {
 	var builder strings.Builder
 	builder.WriteString("ExternalReference(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", er.ID))
+	builder.WriteString("document_id=")
+	builder.WriteString(fmt.Sprintf("%v", er.DocumentID))
+	builder.WriteString(", ")
 	builder.WriteString("proto_message=")
 	builder.WriteString(fmt.Sprintf("%v", er.ProtoMessage))
 	builder.WriteString(", ")

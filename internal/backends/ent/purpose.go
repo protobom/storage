@@ -12,6 +12,7 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/google/uuid"
 	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/node"
 	"github.com/protobom/storage/internal/backends/ent/purpose"
@@ -22,6 +23,8 @@ type Purpose struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID int `json:"id,omitempty"`
+	// DocumentID holds the value of the "document_id" field.
+	DocumentID uuid.UUID `json:"document_id,omitempty"`
 	// NodeID holds the value of the "node_id" field.
 	NodeID string `json:"node_id,omitempty"`
 	// PrimaryPurpose holds the value of the "primary_purpose" field.
@@ -29,7 +32,6 @@ type Purpose struct {
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the PurposeQuery when eager-loading is set.
 	Edges        PurposeEdges `json:"edges"`
-	document_id  *string
 	selectValues sql.SelectValues
 }
 
@@ -75,8 +77,8 @@ func (*Purpose) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullInt64)
 		case purpose.FieldNodeID, purpose.FieldPrimaryPurpose:
 			values[i] = new(sql.NullString)
-		case purpose.ForeignKeys[0]: // document_id
-			values[i] = new(sql.NullString)
+		case purpose.FieldDocumentID:
+			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -98,6 +100,12 @@ func (pu *Purpose) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", value)
 			}
 			pu.ID = int(value.Int64)
+		case purpose.FieldDocumentID:
+			if value, ok := values[i].(*uuid.UUID); !ok {
+				return fmt.Errorf("unexpected type %T for field document_id", values[i])
+			} else if value != nil {
+				pu.DocumentID = *value
+			}
 		case purpose.FieldNodeID:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field node_id", values[i])
@@ -109,13 +117,6 @@ func (pu *Purpose) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field primary_purpose", values[i])
 			} else if value.Valid {
 				pu.PrimaryPurpose = purpose.PrimaryPurpose(value.String)
-			}
-		case purpose.ForeignKeys[0]:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field document_id", values[i])
-			} else if value.Valid {
-				pu.document_id = new(string)
-				*pu.document_id = value.String
 			}
 		default:
 			pu.selectValues.Set(columns[i], values[i])
@@ -163,6 +164,9 @@ func (pu *Purpose) String() string {
 	var builder strings.Builder
 	builder.WriteString("Purpose(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", pu.ID))
+	builder.WriteString("document_id=")
+	builder.WriteString(fmt.Sprintf("%v", pu.DocumentID))
+	builder.WriteString(", ")
 	builder.WriteString("node_id=")
 	builder.WriteString(pu.NodeID)
 	builder.WriteString(", ")

@@ -38,8 +38,7 @@ func (Metadata) Edges() []ent.Edge {
 		edge.To("tools", Tool.Type),
 		edge.To("authors", Person.Type),
 		edge.To("document_types", DocumentType.Type),
-		edge.From("document", Document.Type).
-			Ref("metadata").
+		edge.To("document", Document.Type).
 			Required().
 			Unique().
 			Immutable(),

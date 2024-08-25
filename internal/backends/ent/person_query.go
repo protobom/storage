@@ -16,6 +16,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/google/uuid"
 	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/metadata"
 	"github.com/protobom/storage/internal/backends/ent/node"
@@ -206,8 +207,8 @@ func (pq *PersonQuery) FirstX(ctx context.Context) *Person {
 
 // FirstID returns the first Person ID from the query.
 // Returns a *NotFoundError when no Person ID was found.
-func (pq *PersonQuery) FirstID(ctx context.Context) (id int, err error) {
-	var ids []int
+func (pq *PersonQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
+	var ids []uuid.UUID
 	if ids, err = pq.Limit(1).IDs(setContextOp(ctx, pq.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
@@ -219,7 +220,7 @@ func (pq *PersonQuery) FirstID(ctx context.Context) (id int, err error) {
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (pq *PersonQuery) FirstIDX(ctx context.Context) int {
+func (pq *PersonQuery) FirstIDX(ctx context.Context) uuid.UUID {
 	id, err := pq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -257,8 +258,8 @@ func (pq *PersonQuery) OnlyX(ctx context.Context) *Person {
 // OnlyID is like Only, but returns the only Person ID in the query.
 // Returns a *NotSingularError when more than one Person ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (pq *PersonQuery) OnlyID(ctx context.Context) (id int, err error) {
-	var ids []int
+func (pq *PersonQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
+	var ids []uuid.UUID
 	if ids, err = pq.Limit(2).IDs(setContextOp(ctx, pq.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
@@ -274,7 +275,7 @@ func (pq *PersonQuery) OnlyID(ctx context.Context) (id int, err error) {
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (pq *PersonQuery) OnlyIDX(ctx context.Context) int {
+func (pq *PersonQuery) OnlyIDX(ctx context.Context) uuid.UUID {
 	id, err := pq.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -302,7 +303,7 @@ func (pq *PersonQuery) AllX(ctx context.Context) []*Person {
 }
 
 // IDs executes the query and returns a list of Person IDs.
-func (pq *PersonQuery) IDs(ctx context.Context) (ids []int, err error) {
+func (pq *PersonQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
 	if pq.ctx.Unique == nil && pq.path != nil {
 		pq.Unique(true)
 	}
@@ -314,7 +315,7 @@ func (pq *PersonQuery) IDs(ctx context.Context) (ids []int, err error) {
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (pq *PersonQuery) IDsX(ctx context.Context) []int {
+func (pq *PersonQuery) IDsX(ctx context.Context) []uuid.UUID {
 	ids, err := pq.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -446,12 +447,12 @@ func (pq *PersonQuery) WithNode(opts ...func(*NodeQuery)) *PersonQuery {
 // Example:
 //
 //	var v []struct {
-//		ProtoMessage *sbom.Person `json:"proto_message,omitempty"`
+//		DocumentID uuid.UUID `json:"document_id,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.Person.Query().
-//		GroupBy(person.FieldProtoMessage).
+//		GroupBy(person.FieldDocumentID).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (pq *PersonQuery) GroupBy(field string, fields ...string) *PersonGroupBy {
@@ -469,11 +470,11 @@ func (pq *PersonQuery) GroupBy(field string, fields ...string) *PersonGroupBy {
 // Example:
 //
 //	var v []struct {
-//		ProtoMessage *sbom.Person `json:"proto_message,omitempty"`
+//		DocumentID uuid.UUID `json:"document_id,omitempty"`
 //	}
 //
 //	client.Person.Query().
-//		Select(person.FieldProtoMessage).
+//		Select(person.FieldDocumentID).
 //		Scan(ctx, &v)
 func (pq *PersonQuery) Select(fields ...string) *PersonSelect {
 	pq.ctx.Fields = append(pq.ctx.Fields, fields...)
@@ -527,7 +528,7 @@ func (pq *PersonQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Perso
 			pq.withNode != nil,
 		}
 	)
-	if pq.withDocument != nil || pq.withContactOwner != nil {
+	if pq.withContactOwner != nil {
 		withFKs = true
 	}
 	if withFKs {
@@ -586,13 +587,10 @@ func (pq *PersonQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Perso
 }
 
 func (pq *PersonQuery) loadDocument(ctx context.Context, query *DocumentQuery, nodes []*Person, init func(*Person), assign func(*Person, *Document)) error {
-	ids := make([]string, 0, len(nodes))
-	nodeids := make(map[string][]*Person)
+	ids := make([]uuid.UUID, 0, len(nodes))
+	nodeids := make(map[uuid.UUID][]*Person)
 	for i := range nodes {
-		if nodes[i].document_id == nil {
-			continue
-		}
-		fk := *nodes[i].document_id
+		fk := nodes[i].DocumentID
 		if _, ok := nodeids[fk]; !ok {
 			ids = append(ids, fk)
 		}
@@ -618,8 +616,8 @@ func (pq *PersonQuery) loadDocument(ctx context.Context, query *DocumentQuery, n
 	return nil
 }
 func (pq *PersonQuery) loadContactOwner(ctx context.Context, query *PersonQuery, nodes []*Person, init func(*Person), assign func(*Person, *Person)) error {
-	ids := make([]int, 0, len(nodes))
-	nodeids := make(map[int][]*Person)
+	ids := make([]uuid.UUID, 0, len(nodes))
+	nodeids := make(map[uuid.UUID][]*Person)
 	for i := range nodes {
 		if nodes[i].person_contacts == nil {
 			continue
@@ -651,7 +649,7 @@ func (pq *PersonQuery) loadContactOwner(ctx context.Context, query *PersonQuery,
 }
 func (pq *PersonQuery) loadContacts(ctx context.Context, query *PersonQuery, nodes []*Person, init func(*Person), assign func(*Person, *Person)) error {
 	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[int]*Person)
+	nodeids := make(map[uuid.UUID]*Person)
 	for i := range nodes {
 		fks = append(fks, nodes[i].ID)
 		nodeids[nodes[i].ID] = nodes[i]
@@ -749,7 +747,7 @@ func (pq *PersonQuery) sqlCount(ctx context.Context) (int, error) {
 }
 
 func (pq *PersonQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := sqlgraph.NewQuerySpec(person.Table, person.Columns, sqlgraph.NewFieldSpec(person.FieldID, field.TypeInt))
+	_spec := sqlgraph.NewQuerySpec(person.Table, person.Columns, sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID))
 	_spec.From = pq.sql
 	if unique := pq.ctx.Unique; unique != nil {
 		_spec.Unique = *unique
@@ -763,6 +761,9 @@ func (pq *PersonQuery) querySpec() *sqlgraph.QuerySpec {
 			if fields[i] != person.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
+		}
+		if pq.withDocument != nil {
+			_spec.Node.AddColumnOnce(person.FieldDocumentID)
 		}
 		if pq.withMetadata != nil {
 			_spec.Node.AddColumnOnce(person.FieldMetadataID)

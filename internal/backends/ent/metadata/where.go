@@ -409,7 +409,7 @@ func HasDocument() predicate.Metadata {
 	return predicate.Metadata(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, true, DocumentTable, DocumentColumn),
+			sqlgraph.Edge(sqlgraph.O2O, false, DocumentTable, DocumentColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})

@@ -18,8 +18,8 @@ type NodeList struct {
 
 func (NodeList) Mixin() []ent.Mixin {
 	return []ent.Mixin{
-		DocumentMixin{},
 		ProtoMessageMixin{ProtoMessageType: &sbom.NodeList{}},
+		UUIDMixin{},
 	}
 }
 
@@ -32,5 +32,9 @@ func (NodeList) Fields() []ent.Field {
 func (NodeList) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("nodes", Node.Type),
+		edge.To("document", Document.Type).
+			Required().
+			Unique().
+			Immutable(),
 	}
 }

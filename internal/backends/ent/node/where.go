@@ -12,6 +12,7 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"github.com/google/uuid"
 	"github.com/protobom/storage/internal/backends/ent/predicate"
 )
 
@@ -70,8 +71,13 @@ func IDContainsFold(id string) predicate.Node {
 	return predicate.Node(sql.FieldContainsFold(FieldID, id))
 }
 
+// DocumentID applies equality check predicate on the "document_id" field. It's identical to DocumentIDEQ.
+func DocumentID(v uuid.UUID) predicate.Node {
+	return predicate.Node(sql.FieldEQ(FieldDocumentID, v))
+}
+
 // NodeListID applies equality check predicate on the "node_list_id" field. It's identical to NodeListIDEQ.
-func NodeListID(v int) predicate.Node {
+func NodeListID(v uuid.UUID) predicate.Node {
 	return predicate.Node(sql.FieldEQ(FieldNodeListID, v))
 }
 
@@ -150,6 +156,36 @@ func ValidUntilDate(v time.Time) predicate.Node {
 	return predicate.Node(sql.FieldEQ(FieldValidUntilDate, v))
 }
 
+// DocumentIDEQ applies the EQ predicate on the "document_id" field.
+func DocumentIDEQ(v uuid.UUID) predicate.Node {
+	return predicate.Node(sql.FieldEQ(FieldDocumentID, v))
+}
+
+// DocumentIDNEQ applies the NEQ predicate on the "document_id" field.
+func DocumentIDNEQ(v uuid.UUID) predicate.Node {
+	return predicate.Node(sql.FieldNEQ(FieldDocumentID, v))
+}
+
+// DocumentIDIn applies the In predicate on the "document_id" field.
+func DocumentIDIn(vs ...uuid.UUID) predicate.Node {
+	return predicate.Node(sql.FieldIn(FieldDocumentID, vs...))
+}
+
+// DocumentIDNotIn applies the NotIn predicate on the "document_id" field.
+func DocumentIDNotIn(vs ...uuid.UUID) predicate.Node {
+	return predicate.Node(sql.FieldNotIn(FieldDocumentID, vs...))
+}
+
+// DocumentIDIsNil applies the IsNil predicate on the "document_id" field.
+func DocumentIDIsNil() predicate.Node {
+	return predicate.Node(sql.FieldIsNull(FieldDocumentID))
+}
+
+// DocumentIDNotNil applies the NotNil predicate on the "document_id" field.
+func DocumentIDNotNil() predicate.Node {
+	return predicate.Node(sql.FieldNotNull(FieldDocumentID))
+}
+
 // ProtoMessageIsNil applies the IsNil predicate on the "proto_message" field.
 func ProtoMessageIsNil() predicate.Node {
 	return predicate.Node(sql.FieldIsNull(FieldProtoMessage))
@@ -161,22 +197,22 @@ func ProtoMessageNotNil() predicate.Node {
 }
 
 // NodeListIDEQ applies the EQ predicate on the "node_list_id" field.
-func NodeListIDEQ(v int) predicate.Node {
+func NodeListIDEQ(v uuid.UUID) predicate.Node {
 	return predicate.Node(sql.FieldEQ(FieldNodeListID, v))
 }
 
 // NodeListIDNEQ applies the NEQ predicate on the "node_list_id" field.
-func NodeListIDNEQ(v int) predicate.Node {
+func NodeListIDNEQ(v uuid.UUID) predicate.Node {
 	return predicate.Node(sql.FieldNEQ(FieldNodeListID, v))
 }
 
 // NodeListIDIn applies the In predicate on the "node_list_id" field.
-func NodeListIDIn(vs ...int) predicate.Node {
+func NodeListIDIn(vs ...uuid.UUID) predicate.Node {
 	return predicate.Node(sql.FieldIn(FieldNodeListID, vs...))
 }
 
 // NodeListIDNotIn applies the NotIn predicate on the "node_list_id" field.
-func NodeListIDNotIn(vs ...int) predicate.Node {
+func NodeListIDNotIn(vs ...uuid.UUID) predicate.Node {
 	return predicate.Node(sql.FieldNotIn(FieldNodeListID, vs...))
 }
 

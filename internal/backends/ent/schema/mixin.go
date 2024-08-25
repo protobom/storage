@@ -7,9 +7,11 @@ package schema
 
 import (
 	"entgo.io/ent"
+	"entgo.io/ent/schema"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/mixin"
+	"github.com/google/uuid"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -22,19 +24,41 @@ type (
 		mixin.Schema
 		ProtoMessageType proto.Message
 	}
+
+	UUIDMixin struct {
+		mixin.Schema
+	}
 )
 
-func (m DocumentMixin) Edges() []ent.Edge {
+func (DocumentMixin) Fields() []ent.Field {
+	return []ent.Field{
+		field.UUID("document_id", uuid.UUID{}).
+			Optional().
+			Immutable().
+			Default(func() uuid.UUID { return uuid.Must(uuid.NewV7()) }),
+	}
+}
+
+func (DocumentMixin) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("document", Document.Type).
 			Unique().
 			Immutable().
-			StorageKey(edge.Column("document_id")),
+			Field("document_id"),
 	}
 }
 
 func (m ProtoMessageMixin) Fields() []ent.Field {
 	return []ent.Field{
 		field.JSON("proto_message", m.ProtoMessageType).Optional(),
+	}
+}
+
+func (UUIDMixin) Fields() []ent.Field {
+	return []ent.Field{
+		field.UUID("id", uuid.UUID{}).
+			Unique().
+			Immutable().
+			Annotations(schema.Comment("Unique identifier field")),
 	}
 }

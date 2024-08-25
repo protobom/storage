@@ -15,6 +15,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/google/uuid"
 	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/edgetype"
 	"github.com/protobom/storage/internal/backends/ent/node"
@@ -31,7 +32,6 @@ type EdgeTypeQuery struct {
 	withDocument *DocumentQuery
 	withFrom     *NodeQuery
 	withTo       *NodeQuery
-	withFKs      bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -374,12 +374,12 @@ func (etq *EdgeTypeQuery) WithTo(opts ...func(*NodeQuery)) *EdgeTypeQuery {
 // Example:
 //
 //	var v []struct {
-//		Type edgetype.Type `json:"type,omitempty"`
+//		DocumentID uuid.UUID `json:"document_id,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.EdgeType.Query().
-//		GroupBy(edgetype.FieldType).
+//		GroupBy(edgetype.FieldDocumentID).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (etq *EdgeTypeQuery) GroupBy(field string, fields ...string) *EdgeTypeGroupBy {
@@ -397,11 +397,11 @@ func (etq *EdgeTypeQuery) GroupBy(field string, fields ...string) *EdgeTypeGroup
 // Example:
 //
 //	var v []struct {
-//		Type edgetype.Type `json:"type,omitempty"`
+//		DocumentID uuid.UUID `json:"document_id,omitempty"`
 //	}
 //
 //	client.EdgeType.Query().
-//		Select(edgetype.FieldType).
+//		Select(edgetype.FieldDocumentID).
 //		Scan(ctx, &v)
 func (etq *EdgeTypeQuery) Select(fields ...string) *EdgeTypeSelect {
 	etq.ctx.Fields = append(etq.ctx.Fields, fields...)
@@ -445,7 +445,6 @@ func (etq *EdgeTypeQuery) prepareQuery(ctx context.Context) error {
 func (etq *EdgeTypeQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*EdgeType, error) {
 	var (
 		nodes       = []*EdgeType{}
-		withFKs     = etq.withFKs
 		_spec       = etq.querySpec()
 		loadedTypes = [3]bool{
 			etq.withDocument != nil,
@@ -453,12 +452,6 @@ func (etq *EdgeTypeQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Ed
 			etq.withTo != nil,
 		}
 	)
-	if etq.withDocument != nil {
-		withFKs = true
-	}
-	if withFKs {
-		_spec.Node.Columns = append(_spec.Node.Columns, edgetype.ForeignKeys...)
-	}
 	_spec.ScanValues = func(columns []string) ([]any, error) {
 		return (*EdgeType).scanValues(nil, columns)
 	}
@@ -499,13 +492,10 @@ func (etq *EdgeTypeQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Ed
 }
 
 func (etq *EdgeTypeQuery) loadDocument(ctx context.Context, query *DocumentQuery, nodes []*EdgeType, init func(*EdgeType), assign func(*EdgeType, *Document)) error {
-	ids := make([]string, 0, len(nodes))
-	nodeids := make(map[string][]*EdgeType)
+	ids := make([]uuid.UUID, 0, len(nodes))
+	nodeids := make(map[uuid.UUID][]*EdgeType)
 	for i := range nodes {
-		if nodes[i].document_id == nil {
-			continue
-		}
-		fk := *nodes[i].document_id
+		fk := nodes[i].DocumentID
 		if _, ok := nodeids[fk]; !ok {
 			ids = append(ids, fk)
 		}
@@ -613,6 +603,9 @@ func (etq *EdgeTypeQuery) querySpec() *sqlgraph.QuerySpec {
 			if fields[i] != edgetype.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
+		}
+		if etq.withDocument != nil {
+			_spec.Node.AddColumnOnce(edgetype.FieldDocumentID)
 		}
 		if etq.withFrom != nil {
 			_spec.Node.AddColumnOnce(edgetype.FieldNodeID)

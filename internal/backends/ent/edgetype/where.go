@@ -10,6 +10,7 @@ package edgetype
 import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"github.com/google/uuid"
 	"github.com/protobom/storage/internal/backends/ent/predicate"
 )
 
@@ -58,6 +59,11 @@ func IDLTE(id int) predicate.EdgeType {
 	return predicate.EdgeType(sql.FieldLTE(FieldID, id))
 }
 
+// DocumentID applies equality check predicate on the "document_id" field. It's identical to DocumentIDEQ.
+func DocumentID(v uuid.UUID) predicate.EdgeType {
+	return predicate.EdgeType(sql.FieldEQ(FieldDocumentID, v))
+}
+
 // NodeID applies equality check predicate on the "node_id" field. It's identical to NodeIDEQ.
 func NodeID(v string) predicate.EdgeType {
 	return predicate.EdgeType(sql.FieldEQ(FieldNodeID, v))
@@ -66,6 +72,36 @@ func NodeID(v string) predicate.EdgeType {
 // ToNodeID applies equality check predicate on the "to_node_id" field. It's identical to ToNodeIDEQ.
 func ToNodeID(v string) predicate.EdgeType {
 	return predicate.EdgeType(sql.FieldEQ(FieldToNodeID, v))
+}
+
+// DocumentIDEQ applies the EQ predicate on the "document_id" field.
+func DocumentIDEQ(v uuid.UUID) predicate.EdgeType {
+	return predicate.EdgeType(sql.FieldEQ(FieldDocumentID, v))
+}
+
+// DocumentIDNEQ applies the NEQ predicate on the "document_id" field.
+func DocumentIDNEQ(v uuid.UUID) predicate.EdgeType {
+	return predicate.EdgeType(sql.FieldNEQ(FieldDocumentID, v))
+}
+
+// DocumentIDIn applies the In predicate on the "document_id" field.
+func DocumentIDIn(vs ...uuid.UUID) predicate.EdgeType {
+	return predicate.EdgeType(sql.FieldIn(FieldDocumentID, vs...))
+}
+
+// DocumentIDNotIn applies the NotIn predicate on the "document_id" field.
+func DocumentIDNotIn(vs ...uuid.UUID) predicate.EdgeType {
+	return predicate.EdgeType(sql.FieldNotIn(FieldDocumentID, vs...))
+}
+
+// DocumentIDIsNil applies the IsNil predicate on the "document_id" field.
+func DocumentIDIsNil() predicate.EdgeType {
+	return predicate.EdgeType(sql.FieldIsNull(FieldDocumentID))
+}
+
+// DocumentIDNotNil applies the NotNil predicate on the "document_id" field.
+func DocumentIDNotNil() predicate.EdgeType {
+	return predicate.EdgeType(sql.FieldNotNull(FieldDocumentID))
 }
 
 // TypeEQ applies the EQ predicate on the "type" field.

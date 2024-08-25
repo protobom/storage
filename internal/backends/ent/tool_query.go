@@ -15,6 +15,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/google/uuid"
 	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/metadata"
 	"github.com/protobom/storage/internal/backends/ent/predicate"
@@ -30,7 +31,6 @@ type ToolQuery struct {
 	predicates   []predicate.Tool
 	withDocument *DocumentQuery
 	withMetadata *MetadataQuery
-	withFKs      bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -135,8 +135,8 @@ func (tq *ToolQuery) FirstX(ctx context.Context) *Tool {
 
 // FirstID returns the first Tool ID from the query.
 // Returns a *NotFoundError when no Tool ID was found.
-func (tq *ToolQuery) FirstID(ctx context.Context) (id int, err error) {
-	var ids []int
+func (tq *ToolQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
+	var ids []uuid.UUID
 	if ids, err = tq.Limit(1).IDs(setContextOp(ctx, tq.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
@@ -148,7 +148,7 @@ func (tq *ToolQuery) FirstID(ctx context.Context) (id int, err error) {
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (tq *ToolQuery) FirstIDX(ctx context.Context) int {
+func (tq *ToolQuery) FirstIDX(ctx context.Context) uuid.UUID {
 	id, err := tq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -186,8 +186,8 @@ func (tq *ToolQuery) OnlyX(ctx context.Context) *Tool {
 // OnlyID is like Only, but returns the only Tool ID in the query.
 // Returns a *NotSingularError when more than one Tool ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (tq *ToolQuery) OnlyID(ctx context.Context) (id int, err error) {
-	var ids []int
+func (tq *ToolQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
+	var ids []uuid.UUID
 	if ids, err = tq.Limit(2).IDs(setContextOp(ctx, tq.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
@@ -203,7 +203,7 @@ func (tq *ToolQuery) OnlyID(ctx context.Context) (id int, err error) {
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (tq *ToolQuery) OnlyIDX(ctx context.Context) int {
+func (tq *ToolQuery) OnlyIDX(ctx context.Context) uuid.UUID {
 	id, err := tq.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -231,7 +231,7 @@ func (tq *ToolQuery) AllX(ctx context.Context) []*Tool {
 }
 
 // IDs executes the query and returns a list of Tool IDs.
-func (tq *ToolQuery) IDs(ctx context.Context) (ids []int, err error) {
+func (tq *ToolQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
 	if tq.ctx.Unique == nil && tq.path != nil {
 		tq.Unique(true)
 	}
@@ -243,7 +243,7 @@ func (tq *ToolQuery) IDs(ctx context.Context) (ids []int, err error) {
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (tq *ToolQuery) IDsX(ctx context.Context) []int {
+func (tq *ToolQuery) IDsX(ctx context.Context) []uuid.UUID {
 	ids, err := tq.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -339,12 +339,12 @@ func (tq *ToolQuery) WithMetadata(opts ...func(*MetadataQuery)) *ToolQuery {
 // Example:
 //
 //	var v []struct {
-//		ProtoMessage *sbom.Tool `json:"proto_message,omitempty"`
+//		DocumentID uuid.UUID `json:"document_id,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.Tool.Query().
-//		GroupBy(tool.FieldProtoMessage).
+//		GroupBy(tool.FieldDocumentID).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (tq *ToolQuery) GroupBy(field string, fields ...string) *ToolGroupBy {
@@ -362,11 +362,11 @@ func (tq *ToolQuery) GroupBy(field string, fields ...string) *ToolGroupBy {
 // Example:
 //
 //	var v []struct {
-//		ProtoMessage *sbom.Tool `json:"proto_message,omitempty"`
+//		DocumentID uuid.UUID `json:"document_id,omitempty"`
 //	}
 //
 //	client.Tool.Query().
-//		Select(tool.FieldProtoMessage).
+//		Select(tool.FieldDocumentID).
 //		Scan(ctx, &v)
 func (tq *ToolQuery) Select(fields ...string) *ToolSelect {
 	tq.ctx.Fields = append(tq.ctx.Fields, fields...)
@@ -410,19 +410,12 @@ func (tq *ToolQuery) prepareQuery(ctx context.Context) error {
 func (tq *ToolQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Tool, error) {
 	var (
 		nodes       = []*Tool{}
-		withFKs     = tq.withFKs
 		_spec       = tq.querySpec()
 		loadedTypes = [2]bool{
 			tq.withDocument != nil,
 			tq.withMetadata != nil,
 		}
 	)
-	if tq.withDocument != nil {
-		withFKs = true
-	}
-	if withFKs {
-		_spec.Node.Columns = append(_spec.Node.Columns, tool.ForeignKeys...)
-	}
 	_spec.ScanValues = func(columns []string) ([]any, error) {
 		return (*Tool).scanValues(nil, columns)
 	}
@@ -457,13 +450,10 @@ func (tq *ToolQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Tool, e
 }
 
 func (tq *ToolQuery) loadDocument(ctx context.Context, query *DocumentQuery, nodes []*Tool, init func(*Tool), assign func(*Tool, *Document)) error {
-	ids := make([]string, 0, len(nodes))
-	nodeids := make(map[string][]*Tool)
+	ids := make([]uuid.UUID, 0, len(nodes))
+	nodeids := make(map[uuid.UUID][]*Tool)
 	for i := range nodes {
-		if nodes[i].document_id == nil {
-			continue
-		}
-		fk := *nodes[i].document_id
+		fk := nodes[i].DocumentID
 		if _, ok := nodeids[fk]; !ok {
 			ids = append(ids, fk)
 		}
@@ -528,7 +518,7 @@ func (tq *ToolQuery) sqlCount(ctx context.Context) (int, error) {
 }
 
 func (tq *ToolQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := sqlgraph.NewQuerySpec(tool.Table, tool.Columns, sqlgraph.NewFieldSpec(tool.FieldID, field.TypeInt))
+	_spec := sqlgraph.NewQuerySpec(tool.Table, tool.Columns, sqlgraph.NewFieldSpec(tool.FieldID, field.TypeUUID))
 	_spec.From = tq.sql
 	if unique := tq.ctx.Unique; unique != nil {
 		_spec.Unique = *unique
@@ -542,6 +532,9 @@ func (tq *ToolQuery) querySpec() *sqlgraph.QuerySpec {
 			if fields[i] != tool.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
+		}
+		if tq.withDocument != nil {
+			_spec.Node.AddColumnOnce(tool.FieldDocumentID)
 		}
 		if tq.withMetadata != nil {
 			_spec.Node.AddColumnOnce(tool.FieldMetadataID)

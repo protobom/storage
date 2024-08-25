@@ -13,6 +13,7 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/google/uuid"
 	"github.com/protobom/protobom/pkg/sbom"
 	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/documenttype"
@@ -23,7 +24,9 @@ import (
 type DocumentType struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID int `json:"id,omitempty"`
+	ID uuid.UUID `json:"id,omitempty"`
+	// DocumentID holds the value of the "document_id" field.
+	DocumentID uuid.UUID `json:"document_id,omitempty"`
 	// ProtoMessage holds the value of the "proto_message" field.
 	ProtoMessage *sbom.DocumentType `json:"proto_message,omitempty"`
 	// MetadataID holds the value of the "metadata_id" field.
@@ -37,7 +40,6 @@ type DocumentType struct {
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the DocumentTypeQuery when eager-loading is set.
 	Edges        DocumentTypeEdges `json:"edges"`
-	document_id  *string
 	selectValues sql.SelectValues
 }
 
@@ -81,12 +83,10 @@ func (*DocumentType) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case documenttype.FieldProtoMessage:
 			values[i] = new([]byte)
-		case documenttype.FieldID:
-			values[i] = new(sql.NullInt64)
 		case documenttype.FieldMetadataID, documenttype.FieldType, documenttype.FieldName, documenttype.FieldDescription:
 			values[i] = new(sql.NullString)
-		case documenttype.ForeignKeys[0]: // document_id
-			values[i] = new(sql.NullString)
+		case documenttype.FieldID, documenttype.FieldDocumentID:
+			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -103,11 +103,17 @@ func (dt *DocumentType) assignValues(columns []string, values []any) error {
 	for i := range columns {
 		switch columns[i] {
 		case documenttype.FieldID:
-			value, ok := values[i].(*sql.NullInt64)
-			if !ok {
-				return fmt.Errorf("unexpected type %T for field id", value)
+			if value, ok := values[i].(*uuid.UUID); !ok {
+				return fmt.Errorf("unexpected type %T for field id", values[i])
+			} else if value != nil {
+				dt.ID = *value
 			}
-			dt.ID = int(value.Int64)
+		case documenttype.FieldDocumentID:
+			if value, ok := values[i].(*uuid.UUID); !ok {
+				return fmt.Errorf("unexpected type %T for field document_id", values[i])
+			} else if value != nil {
+				dt.DocumentID = *value
+			}
 		case documenttype.FieldProtoMessage:
 			if value, ok := values[i].(*[]byte); !ok {
 				return fmt.Errorf("unexpected type %T for field proto_message", values[i])
@@ -142,13 +148,6 @@ func (dt *DocumentType) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				dt.Description = new(string)
 				*dt.Description = value.String
-			}
-		case documenttype.ForeignKeys[0]:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field document_id", values[i])
-			} else if value.Valid {
-				dt.document_id = new(string)
-				*dt.document_id = value.String
 			}
 		default:
 			dt.selectValues.Set(columns[i], values[i])
@@ -196,6 +195,9 @@ func (dt *DocumentType) String() string {
 	var builder strings.Builder
 	builder.WriteString("DocumentType(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", dt.ID))
+	builder.WriteString("document_id=")
+	builder.WriteString(fmt.Sprintf("%v", dt.DocumentID))
+	builder.WriteString(", ")
 	builder.WriteString("proto_message=")
 	builder.WriteString(fmt.Sprintf("%v", dt.ProtoMessage))
 	builder.WriteString(", ")

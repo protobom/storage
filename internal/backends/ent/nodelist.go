@@ -13,6 +13,7 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/google/uuid"
 	"github.com/protobom/protobom/pkg/sbom"
 	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/nodelist"
@@ -22,7 +23,7 @@ import (
 type NodeList struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID int `json:"id,omitempty"`
+	ID uuid.UUID `json:"id,omitempty"`
 	// ProtoMessage holds the value of the "proto_message" field.
 	ProtoMessage *sbom.NodeList `json:"proto_message,omitempty"`
 	// RootElements holds the value of the "root_elements" field.
@@ -35,13 +36,22 @@ type NodeList struct {
 
 // NodeListEdges holds the relations/edges for other nodes in the graph.
 type NodeListEdges struct {
-	// Document holds the value of the document edge.
-	Document *Document `json:"document,omitempty"`
 	// Nodes holds the value of the nodes edge.
 	Nodes []*Node `json:"nodes,omitempty"`
+	// Document holds the value of the document edge.
+	Document *Document `json:"document,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [2]bool
+}
+
+// NodesOrErr returns the Nodes value or an error if the edge
+// was not loaded in eager-loading.
+func (e NodeListEdges) NodesOrErr() ([]*Node, error) {
+	if e.loadedTypes[0] {
+		return e.Nodes, nil
+	}
+	return nil, &NotLoadedError{edge: "nodes"}
 }
 
 // DocumentOrErr returns the Document value or an error if the edge
@@ -49,19 +59,10 @@ type NodeListEdges struct {
 func (e NodeListEdges) DocumentOrErr() (*Document, error) {
 	if e.Document != nil {
 		return e.Document, nil
-	} else if e.loadedTypes[0] {
+	} else if e.loadedTypes[1] {
 		return nil, &NotFoundError{label: document.Label}
 	}
 	return nil, &NotLoadedError{edge: "document"}
-}
-
-// NodesOrErr returns the Nodes value or an error if the edge
-// was not loaded in eager-loading.
-func (e NodeListEdges) NodesOrErr() ([]*Node, error) {
-	if e.loadedTypes[1] {
-		return e.Nodes, nil
-	}
-	return nil, &NotLoadedError{edge: "nodes"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -72,7 +73,7 @@ func (*NodeList) scanValues(columns []string) ([]any, error) {
 		case nodelist.FieldProtoMessage, nodelist.FieldRootElements:
 			values[i] = new([]byte)
 		case nodelist.FieldID:
-			values[i] = new(sql.NullInt64)
+			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -89,11 +90,11 @@ func (nl *NodeList) assignValues(columns []string, values []any) error {
 	for i := range columns {
 		switch columns[i] {
 		case nodelist.FieldID:
-			value, ok := values[i].(*sql.NullInt64)
-			if !ok {
-				return fmt.Errorf("unexpected type %T for field id", value)
+			if value, ok := values[i].(*uuid.UUID); !ok {
+				return fmt.Errorf("unexpected type %T for field id", values[i])
+			} else if value != nil {
+				nl.ID = *value
 			}
-			nl.ID = int(value.Int64)
 		case nodelist.FieldProtoMessage:
 			if value, ok := values[i].(*[]byte); !ok {
 				return fmt.Errorf("unexpected type %T for field proto_message", values[i])
@@ -123,14 +124,14 @@ func (nl *NodeList) Value(name string) (ent.Value, error) {
 	return nl.selectValues.Get(name)
 }
 
-// QueryDocument queries the "document" edge of the NodeList entity.
-func (nl *NodeList) QueryDocument() *DocumentQuery {
-	return NewNodeListClient(nl.config).QueryDocument(nl)
-}
-
 // QueryNodes queries the "nodes" edge of the NodeList entity.
 func (nl *NodeList) QueryNodes() *NodeQuery {
 	return NewNodeListClient(nl.config).QueryNodes(nl)
+}
+
+// QueryDocument queries the "document" edge of the NodeList entity.
+func (nl *NodeList) QueryDocument() *DocumentQuery {
+	return NewNodeListClient(nl.config).QueryDocument(nl)
 }
 
 // Update returns a builder for updating this NodeList.

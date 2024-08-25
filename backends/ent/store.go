@@ -7,10 +7,13 @@ package ent
 
 import (
 	"context"
+	"crypto/sha256"
 	"fmt"
 
+	"github.com/google/uuid"
 	"github.com/protobom/protobom/pkg/sbom"
 	"github.com/protobom/protobom/pkg/storage"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/protobom/storage/internal/backends/ent"
 	"github.com/protobom/storage/internal/backends/ent/documenttype"
@@ -24,6 +27,7 @@ type (
 	contactOwnerIDKey      struct{}
 	documentIDKey          struct{}
 	externalReferenceIDKey struct{}
+	metadataIDKey          struct{}
 	nodeIDKey              struct{}
 	nodeListIDKey          struct{}
 )
@@ -50,15 +54,19 @@ func (backend *Backend) Store(doc *sbom.Document, opts *storage.StoreOptions) er
 	}
 
 	backend.ctx = ent.NewTxContext(backend.ctx, tx)
+	id := newUUIDFromHash(doc)
 
-	if err := tx.Document.Create().
-		SetID(doc.Metadata.Id).
+	err = tx.Document.Create().
+		SetID(id).
 		SetProtoMessage(doc).
 		OnConflict().
 		Ignore().
-		Exec(backend.ctx); err != nil && !ent.IsConstraintError(err) {
+		Exec(backend.ctx)
+	if err != nil {
 		return rollback(tx, fmt.Errorf("ent.Document: %w", err))
 	}
+
+	backend.ctx = context.WithValue(backend.ctx, documentIDKey{}, id)
 
 	if err := backend.saveMetadata(doc.Metadata); err != nil {
 		return rollback(tx, err)
@@ -83,17 +91,22 @@ func (backend *Backend) saveDocumentTypes(docTypes []*sbom.DocumentType) error {
 	tx := ent.TxFromContext(backend.ctx)
 
 	for _, dt := range docTypes {
+		id := newUUIDFromHash(dt)
 		typeName := documenttype.Type(dt.Type.String())
 
 		newDocType := tx.DocumentType.Create().
+			SetID(id).
 			SetProtoMessage(dt).
 			SetNillableType(&typeName).
 			SetNillableName(dt.Name).
 			SetNillableDescription(dt.Description)
 
-		if documentID, ok := backend.ctx.Value(documentIDKey{}).(string); ok {
+		if documentID, ok := backend.ctx.Value(documentIDKey{}).(uuid.UUID); ok {
 			newDocType.SetDocumentID(documentID)
-			newDocType.SetMetadataID(documentID)
+		}
+
+		if metadataID, ok := backend.ctx.Value(metadataIDKey{}).(string); ok {
+			newDocType.SetMetadataID(metadataID)
 		}
 
 		err := newDocType.OnConflict().Ignore().Exec(backend.ctx)
@@ -119,7 +132,7 @@ func (backend *Backend) saveEdges(edges []*sbom.Edge) error {
 				SetFromID(edge.From).
 				SetToID(toID)
 
-			if documentID, ok := backend.ctx.Value(documentIDKey{}).(string); ok {
+			if documentID, ok := backend.ctx.Value(documentIDKey{}).(uuid.UUID); ok {
 				newEdgeType.SetDocumentID(documentID)
 			}
 
@@ -141,7 +154,10 @@ func (backend *Backend) saveExternalReferences(refs []*sbom.ExternalReference) e
 	tx := ent.TxFromContext(backend.ctx)
 
 	for _, ref := range refs {
+		id := newUUIDFromHash(ref)
+
 		newRef := tx.ExternalReference.Create().
+			SetID(id).
 			SetProtoMessage(ref).
 			SetURL(ref.Url).
 			SetComment(ref.Comment).
@@ -153,11 +169,11 @@ func (backend *Backend) saveExternalReferences(refs []*sbom.ExternalReference) e
 			newRef.SetNodeID(nodeID)
 		}
 
-		if documentID, ok := backend.ctx.Value(documentIDKey{}).(string); ok {
+		if documentID, ok := backend.ctx.Value(documentIDKey{}).(uuid.UUID); ok {
 			newRef.SetDocumentID(documentID)
 		}
 
-		id, err := newRef.OnConflict().Ignore().ID(backend.ctx)
+		err := newRef.OnConflict().Ignore().Exec(backend.ctx)
 		if err != nil && !ent.IsConstraintError(err) {
 			return fmt.Errorf("ent.ExternalReference: %w", err)
 		}
@@ -177,19 +193,22 @@ func (backend *Backend) saveMetadata(md *sbom.Metadata) error {
 
 	newMetadata := tx.Metadata.Create().
 		SetID(md.Id).
-		SetDocumentID(md.Id).
 		SetProtoMessage(md).
 		SetVersion(md.Version).
 		SetName(md.Name).
 		SetComment(md.Comment).
 		SetDate(md.Date.AsTime())
 
+	if documentID, ok := backend.ctx.Value(documentIDKey{}).(uuid.UUID); ok {
+		newMetadata.SetDocumentID(documentID)
+	}
+
 	err := newMetadata.OnConflict().Ignore().Exec(backend.ctx)
 	if err != nil && !ent.IsConstraintError(err) {
 		return fmt.Errorf("ent.Metadata: %w", err)
 	}
 
-	backend.ctx = context.WithValue(backend.ctx, documentIDKey{}, md.Id)
+	backend.ctx = context.WithValue(backend.ctx, metadataIDKey{}, md.Id)
 
 	if err := backend.savePersons(md.Authors); err != nil {
 		return err
@@ -212,15 +231,17 @@ func (backend *Backend) saveNodeList(nodeList *sbom.NodeList) error {
 	}
 
 	tx := ent.TxFromContext(backend.ctx)
+	id := newUUIDFromHash(nodeList)
 	newNodeList := tx.NodeList.Create().
+		SetID(id).
 		SetProtoMessage(nodeList).
 		SetRootElements(nodeList.RootElements)
 
-	if documentID, ok := backend.ctx.Value(documentIDKey{}).(string); ok {
+	if documentID, ok := backend.ctx.Value(documentIDKey{}).(uuid.UUID); ok {
 		newNodeList.SetDocumentID(documentID)
 	}
 
-	id, err := newNodeList.OnConflict().Ignore().ID(backend.ctx)
+	err := newNodeList.OnConflict().Ignore().Exec(backend.ctx)
 	if err != nil && !ent.IsConstraintError(err) {
 		return fmt.Errorf("ent.NodeList: %w", err)
 	}
@@ -281,7 +302,9 @@ func (backend *Backend) savePersons(persons []*sbom.Person) error {
 	tx := ent.TxFromContext(backend.ctx)
 
 	for _, p := range persons {
+		id := newUUIDFromHash(p)
 		newPerson := tx.Person.Create().
+			SetID(id).
 			SetProtoMessage(p).
 			SetName(p.Name).
 			SetEmail(p.Email).
@@ -289,16 +312,19 @@ func (backend *Backend) savePersons(persons []*sbom.Person) error {
 			SetPhone(p.Phone).
 			SetURL(p.Url)
 
-		if contactOwnerID, ok := backend.ctx.Value(contactOwnerIDKey{}).(int); ok {
+		if contactOwnerID, ok := backend.ctx.Value(contactOwnerIDKey{}).(uuid.UUID); ok {
 			newPerson.SetContactOwnerID(contactOwnerID)
 		}
 
-		if documentID, ok := backend.ctx.Value(documentIDKey{}).(string); ok {
+		if documentID, ok := backend.ctx.Value(documentIDKey{}).(uuid.UUID); ok {
 			newPerson.SetDocumentID(documentID)
-			newPerson.SetMetadataID(documentID)
 		}
 
-		id, err := newPerson.OnConflict().Ignore().ID(backend.ctx)
+		if metadataID, ok := backend.ctx.Value(metadataIDKey{}).(string); ok {
+			newPerson.SetMetadataID(metadataID)
+		}
+
+		err := newPerson.OnConflict().Ignore().Exec(backend.ctx)
 		if err != nil && !ent.IsConstraintError(err) {
 			return fmt.Errorf("ent.ExternalReference: %w", err)
 		}
@@ -329,7 +355,7 @@ func (backend *Backend) savePurposes(purposes []sbom.Purpose) error {
 			newPurpose.SetNodeID(nodeID)
 		}
 
-		if documentID, ok := backend.ctx.Value(documentIDKey{}).(string); ok {
+		if documentID, ok := backend.ctx.Value(documentIDKey{}).(uuid.UUID); ok {
 			newPurpose.SetDocumentID(documentID)
 		}
 
@@ -356,15 +382,20 @@ func (backend *Backend) saveTools(tools []*sbom.Tool) error {
 	builders := []*ent.ToolCreate{}
 
 	for _, t := range tools {
+		id := newUUIDFromHash(t)
 		newTool := tx.Tool.Create().
+			SetID(id).
 			SetProtoMessage(t).
 			SetName(t.Name).
 			SetVersion(t.Version).
 			SetVendor(t.Vendor)
 
-		if documentID, ok := backend.ctx.Value(documentIDKey{}).(string); ok {
+		if documentID, ok := backend.ctx.Value(documentIDKey{}).(uuid.UUID); ok {
 			newTool.SetDocumentID(documentID)
-			newTool.SetMetadataID(documentID)
+		}
+
+		if metadataID, ok := backend.ctx.Value(metadataIDKey{}).(string); ok {
+			newTool.SetMetadataID(metadataID)
 		}
 
 		builders = append(builders, newTool)
@@ -409,15 +440,24 @@ func (backend *Backend) newNodeCreate(n *sbom.Node) *ent.NodeCreate {
 		SetHashes(n.Hashes).
 		SetIdentifiers(n.Identifiers)
 
-	if nodeListID, ok := backend.ctx.Value(nodeListIDKey{}).(int); ok {
+	if nodeListID, ok := backend.ctx.Value(nodeListIDKey{}).(uuid.UUID); ok {
 		newNode.SetNodeListID(nodeListID)
 	}
 
-	if documentID, ok := backend.ctx.Value(documentIDKey{}).(string); ok {
+	if documentID, ok := backend.ctx.Value(documentIDKey{}).(uuid.UUID); ok {
 		newNode.SetDocumentID(documentID)
 	}
 
 	return newNode
+}
+
+func newUUIDFromHash(msg proto.Message) uuid.UUID {
+	data, err := proto.MarshalOptions{Deterministic: true}.Marshal(msg)
+	if err != nil {
+		return uuid.Nil
+	}
+
+	return uuid.NewHash(sha256.New(), uuid.Max, data, int(uuid.Max.Version()))
 }
 
 func rollback(tx *ent.Tx, err error) error {

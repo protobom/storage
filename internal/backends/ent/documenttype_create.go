@@ -11,9 +11,11 @@ import (
 	"errors"
 	"fmt"
 
+	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/google/uuid"
 	"github.com/protobom/protobom/pkg/sbom"
 	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/documenttype"
@@ -26,6 +28,20 @@ type DocumentTypeCreate struct {
 	mutation *DocumentTypeMutation
 	hooks    []Hook
 	conflict []sql.ConflictOption
+}
+
+// SetDocumentID sets the "document_id" field.
+func (dtc *DocumentTypeCreate) SetDocumentID(u uuid.UUID) *DocumentTypeCreate {
+	dtc.mutation.SetDocumentID(u)
+	return dtc
+}
+
+// SetNillableDocumentID sets the "document_id" field if the given value is not nil.
+func (dtc *DocumentTypeCreate) SetNillableDocumentID(u *uuid.UUID) *DocumentTypeCreate {
+	if u != nil {
+		dtc.SetDocumentID(*u)
+	}
+	return dtc
 }
 
 // SetProtoMessage sets the "proto_message" field.
@@ -90,17 +106,9 @@ func (dtc *DocumentTypeCreate) SetNillableDescription(s *string) *DocumentTypeCr
 	return dtc
 }
 
-// SetDocumentID sets the "document" edge to the Document entity by ID.
-func (dtc *DocumentTypeCreate) SetDocumentID(id string) *DocumentTypeCreate {
-	dtc.mutation.SetDocumentID(id)
-	return dtc
-}
-
-// SetNillableDocumentID sets the "document" edge to the Document entity by ID if the given value is not nil.
-func (dtc *DocumentTypeCreate) SetNillableDocumentID(id *string) *DocumentTypeCreate {
-	if id != nil {
-		dtc = dtc.SetDocumentID(*id)
-	}
+// SetID sets the "id" field.
+func (dtc *DocumentTypeCreate) SetID(u uuid.UUID) *DocumentTypeCreate {
+	dtc.mutation.SetID(u)
 	return dtc
 }
 
@@ -121,6 +129,7 @@ func (dtc *DocumentTypeCreate) Mutation() *DocumentTypeMutation {
 
 // Save creates the DocumentType in the database.
 func (dtc *DocumentTypeCreate) Save(ctx context.Context) (*DocumentType, error) {
+	dtc.defaults()
 	return withHooks(ctx, dtc.sqlSave, dtc.mutation, dtc.hooks)
 }
 
@@ -146,6 +155,14 @@ func (dtc *DocumentTypeCreate) ExecX(ctx context.Context) {
 	}
 }
 
+// defaults sets the default values of the builder before save.
+func (dtc *DocumentTypeCreate) defaults() {
+	if _, ok := dtc.mutation.DocumentID(); !ok {
+		v := documenttype.DefaultDocumentID()
+		dtc.mutation.SetDocumentID(v)
+	}
+}
+
 // check runs all checks and user-defined validators on the builder.
 func (dtc *DocumentTypeCreate) check() error {
 	if v, ok := dtc.mutation.GetType(); ok {
@@ -167,8 +184,13 @@ func (dtc *DocumentTypeCreate) sqlSave(ctx context.Context) (*DocumentType, erro
 		}
 		return nil, err
 	}
-	id := _spec.ID.Value.(int64)
-	_node.ID = int(id)
+	if _spec.ID.Value != nil {
+		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
+			_node.ID = *id
+		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
+			return nil, err
+		}
+	}
 	dtc.mutation.id = &_node.ID
 	dtc.mutation.done = true
 	return _node, nil
@@ -177,9 +199,13 @@ func (dtc *DocumentTypeCreate) sqlSave(ctx context.Context) (*DocumentType, erro
 func (dtc *DocumentTypeCreate) createSpec() (*DocumentType, *sqlgraph.CreateSpec) {
 	var (
 		_node = &DocumentType{config: dtc.config}
-		_spec = sqlgraph.NewCreateSpec(documenttype.Table, sqlgraph.NewFieldSpec(documenttype.FieldID, field.TypeInt))
+		_spec = sqlgraph.NewCreateSpec(documenttype.Table, sqlgraph.NewFieldSpec(documenttype.FieldID, field.TypeUUID))
 	)
 	_spec.OnConflict = dtc.conflict
+	if id, ok := dtc.mutation.ID(); ok {
+		_node.ID = id
+		_spec.ID.Value = &id
+	}
 	if value, ok := dtc.mutation.ProtoMessage(); ok {
 		_spec.SetField(documenttype.FieldProtoMessage, field.TypeJSON, value)
 		_node.ProtoMessage = value
@@ -204,13 +230,13 @@ func (dtc *DocumentTypeCreate) createSpec() (*DocumentType, *sqlgraph.CreateSpec
 			Columns: []string{documenttype.DocumentColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(document.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(document.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.document_id = &nodes[0]
+		_node.DocumentID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := dtc.mutation.MetadataIDs(); len(nodes) > 0 {
@@ -237,7 +263,7 @@ func (dtc *DocumentTypeCreate) createSpec() (*DocumentType, *sqlgraph.CreateSpec
 // of the `INSERT` statement. For example:
 //
 //	client.DocumentType.Create().
-//		SetProtoMessage(v).
+//		SetDocumentID(v).
 //		OnConflict(
 //			// Update the row with the new values
 //			// the was proposed for insertion.
@@ -246,7 +272,7 @@ func (dtc *DocumentTypeCreate) createSpec() (*DocumentType, *sqlgraph.CreateSpec
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.DocumentTypeUpsert) {
-//			SetProtoMessage(v+v).
+//			SetDocumentID(v+v).
 //		}).
 //		Exec(ctx)
 func (dtc *DocumentTypeCreate) OnConflict(opts ...sql.ConflictOption) *DocumentTypeUpsertOne {
@@ -372,16 +398,27 @@ func (u *DocumentTypeUpsert) ClearDescription() *DocumentTypeUpsert {
 	return u
 }
 
-// UpdateNewValues updates the mutable fields using the new values that were set on create.
+// UpdateNewValues updates the mutable fields using the new values that were set on create except the ID field.
 // Using this option is equivalent to using:
 //
 //	client.DocumentType.Create().
 //		OnConflict(
 //			sql.ResolveWithNewValues(),
+//			sql.ResolveWith(func(u *sql.UpdateSet) {
+//				u.SetIgnore(documenttype.FieldID)
+//			}),
 //		).
 //		Exec(ctx)
 func (u *DocumentTypeUpsertOne) UpdateNewValues() *DocumentTypeUpsertOne {
 	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
+		if _, exists := u.create.mutation.ID(); exists {
+			s.SetIgnore(documenttype.FieldID)
+		}
+		if _, exists := u.create.mutation.DocumentID(); exists {
+			s.SetIgnore(documenttype.FieldDocumentID)
+		}
+	}))
 	return u
 }
 
@@ -533,7 +570,12 @@ func (u *DocumentTypeUpsertOne) ExecX(ctx context.Context) {
 }
 
 // Exec executes the UPSERT query and returns the inserted/updated ID.
-func (u *DocumentTypeUpsertOne) ID(ctx context.Context) (id int, err error) {
+func (u *DocumentTypeUpsertOne) ID(ctx context.Context) (id uuid.UUID, err error) {
+	if u.create.driver.Dialect() == dialect.MySQL {
+		// In case of "ON CONFLICT", there is no way to get back non-numeric ID
+		// fields from the database since MySQL does not support the RETURNING clause.
+		return id, errors.New("ent: DocumentTypeUpsertOne.ID is not supported by MySQL driver. Use DocumentTypeUpsertOne.Exec instead")
+	}
 	node, err := u.create.Save(ctx)
 	if err != nil {
 		return id, err
@@ -542,7 +584,7 @@ func (u *DocumentTypeUpsertOne) ID(ctx context.Context) (id int, err error) {
 }
 
 // IDX is like ID, but panics if an error occurs.
-func (u *DocumentTypeUpsertOne) IDX(ctx context.Context) int {
+func (u *DocumentTypeUpsertOne) IDX(ctx context.Context) uuid.UUID {
 	id, err := u.ID(ctx)
 	if err != nil {
 		panic(err)
@@ -569,6 +611,7 @@ func (dtcb *DocumentTypeCreateBulk) Save(ctx context.Context) ([]*DocumentType, 
 	for i := range dtcb.builders {
 		func(i int, root context.Context) {
 			builder := dtcb.builders[i]
+			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*DocumentTypeMutation)
 				if !ok {
@@ -596,10 +639,6 @@ func (dtcb *DocumentTypeCreateBulk) Save(ctx context.Context) ([]*DocumentType, 
 					return nil, err
 				}
 				mutation.id = &nodes[i].ID
-				if specs[i].ID.Value != nil {
-					id := specs[i].ID.Value.(int64)
-					nodes[i].ID = int(id)
-				}
 				mutation.done = true
 				return nodes[i], nil
 			})
@@ -651,7 +690,7 @@ func (dtcb *DocumentTypeCreateBulk) ExecX(ctx context.Context) {
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.DocumentTypeUpsert) {
-//			SetProtoMessage(v+v).
+//			SetDocumentID(v+v).
 //		}).
 //		Exec(ctx)
 func (dtcb *DocumentTypeCreateBulk) OnConflict(opts ...sql.ConflictOption) *DocumentTypeUpsertBulk {
@@ -686,10 +725,23 @@ type DocumentTypeUpsertBulk struct {
 //	client.DocumentType.Create().
 //		OnConflict(
 //			sql.ResolveWithNewValues(),
+//			sql.ResolveWith(func(u *sql.UpdateSet) {
+//				u.SetIgnore(documenttype.FieldID)
+//			}),
 //		).
 //		Exec(ctx)
 func (u *DocumentTypeUpsertBulk) UpdateNewValues() *DocumentTypeUpsertBulk {
 	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
+		for _, b := range u.create.builders {
+			if _, exists := b.mutation.ID(); exists {
+				s.SetIgnore(documenttype.FieldID)
+			}
+			if _, exists := b.mutation.DocumentID(); exists {
+				s.SetIgnore(documenttype.FieldDocumentID)
+			}
+		}
+	}))
 	return u
 }
 

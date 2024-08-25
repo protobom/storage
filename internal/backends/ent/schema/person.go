@@ -22,6 +22,7 @@ func (Person) Mixin() []ent.Mixin {
 	return []ent.Mixin{
 		DocumentMixin{},
 		ProtoMessageMixin{ProtoMessageType: &sbom.Person{}},
+		UUIDMixin{},
 	}
 }
 

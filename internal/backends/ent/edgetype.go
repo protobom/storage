@@ -12,6 +12,7 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/google/uuid"
 	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/edgetype"
 	"github.com/protobom/storage/internal/backends/ent/node"
@@ -22,6 +23,8 @@ type EdgeType struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID int `json:"id,omitempty"`
+	// DocumentID holds the value of the "document_id" field.
+	DocumentID uuid.UUID `json:"document_id,omitempty"`
 	// Type holds the value of the "type" field.
 	Type edgetype.Type `json:"type,omitempty"`
 	// NodeID holds the value of the "node_id" field.
@@ -31,7 +34,6 @@ type EdgeType struct {
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the EdgeTypeQuery when eager-loading is set.
 	Edges        EdgeTypeEdges `json:"edges"`
-	document_id  *string
 	selectValues sql.SelectValues
 }
 
@@ -90,8 +92,8 @@ func (*EdgeType) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullInt64)
 		case edgetype.FieldType, edgetype.FieldNodeID, edgetype.FieldToNodeID:
 			values[i] = new(sql.NullString)
-		case edgetype.ForeignKeys[0]: // document_id
-			values[i] = new(sql.NullString)
+		case edgetype.FieldDocumentID:
+			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -113,6 +115,12 @@ func (et *EdgeType) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", value)
 			}
 			et.ID = int(value.Int64)
+		case edgetype.FieldDocumentID:
+			if value, ok := values[i].(*uuid.UUID); !ok {
+				return fmt.Errorf("unexpected type %T for field document_id", values[i])
+			} else if value != nil {
+				et.DocumentID = *value
+			}
 		case edgetype.FieldType:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field type", values[i])
@@ -130,13 +138,6 @@ func (et *EdgeType) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field to_node_id", values[i])
 			} else if value.Valid {
 				et.ToNodeID = value.String
-			}
-		case edgetype.ForeignKeys[0]:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field document_id", values[i])
-			} else if value.Valid {
-				et.document_id = new(string)
-				*et.document_id = value.String
 			}
 		default:
 			et.selectValues.Set(columns[i], values[i])
@@ -189,6 +190,9 @@ func (et *EdgeType) String() string {
 	var builder strings.Builder
 	builder.WriteString("EdgeType(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", et.ID))
+	builder.WriteString("document_id=")
+	builder.WriteString(fmt.Sprintf("%v", et.DocumentID))
+	builder.WriteString(", ")
 	builder.WriteString("type=")
 	builder.WriteString(fmt.Sprintf("%v", et.Type))
 	builder.WriteString(", ")

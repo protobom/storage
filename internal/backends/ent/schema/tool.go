@@ -21,6 +21,7 @@ func (Tool) Mixin() []ent.Mixin {
 	return []ent.Mixin{
 		DocumentMixin{},
 		ProtoMessageMixin{ProtoMessageType: &sbom.Tool{}},
+		UUIDMixin{},
 	}
 }
 
@@ -35,7 +36,10 @@ func (Tool) Fields() []ent.Field {
 
 func (Tool) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("metadata", Metadata.Type).Ref("tools").Unique().Field("metadata_id"),
+		edge.From("metadata", Metadata.Type).
+			Ref("tools").
+			Unique().
+			Field("metadata_id"),
 	}
 }
 

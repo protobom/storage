@@ -13,6 +13,7 @@ import (
 	"log"
 	"reflect"
 
+	"github.com/google/uuid"
 	"github.com/protobom/storage/internal/backends/ent/migrate"
 
 	"entgo.io/ent"
@@ -344,7 +345,7 @@ func (c *DocumentClient) UpdateOne(d *Document) *DocumentUpdateOne {
 }
 
 // UpdateOneID returns an update builder for the given id.
-func (c *DocumentClient) UpdateOneID(id string) *DocumentUpdateOne {
+func (c *DocumentClient) UpdateOneID(id uuid.UUID) *DocumentUpdateOne {
 	mutation := newDocumentMutation(c.config, OpUpdateOne, withDocumentID(id))
 	return &DocumentUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
@@ -361,7 +362,7 @@ func (c *DocumentClient) DeleteOne(d *Document) *DocumentDeleteOne {
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
-func (c *DocumentClient) DeleteOneID(id string) *DocumentDeleteOne {
+func (c *DocumentClient) DeleteOneID(id uuid.UUID) *DocumentDeleteOne {
 	builder := c.Delete().Where(document.ID(id))
 	builder.mutation.id = &id
 	builder.mutation.op = OpDeleteOne
@@ -378,12 +379,12 @@ func (c *DocumentClient) Query() *DocumentQuery {
 }
 
 // Get returns a Document entity by its id.
-func (c *DocumentClient) Get(ctx context.Context, id string) (*Document, error) {
+func (c *DocumentClient) Get(ctx context.Context, id uuid.UUID) (*Document, error) {
 	return c.Query().Where(document.ID(id)).Only(ctx)
 }
 
 // GetX is like Get, but panics if an error occurs.
-func (c *DocumentClient) GetX(ctx context.Context, id string) *Document {
+func (c *DocumentClient) GetX(ctx context.Context, id uuid.UUID) *Document {
 	obj, err := c.Get(ctx, id)
 	if err != nil {
 		panic(err)
@@ -399,7 +400,7 @@ func (c *DocumentClient) QueryMetadata(d *Document) *MetadataQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(document.Table, document.FieldID, id),
 			sqlgraph.To(metadata.Table, metadata.FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, false, document.MetadataTable, document.MetadataColumn),
+			sqlgraph.Edge(sqlgraph.O2O, true, document.MetadataTable, document.MetadataColumn),
 		)
 		fromV = sqlgraph.Neighbors(d.driver.Dialect(), step)
 		return fromV, nil
@@ -509,7 +510,7 @@ func (c *DocumentTypeClient) UpdateOne(dt *DocumentType) *DocumentTypeUpdateOne 
 }
 
 // UpdateOneID returns an update builder for the given id.
-func (c *DocumentTypeClient) UpdateOneID(id int) *DocumentTypeUpdateOne {
+func (c *DocumentTypeClient) UpdateOneID(id uuid.UUID) *DocumentTypeUpdateOne {
 	mutation := newDocumentTypeMutation(c.config, OpUpdateOne, withDocumentTypeID(id))
 	return &DocumentTypeUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
@@ -526,7 +527,7 @@ func (c *DocumentTypeClient) DeleteOne(dt *DocumentType) *DocumentTypeDeleteOne 
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
-func (c *DocumentTypeClient) DeleteOneID(id int) *DocumentTypeDeleteOne {
+func (c *DocumentTypeClient) DeleteOneID(id uuid.UUID) *DocumentTypeDeleteOne {
 	builder := c.Delete().Where(documenttype.ID(id))
 	builder.mutation.id = &id
 	builder.mutation.op = OpDeleteOne
@@ -543,12 +544,12 @@ func (c *DocumentTypeClient) Query() *DocumentTypeQuery {
 }
 
 // Get returns a DocumentType entity by its id.
-func (c *DocumentTypeClient) Get(ctx context.Context, id int) (*DocumentType, error) {
+func (c *DocumentTypeClient) Get(ctx context.Context, id uuid.UUID) (*DocumentType, error) {
 	return c.Query().Where(documenttype.ID(id)).Only(ctx)
 }
 
 // GetX is like Get, but panics if an error occurs.
-func (c *DocumentTypeClient) GetX(ctx context.Context, id int) *DocumentType {
+func (c *DocumentTypeClient) GetX(ctx context.Context, id uuid.UUID) *DocumentType {
 	obj, err := c.Get(ctx, id)
 	if err != nil {
 		panic(err)
@@ -855,7 +856,7 @@ func (c *ExternalReferenceClient) UpdateOne(er *ExternalReference) *ExternalRefe
 }
 
 // UpdateOneID returns an update builder for the given id.
-func (c *ExternalReferenceClient) UpdateOneID(id int) *ExternalReferenceUpdateOne {
+func (c *ExternalReferenceClient) UpdateOneID(id uuid.UUID) *ExternalReferenceUpdateOne {
 	mutation := newExternalReferenceMutation(c.config, OpUpdateOne, withExternalReferenceID(id))
 	return &ExternalReferenceUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
@@ -872,7 +873,7 @@ func (c *ExternalReferenceClient) DeleteOne(er *ExternalReference) *ExternalRefe
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
-func (c *ExternalReferenceClient) DeleteOneID(id int) *ExternalReferenceDeleteOne {
+func (c *ExternalReferenceClient) DeleteOneID(id uuid.UUID) *ExternalReferenceDeleteOne {
 	builder := c.Delete().Where(externalreference.ID(id))
 	builder.mutation.id = &id
 	builder.mutation.op = OpDeleteOne
@@ -889,12 +890,12 @@ func (c *ExternalReferenceClient) Query() *ExternalReferenceQuery {
 }
 
 // Get returns a ExternalReference entity by its id.
-func (c *ExternalReferenceClient) Get(ctx context.Context, id int) (*ExternalReference, error) {
+func (c *ExternalReferenceClient) Get(ctx context.Context, id uuid.UUID) (*ExternalReference, error) {
 	return c.Query().Where(externalreference.ID(id)).Only(ctx)
 }
 
 // GetX is like Get, but panics if an error occurs.
-func (c *ExternalReferenceClient) GetX(ctx context.Context, id int) *ExternalReference {
+func (c *ExternalReferenceClient) GetX(ctx context.Context, id uuid.UUID) *ExternalReference {
 	obj, err := c.Get(ctx, id)
 	if err != nil {
 		panic(err)
@@ -1123,7 +1124,7 @@ func (c *MetadataClient) QueryDocument(m *Metadata) *DocumentQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(metadata.Table, metadata.FieldID, id),
 			sqlgraph.To(document.Table, document.FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, true, metadata.DocumentTable, metadata.DocumentColumn),
+			sqlgraph.Edge(sqlgraph.O2O, false, metadata.DocumentTable, metadata.DocumentColumn),
 		)
 		fromV = sqlgraph.Neighbors(m.driver.Dialect(), step)
 		return fromV, nil
@@ -1494,7 +1495,7 @@ func (c *NodeListClient) UpdateOne(nl *NodeList) *NodeListUpdateOne {
 }
 
 // UpdateOneID returns an update builder for the given id.
-func (c *NodeListClient) UpdateOneID(id int) *NodeListUpdateOne {
+func (c *NodeListClient) UpdateOneID(id uuid.UUID) *NodeListUpdateOne {
 	mutation := newNodeListMutation(c.config, OpUpdateOne, withNodeListID(id))
 	return &NodeListUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
@@ -1511,7 +1512,7 @@ func (c *NodeListClient) DeleteOne(nl *NodeList) *NodeListDeleteOne {
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
-func (c *NodeListClient) DeleteOneID(id int) *NodeListDeleteOne {
+func (c *NodeListClient) DeleteOneID(id uuid.UUID) *NodeListDeleteOne {
 	builder := c.Delete().Where(nodelist.ID(id))
 	builder.mutation.id = &id
 	builder.mutation.op = OpDeleteOne
@@ -1528,33 +1529,17 @@ func (c *NodeListClient) Query() *NodeListQuery {
 }
 
 // Get returns a NodeList entity by its id.
-func (c *NodeListClient) Get(ctx context.Context, id int) (*NodeList, error) {
+func (c *NodeListClient) Get(ctx context.Context, id uuid.UUID) (*NodeList, error) {
 	return c.Query().Where(nodelist.ID(id)).Only(ctx)
 }
 
 // GetX is like Get, but panics if an error occurs.
-func (c *NodeListClient) GetX(ctx context.Context, id int) *NodeList {
+func (c *NodeListClient) GetX(ctx context.Context, id uuid.UUID) *NodeList {
 	obj, err := c.Get(ctx, id)
 	if err != nil {
 		panic(err)
 	}
 	return obj
-}
-
-// QueryDocument queries the document edge of a NodeList.
-func (c *NodeListClient) QueryDocument(nl *NodeList) *DocumentQuery {
-	query := (&DocumentClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := nl.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(nodelist.Table, nodelist.FieldID, id),
-			sqlgraph.To(document.Table, document.FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, false, nodelist.DocumentTable, nodelist.DocumentColumn),
-		)
-		fromV = sqlgraph.Neighbors(nl.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
 }
 
 // QueryNodes queries the nodes edge of a NodeList.
@@ -1566,6 +1551,22 @@ func (c *NodeListClient) QueryNodes(nl *NodeList) *NodeQuery {
 			sqlgraph.From(nodelist.Table, nodelist.FieldID, id),
 			sqlgraph.To(node.Table, node.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, nodelist.NodesTable, nodelist.NodesColumn),
+		)
+		fromV = sqlgraph.Neighbors(nl.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryDocument queries the document edge of a NodeList.
+func (c *NodeListClient) QueryDocument(nl *NodeList) *DocumentQuery {
+	query := (&DocumentClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := nl.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(nodelist.Table, nodelist.FieldID, id),
+			sqlgraph.To(document.Table, document.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, nodelist.DocumentTable, nodelist.DocumentColumn),
 		)
 		fromV = sqlgraph.Neighbors(nl.driver.Dialect(), step)
 		return fromV, nil
@@ -1659,7 +1660,7 @@ func (c *PersonClient) UpdateOne(pe *Person) *PersonUpdateOne {
 }
 
 // UpdateOneID returns an update builder for the given id.
-func (c *PersonClient) UpdateOneID(id int) *PersonUpdateOne {
+func (c *PersonClient) UpdateOneID(id uuid.UUID) *PersonUpdateOne {
 	mutation := newPersonMutation(c.config, OpUpdateOne, withPersonID(id))
 	return &PersonUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
@@ -1676,7 +1677,7 @@ func (c *PersonClient) DeleteOne(pe *Person) *PersonDeleteOne {
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
-func (c *PersonClient) DeleteOneID(id int) *PersonDeleteOne {
+func (c *PersonClient) DeleteOneID(id uuid.UUID) *PersonDeleteOne {
 	builder := c.Delete().Where(person.ID(id))
 	builder.mutation.id = &id
 	builder.mutation.op = OpDeleteOne
@@ -1693,12 +1694,12 @@ func (c *PersonClient) Query() *PersonQuery {
 }
 
 // Get returns a Person entity by its id.
-func (c *PersonClient) Get(ctx context.Context, id int) (*Person, error) {
+func (c *PersonClient) Get(ctx context.Context, id uuid.UUID) (*Person, error) {
 	return c.Query().Where(person.ID(id)).Only(ctx)
 }
 
 // GetX is like Get, but panics if an error occurs.
-func (c *PersonClient) GetX(ctx context.Context, id int) *Person {
+func (c *PersonClient) GetX(ctx context.Context, id uuid.UUID) *Person {
 	obj, err := c.Get(ctx, id)
 	if err != nil {
 		panic(err)
@@ -2037,7 +2038,7 @@ func (c *ToolClient) UpdateOne(t *Tool) *ToolUpdateOne {
 }
 
 // UpdateOneID returns an update builder for the given id.
-func (c *ToolClient) UpdateOneID(id int) *ToolUpdateOne {
+func (c *ToolClient) UpdateOneID(id uuid.UUID) *ToolUpdateOne {
 	mutation := newToolMutation(c.config, OpUpdateOne, withToolID(id))
 	return &ToolUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
@@ -2054,7 +2055,7 @@ func (c *ToolClient) DeleteOne(t *Tool) *ToolDeleteOne {
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
-func (c *ToolClient) DeleteOneID(id int) *ToolDeleteOne {
+func (c *ToolClient) DeleteOneID(id uuid.UUID) *ToolDeleteOne {
 	builder := c.Delete().Where(tool.ID(id))
 	builder.mutation.id = &id
 	builder.mutation.op = OpDeleteOne
@@ -2071,12 +2072,12 @@ func (c *ToolClient) Query() *ToolQuery {
 }
 
 // Get returns a Tool entity by its id.
-func (c *ToolClient) Get(ctx context.Context, id int) (*Tool, error) {
+func (c *ToolClient) Get(ctx context.Context, id uuid.UUID) (*Tool, error) {
 	return c.Query().Where(tool.ID(id)).Only(ctx)
 }
 
 // GetX is like Get, but panics if an error occurs.
-func (c *ToolClient) GetX(ctx context.Context, id int) *Tool {
+func (c *ToolClient) GetX(ctx context.Context, id uuid.UUID) *Tool {
 	obj, err := c.Get(ctx, id)
 	if err != nil {
 		panic(err)

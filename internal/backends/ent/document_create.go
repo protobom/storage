@@ -15,6 +15,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/google/uuid"
 	"github.com/protobom/protobom/pkg/sbom"
 	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/metadata"
@@ -35,43 +36,43 @@ func (dc *DocumentCreate) SetProtoMessage(s *sbom.Document) *DocumentCreate {
 	return dc
 }
 
-// SetID sets the "id" field.
-func (dc *DocumentCreate) SetID(s string) *DocumentCreate {
-	dc.mutation.SetID(s)
+// SetMetadataID sets the "metadata_id" field.
+func (dc *DocumentCreate) SetMetadataID(s string) *DocumentCreate {
+	dc.mutation.SetMetadataID(s)
 	return dc
 }
 
-// SetMetadataID sets the "metadata" edge to the Metadata entity by ID.
-func (dc *DocumentCreate) SetMetadataID(id string) *DocumentCreate {
-	dc.mutation.SetMetadataID(id)
-	return dc
-}
-
-// SetNillableMetadataID sets the "metadata" edge to the Metadata entity by ID if the given value is not nil.
-func (dc *DocumentCreate) SetNillableMetadataID(id *string) *DocumentCreate {
-	if id != nil {
-		dc = dc.SetMetadataID(*id)
+// SetNillableMetadataID sets the "metadata_id" field if the given value is not nil.
+func (dc *DocumentCreate) SetNillableMetadataID(s *string) *DocumentCreate {
+	if s != nil {
+		dc.SetMetadataID(*s)
 	}
+	return dc
+}
+
+// SetNodeListID sets the "node_list_id" field.
+func (dc *DocumentCreate) SetNodeListID(u uuid.UUID) *DocumentCreate {
+	dc.mutation.SetNodeListID(u)
+	return dc
+}
+
+// SetNillableNodeListID sets the "node_list_id" field if the given value is not nil.
+func (dc *DocumentCreate) SetNillableNodeListID(u *uuid.UUID) *DocumentCreate {
+	if u != nil {
+		dc.SetNodeListID(*u)
+	}
+	return dc
+}
+
+// SetID sets the "id" field.
+func (dc *DocumentCreate) SetID(u uuid.UUID) *DocumentCreate {
+	dc.mutation.SetID(u)
 	return dc
 }
 
 // SetMetadata sets the "metadata" edge to the Metadata entity.
 func (dc *DocumentCreate) SetMetadata(m *Metadata) *DocumentCreate {
 	return dc.SetMetadataID(m.ID)
-}
-
-// SetNodeListID sets the "node_list" edge to the NodeList entity by ID.
-func (dc *DocumentCreate) SetNodeListID(id int) *DocumentCreate {
-	dc.mutation.SetNodeListID(id)
-	return dc
-}
-
-// SetNillableNodeListID sets the "node_list" edge to the NodeList entity by ID if the given value is not nil.
-func (dc *DocumentCreate) SetNillableNodeListID(id *int) *DocumentCreate {
-	if id != nil {
-		dc = dc.SetNodeListID(*id)
-	}
-	return dc
 }
 
 // SetNodeList sets the "node_list" edge to the NodeList entity.
@@ -128,10 +129,10 @@ func (dc *DocumentCreate) sqlSave(ctx context.Context) (*Document, error) {
 		return nil, err
 	}
 	if _spec.ID.Value != nil {
-		if id, ok := _spec.ID.Value.(string); ok {
-			_node.ID = id
-		} else {
-			return nil, fmt.Errorf("unexpected Document.ID type: %T", _spec.ID.Value)
+		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
+			_node.ID = *id
+		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
+			return nil, err
 		}
 	}
 	dc.mutation.id = &_node.ID
@@ -142,12 +143,12 @@ func (dc *DocumentCreate) sqlSave(ctx context.Context) (*Document, error) {
 func (dc *DocumentCreate) createSpec() (*Document, *sqlgraph.CreateSpec) {
 	var (
 		_node = &Document{config: dc.config}
-		_spec = sqlgraph.NewCreateSpec(document.Table, sqlgraph.NewFieldSpec(document.FieldID, field.TypeString))
+		_spec = sqlgraph.NewCreateSpec(document.Table, sqlgraph.NewFieldSpec(document.FieldID, field.TypeUUID))
 	)
 	_spec.OnConflict = dc.conflict
 	if id, ok := dc.mutation.ID(); ok {
 		_node.ID = id
-		_spec.ID.Value = id
+		_spec.ID.Value = &id
 	}
 	if value, ok := dc.mutation.ProtoMessage(); ok {
 		_spec.SetField(document.FieldProtoMessage, field.TypeJSON, value)
@@ -156,7 +157,7 @@ func (dc *DocumentCreate) createSpec() (*Document, *sqlgraph.CreateSpec) {
 	if nodes := dc.mutation.MetadataIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2O,
-			Inverse: false,
+			Inverse: true,
 			Table:   document.MetadataTable,
 			Columns: []string{document.MetadataColumn},
 			Bidi:    false,
@@ -167,6 +168,7 @@ func (dc *DocumentCreate) createSpec() (*Document, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
+		_node.MetadataID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := dc.mutation.NodeListIDs(); len(nodes) > 0 {
@@ -177,13 +179,13 @@ func (dc *DocumentCreate) createSpec() (*Document, *sqlgraph.CreateSpec) {
 			Columns: []string{document.NodeListColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(nodelist.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(nodelist.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.document_id = &nodes[0]
+		_node.NodeListID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
@@ -273,6 +275,12 @@ func (u *DocumentUpsertOne) UpdateNewValues() *DocumentUpsertOne {
 		if _, exists := u.create.mutation.ID(); exists {
 			s.SetIgnore(document.FieldID)
 		}
+		if _, exists := u.create.mutation.MetadataID(); exists {
+			s.SetIgnore(document.FieldMetadataID)
+		}
+		if _, exists := u.create.mutation.NodeListID(); exists {
+			s.SetIgnore(document.FieldNodeListID)
+		}
 	}))
 	return u
 }
@@ -341,7 +349,7 @@ func (u *DocumentUpsertOne) ExecX(ctx context.Context) {
 }
 
 // Exec executes the UPSERT query and returns the inserted/updated ID.
-func (u *DocumentUpsertOne) ID(ctx context.Context) (id string, err error) {
+func (u *DocumentUpsertOne) ID(ctx context.Context) (id uuid.UUID, err error) {
 	if u.create.driver.Dialect() == dialect.MySQL {
 		// In case of "ON CONFLICT", there is no way to get back non-numeric ID
 		// fields from the database since MySQL does not support the RETURNING clause.
@@ -355,7 +363,7 @@ func (u *DocumentUpsertOne) ID(ctx context.Context) (id string, err error) {
 }
 
 // IDX is like ID, but panics if an error occurs.
-func (u *DocumentUpsertOne) IDX(ctx context.Context) string {
+func (u *DocumentUpsertOne) IDX(ctx context.Context) uuid.UUID {
 	id, err := u.ID(ctx)
 	if err != nil {
 		panic(err)
@@ -506,6 +514,12 @@ func (u *DocumentUpsertBulk) UpdateNewValues() *DocumentUpsertBulk {
 		for _, b := range u.create.builders {
 			if _, exists := b.mutation.ID(); exists {
 				s.SetIgnore(document.FieldID)
+			}
+			if _, exists := b.mutation.MetadataID(); exists {
+				s.SetIgnore(document.FieldMetadataID)
+			}
+			if _, exists := b.mutation.NodeListID(); exists {
+				s.SetIgnore(document.FieldNodeListID)
 			}
 		}
 	}))

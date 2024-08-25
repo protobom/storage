@@ -14,6 +14,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/google/uuid"
 	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/edgetype"
 	"github.com/protobom/storage/internal/backends/ent/node"
@@ -25,6 +26,20 @@ type EdgeTypeCreate struct {
 	mutation *EdgeTypeMutation
 	hooks    []Hook
 	conflict []sql.ConflictOption
+}
+
+// SetDocumentID sets the "document_id" field.
+func (etc *EdgeTypeCreate) SetDocumentID(u uuid.UUID) *EdgeTypeCreate {
+	etc.mutation.SetDocumentID(u)
+	return etc
+}
+
+// SetNillableDocumentID sets the "document_id" field if the given value is not nil.
+func (etc *EdgeTypeCreate) SetNillableDocumentID(u *uuid.UUID) *EdgeTypeCreate {
+	if u != nil {
+		etc.SetDocumentID(*u)
+	}
+	return etc
 }
 
 // SetType sets the "type" field.
@@ -42,20 +57,6 @@ func (etc *EdgeTypeCreate) SetNodeID(s string) *EdgeTypeCreate {
 // SetToNodeID sets the "to_node_id" field.
 func (etc *EdgeTypeCreate) SetToNodeID(s string) *EdgeTypeCreate {
 	etc.mutation.SetToNodeID(s)
-	return etc
-}
-
-// SetDocumentID sets the "document" edge to the Document entity by ID.
-func (etc *EdgeTypeCreate) SetDocumentID(id string) *EdgeTypeCreate {
-	etc.mutation.SetDocumentID(id)
-	return etc
-}
-
-// SetNillableDocumentID sets the "document" edge to the Document entity by ID if the given value is not nil.
-func (etc *EdgeTypeCreate) SetNillableDocumentID(id *string) *EdgeTypeCreate {
-	if id != nil {
-		etc = etc.SetDocumentID(*id)
-	}
 	return etc
 }
 
@@ -93,6 +94,7 @@ func (etc *EdgeTypeCreate) Mutation() *EdgeTypeMutation {
 
 // Save creates the EdgeType in the database.
 func (etc *EdgeTypeCreate) Save(ctx context.Context) (*EdgeType, error) {
+	etc.defaults()
 	return withHooks(ctx, etc.sqlSave, etc.mutation, etc.hooks)
 }
 
@@ -115,6 +117,14 @@ func (etc *EdgeTypeCreate) Exec(ctx context.Context) error {
 func (etc *EdgeTypeCreate) ExecX(ctx context.Context) {
 	if err := etc.Exec(ctx); err != nil {
 		panic(err)
+	}
+}
+
+// defaults sets the default values of the builder before save.
+func (etc *EdgeTypeCreate) defaults() {
+	if _, ok := etc.mutation.DocumentID(); !ok {
+		v := edgetype.DefaultDocumentID()
+		etc.mutation.SetDocumentID(v)
 	}
 }
 
@@ -179,13 +189,13 @@ func (etc *EdgeTypeCreate) createSpec() (*EdgeType, *sqlgraph.CreateSpec) {
 			Columns: []string{edgetype.DocumentColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(document.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(document.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.document_id = &nodes[0]
+		_node.DocumentID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := etc.mutation.FromIDs(); len(nodes) > 0 {
@@ -229,7 +239,7 @@ func (etc *EdgeTypeCreate) createSpec() (*EdgeType, *sqlgraph.CreateSpec) {
 // of the `INSERT` statement. For example:
 //
 //	client.EdgeType.Create().
-//		SetType(v).
+//		SetDocumentID(v).
 //		OnConflict(
 //			// Update the row with the new values
 //			// the was proposed for insertion.
@@ -238,7 +248,7 @@ func (etc *EdgeTypeCreate) createSpec() (*EdgeType, *sqlgraph.CreateSpec) {
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.EdgeTypeUpsert) {
-//			SetType(v+v).
+//			SetDocumentID(v+v).
 //		}).
 //		Exec(ctx)
 func (etc *EdgeTypeCreate) OnConflict(opts ...sql.ConflictOption) *EdgeTypeUpsertOne {
@@ -320,6 +330,11 @@ func (u *EdgeTypeUpsert) UpdateToNodeID() *EdgeTypeUpsert {
 //		Exec(ctx)
 func (u *EdgeTypeUpsertOne) UpdateNewValues() *EdgeTypeUpsertOne {
 	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
+		if _, exists := u.create.mutation.DocumentID(); exists {
+			s.SetIgnore(edgetype.FieldDocumentID)
+		}
+	}))
 	return u
 }
 
@@ -444,6 +459,7 @@ func (etcb *EdgeTypeCreateBulk) Save(ctx context.Context) ([]*EdgeType, error) {
 	for i := range etcb.builders {
 		func(i int, root context.Context) {
 			builder := etcb.builders[i]
+			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*EdgeTypeMutation)
 				if !ok {
@@ -526,7 +542,7 @@ func (etcb *EdgeTypeCreateBulk) ExecX(ctx context.Context) {
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.EdgeTypeUpsert) {
-//			SetType(v+v).
+//			SetDocumentID(v+v).
 //		}).
 //		Exec(ctx)
 func (etcb *EdgeTypeCreateBulk) OnConflict(opts ...sql.ConflictOption) *EdgeTypeUpsertBulk {
@@ -565,6 +581,13 @@ type EdgeTypeUpsertBulk struct {
 //		Exec(ctx)
 func (u *EdgeTypeUpsertBulk) UpdateNewValues() *EdgeTypeUpsertBulk {
 	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
+		for _, b := range u.create.builders {
+			if _, exists := b.mutation.DocumentID(); exists {
+				s.SetIgnore(edgetype.FieldDocumentID)
+			}
+		}
+	}))
 	return u
 }
 

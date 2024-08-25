@@ -15,6 +15,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/google/uuid"
 	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/documenttype"
 	"github.com/protobom/storage/internal/backends/ent/metadata"
@@ -30,7 +31,6 @@ type DocumentTypeQuery struct {
 	predicates   []predicate.DocumentType
 	withDocument *DocumentQuery
 	withMetadata *MetadataQuery
-	withFKs      bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -135,8 +135,8 @@ func (dtq *DocumentTypeQuery) FirstX(ctx context.Context) *DocumentType {
 
 // FirstID returns the first DocumentType ID from the query.
 // Returns a *NotFoundError when no DocumentType ID was found.
-func (dtq *DocumentTypeQuery) FirstID(ctx context.Context) (id int, err error) {
-	var ids []int
+func (dtq *DocumentTypeQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
+	var ids []uuid.UUID
 	if ids, err = dtq.Limit(1).IDs(setContextOp(ctx, dtq.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
@@ -148,7 +148,7 @@ func (dtq *DocumentTypeQuery) FirstID(ctx context.Context) (id int, err error) {
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (dtq *DocumentTypeQuery) FirstIDX(ctx context.Context) int {
+func (dtq *DocumentTypeQuery) FirstIDX(ctx context.Context) uuid.UUID {
 	id, err := dtq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -186,8 +186,8 @@ func (dtq *DocumentTypeQuery) OnlyX(ctx context.Context) *DocumentType {
 // OnlyID is like Only, but returns the only DocumentType ID in the query.
 // Returns a *NotSingularError when more than one DocumentType ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (dtq *DocumentTypeQuery) OnlyID(ctx context.Context) (id int, err error) {
-	var ids []int
+func (dtq *DocumentTypeQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
+	var ids []uuid.UUID
 	if ids, err = dtq.Limit(2).IDs(setContextOp(ctx, dtq.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
@@ -203,7 +203,7 @@ func (dtq *DocumentTypeQuery) OnlyID(ctx context.Context) (id int, err error) {
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (dtq *DocumentTypeQuery) OnlyIDX(ctx context.Context) int {
+func (dtq *DocumentTypeQuery) OnlyIDX(ctx context.Context) uuid.UUID {
 	id, err := dtq.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -231,7 +231,7 @@ func (dtq *DocumentTypeQuery) AllX(ctx context.Context) []*DocumentType {
 }
 
 // IDs executes the query and returns a list of DocumentType IDs.
-func (dtq *DocumentTypeQuery) IDs(ctx context.Context) (ids []int, err error) {
+func (dtq *DocumentTypeQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
 	if dtq.ctx.Unique == nil && dtq.path != nil {
 		dtq.Unique(true)
 	}
@@ -243,7 +243,7 @@ func (dtq *DocumentTypeQuery) IDs(ctx context.Context) (ids []int, err error) {
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (dtq *DocumentTypeQuery) IDsX(ctx context.Context) []int {
+func (dtq *DocumentTypeQuery) IDsX(ctx context.Context) []uuid.UUID {
 	ids, err := dtq.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -339,12 +339,12 @@ func (dtq *DocumentTypeQuery) WithMetadata(opts ...func(*MetadataQuery)) *Docume
 // Example:
 //
 //	var v []struct {
-//		ProtoMessage *sbom.DocumentType `json:"proto_message,omitempty"`
+//		DocumentID uuid.UUID `json:"document_id,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.DocumentType.Query().
-//		GroupBy(documenttype.FieldProtoMessage).
+//		GroupBy(documenttype.FieldDocumentID).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (dtq *DocumentTypeQuery) GroupBy(field string, fields ...string) *DocumentTypeGroupBy {
@@ -362,11 +362,11 @@ func (dtq *DocumentTypeQuery) GroupBy(field string, fields ...string) *DocumentT
 // Example:
 //
 //	var v []struct {
-//		ProtoMessage *sbom.DocumentType `json:"proto_message,omitempty"`
+//		DocumentID uuid.UUID `json:"document_id,omitempty"`
 //	}
 //
 //	client.DocumentType.Query().
-//		Select(documenttype.FieldProtoMessage).
+//		Select(documenttype.FieldDocumentID).
 //		Scan(ctx, &v)
 func (dtq *DocumentTypeQuery) Select(fields ...string) *DocumentTypeSelect {
 	dtq.ctx.Fields = append(dtq.ctx.Fields, fields...)
@@ -410,19 +410,12 @@ func (dtq *DocumentTypeQuery) prepareQuery(ctx context.Context) error {
 func (dtq *DocumentTypeQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*DocumentType, error) {
 	var (
 		nodes       = []*DocumentType{}
-		withFKs     = dtq.withFKs
 		_spec       = dtq.querySpec()
 		loadedTypes = [2]bool{
 			dtq.withDocument != nil,
 			dtq.withMetadata != nil,
 		}
 	)
-	if dtq.withDocument != nil {
-		withFKs = true
-	}
-	if withFKs {
-		_spec.Node.Columns = append(_spec.Node.Columns, documenttype.ForeignKeys...)
-	}
 	_spec.ScanValues = func(columns []string) ([]any, error) {
 		return (*DocumentType).scanValues(nil, columns)
 	}
@@ -457,13 +450,10 @@ func (dtq *DocumentTypeQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([
 }
 
 func (dtq *DocumentTypeQuery) loadDocument(ctx context.Context, query *DocumentQuery, nodes []*DocumentType, init func(*DocumentType), assign func(*DocumentType, *Document)) error {
-	ids := make([]string, 0, len(nodes))
-	nodeids := make(map[string][]*DocumentType)
+	ids := make([]uuid.UUID, 0, len(nodes))
+	nodeids := make(map[uuid.UUID][]*DocumentType)
 	for i := range nodes {
-		if nodes[i].document_id == nil {
-			continue
-		}
-		fk := *nodes[i].document_id
+		fk := nodes[i].DocumentID
 		if _, ok := nodeids[fk]; !ok {
 			ids = append(ids, fk)
 		}
@@ -528,7 +518,7 @@ func (dtq *DocumentTypeQuery) sqlCount(ctx context.Context) (int, error) {
 }
 
 func (dtq *DocumentTypeQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := sqlgraph.NewQuerySpec(documenttype.Table, documenttype.Columns, sqlgraph.NewFieldSpec(documenttype.FieldID, field.TypeInt))
+	_spec := sqlgraph.NewQuerySpec(documenttype.Table, documenttype.Columns, sqlgraph.NewFieldSpec(documenttype.FieldID, field.TypeUUID))
 	_spec.From = dtq.sql
 	if unique := dtq.ctx.Unique; unique != nil {
 		_spec.Unique = *unique
@@ -542,6 +532,9 @@ func (dtq *DocumentTypeQuery) querySpec() *sqlgraph.QuerySpec {
 			if fields[i] != documenttype.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
+		}
+		if dtq.withDocument != nil {
+			_spec.Node.AddColumnOnce(documenttype.FieldDocumentID)
 		}
 		if dtq.withMetadata != nil {
 			_spec.Node.AddColumnOnce(documenttype.FieldMetadataID)

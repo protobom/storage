@@ -10,6 +10,7 @@ package purpose
 import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"github.com/google/uuid"
 	"github.com/protobom/storage/internal/backends/ent/predicate"
 )
 
@@ -58,9 +59,44 @@ func IDLTE(id int) predicate.Purpose {
 	return predicate.Purpose(sql.FieldLTE(FieldID, id))
 }
 
+// DocumentID applies equality check predicate on the "document_id" field. It's identical to DocumentIDEQ.
+func DocumentID(v uuid.UUID) predicate.Purpose {
+	return predicate.Purpose(sql.FieldEQ(FieldDocumentID, v))
+}
+
 // NodeID applies equality check predicate on the "node_id" field. It's identical to NodeIDEQ.
 func NodeID(v string) predicate.Purpose {
 	return predicate.Purpose(sql.FieldEQ(FieldNodeID, v))
+}
+
+// DocumentIDEQ applies the EQ predicate on the "document_id" field.
+func DocumentIDEQ(v uuid.UUID) predicate.Purpose {
+	return predicate.Purpose(sql.FieldEQ(FieldDocumentID, v))
+}
+
+// DocumentIDNEQ applies the NEQ predicate on the "document_id" field.
+func DocumentIDNEQ(v uuid.UUID) predicate.Purpose {
+	return predicate.Purpose(sql.FieldNEQ(FieldDocumentID, v))
+}
+
+// DocumentIDIn applies the In predicate on the "document_id" field.
+func DocumentIDIn(vs ...uuid.UUID) predicate.Purpose {
+	return predicate.Purpose(sql.FieldIn(FieldDocumentID, vs...))
+}
+
+// DocumentIDNotIn applies the NotIn predicate on the "document_id" field.
+func DocumentIDNotIn(vs ...uuid.UUID) predicate.Purpose {
+	return predicate.Purpose(sql.FieldNotIn(FieldDocumentID, vs...))
+}
+
+// DocumentIDIsNil applies the IsNil predicate on the "document_id" field.
+func DocumentIDIsNil() predicate.Purpose {
+	return predicate.Purpose(sql.FieldIsNull(FieldDocumentID))
+}
+
+// DocumentIDNotNil applies the NotNil predicate on the "document_id" field.
+func DocumentIDNotNil() predicate.Purpose {
+	return predicate.Purpose(sql.FieldNotNull(FieldDocumentID))
 }
 
 // NodeIDEQ applies the EQ predicate on the "node_id" field.

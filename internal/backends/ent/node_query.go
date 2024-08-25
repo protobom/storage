@@ -16,6 +16,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/google/uuid"
 	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/edgetype"
 	"github.com/protobom/storage/internal/backends/ent/externalreference"
@@ -42,7 +43,6 @@ type NodeQuery struct {
 	withNodes              *NodeQuery
 	withNodeList           *NodeListQuery
 	withEdgeTypes          *EdgeTypeQuery
-	withFKs                bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -589,12 +589,12 @@ func (nq *NodeQuery) WithEdgeTypes(opts ...func(*EdgeTypeQuery)) *NodeQuery {
 // Example:
 //
 //	var v []struct {
-//		ProtoMessage *sbom.Node `json:"proto_message,omitempty"`
+//		DocumentID uuid.UUID `json:"document_id,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.Node.Query().
-//		GroupBy(node.FieldProtoMessage).
+//		GroupBy(node.FieldDocumentID).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (nq *NodeQuery) GroupBy(field string, fields ...string) *NodeGroupBy {
@@ -612,11 +612,11 @@ func (nq *NodeQuery) GroupBy(field string, fields ...string) *NodeGroupBy {
 // Example:
 //
 //	var v []struct {
-//		ProtoMessage *sbom.Node `json:"proto_message,omitempty"`
+//		DocumentID uuid.UUID `json:"document_id,omitempty"`
 //	}
 //
 //	client.Node.Query().
-//		Select(node.FieldProtoMessage).
+//		Select(node.FieldDocumentID).
 //		Scan(ctx, &v)
 func (nq *NodeQuery) Select(fields ...string) *NodeSelect {
 	nq.ctx.Fields = append(nq.ctx.Fields, fields...)
@@ -660,7 +660,6 @@ func (nq *NodeQuery) prepareQuery(ctx context.Context) error {
 func (nq *NodeQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Node, error) {
 	var (
 		nodes       = []*Node{}
-		withFKs     = nq.withFKs
 		_spec       = nq.querySpec()
 		loadedTypes = [9]bool{
 			nq.withDocument != nil,
@@ -674,12 +673,6 @@ func (nq *NodeQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Node, e
 			nq.withEdgeTypes != nil,
 		}
 	)
-	if nq.withDocument != nil {
-		withFKs = true
-	}
-	if withFKs {
-		_spec.Node.Columns = append(_spec.Node.Columns, node.ForeignKeys...)
-	}
 	_spec.ScanValues = func(columns []string) ([]any, error) {
 		return (*Node).scanValues(nil, columns)
 	}
@@ -765,13 +758,10 @@ func (nq *NodeQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Node, e
 }
 
 func (nq *NodeQuery) loadDocument(ctx context.Context, query *DocumentQuery, nodes []*Node, init func(*Node), assign func(*Node, *Document)) error {
-	ids := make([]string, 0, len(nodes))
-	nodeids := make(map[string][]*Node)
+	ids := make([]uuid.UUID, 0, len(nodes))
+	nodeids := make(map[uuid.UUID][]*Node)
 	for i := range nodes {
-		if nodes[i].document_id == nil {
-			continue
-		}
-		fk := *nodes[i].document_id
+		fk := nodes[i].DocumentID
 		if _, ok := nodeids[fk]; !ok {
 			ids = append(ids, fk)
 		}
@@ -868,7 +858,6 @@ func (nq *NodeQuery) loadExternalReferences(ctx context.Context, query *External
 			init(nodes[i])
 		}
 	}
-	query.withFKs = true
 	if len(query.ctx.Fields) > 0 {
 		query.ctx.AppendFieldOnce(externalreference.FieldNodeID)
 	}
@@ -899,7 +888,6 @@ func (nq *NodeQuery) loadPrimaryPurpose(ctx context.Context, query *PurposeQuery
 			init(nodes[i])
 		}
 	}
-	query.withFKs = true
 	if len(query.ctx.Fields) > 0 {
 		query.ctx.AppendFieldOnce(purpose.FieldNodeID)
 	}
@@ -1043,8 +1031,8 @@ func (nq *NodeQuery) loadNodes(ctx context.Context, query *NodeQuery, nodes []*N
 	return nil
 }
 func (nq *NodeQuery) loadNodeList(ctx context.Context, query *NodeListQuery, nodes []*Node, init func(*Node), assign func(*Node, *NodeList)) error {
-	ids := make([]int, 0, len(nodes))
-	nodeids := make(map[int][]*Node)
+	ids := make([]uuid.UUID, 0, len(nodes))
+	nodeids := make(map[uuid.UUID][]*Node)
 	for i := range nodes {
 		fk := nodes[i].NodeListID
 		if _, ok := nodeids[fk]; !ok {
@@ -1081,7 +1069,6 @@ func (nq *NodeQuery) loadEdgeTypes(ctx context.Context, query *EdgeTypeQuery, no
 			init(nodes[i])
 		}
 	}
-	query.withFKs = true
 	if len(query.ctx.Fields) > 0 {
 		query.ctx.AppendFieldOnce(edgetype.FieldToNodeID)
 	}
@@ -1127,6 +1114,9 @@ func (nq *NodeQuery) querySpec() *sqlgraph.QuerySpec {
 			if fields[i] != node.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
+		}
+		if nq.withDocument != nil {
+			_spec.Node.AddColumnOnce(node.FieldDocumentID)
 		}
 		if nq.withNodeList != nil {
 			_spec.Node.AddColumnOnce(node.FieldNodeListID)

@@ -13,6 +13,7 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/google/uuid"
 	"github.com/protobom/protobom/pkg/sbom"
 	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/metadata"
@@ -23,7 +24,9 @@ import (
 type Tool struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID int `json:"id,omitempty"`
+	ID uuid.UUID `json:"id,omitempty"`
+	// DocumentID holds the value of the "document_id" field.
+	DocumentID uuid.UUID `json:"document_id,omitempty"`
 	// ProtoMessage holds the value of the "proto_message" field.
 	ProtoMessage *sbom.Tool `json:"proto_message,omitempty"`
 	// MetadataID holds the value of the "metadata_id" field.
@@ -37,7 +40,6 @@ type Tool struct {
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the ToolQuery when eager-loading is set.
 	Edges        ToolEdges `json:"edges"`
-	document_id  *string
 	selectValues sql.SelectValues
 }
 
@@ -81,12 +83,10 @@ func (*Tool) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case tool.FieldProtoMessage:
 			values[i] = new([]byte)
-		case tool.FieldID:
-			values[i] = new(sql.NullInt64)
 		case tool.FieldMetadataID, tool.FieldName, tool.FieldVersion, tool.FieldVendor:
 			values[i] = new(sql.NullString)
-		case tool.ForeignKeys[0]: // document_id
-			values[i] = new(sql.NullString)
+		case tool.FieldID, tool.FieldDocumentID:
+			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -103,11 +103,17 @@ func (t *Tool) assignValues(columns []string, values []any) error {
 	for i := range columns {
 		switch columns[i] {
 		case tool.FieldID:
-			value, ok := values[i].(*sql.NullInt64)
-			if !ok {
-				return fmt.Errorf("unexpected type %T for field id", value)
+			if value, ok := values[i].(*uuid.UUID); !ok {
+				return fmt.Errorf("unexpected type %T for field id", values[i])
+			} else if value != nil {
+				t.ID = *value
 			}
-			t.ID = int(value.Int64)
+		case tool.FieldDocumentID:
+			if value, ok := values[i].(*uuid.UUID); !ok {
+				return fmt.Errorf("unexpected type %T for field document_id", values[i])
+			} else if value != nil {
+				t.DocumentID = *value
+			}
 		case tool.FieldProtoMessage:
 			if value, ok := values[i].(*[]byte); !ok {
 				return fmt.Errorf("unexpected type %T for field proto_message", values[i])
@@ -139,13 +145,6 @@ func (t *Tool) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field vendor", values[i])
 			} else if value.Valid {
 				t.Vendor = value.String
-			}
-		case tool.ForeignKeys[0]:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field document_id", values[i])
-			} else if value.Valid {
-				t.document_id = new(string)
-				*t.document_id = value.String
 			}
 		default:
 			t.selectValues.Set(columns[i], values[i])
@@ -193,6 +192,9 @@ func (t *Tool) String() string {
 	var builder strings.Builder
 	builder.WriteString("Tool(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", t.ID))
+	builder.WriteString("document_id=")
+	builder.WriteString(fmt.Sprintf("%v", t.DocumentID))
+	builder.WriteString(", ")
 	builder.WriteString("proto_message=")
 	builder.WriteString(fmt.Sprintf("%v", t.ProtoMessage))
 	builder.WriteString(", ")

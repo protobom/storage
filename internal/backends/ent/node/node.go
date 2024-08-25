@@ -12,6 +12,7 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"github.com/google/uuid"
 )
 
 const (
@@ -19,6 +20,8 @@ const (
 	Label = "node"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
+	// FieldDocumentID holds the string denoting the document_id field in the database.
+	FieldDocumentID = "document_id"
 	// FieldProtoMessage holds the string denoting the proto_message field in the database.
 	FieldProtoMessage = "proto_message"
 	// FieldNodeListID holds the string denoting the node_list_id field in the database.
@@ -143,6 +146,7 @@ const (
 // Columns holds all SQL columns for node fields.
 var Columns = []string{
 	FieldID,
+	FieldDocumentID,
 	FieldProtoMessage,
 	FieldNodeListID,
 	FieldType,
@@ -168,12 +172,6 @@ var Columns = []string{
 	FieldIdentifiers,
 }
 
-// ForeignKeys holds the SQL foreign-keys that are owned by the "nodes"
-// table and are not defined as standalone fields in the schema.
-var ForeignKeys = []string{
-	"document_id",
-}
-
 var (
 	// ToNodesPrimaryKey and ToNodesColumn2 are the table columns denoting the
 	// primary key for the to_nodes relation (M2M).
@@ -190,15 +188,12 @@ func ValidColumn(column string) bool {
 			return true
 		}
 	}
-	for i := range ForeignKeys {
-		if column == ForeignKeys[i] {
-			return true
-		}
-	}
 	return false
 }
 
 var (
+	// DefaultDocumentID holds the default value on creation for the "document_id" field.
+	DefaultDocumentID func() uuid.UUID
 	// IDValidator is a validator for the "id" field. It is called by the builders before save.
 	IDValidator func(string) error
 )
@@ -232,6 +227,11 @@ type OrderOption func(*sql.Selector)
 // ByID orders the results by the id field.
 func ByID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldID, opts...).ToFunc()
+}
+
+// ByDocumentID orders the results by the document_id field.
+func ByDocumentID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDocumentID, opts...).ToFunc()
 }
 
 // ByNodeListID orders the results by the node_list_id field.

@@ -16,6 +16,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/google/uuid"
 	"github.com/protobom/protobom/pkg/sbom"
 	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/edgetype"
@@ -34,6 +35,20 @@ type NodeCreate struct {
 	conflict []sql.ConflictOption
 }
 
+// SetDocumentID sets the "document_id" field.
+func (nc *NodeCreate) SetDocumentID(u uuid.UUID) *NodeCreate {
+	nc.mutation.SetDocumentID(u)
+	return nc
+}
+
+// SetNillableDocumentID sets the "document_id" field if the given value is not nil.
+func (nc *NodeCreate) SetNillableDocumentID(u *uuid.UUID) *NodeCreate {
+	if u != nil {
+		nc.SetDocumentID(*u)
+	}
+	return nc
+}
+
 // SetProtoMessage sets the "proto_message" field.
 func (nc *NodeCreate) SetProtoMessage(s *sbom.Node) *NodeCreate {
 	nc.mutation.SetProtoMessage(s)
@@ -41,15 +56,15 @@ func (nc *NodeCreate) SetProtoMessage(s *sbom.Node) *NodeCreate {
 }
 
 // SetNodeListID sets the "node_list_id" field.
-func (nc *NodeCreate) SetNodeListID(i int) *NodeCreate {
-	nc.mutation.SetNodeListID(i)
+func (nc *NodeCreate) SetNodeListID(u uuid.UUID) *NodeCreate {
+	nc.mutation.SetNodeListID(u)
 	return nc
 }
 
 // SetNillableNodeListID sets the "node_list_id" field if the given value is not nil.
-func (nc *NodeCreate) SetNillableNodeListID(i *int) *NodeCreate {
-	if i != nil {
-		nc.SetNodeListID(*i)
+func (nc *NodeCreate) SetNillableNodeListID(u *uuid.UUID) *NodeCreate {
+	if u != nil {
+		nc.SetNodeListID(*u)
 	}
 	return nc
 }
@@ -186,34 +201,20 @@ func (nc *NodeCreate) SetID(s string) *NodeCreate {
 	return nc
 }
 
-// SetDocumentID sets the "document" edge to the Document entity by ID.
-func (nc *NodeCreate) SetDocumentID(id string) *NodeCreate {
-	nc.mutation.SetDocumentID(id)
-	return nc
-}
-
-// SetNillableDocumentID sets the "document" edge to the Document entity by ID if the given value is not nil.
-func (nc *NodeCreate) SetNillableDocumentID(id *string) *NodeCreate {
-	if id != nil {
-		nc = nc.SetDocumentID(*id)
-	}
-	return nc
-}
-
 // SetDocument sets the "document" edge to the Document entity.
 func (nc *NodeCreate) SetDocument(d *Document) *NodeCreate {
 	return nc.SetDocumentID(d.ID)
 }
 
 // AddSupplierIDs adds the "suppliers" edge to the Person entity by IDs.
-func (nc *NodeCreate) AddSupplierIDs(ids ...int) *NodeCreate {
+func (nc *NodeCreate) AddSupplierIDs(ids ...uuid.UUID) *NodeCreate {
 	nc.mutation.AddSupplierIDs(ids...)
 	return nc
 }
 
 // AddSuppliers adds the "suppliers" edges to the Person entity.
 func (nc *NodeCreate) AddSuppliers(p ...*Person) *NodeCreate {
-	ids := make([]int, len(p))
+	ids := make([]uuid.UUID, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -221,14 +222,14 @@ func (nc *NodeCreate) AddSuppliers(p ...*Person) *NodeCreate {
 }
 
 // AddOriginatorIDs adds the "originators" edge to the Person entity by IDs.
-func (nc *NodeCreate) AddOriginatorIDs(ids ...int) *NodeCreate {
+func (nc *NodeCreate) AddOriginatorIDs(ids ...uuid.UUID) *NodeCreate {
 	nc.mutation.AddOriginatorIDs(ids...)
 	return nc
 }
 
 // AddOriginators adds the "originators" edges to the Person entity.
 func (nc *NodeCreate) AddOriginators(p ...*Person) *NodeCreate {
-	ids := make([]int, len(p))
+	ids := make([]uuid.UUID, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -236,14 +237,14 @@ func (nc *NodeCreate) AddOriginators(p ...*Person) *NodeCreate {
 }
 
 // AddExternalReferenceIDs adds the "external_references" edge to the ExternalReference entity by IDs.
-func (nc *NodeCreate) AddExternalReferenceIDs(ids ...int) *NodeCreate {
+func (nc *NodeCreate) AddExternalReferenceIDs(ids ...uuid.UUID) *NodeCreate {
 	nc.mutation.AddExternalReferenceIDs(ids...)
 	return nc
 }
 
 // AddExternalReferences adds the "external_references" edges to the ExternalReference entity.
 func (nc *NodeCreate) AddExternalReferences(e ...*ExternalReference) *NodeCreate {
-	ids := make([]int, len(e))
+	ids := make([]uuid.UUID, len(e))
 	for i := range e {
 		ids[i] = e[i].ID
 	}
@@ -322,6 +323,7 @@ func (nc *NodeCreate) Mutation() *NodeMutation {
 
 // Save creates the Node in the database.
 func (nc *NodeCreate) Save(ctx context.Context) (*Node, error) {
+	nc.defaults()
 	return withHooks(ctx, nc.sqlSave, nc.mutation, nc.hooks)
 }
 
@@ -344,6 +346,14 @@ func (nc *NodeCreate) Exec(ctx context.Context) error {
 func (nc *NodeCreate) ExecX(ctx context.Context) {
 	if err := nc.Exec(ctx); err != nil {
 		panic(err)
+	}
+}
+
+// defaults sets the default values of the builder before save.
+func (nc *NodeCreate) defaults() {
+	if _, ok := nc.mutation.DocumentID(); !ok {
+		v := node.DefaultDocumentID()
+		nc.mutation.SetDocumentID(v)
 	}
 }
 
@@ -548,13 +558,13 @@ func (nc *NodeCreate) createSpec() (*Node, *sqlgraph.CreateSpec) {
 			Columns: []string{node.DocumentColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(document.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(document.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.document_id = &nodes[0]
+		_node.DocumentID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := nc.mutation.SuppliersIDs(); len(nodes) > 0 {
@@ -565,7 +575,7 @@ func (nc *NodeCreate) createSpec() (*Node, *sqlgraph.CreateSpec) {
 			Columns: []string{node.SuppliersColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -581,7 +591,7 @@ func (nc *NodeCreate) createSpec() (*Node, *sqlgraph.CreateSpec) {
 			Columns: []string{node.OriginatorsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -597,7 +607,7 @@ func (nc *NodeCreate) createSpec() (*Node, *sqlgraph.CreateSpec) {
 			Columns: []string{node.ExternalReferencesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(externalreference.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(externalreference.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -635,6 +645,10 @@ func (nc *NodeCreate) createSpec() (*Node, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
+		createE := &EdgeTypeCreate{config: nc.config, mutation: newEdgeTypeMutation(nc.config, OpCreate)}
+		createE.defaults()
+		_, specE := createE.createSpec()
+		edge.Target.Fields = specE.Fields
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := nc.mutation.NodesIDs(); len(nodes) > 0 {
@@ -661,7 +675,7 @@ func (nc *NodeCreate) createSpec() (*Node, *sqlgraph.CreateSpec) {
 			Columns: []string{node.NodeListColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(nodelist.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(nodelist.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -693,7 +707,7 @@ func (nc *NodeCreate) createSpec() (*Node, *sqlgraph.CreateSpec) {
 // of the `INSERT` statement. For example:
 //
 //	client.Node.Create().
-//		SetProtoMessage(v).
+//		SetDocumentID(v).
 //		OnConflict(
 //			// Update the row with the new values
 //			// the was proposed for insertion.
@@ -702,7 +716,7 @@ func (nc *NodeCreate) createSpec() (*Node, *sqlgraph.CreateSpec) {
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.NodeUpsert) {
-//			SetProtoMessage(v+v).
+//			SetDocumentID(v+v).
 //		}).
 //		Exec(ctx)
 func (nc *NodeCreate) OnConflict(opts ...sql.ConflictOption) *NodeUpsertOne {
@@ -757,7 +771,7 @@ func (u *NodeUpsert) ClearProtoMessage() *NodeUpsert {
 }
 
 // SetNodeListID sets the "node_list_id" field.
-func (u *NodeUpsert) SetNodeListID(v int) *NodeUpsert {
+func (u *NodeUpsert) SetNodeListID(v uuid.UUID) *NodeUpsert {
 	u.Set(node.FieldNodeListID, v)
 	return u
 }
@@ -1055,6 +1069,9 @@ func (u *NodeUpsertOne) UpdateNewValues() *NodeUpsertOne {
 		if _, exists := u.create.mutation.ID(); exists {
 			s.SetIgnore(node.FieldID)
 		}
+		if _, exists := u.create.mutation.DocumentID(); exists {
+			s.SetIgnore(node.FieldDocumentID)
+		}
 	}))
 	return u
 }
@@ -1108,7 +1125,7 @@ func (u *NodeUpsertOne) ClearProtoMessage() *NodeUpsertOne {
 }
 
 // SetNodeListID sets the "node_list_id" field.
-func (u *NodeUpsertOne) SetNodeListID(v int) *NodeUpsertOne {
+func (u *NodeUpsertOne) SetNodeListID(v uuid.UUID) *NodeUpsertOne {
 	return u.Update(func(s *NodeUpsert) {
 		s.SetNodeListID(v)
 	})
@@ -1493,6 +1510,7 @@ func (ncb *NodeCreateBulk) Save(ctx context.Context) ([]*Node, error) {
 	for i := range ncb.builders {
 		func(i int, root context.Context) {
 			builder := ncb.builders[i]
+			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*NodeMutation)
 				if !ok {
@@ -1571,7 +1589,7 @@ func (ncb *NodeCreateBulk) ExecX(ctx context.Context) {
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.NodeUpsert) {
-//			SetProtoMessage(v+v).
+//			SetDocumentID(v+v).
 //		}).
 //		Exec(ctx)
 func (ncb *NodeCreateBulk) OnConflict(opts ...sql.ConflictOption) *NodeUpsertBulk {
@@ -1617,6 +1635,9 @@ func (u *NodeUpsertBulk) UpdateNewValues() *NodeUpsertBulk {
 		for _, b := range u.create.builders {
 			if _, exists := b.mutation.ID(); exists {
 				s.SetIgnore(node.FieldID)
+			}
+			if _, exists := b.mutation.DocumentID(); exists {
+				s.SetIgnore(node.FieldDocumentID)
 			}
 		}
 	}))
@@ -1672,7 +1693,7 @@ func (u *NodeUpsertBulk) ClearProtoMessage() *NodeUpsertBulk {
 }
 
 // SetNodeListID sets the "node_list_id" field.
-func (u *NodeUpsertBulk) SetNodeListID(v int) *NodeUpsertBulk {
+func (u *NodeUpsertBulk) SetNodeListID(v uuid.UUID) *NodeUpsertBulk {
 	return u.Update(func(s *NodeUpsert) {
 		s.SetNodeListID(v)
 	})

@@ -13,6 +13,7 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/google/uuid"
 	"github.com/protobom/protobom/pkg/sbom"
 	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/metadata"
@@ -23,13 +24,16 @@ import (
 type Document struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID string `json:"id,omitempty"`
+	ID uuid.UUID `json:"id,omitempty"`
 	// ProtoMessage holds the value of the "proto_message" field.
 	ProtoMessage *sbom.Document `json:"proto_message,omitempty"`
+	// MetadataID holds the value of the "metadata_id" field.
+	MetadataID string `json:"metadata_id,omitempty"`
+	// NodeListID holds the value of the "node_list_id" field.
+	NodeListID uuid.UUID `json:"node_list_id,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the DocumentQuery when eager-loading is set.
 	Edges        DocumentEdges `json:"edges"`
-	document_id  *int
 	selectValues sql.SelectValues
 }
 
@@ -73,10 +77,10 @@ func (*Document) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case document.FieldProtoMessage:
 			values[i] = new([]byte)
-		case document.FieldID:
+		case document.FieldMetadataID:
 			values[i] = new(sql.NullString)
-		case document.ForeignKeys[0]: // document_id
-			values[i] = new(sql.NullInt64)
+		case document.FieldID, document.FieldNodeListID:
+			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -93,10 +97,10 @@ func (d *Document) assignValues(columns []string, values []any) error {
 	for i := range columns {
 		switch columns[i] {
 		case document.FieldID:
-			if value, ok := values[i].(*sql.NullString); !ok {
+			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
-			} else if value.Valid {
-				d.ID = value.String
+			} else if value != nil {
+				d.ID = *value
 			}
 		case document.FieldProtoMessage:
 			if value, ok := values[i].(*[]byte); !ok {
@@ -106,12 +110,17 @@ func (d *Document) assignValues(columns []string, values []any) error {
 					return fmt.Errorf("unmarshal field proto_message: %w", err)
 				}
 			}
-		case document.ForeignKeys[0]:
-			if value, ok := values[i].(*sql.NullInt64); !ok {
-				return fmt.Errorf("unexpected type %T for edge-field document_id", value)
+		case document.FieldMetadataID:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field metadata_id", values[i])
 			} else if value.Valid {
-				d.document_id = new(int)
-				*d.document_id = int(value.Int64)
+				d.MetadataID = value.String
+			}
+		case document.FieldNodeListID:
+			if value, ok := values[i].(*uuid.UUID); !ok {
+				return fmt.Errorf("unexpected type %T for field node_list_id", values[i])
+			} else if value != nil {
+				d.NodeListID = *value
 			}
 		default:
 			d.selectValues.Set(columns[i], values[i])
@@ -161,6 +170,12 @@ func (d *Document) String() string {
 	builder.WriteString(fmt.Sprintf("id=%v, ", d.ID))
 	builder.WriteString("proto_message=")
 	builder.WriteString(fmt.Sprintf("%v", d.ProtoMessage))
+	builder.WriteString(", ")
+	builder.WriteString("metadata_id=")
+	builder.WriteString(d.MetadataID)
+	builder.WriteString(", ")
+	builder.WriteString("node_list_id=")
+	builder.WriteString(fmt.Sprintf("%v", d.NodeListID))
 	builder.WriteByte(')')
 	return builder.String()
 }

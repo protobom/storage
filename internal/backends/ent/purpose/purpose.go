@@ -12,6 +12,7 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"github.com/google/uuid"
 )
 
 const (
@@ -19,6 +20,8 @@ const (
 	Label = "purpose"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
+	// FieldDocumentID holds the string denoting the document_id field in the database.
+	FieldDocumentID = "document_id"
 	// FieldNodeID holds the string denoting the node_id field in the database.
 	FieldNodeID = "node_id"
 	// FieldPrimaryPurpose holds the string denoting the primary_purpose field in the database.
@@ -48,14 +51,9 @@ const (
 // Columns holds all SQL columns for purpose fields.
 var Columns = []string{
 	FieldID,
+	FieldDocumentID,
 	FieldNodeID,
 	FieldPrimaryPurpose,
-}
-
-// ForeignKeys holds the SQL foreign-keys that are owned by the "purposes"
-// table and are not defined as standalone fields in the schema.
-var ForeignKeys = []string{
-	"document_id",
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -65,13 +63,13 @@ func ValidColumn(column string) bool {
 			return true
 		}
 	}
-	for i := range ForeignKeys {
-		if column == ForeignKeys[i] {
-			return true
-		}
-	}
 	return false
 }
+
+var (
+	// DefaultDocumentID holds the default value on creation for the "document_id" field.
+	DefaultDocumentID func() uuid.UUID
+)
 
 // PrimaryPurpose defines the type for the "primary_purpose" enum field.
 type PrimaryPurpose string
@@ -129,6 +127,11 @@ type OrderOption func(*sql.Selector)
 // ByID orders the results by the id field.
 func ByID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldID, opts...).ToFunc()
+}
+
+// ByDocumentID orders the results by the document_id field.
+func ByDocumentID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDocumentID, opts...).ToFunc()
 }
 
 // ByNodeID orders the results by the node_id field.

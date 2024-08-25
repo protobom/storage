@@ -15,6 +15,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/google/uuid"
 	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/node"
 	"github.com/protobom/storage/internal/backends/ent/predicate"
@@ -30,7 +31,6 @@ type PurposeQuery struct {
 	predicates   []predicate.Purpose
 	withDocument *DocumentQuery
 	withNode     *NodeQuery
-	withFKs      bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -339,12 +339,12 @@ func (pq *PurposeQuery) WithNode(opts ...func(*NodeQuery)) *PurposeQuery {
 // Example:
 //
 //	var v []struct {
-//		NodeID string `json:"node_id,omitempty"`
+//		DocumentID uuid.UUID `json:"document_id,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.Purpose.Query().
-//		GroupBy(purpose.FieldNodeID).
+//		GroupBy(purpose.FieldDocumentID).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (pq *PurposeQuery) GroupBy(field string, fields ...string) *PurposeGroupBy {
@@ -362,11 +362,11 @@ func (pq *PurposeQuery) GroupBy(field string, fields ...string) *PurposeGroupBy 
 // Example:
 //
 //	var v []struct {
-//		NodeID string `json:"node_id,omitempty"`
+//		DocumentID uuid.UUID `json:"document_id,omitempty"`
 //	}
 //
 //	client.Purpose.Query().
-//		Select(purpose.FieldNodeID).
+//		Select(purpose.FieldDocumentID).
 //		Scan(ctx, &v)
 func (pq *PurposeQuery) Select(fields ...string) *PurposeSelect {
 	pq.ctx.Fields = append(pq.ctx.Fields, fields...)
@@ -410,19 +410,12 @@ func (pq *PurposeQuery) prepareQuery(ctx context.Context) error {
 func (pq *PurposeQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Purpose, error) {
 	var (
 		nodes       = []*Purpose{}
-		withFKs     = pq.withFKs
 		_spec       = pq.querySpec()
 		loadedTypes = [2]bool{
 			pq.withDocument != nil,
 			pq.withNode != nil,
 		}
 	)
-	if pq.withDocument != nil {
-		withFKs = true
-	}
-	if withFKs {
-		_spec.Node.Columns = append(_spec.Node.Columns, purpose.ForeignKeys...)
-	}
 	_spec.ScanValues = func(columns []string) ([]any, error) {
 		return (*Purpose).scanValues(nil, columns)
 	}
@@ -457,13 +450,10 @@ func (pq *PurposeQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Purp
 }
 
 func (pq *PurposeQuery) loadDocument(ctx context.Context, query *DocumentQuery, nodes []*Purpose, init func(*Purpose), assign func(*Purpose, *Document)) error {
-	ids := make([]string, 0, len(nodes))
-	nodeids := make(map[string][]*Purpose)
+	ids := make([]uuid.UUID, 0, len(nodes))
+	nodeids := make(map[uuid.UUID][]*Purpose)
 	for i := range nodes {
-		if nodes[i].document_id == nil {
-			continue
-		}
-		fk := *nodes[i].document_id
+		fk := nodes[i].DocumentID
 		if _, ok := nodeids[fk]; !ok {
 			ids = append(ids, fk)
 		}
@@ -542,6 +532,9 @@ func (pq *PurposeQuery) querySpec() *sqlgraph.QuerySpec {
 			if fields[i] != purpose.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
+		}
+		if pq.withDocument != nil {
+			_spec.Node.AddColumnOnce(purpose.FieldDocumentID)
 		}
 		if pq.withNode != nil {
 			_spec.Node.AddColumnOnce(purpose.FieldNodeID)

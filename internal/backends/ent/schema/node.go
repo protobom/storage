@@ -10,6 +10,7 @@ import (
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
+	"github.com/google/uuid"
 	"github.com/protobom/protobom/pkg/sbom"
 )
 
@@ -27,7 +28,7 @@ func (Node) Mixin() []ent.Mixin {
 func (Node) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("id").NotEmpty().Unique().Immutable(),
-		field.Int("node_list_id").Optional(),
+		field.UUID("node_list_id", uuid.UUID{}).Optional(),
 		field.Enum("type").Values("PACKAGE", "FILE"),
 		field.String("name"),
 		field.String("version"),

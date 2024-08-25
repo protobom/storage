@@ -16,6 +16,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/dialect/sql/sqljson"
 	"entgo.io/ent/schema/field"
+	"github.com/google/uuid"
 	"github.com/protobom/protobom/pkg/sbom"
 	"github.com/protobom/storage/internal/backends/ent/edgetype"
 	"github.com/protobom/storage/internal/backends/ent/externalreference"
@@ -52,15 +53,15 @@ func (nu *NodeUpdate) ClearProtoMessage() *NodeUpdate {
 }
 
 // SetNodeListID sets the "node_list_id" field.
-func (nu *NodeUpdate) SetNodeListID(i int) *NodeUpdate {
-	nu.mutation.SetNodeListID(i)
+func (nu *NodeUpdate) SetNodeListID(u uuid.UUID) *NodeUpdate {
+	nu.mutation.SetNodeListID(u)
 	return nu
 }
 
 // SetNillableNodeListID sets the "node_list_id" field if the given value is not nil.
-func (nu *NodeUpdate) SetNillableNodeListID(i *int) *NodeUpdate {
-	if i != nil {
-		nu.SetNodeListID(*i)
+func (nu *NodeUpdate) SetNillableNodeListID(u *uuid.UUID) *NodeUpdate {
+	if u != nil {
+		nu.SetNodeListID(*u)
 	}
 	return nu
 }
@@ -356,14 +357,14 @@ func (nu *NodeUpdate) ClearIdentifiers() *NodeUpdate {
 }
 
 // AddSupplierIDs adds the "suppliers" edge to the Person entity by IDs.
-func (nu *NodeUpdate) AddSupplierIDs(ids ...int) *NodeUpdate {
+func (nu *NodeUpdate) AddSupplierIDs(ids ...uuid.UUID) *NodeUpdate {
 	nu.mutation.AddSupplierIDs(ids...)
 	return nu
 }
 
 // AddSuppliers adds the "suppliers" edges to the Person entity.
 func (nu *NodeUpdate) AddSuppliers(p ...*Person) *NodeUpdate {
-	ids := make([]int, len(p))
+	ids := make([]uuid.UUID, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -371,14 +372,14 @@ func (nu *NodeUpdate) AddSuppliers(p ...*Person) *NodeUpdate {
 }
 
 // AddOriginatorIDs adds the "originators" edge to the Person entity by IDs.
-func (nu *NodeUpdate) AddOriginatorIDs(ids ...int) *NodeUpdate {
+func (nu *NodeUpdate) AddOriginatorIDs(ids ...uuid.UUID) *NodeUpdate {
 	nu.mutation.AddOriginatorIDs(ids...)
 	return nu
 }
 
 // AddOriginators adds the "originators" edges to the Person entity.
 func (nu *NodeUpdate) AddOriginators(p ...*Person) *NodeUpdate {
-	ids := make([]int, len(p))
+	ids := make([]uuid.UUID, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -386,14 +387,14 @@ func (nu *NodeUpdate) AddOriginators(p ...*Person) *NodeUpdate {
 }
 
 // AddExternalReferenceIDs adds the "external_references" edge to the ExternalReference entity by IDs.
-func (nu *NodeUpdate) AddExternalReferenceIDs(ids ...int) *NodeUpdate {
+func (nu *NodeUpdate) AddExternalReferenceIDs(ids ...uuid.UUID) *NodeUpdate {
 	nu.mutation.AddExternalReferenceIDs(ids...)
 	return nu
 }
 
 // AddExternalReferences adds the "external_references" edges to the ExternalReference entity.
 func (nu *NodeUpdate) AddExternalReferences(e ...*ExternalReference) *NodeUpdate {
-	ids := make([]int, len(e))
+	ids := make([]uuid.UUID, len(e))
 	for i := range e {
 		ids[i] = e[i].ID
 	}
@@ -477,14 +478,14 @@ func (nu *NodeUpdate) ClearSuppliers() *NodeUpdate {
 }
 
 // RemoveSupplierIDs removes the "suppliers" edge to Person entities by IDs.
-func (nu *NodeUpdate) RemoveSupplierIDs(ids ...int) *NodeUpdate {
+func (nu *NodeUpdate) RemoveSupplierIDs(ids ...uuid.UUID) *NodeUpdate {
 	nu.mutation.RemoveSupplierIDs(ids...)
 	return nu
 }
 
 // RemoveSuppliers removes "suppliers" edges to Person entities.
 func (nu *NodeUpdate) RemoveSuppliers(p ...*Person) *NodeUpdate {
-	ids := make([]int, len(p))
+	ids := make([]uuid.UUID, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -498,14 +499,14 @@ func (nu *NodeUpdate) ClearOriginators() *NodeUpdate {
 }
 
 // RemoveOriginatorIDs removes the "originators" edge to Person entities by IDs.
-func (nu *NodeUpdate) RemoveOriginatorIDs(ids ...int) *NodeUpdate {
+func (nu *NodeUpdate) RemoveOriginatorIDs(ids ...uuid.UUID) *NodeUpdate {
 	nu.mutation.RemoveOriginatorIDs(ids...)
 	return nu
 }
 
 // RemoveOriginators removes "originators" edges to Person entities.
 func (nu *NodeUpdate) RemoveOriginators(p ...*Person) *NodeUpdate {
-	ids := make([]int, len(p))
+	ids := make([]uuid.UUID, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -519,14 +520,14 @@ func (nu *NodeUpdate) ClearExternalReferences() *NodeUpdate {
 }
 
 // RemoveExternalReferenceIDs removes the "external_references" edge to ExternalReference entities by IDs.
-func (nu *NodeUpdate) RemoveExternalReferenceIDs(ids ...int) *NodeUpdate {
+func (nu *NodeUpdate) RemoveExternalReferenceIDs(ids ...uuid.UUID) *NodeUpdate {
 	nu.mutation.RemoveExternalReferenceIDs(ids...)
 	return nu
 }
 
 // RemoveExternalReferences removes "external_references" edges to ExternalReference entities.
 func (nu *NodeUpdate) RemoveExternalReferences(e ...*ExternalReference) *NodeUpdate {
-	ids := make([]int, len(e))
+	ids := make([]uuid.UUID, len(e))
 	for i := range e {
 		ids[i] = e[i].ID
 	}
@@ -770,7 +771,7 @@ func (nu *NodeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{node.SuppliersColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -783,7 +784,7 @@ func (nu *NodeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{node.SuppliersColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -799,7 +800,7 @@ func (nu *NodeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{node.SuppliersColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -815,7 +816,7 @@ func (nu *NodeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{node.OriginatorsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -828,7 +829,7 @@ func (nu *NodeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{node.OriginatorsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -844,7 +845,7 @@ func (nu *NodeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{node.OriginatorsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -860,7 +861,7 @@ func (nu *NodeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{node.ExternalReferencesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(externalreference.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(externalreference.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -873,7 +874,7 @@ func (nu *NodeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{node.ExternalReferencesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(externalreference.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(externalreference.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -889,7 +890,7 @@ func (nu *NodeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{node.ExternalReferencesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(externalreference.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(externalreference.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -953,6 +954,10 @@ func (nu *NodeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeString),
 			},
 		}
+		createE := &EdgeTypeCreate{config: nu.config, mutation: newEdgeTypeMutation(nu.config, OpCreate)}
+		createE.defaults()
+		_, specE := createE.createSpec()
+		edge.Target.Fields = specE.Fields
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
 	if nodes := nu.mutation.RemovedToNodesIDs(); len(nodes) > 0 && !nu.mutation.ToNodesCleared() {
@@ -969,6 +974,10 @@ func (nu *NodeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
+		createE := &EdgeTypeCreate{config: nu.config, mutation: newEdgeTypeMutation(nu.config, OpCreate)}
+		createE.defaults()
+		_, specE := createE.createSpec()
+		edge.Target.Fields = specE.Fields
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
 	if nodes := nu.mutation.ToNodesIDs(); len(nodes) > 0 {
@@ -985,6 +994,10 @@ func (nu *NodeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
+		createE := &EdgeTypeCreate{config: nu.config, mutation: newEdgeTypeMutation(nu.config, OpCreate)}
+		createE.defaults()
+		_, specE := createE.createSpec()
+		edge.Target.Fields = specE.Fields
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if nu.mutation.NodesCleared() {
@@ -1040,7 +1053,7 @@ func (nu *NodeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{node.NodeListColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(nodelist.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(nodelist.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -1053,7 +1066,7 @@ func (nu *NodeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{node.NodeListColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(nodelist.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(nodelist.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -1139,15 +1152,15 @@ func (nuo *NodeUpdateOne) ClearProtoMessage() *NodeUpdateOne {
 }
 
 // SetNodeListID sets the "node_list_id" field.
-func (nuo *NodeUpdateOne) SetNodeListID(i int) *NodeUpdateOne {
-	nuo.mutation.SetNodeListID(i)
+func (nuo *NodeUpdateOne) SetNodeListID(u uuid.UUID) *NodeUpdateOne {
+	nuo.mutation.SetNodeListID(u)
 	return nuo
 }
 
 // SetNillableNodeListID sets the "node_list_id" field if the given value is not nil.
-func (nuo *NodeUpdateOne) SetNillableNodeListID(i *int) *NodeUpdateOne {
-	if i != nil {
-		nuo.SetNodeListID(*i)
+func (nuo *NodeUpdateOne) SetNillableNodeListID(u *uuid.UUID) *NodeUpdateOne {
+	if u != nil {
+		nuo.SetNodeListID(*u)
 	}
 	return nuo
 }
@@ -1443,14 +1456,14 @@ func (nuo *NodeUpdateOne) ClearIdentifiers() *NodeUpdateOne {
 }
 
 // AddSupplierIDs adds the "suppliers" edge to the Person entity by IDs.
-func (nuo *NodeUpdateOne) AddSupplierIDs(ids ...int) *NodeUpdateOne {
+func (nuo *NodeUpdateOne) AddSupplierIDs(ids ...uuid.UUID) *NodeUpdateOne {
 	nuo.mutation.AddSupplierIDs(ids...)
 	return nuo
 }
 
 // AddSuppliers adds the "suppliers" edges to the Person entity.
 func (nuo *NodeUpdateOne) AddSuppliers(p ...*Person) *NodeUpdateOne {
-	ids := make([]int, len(p))
+	ids := make([]uuid.UUID, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -1458,14 +1471,14 @@ func (nuo *NodeUpdateOne) AddSuppliers(p ...*Person) *NodeUpdateOne {
 }
 
 // AddOriginatorIDs adds the "originators" edge to the Person entity by IDs.
-func (nuo *NodeUpdateOne) AddOriginatorIDs(ids ...int) *NodeUpdateOne {
+func (nuo *NodeUpdateOne) AddOriginatorIDs(ids ...uuid.UUID) *NodeUpdateOne {
 	nuo.mutation.AddOriginatorIDs(ids...)
 	return nuo
 }
 
 // AddOriginators adds the "originators" edges to the Person entity.
 func (nuo *NodeUpdateOne) AddOriginators(p ...*Person) *NodeUpdateOne {
-	ids := make([]int, len(p))
+	ids := make([]uuid.UUID, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -1473,14 +1486,14 @@ func (nuo *NodeUpdateOne) AddOriginators(p ...*Person) *NodeUpdateOne {
 }
 
 // AddExternalReferenceIDs adds the "external_references" edge to the ExternalReference entity by IDs.
-func (nuo *NodeUpdateOne) AddExternalReferenceIDs(ids ...int) *NodeUpdateOne {
+func (nuo *NodeUpdateOne) AddExternalReferenceIDs(ids ...uuid.UUID) *NodeUpdateOne {
 	nuo.mutation.AddExternalReferenceIDs(ids...)
 	return nuo
 }
 
 // AddExternalReferences adds the "external_references" edges to the ExternalReference entity.
 func (nuo *NodeUpdateOne) AddExternalReferences(e ...*ExternalReference) *NodeUpdateOne {
-	ids := make([]int, len(e))
+	ids := make([]uuid.UUID, len(e))
 	for i := range e {
 		ids[i] = e[i].ID
 	}
@@ -1564,14 +1577,14 @@ func (nuo *NodeUpdateOne) ClearSuppliers() *NodeUpdateOne {
 }
 
 // RemoveSupplierIDs removes the "suppliers" edge to Person entities by IDs.
-func (nuo *NodeUpdateOne) RemoveSupplierIDs(ids ...int) *NodeUpdateOne {
+func (nuo *NodeUpdateOne) RemoveSupplierIDs(ids ...uuid.UUID) *NodeUpdateOne {
 	nuo.mutation.RemoveSupplierIDs(ids...)
 	return nuo
 }
 
 // RemoveSuppliers removes "suppliers" edges to Person entities.
 func (nuo *NodeUpdateOne) RemoveSuppliers(p ...*Person) *NodeUpdateOne {
-	ids := make([]int, len(p))
+	ids := make([]uuid.UUID, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -1585,14 +1598,14 @@ func (nuo *NodeUpdateOne) ClearOriginators() *NodeUpdateOne {
 }
 
 // RemoveOriginatorIDs removes the "originators" edge to Person entities by IDs.
-func (nuo *NodeUpdateOne) RemoveOriginatorIDs(ids ...int) *NodeUpdateOne {
+func (nuo *NodeUpdateOne) RemoveOriginatorIDs(ids ...uuid.UUID) *NodeUpdateOne {
 	nuo.mutation.RemoveOriginatorIDs(ids...)
 	return nuo
 }
 
 // RemoveOriginators removes "originators" edges to Person entities.
 func (nuo *NodeUpdateOne) RemoveOriginators(p ...*Person) *NodeUpdateOne {
-	ids := make([]int, len(p))
+	ids := make([]uuid.UUID, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -1606,14 +1619,14 @@ func (nuo *NodeUpdateOne) ClearExternalReferences() *NodeUpdateOne {
 }
 
 // RemoveExternalReferenceIDs removes the "external_references" edge to ExternalReference entities by IDs.
-func (nuo *NodeUpdateOne) RemoveExternalReferenceIDs(ids ...int) *NodeUpdateOne {
+func (nuo *NodeUpdateOne) RemoveExternalReferenceIDs(ids ...uuid.UUID) *NodeUpdateOne {
 	nuo.mutation.RemoveExternalReferenceIDs(ids...)
 	return nuo
 }
 
 // RemoveExternalReferences removes "external_references" edges to ExternalReference entities.
 func (nuo *NodeUpdateOne) RemoveExternalReferences(e ...*ExternalReference) *NodeUpdateOne {
-	ids := make([]int, len(e))
+	ids := make([]uuid.UUID, len(e))
 	for i := range e {
 		ids[i] = e[i].ID
 	}
@@ -1887,7 +1900,7 @@ func (nuo *NodeUpdateOne) sqlSave(ctx context.Context) (_node *Node, err error) 
 			Columns: []string{node.SuppliersColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -1900,7 +1913,7 @@ func (nuo *NodeUpdateOne) sqlSave(ctx context.Context) (_node *Node, err error) 
 			Columns: []string{node.SuppliersColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -1916,7 +1929,7 @@ func (nuo *NodeUpdateOne) sqlSave(ctx context.Context) (_node *Node, err error) 
 			Columns: []string{node.SuppliersColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -1932,7 +1945,7 @@ func (nuo *NodeUpdateOne) sqlSave(ctx context.Context) (_node *Node, err error) 
 			Columns: []string{node.OriginatorsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -1945,7 +1958,7 @@ func (nuo *NodeUpdateOne) sqlSave(ctx context.Context) (_node *Node, err error) 
 			Columns: []string{node.OriginatorsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -1961,7 +1974,7 @@ func (nuo *NodeUpdateOne) sqlSave(ctx context.Context) (_node *Node, err error) 
 			Columns: []string{node.OriginatorsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -1977,7 +1990,7 @@ func (nuo *NodeUpdateOne) sqlSave(ctx context.Context) (_node *Node, err error) 
 			Columns: []string{node.ExternalReferencesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(externalreference.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(externalreference.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -1990,7 +2003,7 @@ func (nuo *NodeUpdateOne) sqlSave(ctx context.Context) (_node *Node, err error) 
 			Columns: []string{node.ExternalReferencesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(externalreference.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(externalreference.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -2006,7 +2019,7 @@ func (nuo *NodeUpdateOne) sqlSave(ctx context.Context) (_node *Node, err error) 
 			Columns: []string{node.ExternalReferencesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(externalreference.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(externalreference.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -2070,6 +2083,10 @@ func (nuo *NodeUpdateOne) sqlSave(ctx context.Context) (_node *Node, err error) 
 				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeString),
 			},
 		}
+		createE := &EdgeTypeCreate{config: nuo.config, mutation: newEdgeTypeMutation(nuo.config, OpCreate)}
+		createE.defaults()
+		_, specE := createE.createSpec()
+		edge.Target.Fields = specE.Fields
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
 	if nodes := nuo.mutation.RemovedToNodesIDs(); len(nodes) > 0 && !nuo.mutation.ToNodesCleared() {
@@ -2086,6 +2103,10 @@ func (nuo *NodeUpdateOne) sqlSave(ctx context.Context) (_node *Node, err error) 
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
+		createE := &EdgeTypeCreate{config: nuo.config, mutation: newEdgeTypeMutation(nuo.config, OpCreate)}
+		createE.defaults()
+		_, specE := createE.createSpec()
+		edge.Target.Fields = specE.Fields
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
 	if nodes := nuo.mutation.ToNodesIDs(); len(nodes) > 0 {
@@ -2102,6 +2123,10 @@ func (nuo *NodeUpdateOne) sqlSave(ctx context.Context) (_node *Node, err error) 
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
+		createE := &EdgeTypeCreate{config: nuo.config, mutation: newEdgeTypeMutation(nuo.config, OpCreate)}
+		createE.defaults()
+		_, specE := createE.createSpec()
+		edge.Target.Fields = specE.Fields
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if nuo.mutation.NodesCleared() {
@@ -2157,7 +2182,7 @@ func (nuo *NodeUpdateOne) sqlSave(ctx context.Context) (_node *Node, err error) 
 			Columns: []string{node.NodeListColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(nodelist.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(nodelist.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -2170,7 +2195,7 @@ func (nuo *NodeUpdateOne) sqlSave(ctx context.Context) (_node *Node, err error) 
 			Columns: []string{node.NodeListColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(nodelist.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(nodelist.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

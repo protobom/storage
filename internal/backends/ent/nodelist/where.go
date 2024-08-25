@@ -10,51 +10,52 @@ package nodelist
 import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"github.com/google/uuid"
 	"github.com/protobom/storage/internal/backends/ent/predicate"
 )
 
 // ID filters vertices based on their ID field.
-func ID(id int) predicate.NodeList {
+func ID(id uuid.UUID) predicate.NodeList {
 	return predicate.NodeList(sql.FieldEQ(FieldID, id))
 }
 
 // IDEQ applies the EQ predicate on the ID field.
-func IDEQ(id int) predicate.NodeList {
+func IDEQ(id uuid.UUID) predicate.NodeList {
 	return predicate.NodeList(sql.FieldEQ(FieldID, id))
 }
 
 // IDNEQ applies the NEQ predicate on the ID field.
-func IDNEQ(id int) predicate.NodeList {
+func IDNEQ(id uuid.UUID) predicate.NodeList {
 	return predicate.NodeList(sql.FieldNEQ(FieldID, id))
 }
 
 // IDIn applies the In predicate on the ID field.
-func IDIn(ids ...int) predicate.NodeList {
+func IDIn(ids ...uuid.UUID) predicate.NodeList {
 	return predicate.NodeList(sql.FieldIn(FieldID, ids...))
 }
 
 // IDNotIn applies the NotIn predicate on the ID field.
-func IDNotIn(ids ...int) predicate.NodeList {
+func IDNotIn(ids ...uuid.UUID) predicate.NodeList {
 	return predicate.NodeList(sql.FieldNotIn(FieldID, ids...))
 }
 
 // IDGT applies the GT predicate on the ID field.
-func IDGT(id int) predicate.NodeList {
+func IDGT(id uuid.UUID) predicate.NodeList {
 	return predicate.NodeList(sql.FieldGT(FieldID, id))
 }
 
 // IDGTE applies the GTE predicate on the ID field.
-func IDGTE(id int) predicate.NodeList {
+func IDGTE(id uuid.UUID) predicate.NodeList {
 	return predicate.NodeList(sql.FieldGTE(FieldID, id))
 }
 
 // IDLT applies the LT predicate on the ID field.
-func IDLT(id int) predicate.NodeList {
+func IDLT(id uuid.UUID) predicate.NodeList {
 	return predicate.NodeList(sql.FieldLT(FieldID, id))
 }
 
 // IDLTE applies the LTE predicate on the ID field.
-func IDLTE(id int) predicate.NodeList {
+func IDLTE(id uuid.UUID) predicate.NodeList {
 	return predicate.NodeList(sql.FieldLTE(FieldID, id))
 }
 
@@ -66,29 +67,6 @@ func ProtoMessageIsNil() predicate.NodeList {
 // ProtoMessageNotNil applies the NotNil predicate on the "proto_message" field.
 func ProtoMessageNotNil() predicate.NodeList {
 	return predicate.NodeList(sql.FieldNotNull(FieldProtoMessage))
-}
-
-// HasDocument applies the HasEdge predicate on the "document" edge.
-func HasDocument() predicate.NodeList {
-	return predicate.NodeList(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, false, DocumentTable, DocumentColumn),
-		)
-		sqlgraph.HasNeighbors(s, step)
-	})
-}
-
-// HasDocumentWith applies the HasEdge predicate on the "document" edge with a given conditions (other predicates).
-func HasDocumentWith(preds ...predicate.Document) predicate.NodeList {
-	return predicate.NodeList(func(s *sql.Selector) {
-		step := newDocumentStep()
-		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
-			for _, p := range preds {
-				p(s)
-			}
-		})
-	})
 }
 
 // HasNodes applies the HasEdge predicate on the "nodes" edge.
@@ -106,6 +84,29 @@ func HasNodes() predicate.NodeList {
 func HasNodesWith(preds ...predicate.Node) predicate.NodeList {
 	return predicate.NodeList(func(s *sql.Selector) {
 		step := newNodesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasDocument applies the HasEdge predicate on the "document" edge.
+func HasDocument() predicate.NodeList {
+	return predicate.NodeList(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, DocumentTable, DocumentColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasDocumentWith applies the HasEdge predicate on the "document" edge with a given conditions (other predicates).
+func HasDocumentWith(preds ...predicate.Document) predicate.NodeList {
+	return predicate.NodeList(func(s *sql.Selector) {
+		step := newDocumentStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

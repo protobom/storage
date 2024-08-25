@@ -11,9 +11,11 @@ import (
 	"errors"
 	"fmt"
 
+	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/google/uuid"
 	"github.com/protobom/protobom/pkg/sbom"
 	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/externalreference"
@@ -26,6 +28,20 @@ type ExternalReferenceCreate struct {
 	mutation *ExternalReferenceMutation
 	hooks    []Hook
 	conflict []sql.ConflictOption
+}
+
+// SetDocumentID sets the "document_id" field.
+func (erc *ExternalReferenceCreate) SetDocumentID(u uuid.UUID) *ExternalReferenceCreate {
+	erc.mutation.SetDocumentID(u)
+	return erc
+}
+
+// SetNillableDocumentID sets the "document_id" field if the given value is not nil.
+func (erc *ExternalReferenceCreate) SetNillableDocumentID(u *uuid.UUID) *ExternalReferenceCreate {
+	if u != nil {
+		erc.SetDocumentID(*u)
+	}
+	return erc
 }
 
 // SetProtoMessage sets the "proto_message" field.
@@ -86,17 +102,9 @@ func (erc *ExternalReferenceCreate) SetHashes(m map[int32]string) *ExternalRefer
 	return erc
 }
 
-// SetDocumentID sets the "document" edge to the Document entity by ID.
-func (erc *ExternalReferenceCreate) SetDocumentID(id string) *ExternalReferenceCreate {
-	erc.mutation.SetDocumentID(id)
-	return erc
-}
-
-// SetNillableDocumentID sets the "document" edge to the Document entity by ID if the given value is not nil.
-func (erc *ExternalReferenceCreate) SetNillableDocumentID(id *string) *ExternalReferenceCreate {
-	if id != nil {
-		erc = erc.SetDocumentID(*id)
-	}
+// SetID sets the "id" field.
+func (erc *ExternalReferenceCreate) SetID(u uuid.UUID) *ExternalReferenceCreate {
+	erc.mutation.SetID(u)
 	return erc
 }
 
@@ -117,6 +125,7 @@ func (erc *ExternalReferenceCreate) Mutation() *ExternalReferenceMutation {
 
 // Save creates the ExternalReference in the database.
 func (erc *ExternalReferenceCreate) Save(ctx context.Context) (*ExternalReference, error) {
+	erc.defaults()
 	return withHooks(ctx, erc.sqlSave, erc.mutation, erc.hooks)
 }
 
@@ -139,6 +148,14 @@ func (erc *ExternalReferenceCreate) Exec(ctx context.Context) error {
 func (erc *ExternalReferenceCreate) ExecX(ctx context.Context) {
 	if err := erc.Exec(ctx); err != nil {
 		panic(err)
+	}
+}
+
+// defaults sets the default values of the builder before save.
+func (erc *ExternalReferenceCreate) defaults() {
+	if _, ok := erc.mutation.DocumentID(); !ok {
+		v := externalreference.DefaultDocumentID()
+		erc.mutation.SetDocumentID(v)
 	}
 }
 
@@ -172,8 +189,13 @@ func (erc *ExternalReferenceCreate) sqlSave(ctx context.Context) (*ExternalRefer
 		}
 		return nil, err
 	}
-	id := _spec.ID.Value.(int64)
-	_node.ID = int(id)
+	if _spec.ID.Value != nil {
+		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
+			_node.ID = *id
+		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
+			return nil, err
+		}
+	}
 	erc.mutation.id = &_node.ID
 	erc.mutation.done = true
 	return _node, nil
@@ -182,9 +204,13 @@ func (erc *ExternalReferenceCreate) sqlSave(ctx context.Context) (*ExternalRefer
 func (erc *ExternalReferenceCreate) createSpec() (*ExternalReference, *sqlgraph.CreateSpec) {
 	var (
 		_node = &ExternalReference{config: erc.config}
-		_spec = sqlgraph.NewCreateSpec(externalreference.Table, sqlgraph.NewFieldSpec(externalreference.FieldID, field.TypeInt))
+		_spec = sqlgraph.NewCreateSpec(externalreference.Table, sqlgraph.NewFieldSpec(externalreference.FieldID, field.TypeUUID))
 	)
 	_spec.OnConflict = erc.conflict
+	if id, ok := erc.mutation.ID(); ok {
+		_node.ID = id
+		_spec.ID.Value = &id
+	}
 	if value, ok := erc.mutation.ProtoMessage(); ok {
 		_spec.SetField(externalreference.FieldProtoMessage, field.TypeJSON, value)
 		_node.ProtoMessage = value
@@ -217,13 +243,13 @@ func (erc *ExternalReferenceCreate) createSpec() (*ExternalReference, *sqlgraph.
 			Columns: []string{externalreference.DocumentColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(document.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(document.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.document_id = &nodes[0]
+		_node.DocumentID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := erc.mutation.NodeIDs(); len(nodes) > 0 {
@@ -250,7 +276,7 @@ func (erc *ExternalReferenceCreate) createSpec() (*ExternalReference, *sqlgraph.
 // of the `INSERT` statement. For example:
 //
 //	client.ExternalReference.Create().
-//		SetProtoMessage(v).
+//		SetDocumentID(v).
 //		OnConflict(
 //			// Update the row with the new values
 //			// the was proposed for insertion.
@@ -259,7 +285,7 @@ func (erc *ExternalReferenceCreate) createSpec() (*ExternalReference, *sqlgraph.
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.ExternalReferenceUpsert) {
-//			SetProtoMessage(v+v).
+//			SetDocumentID(v+v).
 //		}).
 //		Exec(ctx)
 func (erc *ExternalReferenceCreate) OnConflict(opts ...sql.ConflictOption) *ExternalReferenceUpsertOne {
@@ -403,16 +429,27 @@ func (u *ExternalReferenceUpsert) ClearHashes() *ExternalReferenceUpsert {
 	return u
 }
 
-// UpdateNewValues updates the mutable fields using the new values that were set on create.
+// UpdateNewValues updates the mutable fields using the new values that were set on create except the ID field.
 // Using this option is equivalent to using:
 //
 //	client.ExternalReference.Create().
 //		OnConflict(
 //			sql.ResolveWithNewValues(),
+//			sql.ResolveWith(func(u *sql.UpdateSet) {
+//				u.SetIgnore(externalreference.FieldID)
+//			}),
 //		).
 //		Exec(ctx)
 func (u *ExternalReferenceUpsertOne) UpdateNewValues() *ExternalReferenceUpsertOne {
 	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
+		if _, exists := u.create.mutation.ID(); exists {
+			s.SetIgnore(externalreference.FieldID)
+		}
+		if _, exists := u.create.mutation.DocumentID(); exists {
+			s.SetIgnore(externalreference.FieldDocumentID)
+		}
+	}))
 	return u
 }
 
@@ -585,7 +622,12 @@ func (u *ExternalReferenceUpsertOne) ExecX(ctx context.Context) {
 }
 
 // Exec executes the UPSERT query and returns the inserted/updated ID.
-func (u *ExternalReferenceUpsertOne) ID(ctx context.Context) (id int, err error) {
+func (u *ExternalReferenceUpsertOne) ID(ctx context.Context) (id uuid.UUID, err error) {
+	if u.create.driver.Dialect() == dialect.MySQL {
+		// In case of "ON CONFLICT", there is no way to get back non-numeric ID
+		// fields from the database since MySQL does not support the RETURNING clause.
+		return id, errors.New("ent: ExternalReferenceUpsertOne.ID is not supported by MySQL driver. Use ExternalReferenceUpsertOne.Exec instead")
+	}
 	node, err := u.create.Save(ctx)
 	if err != nil {
 		return id, err
@@ -594,7 +636,7 @@ func (u *ExternalReferenceUpsertOne) ID(ctx context.Context) (id int, err error)
 }
 
 // IDX is like ID, but panics if an error occurs.
-func (u *ExternalReferenceUpsertOne) IDX(ctx context.Context) int {
+func (u *ExternalReferenceUpsertOne) IDX(ctx context.Context) uuid.UUID {
 	id, err := u.ID(ctx)
 	if err != nil {
 		panic(err)
@@ -621,6 +663,7 @@ func (ercb *ExternalReferenceCreateBulk) Save(ctx context.Context) ([]*ExternalR
 	for i := range ercb.builders {
 		func(i int, root context.Context) {
 			builder := ercb.builders[i]
+			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*ExternalReferenceMutation)
 				if !ok {
@@ -648,10 +691,6 @@ func (ercb *ExternalReferenceCreateBulk) Save(ctx context.Context) ([]*ExternalR
 					return nil, err
 				}
 				mutation.id = &nodes[i].ID
-				if specs[i].ID.Value != nil {
-					id := specs[i].ID.Value.(int64)
-					nodes[i].ID = int(id)
-				}
 				mutation.done = true
 				return nodes[i], nil
 			})
@@ -703,7 +742,7 @@ func (ercb *ExternalReferenceCreateBulk) ExecX(ctx context.Context) {
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.ExternalReferenceUpsert) {
-//			SetProtoMessage(v+v).
+//			SetDocumentID(v+v).
 //		}).
 //		Exec(ctx)
 func (ercb *ExternalReferenceCreateBulk) OnConflict(opts ...sql.ConflictOption) *ExternalReferenceUpsertBulk {
@@ -738,10 +777,23 @@ type ExternalReferenceUpsertBulk struct {
 //	client.ExternalReference.Create().
 //		OnConflict(
 //			sql.ResolveWithNewValues(),
+//			sql.ResolveWith(func(u *sql.UpdateSet) {
+//				u.SetIgnore(externalreference.FieldID)
+//			}),
 //		).
 //		Exec(ctx)
 func (u *ExternalReferenceUpsertBulk) UpdateNewValues() *ExternalReferenceUpsertBulk {
 	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
+		for _, b := range u.create.builders {
+			if _, exists := b.mutation.ID(); exists {
+				s.SetIgnore(externalreference.FieldID)
+			}
+			if _, exists := b.mutation.DocumentID(); exists {
+				s.SetIgnore(externalreference.FieldDocumentID)
+			}
+		}
+	}))
 	return u
 }
 

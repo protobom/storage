@@ -16,6 +16,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/google/uuid"
 	"github.com/protobom/protobom/pkg/sbom"
 	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/documenttype"
@@ -69,14 +70,14 @@ func (mc *MetadataCreate) SetID(s string) *MetadataCreate {
 }
 
 // AddToolIDs adds the "tools" edge to the Tool entity by IDs.
-func (mc *MetadataCreate) AddToolIDs(ids ...int) *MetadataCreate {
+func (mc *MetadataCreate) AddToolIDs(ids ...uuid.UUID) *MetadataCreate {
 	mc.mutation.AddToolIDs(ids...)
 	return mc
 }
 
 // AddTools adds the "tools" edges to the Tool entity.
 func (mc *MetadataCreate) AddTools(t ...*Tool) *MetadataCreate {
-	ids := make([]int, len(t))
+	ids := make([]uuid.UUID, len(t))
 	for i := range t {
 		ids[i] = t[i].ID
 	}
@@ -84,14 +85,14 @@ func (mc *MetadataCreate) AddTools(t ...*Tool) *MetadataCreate {
 }
 
 // AddAuthorIDs adds the "authors" edge to the Person entity by IDs.
-func (mc *MetadataCreate) AddAuthorIDs(ids ...int) *MetadataCreate {
+func (mc *MetadataCreate) AddAuthorIDs(ids ...uuid.UUID) *MetadataCreate {
 	mc.mutation.AddAuthorIDs(ids...)
 	return mc
 }
 
 // AddAuthors adds the "authors" edges to the Person entity.
 func (mc *MetadataCreate) AddAuthors(p ...*Person) *MetadataCreate {
-	ids := make([]int, len(p))
+	ids := make([]uuid.UUID, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -99,14 +100,14 @@ func (mc *MetadataCreate) AddAuthors(p ...*Person) *MetadataCreate {
 }
 
 // AddDocumentTypeIDs adds the "document_types" edge to the DocumentType entity by IDs.
-func (mc *MetadataCreate) AddDocumentTypeIDs(ids ...int) *MetadataCreate {
+func (mc *MetadataCreate) AddDocumentTypeIDs(ids ...uuid.UUID) *MetadataCreate {
 	mc.mutation.AddDocumentTypeIDs(ids...)
 	return mc
 }
 
 // AddDocumentTypes adds the "document_types" edges to the DocumentType entity.
 func (mc *MetadataCreate) AddDocumentTypes(d ...*DocumentType) *MetadataCreate {
-	ids := make([]int, len(d))
+	ids := make([]uuid.UUID, len(d))
 	for i := range d {
 		ids[i] = d[i].ID
 	}
@@ -114,7 +115,7 @@ func (mc *MetadataCreate) AddDocumentTypes(d ...*DocumentType) *MetadataCreate {
 }
 
 // SetDocumentID sets the "document" edge to the Document entity by ID.
-func (mc *MetadataCreate) SetDocumentID(id string) *MetadataCreate {
+func (mc *MetadataCreate) SetDocumentID(id uuid.UUID) *MetadataCreate {
 	mc.mutation.SetDocumentID(id)
 	return mc
 }
@@ -242,7 +243,7 @@ func (mc *MetadataCreate) createSpec() (*Metadata, *sqlgraph.CreateSpec) {
 			Columns: []string{metadata.ToolsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(tool.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(tool.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -258,7 +259,7 @@ func (mc *MetadataCreate) createSpec() (*Metadata, *sqlgraph.CreateSpec) {
 			Columns: []string{metadata.AuthorsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -274,7 +275,7 @@ func (mc *MetadataCreate) createSpec() (*Metadata, *sqlgraph.CreateSpec) {
 			Columns: []string{metadata.DocumentTypesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(documenttype.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(documenttype.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -285,18 +286,17 @@ func (mc *MetadataCreate) createSpec() (*Metadata, *sqlgraph.CreateSpec) {
 	if nodes := mc.mutation.DocumentIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2O,
-			Inverse: true,
+			Inverse: false,
 			Table:   metadata.DocumentTable,
 			Columns: []string{metadata.DocumentColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(document.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(document.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.ID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

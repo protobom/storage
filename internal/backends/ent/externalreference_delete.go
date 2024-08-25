@@ -44,7 +44,7 @@ func (erd *ExternalReferenceDelete) ExecX(ctx context.Context) int {
 }
 
 func (erd *ExternalReferenceDelete) sqlExec(ctx context.Context) (int, error) {
-	_spec := sqlgraph.NewDeleteSpec(externalreference.Table, sqlgraph.NewFieldSpec(externalreference.FieldID, field.TypeInt))
+	_spec := sqlgraph.NewDeleteSpec(externalreference.Table, sqlgraph.NewFieldSpec(externalreference.FieldID, field.TypeUUID))
 	if ps := erd.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {

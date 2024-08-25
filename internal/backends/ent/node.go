@@ -14,6 +14,7 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/google/uuid"
 	"github.com/protobom/protobom/pkg/sbom"
 	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/node"
@@ -25,10 +26,12 @@ type Node struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID string `json:"id,omitempty"`
+	// DocumentID holds the value of the "document_id" field.
+	DocumentID uuid.UUID `json:"document_id,omitempty"`
 	// ProtoMessage holds the value of the "proto_message" field.
 	ProtoMessage *sbom.Node `json:"proto_message,omitempty"`
 	// NodeListID holds the value of the "node_list_id" field.
-	NodeListID int `json:"node_list_id,omitempty"`
+	NodeListID uuid.UUID `json:"node_list_id,omitempty"`
 	// Type holds the value of the "type" field.
 	Type node.Type `json:"type,omitempty"`
 	// Name holds the value of the "name" field.
@@ -74,7 +77,6 @@ type Node struct {
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the NodeQuery when eager-loading is set.
 	Edges        NodeEdges `json:"edges"`
-	document_id  *string
 	selectValues sql.SelectValues
 }
 
@@ -195,14 +197,12 @@ func (*Node) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case node.FieldProtoMessage, node.FieldLicenses, node.FieldAttribution, node.FieldFileTypes, node.FieldHashes, node.FieldIdentifiers:
 			values[i] = new([]byte)
-		case node.FieldNodeListID:
-			values[i] = new(sql.NullInt64)
 		case node.FieldID, node.FieldType, node.FieldName, node.FieldVersion, node.FieldFileName, node.FieldURLHome, node.FieldURLDownload, node.FieldLicenseConcluded, node.FieldLicenseComments, node.FieldCopyright, node.FieldSourceInfo, node.FieldComment, node.FieldSummary, node.FieldDescription:
 			values[i] = new(sql.NullString)
 		case node.FieldReleaseDate, node.FieldBuildDate, node.FieldValidUntilDate:
 			values[i] = new(sql.NullTime)
-		case node.ForeignKeys[0]: // document_id
-			values[i] = new(sql.NullString)
+		case node.FieldDocumentID, node.FieldNodeListID:
+			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -224,6 +224,12 @@ func (n *Node) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				n.ID = value.String
 			}
+		case node.FieldDocumentID:
+			if value, ok := values[i].(*uuid.UUID); !ok {
+				return fmt.Errorf("unexpected type %T for field document_id", values[i])
+			} else if value != nil {
+				n.DocumentID = *value
+			}
 		case node.FieldProtoMessage:
 			if value, ok := values[i].(*[]byte); !ok {
 				return fmt.Errorf("unexpected type %T for field proto_message", values[i])
@@ -233,10 +239,10 @@ func (n *Node) assignValues(columns []string, values []any) error {
 				}
 			}
 		case node.FieldNodeListID:
-			if value, ok := values[i].(*sql.NullInt64); !ok {
+			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field node_list_id", values[i])
-			} else if value.Valid {
-				n.NodeListID = int(value.Int64)
+			} else if value != nil {
+				n.NodeListID = *value
 			}
 		case node.FieldType:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -374,13 +380,6 @@ func (n *Node) assignValues(columns []string, values []any) error {
 					return fmt.Errorf("unmarshal field identifiers: %w", err)
 				}
 			}
-		case node.ForeignKeys[0]:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field document_id", values[i])
-			} else if value.Valid {
-				n.document_id = new(string)
-				*n.document_id = value.String
-			}
 		default:
 			n.selectValues.Set(columns[i], values[i])
 		}
@@ -462,6 +461,9 @@ func (n *Node) String() string {
 	var builder strings.Builder
 	builder.WriteString("Node(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", n.ID))
+	builder.WriteString("document_id=")
+	builder.WriteString(fmt.Sprintf("%v", n.DocumentID))
+	builder.WriteString(", ")
 	builder.WriteString("proto_message=")
 	builder.WriteString(fmt.Sprintf("%v", n.ProtoMessage))
 	builder.WriteString(", ")

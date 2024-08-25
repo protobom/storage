@@ -52,7 +52,7 @@ func (backend *Backend) GetDocumentsByID(ids ...string) ([]*sbom.Document, error
 	query := backend.client.Document.Query()
 
 	if len(ids) > 0 {
-		query.Where(document.IDIn(ids...))
+		query.Where(document.MetadataIDIn(ids...))
 	}
 
 	results, err := query.All(backend.ctx)
@@ -72,7 +72,7 @@ func (backend *Backend) GetExternalReferencesByDocumentID(
 ) ([]*sbom.ExternalReference, error) {
 	query := backend.client.ExternalReference.Query().
 		Select("proto_message").
-		Where(externalreference.HasDocumentWith(document.IDEQ(id)))
+		Where(externalreference.HasDocumentWith(document.MetadataIDEQ(id)))
 
 	typeValues := []any{}
 	for idx := range types {

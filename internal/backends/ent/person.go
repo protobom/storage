@@ -13,6 +13,7 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/google/uuid"
 	"github.com/protobom/protobom/pkg/sbom"
 	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/metadata"
@@ -24,7 +25,9 @@ import (
 type Person struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID int `json:"id,omitempty"`
+	ID uuid.UUID `json:"id,omitempty"`
+	// DocumentID holds the value of the "document_id" field.
+	DocumentID uuid.UUID `json:"document_id,omitempty"`
 	// ProtoMessage holds the value of the "proto_message" field.
 	ProtoMessage *sbom.Person `json:"proto_message,omitempty"`
 	// MetadataID holds the value of the "metadata_id" field.
@@ -45,8 +48,7 @@ type Person struct {
 	// The values are being populated by the PersonQuery when eager-loading is set.
 	Edges           PersonEdges `json:"edges"`
 	node_suppliers  *string
-	document_id     *string
-	person_contacts *int
+	person_contacts *uuid.UUID
 	selectValues    sql.SelectValues
 }
 
@@ -129,16 +131,14 @@ func (*Person) scanValues(columns []string) ([]any, error) {
 			values[i] = new([]byte)
 		case person.FieldIsOrg:
 			values[i] = new(sql.NullBool)
-		case person.FieldID:
-			values[i] = new(sql.NullInt64)
 		case person.FieldMetadataID, person.FieldNodeID, person.FieldName, person.FieldEmail, person.FieldURL, person.FieldPhone:
 			values[i] = new(sql.NullString)
+		case person.FieldID, person.FieldDocumentID:
+			values[i] = new(uuid.UUID)
 		case person.ForeignKeys[0]: // node_suppliers
 			values[i] = new(sql.NullString)
-		case person.ForeignKeys[1]: // document_id
-			values[i] = new(sql.NullString)
-		case person.ForeignKeys[2]: // person_contacts
-			values[i] = new(sql.NullInt64)
+		case person.ForeignKeys[1]: // person_contacts
+			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -155,11 +155,17 @@ func (pe *Person) assignValues(columns []string, values []any) error {
 	for i := range columns {
 		switch columns[i] {
 		case person.FieldID:
-			value, ok := values[i].(*sql.NullInt64)
-			if !ok {
-				return fmt.Errorf("unexpected type %T for field id", value)
+			if value, ok := values[i].(*uuid.UUID); !ok {
+				return fmt.Errorf("unexpected type %T for field id", values[i])
+			} else if value != nil {
+				pe.ID = *value
 			}
-			pe.ID = int(value.Int64)
+		case person.FieldDocumentID:
+			if value, ok := values[i].(*uuid.UUID); !ok {
+				return fmt.Errorf("unexpected type %T for field document_id", values[i])
+			} else if value != nil {
+				pe.DocumentID = *value
+			}
 		case person.FieldProtoMessage:
 			if value, ok := values[i].(*[]byte); !ok {
 				return fmt.Errorf("unexpected type %T for field proto_message", values[i])
@@ -218,18 +224,11 @@ func (pe *Person) assignValues(columns []string, values []any) error {
 				*pe.node_suppliers = value.String
 			}
 		case person.ForeignKeys[1]:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field document_id", values[i])
+			if value, ok := values[i].(*sql.NullScanner); !ok {
+				return fmt.Errorf("unexpected type %T for field person_contacts", values[i])
 			} else if value.Valid {
-				pe.document_id = new(string)
-				*pe.document_id = value.String
-			}
-		case person.ForeignKeys[2]:
-			if value, ok := values[i].(*sql.NullInt64); !ok {
-				return fmt.Errorf("unexpected type %T for edge-field person_contacts", value)
-			} else if value.Valid {
-				pe.person_contacts = new(int)
-				*pe.person_contacts = int(value.Int64)
+				pe.person_contacts = new(uuid.UUID)
+				*pe.person_contacts = *value.S.(*uuid.UUID)
 			}
 		default:
 			pe.selectValues.Set(columns[i], values[i])
@@ -292,6 +291,9 @@ func (pe *Person) String() string {
 	var builder strings.Builder
 	builder.WriteString("Person(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", pe.ID))
+	builder.WriteString("document_id=")
+	builder.WriteString(fmt.Sprintf("%v", pe.DocumentID))
+	builder.WriteString(", ")
 	builder.WriteString("proto_message=")
 	builder.WriteString(fmt.Sprintf("%v", pe.ProtoMessage))
 	builder.WriteString(", ")
