@@ -50,9 +50,17 @@ func (backend *Backend) createAnnotations(data ...*ent.Annotation) error {
 // AddAnnotations applies multiple named annotation values to a single document.
 func (backend *Backend) AddAnnotations(documentID, name string, values ...string) error {
 	data := ent.Annotations{}
+
+	doc, err := backend.client.Document.Query().
+		Where(document.MetadataIDEQ(documentID)).
+		Only(backend.ctx)
+	if err != nil {
+		return fmt.Errorf("querying documents: %w", err)
+	}
+
 	for _, value := range values {
 		data = append(data, &ent.Annotation{
-			DocumentID: documentID,
+			DocumentID: doc.ID,
 			Name:       name,
 			Value:      value,
 		})
@@ -64,9 +72,17 @@ func (backend *Backend) AddAnnotations(documentID, name string, values ...string
 // AddAnnotationToDocuments applies a single named annotation value to multiple documents.
 func (backend *Backend) AddAnnotationToDocuments(name, value string, documentIDs ...string) error {
 	data := ent.Annotations{}
+
 	for _, documentID := range documentIDs {
+		doc, err := backend.client.Document.Query().
+			Where(document.MetadataIDEQ(documentID)).
+			Only(backend.ctx)
+		if err != nil {
+			return fmt.Errorf("querying documents: %w", err)
+		}
+
 		data = append(data, &ent.Annotation{
-			DocumentID: documentID,
+			DocumentID: doc.ID,
 			Name:       name,
 			Value:      value,
 		})
@@ -83,7 +99,7 @@ func (backend *Backend) ClearAnnotations(documentIDs ...string) error {
 	}
 
 	_, err = tx.Annotation.Delete().
-		Where(annotation.DocumentIDIn(documentIDs...)).
+		Where(annotation.HasDocumentWith(document.MetadataIDIn(documentIDs...))).
 		Exec(backend.ctx)
 	if err != nil {
 		return rollback(tx, fmt.Errorf("clearing annotations: %w", err))
@@ -105,7 +121,7 @@ func (backend *Backend) GetDocumentAlias(documentID string) (string, error) {
 	query := backend.client.Annotation.Query().
 		Where(
 			annotation.And(
-				annotation.HasDocumentWith(document.IDEQ(documentID)),
+				annotation.HasDocumentWith(document.MetadataIDEQ(documentID)),
 				annotation.NameEQ("alias"),
 			),
 		)
@@ -130,7 +146,7 @@ func (backend *Backend) GetDocumentAnnotations(documentID string, names ...strin
 	}
 
 	query := backend.client.Annotation.Query().
-		Where(annotation.HasDocumentWith(document.IDEQ(documentID)))
+		Where(annotation.HasDocumentWith(document.MetadataIDEQ(documentID)))
 
 	if len(names) > 0 {
 		query.Where(annotation.NameIn(names...))
@@ -160,6 +176,7 @@ func (backend *Backend) GetDocumentsByAnnotation(name string, values ...string) 
 				),
 			),
 		).
+		QueryMetadata().
 		IDs(backend.ctx)
 	if err != nil {
 		return nil, fmt.Errorf("querying documents table: %w", err)
@@ -179,7 +196,7 @@ func (backend *Backend) RemoveAnnotations(documentID, name string, values ...str
 	_, err = tx.Annotation.Delete().
 		Where(
 			annotation.And(
-				annotation.DocumentIDEQ(documentID),
+				annotation.HasDocumentWith(document.MetadataIDEQ(documentID)),
 				annotation.NameEQ(name),
 				annotation.ValueIn(values...),
 			),
