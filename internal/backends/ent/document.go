@@ -39,13 +39,24 @@ type Document struct {
 
 // DocumentEdges holds the relations/edges for other nodes in the graph.
 type DocumentEdges struct {
+	// Annotations holds the value of the annotations edge.
+	Annotations []*Annotation `json:"annotations,omitempty"`
 	// Metadata holds the value of the metadata edge.
 	Metadata *Metadata `json:"metadata,omitempty"`
 	// NodeList holds the value of the node_list edge.
 	NodeList *NodeList `json:"node_list,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [3]bool
+}
+
+// AnnotationsOrErr returns the Annotations value or an error if the edge
+// was not loaded in eager-loading.
+func (e DocumentEdges) AnnotationsOrErr() ([]*Annotation, error) {
+	if e.loadedTypes[0] {
+		return e.Annotations, nil
+	}
+	return nil, &NotLoadedError{edge: "annotations"}
 }
 
 // MetadataOrErr returns the Metadata value or an error if the edge
@@ -53,7 +64,7 @@ type DocumentEdges struct {
 func (e DocumentEdges) MetadataOrErr() (*Metadata, error) {
 	if e.Metadata != nil {
 		return e.Metadata, nil
-	} else if e.loadedTypes[0] {
+	} else if e.loadedTypes[1] {
 		return nil, &NotFoundError{label: metadata.Label}
 	}
 	return nil, &NotLoadedError{edge: "metadata"}
@@ -64,7 +75,7 @@ func (e DocumentEdges) MetadataOrErr() (*Metadata, error) {
 func (e DocumentEdges) NodeListOrErr() (*NodeList, error) {
 	if e.NodeList != nil {
 		return e.NodeList, nil
-	} else if e.loadedTypes[1] {
+	} else if e.loadedTypes[2] {
 		return nil, &NotFoundError{label: nodelist.Label}
 	}
 	return nil, &NotLoadedError{edge: "node_list"}
@@ -133,6 +144,11 @@ func (d *Document) assignValues(columns []string, values []any) error {
 // This includes values selected through modifiers, order, etc.
 func (d *Document) Value(name string) (ent.Value, error) {
 	return d.selectValues.Get(name)
+}
+
+// QueryAnnotations queries the "annotations" edge of the Document entity.
+func (d *Document) QueryAnnotations() *AnnotationQuery {
+	return NewDocumentClient(d.config).QueryAnnotations(d)
 }
 
 // QueryMetadata queries the "metadata" edge of the Document entity.

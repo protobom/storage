@@ -446,9 +446,19 @@ func (nu *NodeUpdate) AddNodes(n ...*Node) *NodeUpdate {
 	return nu.AddNodeIDs(ids...)
 }
 
-// SetNodeList sets the "node_list" edge to the NodeList entity.
-func (nu *NodeUpdate) SetNodeList(n *NodeList) *NodeUpdate {
-	return nu.SetNodeListID(n.ID)
+// AddNodeListIDs adds the "node_lists" edge to the NodeList entity by IDs.
+func (nu *NodeUpdate) AddNodeListIDs(ids ...uuid.UUID) *NodeUpdate {
+	nu.mutation.AddNodeListIDs(ids...)
+	return nu
+}
+
+// AddNodeLists adds the "node_lists" edges to the NodeList entity.
+func (nu *NodeUpdate) AddNodeLists(n ...*NodeList) *NodeUpdate {
+	ids := make([]uuid.UUID, len(n))
+	for i := range n {
+		ids[i] = n[i].ID
+	}
+	return nu.AddNodeListIDs(ids...)
 }
 
 // AddEdgeTypeIDs adds the "edge_types" edge to the EdgeType entity by IDs.
@@ -597,10 +607,25 @@ func (nu *NodeUpdate) RemoveNodes(n ...*Node) *NodeUpdate {
 	return nu.RemoveNodeIDs(ids...)
 }
 
-// ClearNodeList clears the "node_list" edge to the NodeList entity.
-func (nu *NodeUpdate) ClearNodeList() *NodeUpdate {
-	nu.mutation.ClearNodeList()
+// ClearNodeLists clears all "node_lists" edges to the NodeList entity.
+func (nu *NodeUpdate) ClearNodeLists() *NodeUpdate {
+	nu.mutation.ClearNodeLists()
 	return nu
+}
+
+// RemoveNodeListIDs removes the "node_lists" edge to NodeList entities by IDs.
+func (nu *NodeUpdate) RemoveNodeListIDs(ids ...uuid.UUID) *NodeUpdate {
+	nu.mutation.RemoveNodeListIDs(ids...)
+	return nu
+}
+
+// RemoveNodeLists removes "node_lists" edges to NodeList entities.
+func (nu *NodeUpdate) RemoveNodeLists(n ...*NodeList) *NodeUpdate {
+	ids := make([]uuid.UUID, len(n))
+	for i := range n {
+		ids[i] = n[i].ID
+	}
+	return nu.RemoveNodeListIDs(ids...)
 }
 
 // ClearEdgeTypes clears all "edge_types" edges to the EdgeType entity.
@@ -678,6 +703,12 @@ func (nu *NodeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if nu.mutation.ProtoMessageCleared() {
 		_spec.ClearField(node.FieldProtoMessage, field.TypeJSON)
+	}
+	if value, ok := nu.mutation.NodeListID(); ok {
+		_spec.SetField(node.FieldNodeListID, field.TypeUUID, value)
+	}
+	if nu.mutation.NodeListIDCleared() {
+		_spec.ClearField(node.FieldNodeListID, field.TypeUUID)
 	}
 	if value, ok := nu.mutation.GetType(); ok {
 		_spec.SetField(node.FieldType, field.TypeEnum, value)
@@ -1045,12 +1076,12 @@ func (nu *NodeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if nu.mutation.NodeListCleared() {
+	if nu.mutation.NodeListsCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.M2M,
 			Inverse: true,
-			Table:   node.NodeListTable,
-			Columns: []string{node.NodeListColumn},
+			Table:   node.NodeListsTable,
+			Columns: node.NodeListsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(nodelist.FieldID, field.TypeUUID),
@@ -1058,12 +1089,28 @@ func (nu *NodeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := nu.mutation.NodeListIDs(); len(nodes) > 0 {
+	if nodes := nu.mutation.RemovedNodeListsIDs(); len(nodes) > 0 && !nu.mutation.NodeListsCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.M2M,
 			Inverse: true,
-			Table:   node.NodeListTable,
-			Columns: []string{node.NodeListColumn},
+			Table:   node.NodeListsTable,
+			Columns: node.NodeListsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(nodelist.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := nu.mutation.NodeListsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   node.NodeListsTable,
+			Columns: node.NodeListsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(nodelist.FieldID, field.TypeUUID),
@@ -1545,9 +1592,19 @@ func (nuo *NodeUpdateOne) AddNodes(n ...*Node) *NodeUpdateOne {
 	return nuo.AddNodeIDs(ids...)
 }
 
-// SetNodeList sets the "node_list" edge to the NodeList entity.
-func (nuo *NodeUpdateOne) SetNodeList(n *NodeList) *NodeUpdateOne {
-	return nuo.SetNodeListID(n.ID)
+// AddNodeListIDs adds the "node_lists" edge to the NodeList entity by IDs.
+func (nuo *NodeUpdateOne) AddNodeListIDs(ids ...uuid.UUID) *NodeUpdateOne {
+	nuo.mutation.AddNodeListIDs(ids...)
+	return nuo
+}
+
+// AddNodeLists adds the "node_lists" edges to the NodeList entity.
+func (nuo *NodeUpdateOne) AddNodeLists(n ...*NodeList) *NodeUpdateOne {
+	ids := make([]uuid.UUID, len(n))
+	for i := range n {
+		ids[i] = n[i].ID
+	}
+	return nuo.AddNodeListIDs(ids...)
 }
 
 // AddEdgeTypeIDs adds the "edge_types" edge to the EdgeType entity by IDs.
@@ -1696,10 +1753,25 @@ func (nuo *NodeUpdateOne) RemoveNodes(n ...*Node) *NodeUpdateOne {
 	return nuo.RemoveNodeIDs(ids...)
 }
 
-// ClearNodeList clears the "node_list" edge to the NodeList entity.
-func (nuo *NodeUpdateOne) ClearNodeList() *NodeUpdateOne {
-	nuo.mutation.ClearNodeList()
+// ClearNodeLists clears all "node_lists" edges to the NodeList entity.
+func (nuo *NodeUpdateOne) ClearNodeLists() *NodeUpdateOne {
+	nuo.mutation.ClearNodeLists()
 	return nuo
+}
+
+// RemoveNodeListIDs removes the "node_lists" edge to NodeList entities by IDs.
+func (nuo *NodeUpdateOne) RemoveNodeListIDs(ids ...uuid.UUID) *NodeUpdateOne {
+	nuo.mutation.RemoveNodeListIDs(ids...)
+	return nuo
+}
+
+// RemoveNodeLists removes "node_lists" edges to NodeList entities.
+func (nuo *NodeUpdateOne) RemoveNodeLists(n ...*NodeList) *NodeUpdateOne {
+	ids := make([]uuid.UUID, len(n))
+	for i := range n {
+		ids[i] = n[i].ID
+	}
+	return nuo.RemoveNodeListIDs(ids...)
 }
 
 // ClearEdgeTypes clears all "edge_types" edges to the EdgeType entity.
@@ -1807,6 +1879,12 @@ func (nuo *NodeUpdateOne) sqlSave(ctx context.Context) (_node *Node, err error) 
 	}
 	if nuo.mutation.ProtoMessageCleared() {
 		_spec.ClearField(node.FieldProtoMessage, field.TypeJSON)
+	}
+	if value, ok := nuo.mutation.NodeListID(); ok {
+		_spec.SetField(node.FieldNodeListID, field.TypeUUID, value)
+	}
+	if nuo.mutation.NodeListIDCleared() {
+		_spec.ClearField(node.FieldNodeListID, field.TypeUUID)
 	}
 	if value, ok := nuo.mutation.GetType(); ok {
 		_spec.SetField(node.FieldType, field.TypeEnum, value)
@@ -2174,12 +2252,12 @@ func (nuo *NodeUpdateOne) sqlSave(ctx context.Context) (_node *Node, err error) 
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if nuo.mutation.NodeListCleared() {
+	if nuo.mutation.NodeListsCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.M2M,
 			Inverse: true,
-			Table:   node.NodeListTable,
-			Columns: []string{node.NodeListColumn},
+			Table:   node.NodeListsTable,
+			Columns: node.NodeListsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(nodelist.FieldID, field.TypeUUID),
@@ -2187,12 +2265,28 @@ func (nuo *NodeUpdateOne) sqlSave(ctx context.Context) (_node *Node, err error) 
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := nuo.mutation.NodeListIDs(); len(nodes) > 0 {
+	if nodes := nuo.mutation.RemovedNodeListsIDs(); len(nodes) > 0 && !nuo.mutation.NodeListsCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.M2M,
 			Inverse: true,
-			Table:   node.NodeListTable,
-			Columns: []string{node.NodeListColumn},
+			Table:   node.NodeListsTable,
+			Columns: node.NodeListsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(nodelist.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := nuo.mutation.NodeListsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   node.NodeListsTable,
+			Columns: node.NodeListsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(nodelist.FieldID, field.TypeUUID),

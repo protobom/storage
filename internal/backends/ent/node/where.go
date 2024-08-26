@@ -216,6 +216,26 @@ func NodeListIDNotIn(vs ...uuid.UUID) predicate.Node {
 	return predicate.Node(sql.FieldNotIn(FieldNodeListID, vs...))
 }
 
+// NodeListIDGT applies the GT predicate on the "node_list_id" field.
+func NodeListIDGT(v uuid.UUID) predicate.Node {
+	return predicate.Node(sql.FieldGT(FieldNodeListID, v))
+}
+
+// NodeListIDGTE applies the GTE predicate on the "node_list_id" field.
+func NodeListIDGTE(v uuid.UUID) predicate.Node {
+	return predicate.Node(sql.FieldGTE(FieldNodeListID, v))
+}
+
+// NodeListIDLT applies the LT predicate on the "node_list_id" field.
+func NodeListIDLT(v uuid.UUID) predicate.Node {
+	return predicate.Node(sql.FieldLT(FieldNodeListID, v))
+}
+
+// NodeListIDLTE applies the LTE predicate on the "node_list_id" field.
+func NodeListIDLTE(v uuid.UUID) predicate.Node {
+	return predicate.Node(sql.FieldLTE(FieldNodeListID, v))
+}
+
 // NodeListIDIsNil applies the IsNil predicate on the "node_list_id" field.
 func NodeListIDIsNil() predicate.Node {
 	return predicate.Node(sql.FieldIsNull(FieldNodeListID))
@@ -1327,21 +1347,21 @@ func HasNodesWith(preds ...predicate.Node) predicate.Node {
 	})
 }
 
-// HasNodeList applies the HasEdge predicate on the "node_list" edge.
-func HasNodeList() predicate.Node {
+// HasNodeLists applies the HasEdge predicate on the "node_lists" edge.
+func HasNodeLists() predicate.Node {
 	return predicate.Node(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, NodeListTable, NodeListColumn),
+			sqlgraph.Edge(sqlgraph.M2M, true, NodeListsTable, NodeListsPrimaryKey...),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
 }
 
-// HasNodeListWith applies the HasEdge predicate on the "node_list" edge with a given conditions (other predicates).
-func HasNodeListWith(preds ...predicate.NodeList) predicate.Node {
+// HasNodeListsWith applies the HasEdge predicate on the "node_lists" edge with a given conditions (other predicates).
+func HasNodeListsWith(preds ...predicate.NodeList) predicate.Node {
 	return predicate.Node(func(s *sql.Selector) {
-		step := newNodeListStep()
+		step := newNodeListsStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

@@ -27,7 +27,7 @@ func (Node) Mixin() []ent.Mixin {
 
 func (Node) Fields() []ent.Field {
 	return []ent.Field{
-		field.String("id").NotEmpty().Unique().Immutable(),
+		field.String("id").NotEmpty().Immutable(),
 		field.UUID("node_list_id", uuid.UUID{}).Optional(),
 		field.Enum("type").Values("PACKAGE", "FILE"),
 		field.String("name"),
@@ -60,7 +60,7 @@ func (Node) Edges() []ent.Edge {
 		edge.To("external_references", ExternalReference.Type),
 		edge.To("primary_purpose", Purpose.Type),
 		edge.To("nodes", Node.Type).From("to_nodes").Through("edge_types", EdgeType.Type),
-		edge.From("node_list", NodeList.Type).Ref("nodes").Unique().Field("node_list_id"),
+		edge.From("node_lists", NodeList.Type).Ref("nodes"),
 	}
 }
 

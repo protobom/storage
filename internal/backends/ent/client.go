@@ -20,6 +20,7 @@ import (
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"github.com/protobom/storage/internal/backends/ent/annotation"
 	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/documenttype"
 	"github.com/protobom/storage/internal/backends/ent/edgetype"
@@ -37,6 +38,8 @@ type Client struct {
 	config
 	// Schema is the client for creating, migrating and dropping schema.
 	Schema *migrate.Schema
+	// Annotation is the client for interacting with the Annotation builders.
+	Annotation *AnnotationClient
 	// Document is the client for interacting with the Document builders.
 	Document *DocumentClient
 	// DocumentType is the client for interacting with the DocumentType builders.
@@ -68,6 +71,7 @@ func NewClient(opts ...Option) *Client {
 
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
+	c.Annotation = NewAnnotationClient(c.config)
 	c.Document = NewDocumentClient(c.config)
 	c.DocumentType = NewDocumentTypeClient(c.config)
 	c.EdgeType = NewEdgeTypeClient(c.config)
@@ -170,6 +174,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	return &Tx{
 		ctx:               ctx,
 		config:            cfg,
+		Annotation:        NewAnnotationClient(cfg),
 		Document:          NewDocumentClient(cfg),
 		DocumentType:      NewDocumentTypeClient(cfg),
 		EdgeType:          NewEdgeTypeClient(cfg),
@@ -199,6 +204,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	return &Tx{
 		ctx:               ctx,
 		config:            cfg,
+		Annotation:        NewAnnotationClient(cfg),
 		Document:          NewDocumentClient(cfg),
 		DocumentType:      NewDocumentTypeClient(cfg),
 		EdgeType:          NewEdgeTypeClient(cfg),
@@ -215,7 +221,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 // Debug returns a new debug-client. It's used to get verbose logging on specific operations.
 //
 //	client.Debug().
-//		Document.
+//		Annotation.
 //		Query().
 //		Count(ctx)
 func (c *Client) Debug() *Client {
@@ -238,8 +244,8 @@ func (c *Client) Close() error {
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
-		c.Document, c.DocumentType, c.EdgeType, c.ExternalReference, c.Metadata, c.Node,
-		c.NodeList, c.Person, c.Purpose, c.Tool,
+		c.Annotation, c.Document, c.DocumentType, c.EdgeType, c.ExternalReference,
+		c.Metadata, c.Node, c.NodeList, c.Person, c.Purpose, c.Tool,
 	} {
 		n.Use(hooks...)
 	}
@@ -249,8 +255,8 @@ func (c *Client) Use(hooks ...Hook) {
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
-		c.Document, c.DocumentType, c.EdgeType, c.ExternalReference, c.Metadata, c.Node,
-		c.NodeList, c.Person, c.Purpose, c.Tool,
+		c.Annotation, c.Document, c.DocumentType, c.EdgeType, c.ExternalReference,
+		c.Metadata, c.Node, c.NodeList, c.Person, c.Purpose, c.Tool,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -259,6 +265,8 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 // Mutate implements the ent.Mutator interface.
 func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 	switch m := m.(type) {
+	case *AnnotationMutation:
+		return c.Annotation.mutate(ctx, m)
 	case *DocumentMutation:
 		return c.Document.mutate(ctx, m)
 	case *DocumentTypeMutation:
@@ -281,6 +289,155 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.Tool.mutate(ctx, m)
 	default:
 		return nil, fmt.Errorf("ent: unknown mutation type %T", m)
+	}
+}
+
+// AnnotationClient is a client for the Annotation schema.
+type AnnotationClient struct {
+	config
+}
+
+// NewAnnotationClient returns a client for the Annotation from the given config.
+func NewAnnotationClient(c config) *AnnotationClient {
+	return &AnnotationClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `annotation.Hooks(f(g(h())))`.
+func (c *AnnotationClient) Use(hooks ...Hook) {
+	c.hooks.Annotation = append(c.hooks.Annotation, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `annotation.Intercept(f(g(h())))`.
+func (c *AnnotationClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Annotation = append(c.inters.Annotation, interceptors...)
+}
+
+// Create returns a builder for creating a Annotation entity.
+func (c *AnnotationClient) Create() *AnnotationCreate {
+	mutation := newAnnotationMutation(c.config, OpCreate)
+	return &AnnotationCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Annotation entities.
+func (c *AnnotationClient) CreateBulk(builders ...*AnnotationCreate) *AnnotationCreateBulk {
+	return &AnnotationCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *AnnotationClient) MapCreateBulk(slice any, setFunc func(*AnnotationCreate, int)) *AnnotationCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &AnnotationCreateBulk{err: fmt.Errorf("calling to AnnotationClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*AnnotationCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &AnnotationCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Annotation.
+func (c *AnnotationClient) Update() *AnnotationUpdate {
+	mutation := newAnnotationMutation(c.config, OpUpdate)
+	return &AnnotationUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *AnnotationClient) UpdateOne(a *Annotation) *AnnotationUpdateOne {
+	mutation := newAnnotationMutation(c.config, OpUpdateOne, withAnnotation(a))
+	return &AnnotationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *AnnotationClient) UpdateOneID(id int) *AnnotationUpdateOne {
+	mutation := newAnnotationMutation(c.config, OpUpdateOne, withAnnotationID(id))
+	return &AnnotationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Annotation.
+func (c *AnnotationClient) Delete() *AnnotationDelete {
+	mutation := newAnnotationMutation(c.config, OpDelete)
+	return &AnnotationDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *AnnotationClient) DeleteOne(a *Annotation) *AnnotationDeleteOne {
+	return c.DeleteOneID(a.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *AnnotationClient) DeleteOneID(id int) *AnnotationDeleteOne {
+	builder := c.Delete().Where(annotation.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &AnnotationDeleteOne{builder}
+}
+
+// Query returns a query builder for Annotation.
+func (c *AnnotationClient) Query() *AnnotationQuery {
+	return &AnnotationQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeAnnotation},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a Annotation entity by its id.
+func (c *AnnotationClient) Get(ctx context.Context, id int) (*Annotation, error) {
+	return c.Query().Where(annotation.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *AnnotationClient) GetX(ctx context.Context, id int) *Annotation {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryDocument queries the document edge of a Annotation.
+func (c *AnnotationClient) QueryDocument(a *Annotation) *DocumentQuery {
+	query := (&DocumentClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := a.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(annotation.Table, annotation.FieldID, id),
+			sqlgraph.To(document.Table, document.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, annotation.DocumentTable, annotation.DocumentColumn),
+		)
+		fromV = sqlgraph.Neighbors(a.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *AnnotationClient) Hooks() []Hook {
+	return c.hooks.Annotation
+}
+
+// Interceptors returns the client interceptors.
+func (c *AnnotationClient) Interceptors() []Interceptor {
+	return c.inters.Annotation
+}
+
+func (c *AnnotationClient) mutate(ctx context.Context, m *AnnotationMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&AnnotationCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&AnnotationUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&AnnotationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&AnnotationDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Annotation mutation op: %q", m.Op())
 	}
 }
 
@@ -390,6 +547,22 @@ func (c *DocumentClient) GetX(ctx context.Context, id uuid.UUID) *Document {
 		panic(err)
 	}
 	return obj
+}
+
+// QueryAnnotations queries the annotations edge of a Document.
+func (c *DocumentClient) QueryAnnotations(d *Document) *AnnotationQuery {
+	query := (&AnnotationClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := d.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(document.Table, document.FieldID, id),
+			sqlgraph.To(annotation.Table, annotation.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, document.AnnotationsTable, document.AnnotationsColumn),
+		)
+		fromV = sqlgraph.Neighbors(d.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
 }
 
 // QueryMetadata queries the metadata edge of a Document.
@@ -1377,15 +1550,15 @@ func (c *NodeClient) QueryNodes(n *Node) *NodeQuery {
 	return query
 }
 
-// QueryNodeList queries the node_list edge of a Node.
-func (c *NodeClient) QueryNodeList(n *Node) *NodeListQuery {
+// QueryNodeLists queries the node_lists edge of a Node.
+func (c *NodeClient) QueryNodeLists(n *Node) *NodeListQuery {
 	query := (&NodeListClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := n.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(node.Table, node.FieldID, id),
 			sqlgraph.To(nodelist.Table, nodelist.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, node.NodeListTable, node.NodeListColumn),
+			sqlgraph.Edge(sqlgraph.M2M, true, node.NodeListsTable, node.NodeListsPrimaryKey...),
 		)
 		fromV = sqlgraph.Neighbors(n.driver.Dialect(), step)
 		return fromV, nil
@@ -1550,7 +1723,7 @@ func (c *NodeListClient) QueryNodes(nl *NodeList) *NodeQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(nodelist.Table, nodelist.FieldID, id),
 			sqlgraph.To(node.Table, node.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, nodelist.NodesTable, nodelist.NodesColumn),
+			sqlgraph.Edge(sqlgraph.M2M, false, nodelist.NodesTable, nodelist.NodesPrimaryKey...),
 		)
 		fromV = sqlgraph.Neighbors(nl.driver.Dialect(), step)
 		return fromV, nil
@@ -2145,11 +2318,11 @@ func (c *ToolClient) mutate(ctx context.Context, m *ToolMutation) (Value, error)
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		Document, DocumentType, EdgeType, ExternalReference, Metadata, Node, NodeList,
-		Person, Purpose, Tool []ent.Hook
+		Annotation, Document, DocumentType, EdgeType, ExternalReference, Metadata, Node,
+		NodeList, Person, Purpose, Tool []ent.Hook
 	}
 	inters struct {
-		Document, DocumentType, EdgeType, ExternalReference, Metadata, Node, NodeList,
-		Person, Purpose, Tool []ent.Interceptor
+		Annotation, Document, DocumentType, EdgeType, ExternalReference, Metadata, Node,
+		NodeList, Person, Purpose, Tool []ent.Interceptor
 	}
 )

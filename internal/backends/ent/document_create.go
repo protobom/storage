@@ -17,6 +17,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
 	"github.com/protobom/protobom/pkg/sbom"
+	"github.com/protobom/storage/internal/backends/ent/annotation"
 	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/metadata"
 	"github.com/protobom/storage/internal/backends/ent/nodelist"
@@ -68,6 +69,21 @@ func (dc *DocumentCreate) SetNillableNodeListID(u *uuid.UUID) *DocumentCreate {
 func (dc *DocumentCreate) SetID(u uuid.UUID) *DocumentCreate {
 	dc.mutation.SetID(u)
 	return dc
+}
+
+// AddAnnotationIDs adds the "annotations" edge to the Annotation entity by IDs.
+func (dc *DocumentCreate) AddAnnotationIDs(ids ...int) *DocumentCreate {
+	dc.mutation.AddAnnotationIDs(ids...)
+	return dc
+}
+
+// AddAnnotations adds the "annotations" edges to the Annotation entity.
+func (dc *DocumentCreate) AddAnnotations(a ...*Annotation) *DocumentCreate {
+	ids := make([]int, len(a))
+	for i := range a {
+		ids[i] = a[i].ID
+	}
+	return dc.AddAnnotationIDs(ids...)
 }
 
 // SetMetadata sets the "metadata" edge to the Metadata entity.
@@ -153,6 +169,22 @@ func (dc *DocumentCreate) createSpec() (*Document, *sqlgraph.CreateSpec) {
 	if value, ok := dc.mutation.ProtoMessage(); ok {
 		_spec.SetField(document.FieldProtoMessage, field.TypeJSON, value)
 		_node.ProtoMessage = value
+	}
+	if nodes := dc.mutation.AnnotationsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   document.AnnotationsTable,
+			Columns: []string{document.AnnotationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(annotation.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := dc.mutation.MetadataIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

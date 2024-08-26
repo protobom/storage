@@ -11,6 +11,9 @@ import (
 	"entgo.io/ent/dialect/sql"
 )
 
+// Annotation is the predicate function for annotation builders.
+type Annotation func(*sql.Selector)
+
 // Document is the predicate function for document builders.
 type Document func(*sql.Selector)
 

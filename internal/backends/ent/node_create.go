@@ -296,9 +296,19 @@ func (nc *NodeCreate) AddNodes(n ...*Node) *NodeCreate {
 	return nc.AddNodeIDs(ids...)
 }
 
-// SetNodeList sets the "node_list" edge to the NodeList entity.
-func (nc *NodeCreate) SetNodeList(n *NodeList) *NodeCreate {
-	return nc.SetNodeListID(n.ID)
+// AddNodeListIDs adds the "node_lists" edge to the NodeList entity by IDs.
+func (nc *NodeCreate) AddNodeListIDs(ids ...uuid.UUID) *NodeCreate {
+	nc.mutation.AddNodeListIDs(ids...)
+	return nc
+}
+
+// AddNodeLists adds the "node_lists" edges to the NodeList entity.
+func (nc *NodeCreate) AddNodeLists(n ...*NodeList) *NodeCreate {
+	ids := make([]uuid.UUID, len(n))
+	for i := range n {
+		ids[i] = n[i].ID
+	}
+	return nc.AddNodeListIDs(ids...)
 }
 
 // AddEdgeTypeIDs adds the "edge_types" edge to the EdgeType entity by IDs.
@@ -465,6 +475,10 @@ func (nc *NodeCreate) createSpec() (*Node, *sqlgraph.CreateSpec) {
 	if value, ok := nc.mutation.ProtoMessage(); ok {
 		_spec.SetField(node.FieldProtoMessage, field.TypeJSON, value)
 		_node.ProtoMessage = value
+	}
+	if value, ok := nc.mutation.NodeListID(); ok {
+		_spec.SetField(node.FieldNodeListID, field.TypeUUID, value)
+		_node.NodeListID = value
 	}
 	if value, ok := nc.mutation.GetType(); ok {
 		_spec.SetField(node.FieldType, field.TypeEnum, value)
@@ -667,12 +681,12 @@ func (nc *NodeCreate) createSpec() (*Node, *sqlgraph.CreateSpec) {
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := nc.mutation.NodeListIDs(); len(nodes) > 0 {
+	if nodes := nc.mutation.NodeListsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.M2M,
 			Inverse: true,
-			Table:   node.NodeListTable,
-			Columns: []string{node.NodeListColumn},
+			Table:   node.NodeListsTable,
+			Columns: node.NodeListsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(nodelist.FieldID, field.TypeUUID),
@@ -681,7 +695,6 @@ func (nc *NodeCreate) createSpec() (*Node, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.NodeListID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := nc.mutation.EdgeTypesIDs(); len(nodes) > 0 {

@@ -23,12 +23,21 @@ const (
 	FieldMetadataID = "metadata_id"
 	// FieldNodeListID holds the string denoting the node_list_id field in the database.
 	FieldNodeListID = "node_list_id"
+	// EdgeAnnotations holds the string denoting the annotations edge name in mutations.
+	EdgeAnnotations = "annotations"
 	// EdgeMetadata holds the string denoting the metadata edge name in mutations.
 	EdgeMetadata = "metadata"
 	// EdgeNodeList holds the string denoting the node_list edge name in mutations.
 	EdgeNodeList = "node_list"
 	// Table holds the table name of the document in the database.
 	Table = "documents"
+	// AnnotationsTable is the table that holds the annotations relation/edge.
+	AnnotationsTable = "annotations"
+	// AnnotationsInverseTable is the table name for the Annotation entity.
+	// It exists in this package in order to avoid circular dependency with the "annotation" package.
+	AnnotationsInverseTable = "annotations"
+	// AnnotationsColumn is the table column denoting the annotations relation/edge.
+	AnnotationsColumn = "document_annotations"
 	// MetadataTable is the table that holds the metadata relation/edge.
 	MetadataTable = "documents"
 	// MetadataInverseTable is the table name for the Metadata entity.
@@ -81,6 +90,20 @@ func ByNodeListID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldNodeListID, opts...).ToFunc()
 }
 
+// ByAnnotationsCount orders the results by annotations count.
+func ByAnnotationsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newAnnotationsStep(), opts...)
+	}
+}
+
+// ByAnnotations orders the results by annotations terms.
+func ByAnnotations(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newAnnotationsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
 // ByMetadataField orders the results by metadata field.
 func ByMetadataField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -93,6 +116,13 @@ func ByNodeListField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
 		sqlgraph.OrderByNeighborTerms(s, newNodeListStep(), sql.OrderByField(field, opts...))
 	}
+}
+func newAnnotationsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(AnnotationsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, AnnotationsTable, AnnotationsColumn),
+	)
 }
 func newMetadataStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(

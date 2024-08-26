@@ -74,7 +74,7 @@ func HasNodes() predicate.NodeList {
 	return predicate.NodeList(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, NodesTable, NodesColumn),
+			sqlgraph.Edge(sqlgraph.M2M, false, NodesTable, NodesPrimaryKey...),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})

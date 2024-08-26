@@ -8,6 +8,7 @@ package ent
 
 import (
 	"github.com/google/uuid"
+	"github.com/protobom/storage/internal/backends/ent/annotation"
 	"github.com/protobom/storage/internal/backends/ent/documenttype"
 	"github.com/protobom/storage/internal/backends/ent/edgetype"
 	"github.com/protobom/storage/internal/backends/ent/externalreference"
@@ -23,6 +24,15 @@ import (
 // (default values, validators, hooks and policies) and stitches it
 // to their package variables.
 func init() {
+	annotationMixin := schema.Annotation{}.Mixin()
+	annotationMixinFields0 := annotationMixin[0].Fields()
+	_ = annotationMixinFields0
+	annotationFields := schema.Annotation{}.Fields()
+	_ = annotationFields
+	// annotationDescDocumentID is the schema descriptor for document_id field.
+	annotationDescDocumentID := annotationMixinFields0[0].Descriptor()
+	// annotation.DefaultDocumentID holds the default value on creation for the document_id field.
+	annotation.DefaultDocumentID = annotationDescDocumentID.Default.(func() uuid.UUID)
 	documenttypeMixin := schema.DocumentType{}.Mixin()
 	documenttypeMixinFields0 := documenttypeMixin[0].Fields()
 	_ = documenttypeMixinFields0

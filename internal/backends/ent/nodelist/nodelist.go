@@ -27,13 +27,11 @@ const (
 	EdgeDocument = "document"
 	// Table holds the table name of the nodelist in the database.
 	Table = "node_lists"
-	// NodesTable is the table that holds the nodes relation/edge.
-	NodesTable = "nodes"
+	// NodesTable is the table that holds the nodes relation/edge. The primary key declared below.
+	NodesTable = "node_list_nodes"
 	// NodesInverseTable is the table name for the Node entity.
 	// It exists in this package in order to avoid circular dependency with the "node" package.
 	NodesInverseTable = "nodes"
-	// NodesColumn is the table column denoting the nodes relation/edge.
-	NodesColumn = "node_list_id"
 	// DocumentTable is the table that holds the document relation/edge.
 	DocumentTable = "documents"
 	// DocumentInverseTable is the table name for the Document entity.
@@ -49,6 +47,12 @@ var Columns = []string{
 	FieldProtoMessage,
 	FieldRootElements,
 }
+
+var (
+	// NodesPrimaryKey and NodesColumn2 are the table columns denoting the
+	// primary key for the nodes relation (M2M).
+	NodesPrimaryKey = []string{"node_list_id", "node_id"}
+)
 
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {
@@ -92,7 +96,7 @@ func newNodesStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(NodesInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2M, false, NodesTable, NodesColumn),
+		sqlgraph.Edge(sqlgraph.M2M, false, NodesTable, NodesPrimaryKey...),
 	)
 }
 func newDocumentStep() *sqlgraph.Step {

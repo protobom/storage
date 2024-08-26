@@ -82,8 +82,8 @@ const (
 	EdgeToNodes = "to_nodes"
 	// EdgeNodes holds the string denoting the nodes edge name in mutations.
 	EdgeNodes = "nodes"
-	// EdgeNodeList holds the string denoting the node_list edge name in mutations.
-	EdgeNodeList = "node_list"
+	// EdgeNodeLists holds the string denoting the node_lists edge name in mutations.
+	EdgeNodeLists = "node_lists"
 	// EdgeEdgeTypes holds the string denoting the edge_types edge name in mutations.
 	EdgeEdgeTypes = "edge_types"
 	// Table holds the table name of the node in the database.
@@ -127,13 +127,11 @@ const (
 	ToNodesTable = "edge_types"
 	// NodesTable is the table that holds the nodes relation/edge. The primary key declared below.
 	NodesTable = "edge_types"
-	// NodeListTable is the table that holds the node_list relation/edge.
-	NodeListTable = "nodes"
-	// NodeListInverseTable is the table name for the NodeList entity.
+	// NodeListsTable is the table that holds the node_lists relation/edge. The primary key declared below.
+	NodeListsTable = "node_list_nodes"
+	// NodeListsInverseTable is the table name for the NodeList entity.
 	// It exists in this package in order to avoid circular dependency with the "nodelist" package.
-	NodeListInverseTable = "node_lists"
-	// NodeListColumn is the table column denoting the node_list relation/edge.
-	NodeListColumn = "node_list_id"
+	NodeListsInverseTable = "node_lists"
 	// EdgeTypesTable is the table that holds the edge_types relation/edge.
 	EdgeTypesTable = "edge_types"
 	// EdgeTypesInverseTable is the table name for the EdgeType entity.
@@ -179,6 +177,9 @@ var (
 	// NodesPrimaryKey and NodesColumn2 are the table columns denoting the
 	// primary key for the nodes relation (M2M).
 	NodesPrimaryKey = []string{"node_id", "to_node_id"}
+	// NodeListsPrimaryKey and NodeListsColumn2 are the table columns denoting the
+	// primary key for the node_lists relation (M2M).
+	NodeListsPrimaryKey = []string{"node_list_id", "node_id"}
 )
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -410,10 +411,17 @@ func ByNodes(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	}
 }
 
-// ByNodeListField orders the results by node_list field.
-func ByNodeListField(field string, opts ...sql.OrderTermOption) OrderOption {
+// ByNodeListsCount orders the results by node_lists count.
+func ByNodeListsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newNodeListStep(), sql.OrderByField(field, opts...))
+		sqlgraph.OrderByNeighborsCount(s, newNodeListsStep(), opts...)
+	}
+}
+
+// ByNodeLists orders the results by node_lists terms.
+func ByNodeLists(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newNodeListsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
 
@@ -479,11 +487,11 @@ func newNodesStep() *sqlgraph.Step {
 		sqlgraph.Edge(sqlgraph.M2M, false, NodesTable, NodesPrimaryKey...),
 	)
 }
-func newNodeListStep() *sqlgraph.Step {
+func newNodeListsStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(NodeListInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.M2O, true, NodeListTable, NodeListColumn),
+		sqlgraph.To(NodeListsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2M, true, NodeListsTable, NodeListsPrimaryKey...),
 	)
 }
 func newEdgeTypesStep() *sqlgraph.Step {

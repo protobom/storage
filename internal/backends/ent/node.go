@@ -18,7 +18,6 @@ import (
 	"github.com/protobom/protobom/pkg/sbom"
 	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/node"
-	"github.com/protobom/storage/internal/backends/ent/nodelist"
 )
 
 // Node is the model entity for the Node schema.
@@ -96,8 +95,8 @@ type NodeEdges struct {
 	ToNodes []*Node `json:"to_nodes,omitempty"`
 	// Nodes holds the value of the nodes edge.
 	Nodes []*Node `json:"nodes,omitempty"`
-	// NodeList holds the value of the node_list edge.
-	NodeList *NodeList `json:"node_list,omitempty"`
+	// NodeLists holds the value of the node_lists edge.
+	NodeLists []*NodeList `json:"node_lists,omitempty"`
 	// EdgeTypes holds the value of the edge_types edge.
 	EdgeTypes []*EdgeType `json:"edge_types,omitempty"`
 	// loadedTypes holds the information for reporting if a
@@ -170,15 +169,13 @@ func (e NodeEdges) NodesOrErr() ([]*Node, error) {
 	return nil, &NotLoadedError{edge: "nodes"}
 }
 
-// NodeListOrErr returns the NodeList value or an error if the edge
-// was not loaded in eager-loading, or loaded but was not found.
-func (e NodeEdges) NodeListOrErr() (*NodeList, error) {
-	if e.NodeList != nil {
-		return e.NodeList, nil
-	} else if e.loadedTypes[7] {
-		return nil, &NotFoundError{label: nodelist.Label}
+// NodeListsOrErr returns the NodeLists value or an error if the edge
+// was not loaded in eager-loading.
+func (e NodeEdges) NodeListsOrErr() ([]*NodeList, error) {
+	if e.loadedTypes[7] {
+		return e.NodeLists, nil
 	}
-	return nil, &NotLoadedError{edge: "node_list"}
+	return nil, &NotLoadedError{edge: "node_lists"}
 }
 
 // EdgeTypesOrErr returns the EdgeTypes value or an error if the edge
@@ -428,9 +425,9 @@ func (n *Node) QueryNodes() *NodeQuery {
 	return NewNodeClient(n.config).QueryNodes(n)
 }
 
-// QueryNodeList queries the "node_list" edge of the Node entity.
-func (n *Node) QueryNodeList() *NodeListQuery {
-	return NewNodeClient(n.config).QueryNodeList(n)
+// QueryNodeLists queries the "node_lists" edge of the Node entity.
+func (n *Node) QueryNodeLists() *NodeListQuery {
+	return NewNodeClient(n.config).QueryNodeLists(n)
 }
 
 // QueryEdgeTypes queries the "edge_types" edge of the Node entity.
