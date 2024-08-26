@@ -54,7 +54,11 @@ func (backend *Backend) Store(doc *sbom.Document, opts *storage.StoreOptions) er
 	}
 
 	backend.ctx = ent.NewTxContext(backend.ctx, tx)
-	id := newUUIDFromHash(doc)
+
+	id, err := uuidFromHash(doc)
+	if err != nil {
+		return err
+	}
 
 	err = tx.Document.Create().
 		SetID(id).
@@ -91,7 +95,11 @@ func (backend *Backend) saveDocumentTypes(docTypes []*sbom.DocumentType) error {
 	tx := ent.TxFromContext(backend.ctx)
 
 	for _, dt := range docTypes {
-		id := newUUIDFromHash(dt)
+		id, err := uuidFromHash(dt)
+		if err != nil {
+			return err
+		}
+
 		typeName := documenttype.Type(dt.Type.String())
 
 		newDocType := tx.DocumentType.Create().
@@ -109,8 +117,7 @@ func (backend *Backend) saveDocumentTypes(docTypes []*sbom.DocumentType) error {
 			newDocType.SetMetadataID(metadataID)
 		}
 
-		err := newDocType.OnConflict().Ignore().Exec(backend.ctx)
-		if err != nil && !ent.IsConstraintError(err) {
+		if err := newDocType.OnConflict().Ignore().Exec(backend.ctx); err != nil && !ent.IsConstraintError(err) {
 			return fmt.Errorf("ent.DocumentType: %w", err)
 		}
 	}
@@ -154,7 +161,10 @@ func (backend *Backend) saveExternalReferences(refs []*sbom.ExternalReference) e
 	tx := ent.TxFromContext(backend.ctx)
 
 	for _, ref := range refs {
-		id := newUUIDFromHash(ref)
+		id, err := uuidFromHash(ref)
+		if err != nil {
+			return err
+		}
 
 		newRef := tx.ExternalReference.Create().
 			SetID(id).
@@ -173,8 +183,7 @@ func (backend *Backend) saveExternalReferences(refs []*sbom.ExternalReference) e
 			newRef.SetDocumentID(documentID)
 		}
 
-		err := newRef.OnConflict().Ignore().Exec(backend.ctx)
-		if err != nil && !ent.IsConstraintError(err) {
+		if err := newRef.OnConflict().Ignore().Exec(backend.ctx); err != nil && !ent.IsConstraintError(err) {
 			return fmt.Errorf("ent.ExternalReference: %w", err)
 		}
 
@@ -231,7 +240,12 @@ func (backend *Backend) saveNodeList(nodeList *sbom.NodeList) error {
 	}
 
 	tx := ent.TxFromContext(backend.ctx)
-	id := newUUIDFromHash(nodeList)
+
+	id, err := uuidFromHash(nodeList)
+	if err != nil {
+		return err
+	}
+
 	newNodeList := tx.NodeList.Create().
 		SetID(id).
 		SetProtoMessage(nodeList).
@@ -241,8 +255,7 @@ func (backend *Backend) saveNodeList(nodeList *sbom.NodeList) error {
 		newNodeList.SetDocumentID(documentID)
 	}
 
-	err := newNodeList.OnConflict().Ignore().Exec(backend.ctx)
-	if err != nil && !ent.IsConstraintError(err) {
+	if err := newNodeList.OnConflict().Ignore().Exec(backend.ctx); err != nil && !ent.IsConstraintError(err) {
 		return fmt.Errorf("ent.NodeList: %w", err)
 	}
 
@@ -302,7 +315,11 @@ func (backend *Backend) savePersons(persons []*sbom.Person) error {
 	tx := ent.TxFromContext(backend.ctx)
 
 	for _, p := range persons {
-		id := newUUIDFromHash(p)
+		id, err := uuidFromHash(p)
+		if err != nil {
+			return err
+		}
+
 		newPerson := tx.Person.Create().
 			SetID(id).
 			SetProtoMessage(p).
@@ -324,8 +341,7 @@ func (backend *Backend) savePersons(persons []*sbom.Person) error {
 			newPerson.SetMetadataID(metadataID)
 		}
 
-		err := newPerson.OnConflict().Ignore().Exec(backend.ctx)
-		if err != nil && !ent.IsConstraintError(err) {
+		if err := newPerson.OnConflict().Ignore().Exec(backend.ctx); err != nil && !ent.IsConstraintError(err) {
 			return fmt.Errorf("ent.ExternalReference: %w", err)
 		}
 
@@ -382,7 +398,11 @@ func (backend *Backend) saveTools(tools []*sbom.Tool) error {
 	builders := []*ent.ToolCreate{}
 
 	for _, t := range tools {
-		id := newUUIDFromHash(t)
+		id, err := uuidFromHash(t)
+		if err != nil {
+			return err
+		}
+
 		newTool := tx.Tool.Create().
 			SetID(id).
 			SetProtoMessage(t).
@@ -451,13 +471,13 @@ func (backend *Backend) newNodeCreate(n *sbom.Node) *ent.NodeCreate {
 	return newNode
 }
 
-func newUUIDFromHash(msg proto.Message) uuid.UUID {
+func uuidFromHash(msg proto.Message) (uuid.UUID, error) {
 	data, err := proto.MarshalOptions{Deterministic: true}.Marshal(msg)
 	if err != nil {
-		return uuid.Nil
+		return uuid.Nil, fmt.Errorf("marshaling proto: %w", err)
 	}
 
-	return uuid.NewHash(sha256.New(), uuid.Max, data, int(uuid.Max.Version()))
+	return uuid.NewHash(sha256.New(), uuid.Max, data, int(uuid.Max.Version())), nil
 }
 
 func rollback(tx *ent.Tx, err error) error {
