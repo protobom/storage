@@ -30,5 +30,6 @@ func (Document) Edges() []ent.Edge {
 		edge.To("node_list", NodeList.Type).
 			Unique().
 			Immutable(),
+		edge.To("annotations", Annotation.Type),
 	}
 }

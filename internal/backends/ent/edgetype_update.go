@@ -147,10 +147,10 @@ func (etu *EdgeTypeUpdate) check() error {
 			return &ValidationError{Name: "type", err: fmt.Errorf(`ent: validator failed for field "EdgeType.type": %w`, err)}
 		}
 	}
-	if _, ok := etu.mutation.FromID(); etu.mutation.FromCleared() && !ok {
+	if etu.mutation.FromCleared() && len(etu.mutation.FromIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "EdgeType.from"`)
 	}
-	if _, ok := etu.mutation.ToID(); etu.mutation.ToCleared() && !ok {
+	if etu.mutation.ToCleared() && len(etu.mutation.ToIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "EdgeType.to"`)
 	}
 	return nil
@@ -377,10 +377,10 @@ func (etuo *EdgeTypeUpdateOne) check() error {
 			return &ValidationError{Name: "type", err: fmt.Errorf(`ent: validator failed for field "EdgeType.type": %w`, err)}
 		}
 	}
-	if _, ok := etuo.mutation.FromID(); etuo.mutation.FromCleared() && !ok {
+	if etuo.mutation.FromCleared() && len(etuo.mutation.FromIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "EdgeType.from"`)
 	}
-	if _, ok := etuo.mutation.ToID(); etuo.mutation.ToCleared() && !ok {
+	if etuo.mutation.ToCleared() && len(etuo.mutation.ToIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "EdgeType.to"`)
 	}
 	return nil

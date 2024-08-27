@@ -15,6 +15,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/protobom/storage/internal/backends/ent/annotation"
 	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/metadata"
 	"github.com/protobom/storage/internal/backends/ent/nodelist"
@@ -70,6 +71,21 @@ func (dc *DocumentCreate) SetNillableNodeListID(id *int) *DocumentCreate {
 // SetNodeList sets the "node_list" edge to the NodeList entity.
 func (dc *DocumentCreate) SetNodeList(n *NodeList) *DocumentCreate {
 	return dc.SetNodeListID(n.ID)
+}
+
+// AddAnnotationIDs adds the "annotations" edge to the Annotation entity by IDs.
+func (dc *DocumentCreate) AddAnnotationIDs(ids ...int) *DocumentCreate {
+	dc.mutation.AddAnnotationIDs(ids...)
+	return dc
+}
+
+// AddAnnotations adds the "annotations" edges to the Annotation entity.
+func (dc *DocumentCreate) AddAnnotations(a ...*Annotation) *DocumentCreate {
+	ids := make([]int, len(a))
+	for i := range a {
+		ids[i] = a[i].ID
+	}
+	return dc.AddAnnotationIDs(ids...)
 }
 
 // Mutation returns the DocumentMutation object of the builder.
@@ -167,6 +183,22 @@ func (dc *DocumentCreate) createSpec() (*Document, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(nodelist.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := dc.mutation.AnnotationsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   document.AnnotationsTable,
+			Columns: []string{document.AnnotationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(annotation.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

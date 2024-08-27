@@ -34,9 +34,11 @@ type DocumentEdges struct {
 	Metadata *Metadata `json:"metadata,omitempty"`
 	// NodeList holds the value of the node_list edge.
 	NodeList *NodeList `json:"node_list,omitempty"`
+	// Annotations holds the value of the annotations edge.
+	Annotations []*Annotation `json:"annotations,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [3]bool
 }
 
 // MetadataOrErr returns the Metadata value or an error if the edge
@@ -59,6 +61,15 @@ func (e DocumentEdges) NodeListOrErr() (*NodeList, error) {
 		return nil, &NotFoundError{label: nodelist.Label}
 	}
 	return nil, &NotLoadedError{edge: "node_list"}
+}
+
+// AnnotationsOrErr returns the Annotations value or an error if the edge
+// was not loaded in eager-loading.
+func (e DocumentEdges) AnnotationsOrErr() ([]*Annotation, error) {
+	if e.loadedTypes[2] {
+		return e.Annotations, nil
+	}
+	return nil, &NotLoadedError{edge: "annotations"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -110,6 +121,11 @@ func (d *Document) QueryMetadata() *MetadataQuery {
 // QueryNodeList queries the "node_list" edge of the Document entity.
 func (d *Document) QueryNodeList() *NodeListQuery {
 	return NewDocumentClient(d.config).QueryNodeList(d)
+}
+
+// QueryAnnotations queries the "annotations" edge of the Document entity.
+func (d *Document) QueryAnnotations() *AnnotationQuery {
+	return NewDocumentClient(d.config).QueryAnnotations(d)
 }
 
 // Update returns a builder for updating this Document.

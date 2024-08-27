@@ -34,20 +34,6 @@ type NodeCreate struct {
 	conflict []sql.ConflictOption
 }
 
-// SetNodeListID sets the "node_list_id" field.
-func (nc *NodeCreate) SetNodeListID(i int) *NodeCreate {
-	nc.mutation.SetNodeListID(i)
-	return nc
-}
-
-// SetNillableNodeListID sets the "node_list_id" field if the given value is not nil.
-func (nc *NodeCreate) SetNillableNodeListID(i *int) *NodeCreate {
-	if i != nil {
-		nc.SetNodeListID(*i)
-	}
-	return nc
-}
-
 // SetType sets the "type" field.
 func (nc *NodeCreate) SetType(n node.Type) *NodeCreate {
 	nc.mutation.SetType(n)
@@ -288,9 +274,19 @@ func (nc *NodeCreate) AddNodes(n ...*Node) *NodeCreate {
 	return nc.AddNodeIDs(ids...)
 }
 
-// SetNodeList sets the "node_list" edge to the NodeList entity.
-func (nc *NodeCreate) SetNodeList(n *NodeList) *NodeCreate {
-	return nc.SetNodeListID(n.ID)
+// AddNodeListIDs adds the "node_lists" edge to the NodeList entity by IDs.
+func (nc *NodeCreate) AddNodeListIDs(ids ...int) *NodeCreate {
+	nc.mutation.AddNodeListIDs(ids...)
+	return nc
+}
+
+// AddNodeLists adds the "node_lists" edges to the NodeList entity.
+func (nc *NodeCreate) AddNodeLists(n ...*NodeList) *NodeCreate {
+	ids := make([]int, len(n))
+	for i := range n {
+		ids[i] = n[i].ID
+	}
+	return nc.AddNodeListIDs(ids...)
 }
 
 // AddEdgeTypeIDs adds the "edge_types" edge to the EdgeType entity by IDs.
@@ -649,12 +645,12 @@ func (nc *NodeCreate) createSpec() (*Node, *sqlgraph.CreateSpec) {
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := nc.mutation.NodeListIDs(); len(nodes) > 0 {
+	if nodes := nc.mutation.NodeListsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.M2M,
 			Inverse: true,
-			Table:   node.NodeListTable,
-			Columns: []string{node.NodeListColumn},
+			Table:   node.NodeListsTable,
+			Columns: node.NodeListsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(nodelist.FieldID, field.TypeInt),
@@ -663,7 +659,6 @@ func (nc *NodeCreate) createSpec() (*Node, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.NodeListID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := nc.mutation.EdgeTypesIDs(); len(nodes) > 0 {
@@ -689,7 +684,7 @@ func (nc *NodeCreate) createSpec() (*Node, *sqlgraph.CreateSpec) {
 // of the `INSERT` statement. For example:
 //
 //	client.Node.Create().
-//		SetNodeListID(v).
+//		SetType(v).
 //		OnConflict(
 //			// Update the row with the new values
 //			// the was proposed for insertion.
@@ -698,7 +693,7 @@ func (nc *NodeCreate) createSpec() (*Node, *sqlgraph.CreateSpec) {
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.NodeUpsert) {
-//			SetNodeListID(v+v).
+//			SetType(v+v).
 //		}).
 //		Exec(ctx)
 func (nc *NodeCreate) OnConflict(opts ...sql.ConflictOption) *NodeUpsertOne {
@@ -733,24 +728,6 @@ type (
 		*sql.UpdateSet
 	}
 )
-
-// SetNodeListID sets the "node_list_id" field.
-func (u *NodeUpsert) SetNodeListID(v int) *NodeUpsert {
-	u.Set(node.FieldNodeListID, v)
-	return u
-}
-
-// UpdateNodeListID sets the "node_list_id" field to the value that was provided on create.
-func (u *NodeUpsert) UpdateNodeListID() *NodeUpsert {
-	u.SetExcluded(node.FieldNodeListID)
-	return u
-}
-
-// ClearNodeListID clears the value of the "node_list_id" field.
-func (u *NodeUpsert) ClearNodeListID() *NodeUpsert {
-	u.SetNull(node.FieldNodeListID)
-	return u
-}
 
 // SetType sets the "type" field.
 func (u *NodeUpsert) SetType(v node.Type) *NodeUpsert {
@@ -1026,27 +1003,6 @@ func (u *NodeUpsertOne) Update(set func(*NodeUpsert)) *NodeUpsertOne {
 		set(&NodeUpsert{UpdateSet: update})
 	}))
 	return u
-}
-
-// SetNodeListID sets the "node_list_id" field.
-func (u *NodeUpsertOne) SetNodeListID(v int) *NodeUpsertOne {
-	return u.Update(func(s *NodeUpsert) {
-		s.SetNodeListID(v)
-	})
-}
-
-// UpdateNodeListID sets the "node_list_id" field to the value that was provided on create.
-func (u *NodeUpsertOne) UpdateNodeListID() *NodeUpsertOne {
-	return u.Update(func(s *NodeUpsert) {
-		s.UpdateNodeListID()
-	})
-}
-
-// ClearNodeListID clears the value of the "node_list_id" field.
-func (u *NodeUpsertOne) ClearNodeListID() *NodeUpsertOne {
-	return u.Update(func(s *NodeUpsert) {
-		s.ClearNodeListID()
-	})
 }
 
 // SetType sets the "type" field.
@@ -1450,7 +1406,7 @@ func (ncb *NodeCreateBulk) ExecX(ctx context.Context) {
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.NodeUpsert) {
-//			SetNodeListID(v+v).
+//			SetType(v+v).
 //		}).
 //		Exec(ctx)
 func (ncb *NodeCreateBulk) OnConflict(opts ...sql.ConflictOption) *NodeUpsertBulk {
@@ -1527,27 +1483,6 @@ func (u *NodeUpsertBulk) Update(set func(*NodeUpsert)) *NodeUpsertBulk {
 		set(&NodeUpsert{UpdateSet: update})
 	}))
 	return u
-}
-
-// SetNodeListID sets the "node_list_id" field.
-func (u *NodeUpsertBulk) SetNodeListID(v int) *NodeUpsertBulk {
-	return u.Update(func(s *NodeUpsert) {
-		s.SetNodeListID(v)
-	})
-}
-
-// UpdateNodeListID sets the "node_list_id" field to the value that was provided on create.
-func (u *NodeUpsertBulk) UpdateNodeListID() *NodeUpsertBulk {
-	return u.Update(func(s *NodeUpsert) {
-		s.UpdateNodeListID()
-	})
-}
-
-// ClearNodeListID clears the value of the "node_list_id" field.
-func (u *NodeUpsertBulk) ClearNodeListID() *NodeUpsertBulk {
-	return u.Update(func(s *NodeUpsert) {
-		s.ClearNodeListID()
-	})
 }
 
 // SetType sets the "type" field.
