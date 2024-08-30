@@ -19,6 +19,7 @@ var (
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "name", Type: field.TypeString},
 		{Name: "value", Type: field.TypeString},
+		{Name: "is_unique", Type: field.TypeBool, Default: false},
 		{Name: "document_id", Type: field.TypeString},
 	}
 	// AnnotationsTable holds the schema information for the "annotations" table.
@@ -29,23 +30,23 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "annotations_documents_annotations",
-				Columns:    []*schema.Column{AnnotationsColumns[3]},
+				Columns:    []*schema.Column{AnnotationsColumns[4]},
 				RefColumns: []*schema.Column{DocumentsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "idx_annotation",
+				Name:    "idx_annotations",
 				Unique:  true,
-				Columns: []*schema.Column{AnnotationsColumns[3], AnnotationsColumns[1], AnnotationsColumns[2]},
+				Columns: []*schema.Column{AnnotationsColumns[4], AnnotationsColumns[1], AnnotationsColumns[2]},
 			},
 			{
-				Name:    "idx_document_alias",
+				Name:    "idx_document_unique_annotations",
 				Unique:  true,
-				Columns: []*schema.Column{AnnotationsColumns[3], AnnotationsColumns[1]},
+				Columns: []*schema.Column{AnnotationsColumns[4], AnnotationsColumns[1]},
 				Annotation: &entsql.IndexAnnotation{
-					Where: "name = 'alias'",
+					Where: "is_unique = true",
 				},
 			},
 		},

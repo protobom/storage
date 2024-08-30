@@ -7,6 +7,7 @@
 package ent
 
 import (
+	"github.com/protobom/storage/internal/backends/ent/annotation"
 	"github.com/protobom/storage/internal/backends/ent/metadata"
 	"github.com/protobom/storage/internal/backends/ent/node"
 	"github.com/protobom/storage/internal/backends/ent/schema"
@@ -16,6 +17,12 @@ import (
 // (default values, validators, hooks and policies) and stitches it
 // to their package variables.
 func init() {
+	annotationFields := schema.Annotation{}.Fields()
+	_ = annotationFields
+	// annotationDescIsUnique is the schema descriptor for is_unique field.
+	annotationDescIsUnique := annotationFields[3].Descriptor()
+	// annotation.DefaultIsUnique holds the default value on creation for the is_unique field.
+	annotation.DefaultIsUnique = annotationDescIsUnique.Default.(bool)
 	metadataFields := schema.Metadata{}.Fields()
 	_ = metadataFields
 	// metadataDescID is the schema descriptor for id field.

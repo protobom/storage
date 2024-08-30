@@ -22,6 +22,8 @@ func (Annotation) Fields() []ent.Field {
 		field.String("document_id"),
 		field.String("name"),
 		field.String("value"),
+		field.Bool("is_unique").
+			Default(false),
 	}
 }
 
@@ -39,10 +41,10 @@ func (Annotation) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Fields("document_id", "name", "value").
 			Unique().
-			StorageKey("idx_annotation"),
+			StorageKey("idx_annotations"),
 		index.Fields("document_id", "name").
 			Unique().
-			Annotations(entsql.IndexWhere("name = 'alias'")).
-			StorageKey("idx_document_alias"),
+			Annotations(entsql.IndexWhere("is_unique = true")).
+			StorageKey("idx_document_unique_annotations"),
 	}
 }

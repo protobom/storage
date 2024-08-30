@@ -73,6 +73,11 @@ func Value(v string) predicate.Annotation {
 	return predicate.Annotation(sql.FieldEQ(FieldValue, v))
 }
 
+// IsUnique applies equality check predicate on the "is_unique" field. It's identical to IsUniqueEQ.
+func IsUnique(v bool) predicate.Annotation {
+	return predicate.Annotation(sql.FieldEQ(FieldIsUnique, v))
+}
+
 // DocumentIDEQ applies the EQ predicate on the "document_id" field.
 func DocumentIDEQ(v string) predicate.Annotation {
 	return predicate.Annotation(sql.FieldEQ(FieldDocumentID, v))
@@ -266,6 +271,16 @@ func ValueEqualFold(v string) predicate.Annotation {
 // ValueContainsFold applies the ContainsFold predicate on the "value" field.
 func ValueContainsFold(v string) predicate.Annotation {
 	return predicate.Annotation(sql.FieldContainsFold(FieldValue, v))
+}
+
+// IsUniqueEQ applies the EQ predicate on the "is_unique" field.
+func IsUniqueEQ(v bool) predicate.Annotation {
+	return predicate.Annotation(sql.FieldEQ(FieldIsUnique, v))
+}
+
+// IsUniqueNEQ applies the NEQ predicate on the "is_unique" field.
+func IsUniqueNEQ(v bool) predicate.Annotation {
+	return predicate.Annotation(sql.FieldNEQ(FieldIsUnique, v))
 }
 
 // HasDocument applies the HasEdge predicate on the "document" edge.

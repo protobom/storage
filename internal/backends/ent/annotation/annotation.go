@@ -23,6 +23,8 @@ const (
 	FieldName = "name"
 	// FieldValue holds the string denoting the value field in the database.
 	FieldValue = "value"
+	// FieldIsUnique holds the string denoting the is_unique field in the database.
+	FieldIsUnique = "is_unique"
 	// EdgeDocument holds the string denoting the document edge name in mutations.
 	EdgeDocument = "document"
 	// Table holds the table name of the annotation in the database.
@@ -42,6 +44,7 @@ var Columns = []string{
 	FieldDocumentID,
 	FieldName,
 	FieldValue,
+	FieldIsUnique,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -53,6 +56,11 @@ func ValidColumn(column string) bool {
 	}
 	return false
 }
+
+var (
+	// DefaultIsUnique holds the default value on creation for the "is_unique" field.
+	DefaultIsUnique bool
+)
 
 // OrderOption defines the ordering options for the Annotation queries.
 type OrderOption func(*sql.Selector)
@@ -75,6 +83,11 @@ func ByName(opts ...sql.OrderTermOption) OrderOption {
 // ByValue orders the results by the value field.
 func ByValue(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldValue, opts...).ToFunc()
+}
+
+// ByIsUnique orders the results by the is_unique field.
+func ByIsUnique(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldIsUnique, opts...).ToFunc()
 }
 
 // ByDocumentField orders the results by document field.
