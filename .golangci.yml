@@ -35,6 +35,7 @@ linters:
   enable:
     - asciicheck
     - bodyclose
+    - copyloopvar
     - cyclop
     - dogsled
     - dupl
@@ -43,7 +44,6 @@ linters:
     - errorlint
     - err113
     - exhaustive
-    - exportloopref
     - forbidigo
     - forcetypeassert
     - funlen
