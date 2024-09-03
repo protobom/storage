@@ -51,15 +51,15 @@ func (backend *Backend) Retrieve(id string, _ *storage.RetrieveOptions) (doc *sb
 func (backend *Backend) GetDocumentsByID(ids ...string) ([]*sbom.Document, error) {
 	documents := []*sbom.Document{}
 
-	query := backend.client.Document.Query().
-		WithMetadata().
-		WithNodeList()
-
-	if len(ids) > 0 {
-		query.Where(document.IDIn(ids...))
+	if len(ids) == 0 {
+		return documents, nil
 	}
 
-	entDocs, err := query.All(backend.ctx)
+	entDocs, err := backend.client.Document.Query().
+		WithMetadata().
+		WithNodeList().
+		Where(document.IDIn(ids...)).
+		All(backend.ctx)
 	if err != nil {
 		return nil, fmt.Errorf("querying documents table: %w", err)
 	}
