@@ -103,6 +103,10 @@ func (backend *Backend) GetDocumentsByAnnotation(name string, values ...string) 
 		return nil, fmt.Errorf("querying documents table: %w", err)
 	}
 
+	if len(ids) == 0 {
+		return []*sbom.Document{}, nil
+	}
+
 	return backend.GetDocumentsByID(ids...)
 }
 
