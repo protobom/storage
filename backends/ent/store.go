@@ -8,6 +8,7 @@ package ent
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	"github.com/protobom/protobom/pkg/sbom"
 	"github.com/protobom/protobom/pkg/storage"
@@ -50,10 +51,11 @@ func (backend *Backend) Store(doc *sbom.Document, opts *storage.StoreOptions) er
 	}
 
 	// Append annotations from opts parameter with any previously set on the backend.
-	backend.Options.Annotations = append(backend.Options.Annotations, backendOpts.Annotations...)
+	annotations := slices.Concat(backend.Options.Annotations, backendOpts.Annotations)
+	clear(backend.Options.Annotations)
 
 	// Set each annotation's document ID if not specified.
-	for _, a := range backend.Options.Annotations {
+	for _, a := range annotations {
 		if a.DocumentID == "" {
 			a.DocumentID = doc.Metadata.Id
 		}
@@ -67,7 +69,7 @@ func (backend *Backend) Store(doc *sbom.Document, opts *storage.StoreOptions) er
 				Ignore().
 				Exec(backend.ctx)
 		},
-		backend.saveAnnotations(backend.Options.Annotations...),
+		backend.saveAnnotations(annotations...),
 		backend.saveMetadata(doc.Metadata),
 		backend.saveNodeList(doc.NodeList),
 	)
