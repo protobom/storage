@@ -16,39 +16,6 @@ import (
 	"github.com/protobom/storage/internal/backends/ent/predicate"
 )
 
-func (backend *Backend) createAnnotations(data ...*ent.Annotation) error {
-	tx, err := backend.txClient()
-	if err != nil {
-		return err
-	}
-
-	builders := []*ent.AnnotationCreate{}
-
-	for idx := range data {
-		builder := tx.Annotation.Create().
-			SetDocumentID(data[idx].DocumentID).
-			SetName(data[idx].Name).
-			SetValue(data[idx].Value).
-			SetIsUnique(data[idx].IsUnique)
-
-		builders = append(builders, builder)
-	}
-
-	err = tx.Annotation.CreateBulk(builders...).
-		OnConflict().
-		UpdateNewValues().
-		Exec(backend.ctx)
-	if err != nil && !ent.IsConstraintError(err) {
-		return rollback(tx, fmt.Errorf("creating annotations: %w", err))
-	}
-
-	if err := tx.Commit(); err != nil {
-		return rollback(tx, err)
-	}
-
-	return nil
-}
-
 // AddAnnotations applies multiple named annotation values to a single document.
 func (backend *Backend) AddAnnotations(documentID, name string, values ...string) error {
 	data := ent.Annotations{}
@@ -60,7 +27,7 @@ func (backend *Backend) AddAnnotations(documentID, name string, values ...string
 		})
 	}
 
-	return backend.createAnnotations(data...)
+	return backend.withTx(backend.saveAnnotations(data...))
 }
 
 // AddAnnotationToDocuments applies a single named annotation value to multiple documents.
@@ -74,7 +41,7 @@ func (backend *Backend) AddAnnotationToDocuments(name, value string, documentIDs
 		})
 	}
 
-	return backend.createAnnotations(data...)
+	return backend.withTx(backend.saveAnnotations(data...))
 }
 
 // ClearAnnotations removes all annotations from the specified documents.
@@ -83,21 +50,14 @@ func (backend *Backend) ClearAnnotations(documentIDs ...string) error {
 		return nil
 	}
 
-	tx, err := backend.txClient()
-	if err != nil {
-		return err
-	}
+	return backend.withTx(func(tx *ent.Tx) error {
+		_, err := tx.Annotation.Delete().Where(annotation.DocumentIDIn(documentIDs...)).Exec(backend.ctx)
+		if err != nil {
+			return fmt.Errorf("clearing annotations: %w", err)
+		}
 
-	_, err = tx.Annotation.Delete().Where(annotation.DocumentIDIn(documentIDs...)).Exec(backend.ctx)
-	if err != nil {
-		return rollback(tx, fmt.Errorf("clearing annotations: %w", err))
-	}
-
-	if err := tx.Commit(); err != nil {
-		return rollback(tx, err)
-	}
-
-	return nil
+		return nil
+	})
 }
 
 // GetDocumentAnnotations gets all annotations for the specified
@@ -143,6 +103,10 @@ func (backend *Backend) GetDocumentsByAnnotation(name string, values ...string) 
 		return nil, fmt.Errorf("querying documents table: %w", err)
 	}
 
+	if len(ids) == 0 {
+		return []*sbom.Document{}, nil
+	}
+
 	return backend.GetDocumentsByID(ids...)
 }
 
@@ -173,29 +137,23 @@ func (backend *Backend) GetDocumentUniqueAnnotation(documentID, name string) (st
 // RemoveAnnotations removes all annotations with the specified name from
 // the document, limited to a set of annotation values if specified.
 func (backend *Backend) RemoveAnnotations(documentID, name string, values ...string) error {
-	tx, err := backend.txClient()
-	if err != nil {
-		return err
-	}
+	return backend.withTx(
+		func(tx *ent.Tx) error {
+			predicates := []predicate.Annotation{
+				annotation.DocumentIDEQ(documentID),
+				annotation.NameEQ(name),
+			}
 
-	predicates := []predicate.Annotation{
-		annotation.DocumentIDEQ(documentID),
-		annotation.NameEQ(name),
-	}
+			if len(values) > 0 {
+				predicates = append(predicates, annotation.ValueIn(values...))
+			}
 
-	if len(values) > 0 {
-		predicates = append(predicates, annotation.ValueIn(values...))
-	}
+			if _, err := tx.Annotation.Delete().Where(predicates...).Exec(backend.ctx); err != nil {
+				return fmt.Errorf("removing annotations: %w", err)
+			}
 
-	if _, err := tx.Annotation.Delete().Where(predicates...).Exec(backend.ctx); err != nil {
-		return rollback(tx, fmt.Errorf("removing annotations: %w", err))
-	}
-
-	if err := tx.Commit(); err != nil {
-		return rollback(tx, err)
-	}
-
-	return nil
+			return nil
+		})
 }
 
 // SetAnnotations explicitly sets the named annotations for the specified document.
@@ -209,10 +167,12 @@ func (backend *Backend) SetAnnotations(documentID, name string, values ...string
 
 // SetUniqueAnnotation sets a named annotation value that is unique to the specified document.
 func (backend *Backend) SetUniqueAnnotation(documentID, name, value string) error {
-	return backend.createAnnotations(&ent.Annotation{
-		DocumentID: documentID,
-		Name:       name,
-		Value:      value,
-		IsUnique:   true,
-	})
+	return backend.withTx(
+		backend.saveAnnotations(&ent.Annotation{
+			DocumentID: documentID,
+			Name:       name,
+			Value:      value,
+			IsUnique:   true,
+		}),
+	)
 }

@@ -81,6 +81,22 @@ func (backend *Backend) Debug() *Backend {
 	return backend
 }
 
+func (backend *Backend) WithAnnotation(name, value string, unique bool) *Backend {
+	backend.Options.Annotations = append(backend.Options.Annotations, &Annotation{
+		Name:     name,
+		Value:    value,
+		IsUnique: unique,
+	})
+
+	return backend
+}
+
+func (backend *Backend) WithAnnotations(annotations Annotations) *Backend {
+	backend.Options.Annotations = append(backend.Options.Annotations, annotations...)
+
+	return backend
+}
+
 func (backend *Backend) WithBackendOptions(opts *BackendOptions) *Backend {
 	backend.Options = opts
 
@@ -93,17 +109,31 @@ func (backend *Backend) WithDatabaseFile(file string) *Backend {
 	return backend
 }
 
-func (backend *Backend) txClient() (*ent.Tx, error) {
+func (backend *Backend) withTx(fns ...txFunc) error {
 	if backend.client == nil {
-		return nil, fmt.Errorf("%w", errUninitializedClient)
+		return fmt.Errorf("%w", errUninitializedClient)
 	}
 
 	tx, err := backend.client.Tx(backend.ctx)
 	if err != nil {
-		return nil, fmt.Errorf("creating transactional client: %w", err)
+		return fmt.Errorf("creating transactional client: %w", err)
 	}
 
 	backend.ctx = ent.NewTxContext(backend.ctx, tx)
 
-	return tx, nil
+	for _, fn := range fns {
+		if err := fn(tx); err != nil {
+			if rollbackErr := tx.Rollback(); rollbackErr != nil {
+				err = fmt.Errorf("%w: rolling back transaction: %w", err, rollbackErr)
+			}
+
+			return err
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("committing transaction: %w", err)
+	}
+
+	return nil
 }
