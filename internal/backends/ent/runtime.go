@@ -33,6 +33,10 @@ func init() {
 	annotationDescDocumentID := annotationMixinFields0[0].Descriptor()
 	// annotation.DefaultDocumentID holds the default value on creation for the document_id field.
 	annotation.DefaultDocumentID = annotationDescDocumentID.Default.(func() uuid.UUID)
+	// annotationDescIsUnique is the schema descriptor for is_unique field.
+	annotationDescIsUnique := annotationFields[2].Descriptor()
+	// annotation.DefaultIsUnique holds the default value on creation for the is_unique field.
+	annotation.DefaultIsUnique = annotationDescIsUnique.Default.(bool)
 	documenttypeMixin := schema.DocumentType{}.Mixin()
 	documenttypeMixinFields0 := documenttypeMixin[0].Fields()
 	_ = documenttypeMixinFields0

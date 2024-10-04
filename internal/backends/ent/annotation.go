@@ -28,6 +28,8 @@ type Annotation struct {
 	Name string `json:"name,omitempty"`
 	// Value holds the value of the "value" field.
 	Value string `json:"value,omitempty"`
+	// IsUnique holds the value of the "is_unique" field.
+	IsUnique bool `json:"is_unique,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the AnnotationQuery when eager-loading is set.
 	Edges                AnnotationEdges `json:"edges"`
@@ -60,6 +62,8 @@ func (*Annotation) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case annotation.FieldIsUnique:
+			values[i] = new(sql.NullBool)
 		case annotation.FieldID:
 			values[i] = new(sql.NullInt64)
 		case annotation.FieldName, annotation.FieldValue:
@@ -106,6 +110,12 @@ func (a *Annotation) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field value", values[i])
 			} else if value.Valid {
 				a.Value = value.String
+			}
+		case annotation.FieldIsUnique:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field is_unique", values[i])
+			} else if value.Valid {
+				a.IsUnique = value.Bool
 			}
 		case annotation.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
@@ -163,6 +173,9 @@ func (a *Annotation) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("value=")
 	builder.WriteString(a.Value)
+	builder.WriteString(", ")
+	builder.WriteString("is_unique=")
+	builder.WriteString(fmt.Sprintf("%v", a.IsUnique))
 	builder.WriteByte(')')
 	return builder.String()
 }

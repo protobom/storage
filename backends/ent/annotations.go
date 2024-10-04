@@ -13,60 +13,29 @@ import (
 	"github.com/protobom/storage/internal/backends/ent"
 	"github.com/protobom/storage/internal/backends/ent/annotation"
 	"github.com/protobom/storage/internal/backends/ent/document"
+	"github.com/protobom/storage/internal/backends/ent/predicate"
 )
-
-func (backend *Backend) createAnnotations(data ...*ent.Annotation) error {
-	tx, err := backend.txClient()
-	if err != nil {
-		return err
-	}
-
-	builders := []*ent.AnnotationCreate{}
-
-	for idx := range data {
-		builder := tx.Annotation.Create().
-			SetDocumentID(data[idx].DocumentID).
-			SetName(data[idx].Name).
-			SetValue(data[idx].Value)
-
-		builders = append(builders, builder)
-	}
-
-	err = tx.Annotation.CreateBulk(builders...).
-		OnConflict().
-		UpdateNewValues().
-		Exec(backend.ctx)
-	if err != nil && !ent.IsConstraintError(err) {
-		return rollback(tx, fmt.Errorf("creating annotations: %w", err))
-	}
-
-	if err := tx.Commit(); err != nil {
-		return rollback(tx, err)
-	}
-
-	return nil
-}
 
 // AddAnnotations applies multiple named annotation values to a single document.
 func (backend *Backend) AddAnnotations(documentID, name string, values ...string) error {
 	data := ent.Annotations{}
 
-	doc, err := backend.client.Document.Query().
+	documentUUID, err := backend.client.Document.Query().
 		Where(document.MetadataIDEQ(documentID)).
-		Only(backend.ctx)
+		OnlyID(backend.ctx)
 	if err != nil {
 		return fmt.Errorf("querying documents: %w", err)
 	}
 
 	for _, value := range values {
 		data = append(data, &ent.Annotation{
-			DocumentID: doc.ID,
+			DocumentID: documentUUID,
 			Name:       name,
 			Value:      value,
 		})
 	}
 
-	return backend.createAnnotations(data...)
+	return backend.withTx(backend.saveAnnotations(data...))
 }
 
 // AddAnnotationToDocuments applies a single named annotation value to multiple documents.
@@ -74,68 +43,38 @@ func (backend *Backend) AddAnnotationToDocuments(name, value string, documentIDs
 	data := ent.Annotations{}
 
 	for _, documentID := range documentIDs {
-		doc, err := backend.client.Document.Query().
+		documentUUID, err := backend.client.Document.Query().
 			Where(document.MetadataIDEQ(documentID)).
-			Only(backend.ctx)
+			OnlyID(backend.ctx)
 		if err != nil {
 			return fmt.Errorf("querying documents: %w", err)
 		}
 
 		data = append(data, &ent.Annotation{
-			DocumentID: doc.ID,
+			DocumentID: documentUUID,
 			Name:       name,
 			Value:      value,
 		})
 	}
 
-	return backend.createAnnotations(data...)
+	return backend.withTx(backend.saveAnnotations(data...))
 }
 
 // ClearAnnotations removes all annotations from the specified documents.
 func (backend *Backend) ClearAnnotations(documentIDs ...string) error {
-	tx, err := backend.txClient()
-	if err != nil {
-		return err
+	if len(documentIDs) == 0 {
+		return nil
 	}
 
-	_, err = tx.Annotation.Delete().
-		Where(annotation.HasDocumentWith(document.MetadataIDIn(documentIDs...))).
-		Exec(backend.ctx)
-	if err != nil {
-		return rollback(tx, fmt.Errorf("clearing annotations: %w", err))
-	}
-
-	if err := tx.Commit(); err != nil {
-		return rollback(tx, err)
-	}
-
-	return nil
-}
-
-// GetDocumentAlias gets the value for the annotation named "alias".
-func (backend *Backend) GetDocumentAlias(documentID string) (string, error) {
-	if backend.client == nil {
-		return "", errUninitializedClient
-	}
-
-	query := backend.client.Annotation.Query().
-		Where(
-			annotation.And(
-				annotation.HasDocumentWith(document.MetadataIDEQ(documentID)),
-				annotation.NameEQ("alias"),
-			),
-		)
-
-	result, err := query.Only(backend.ctx)
-	if err != nil {
-		if ent.IsNotFound(err) {
-			return "", nil
+	return backend.withTx(func(tx *ent.Tx) error {
+		if _, err := tx.Annotation.Delete().
+			Where(annotation.HasDocumentWith(document.MetadataIDIn(documentIDs...))).
+			Exec(backend.ctx); err != nil {
+			return fmt.Errorf("clearing annotations: %w", err)
 		}
 
-		return "", fmt.Errorf("retrieving document alias: %w", err)
-	}
-
-	return result.Value, nil
+		return nil
+	})
 }
 
 // GetDocumentAnnotations gets all annotations for the specified
@@ -145,14 +84,15 @@ func (backend *Backend) GetDocumentAnnotations(documentID string, names ...strin
 		return nil, errUninitializedClient
 	}
 
-	query := backend.client.Annotation.Query().
-		Where(annotation.HasDocumentWith(document.MetadataIDEQ(documentID)))
-
-	if len(names) > 0 {
-		query.Where(annotation.NameIn(names...))
+	predicates := []predicate.Annotation{
+		annotation.HasDocumentWith(document.MetadataIDEQ(documentID)),
 	}
 
-	annotations, err := query.All(backend.ctx)
+	if len(names) > 0 {
+		predicates = append(predicates, annotation.NameIn(names...))
+	}
+
+	annotations, err := backend.client.Annotation.Query().Where(predicates...).All(backend.ctx)
 	if err != nil {
 		return nil, fmt.Errorf("querying annotations: %w", err)
 	}
@@ -167,59 +107,70 @@ func (backend *Backend) GetDocumentsByAnnotation(name string, values ...string) 
 		return nil, errUninitializedClient
 	}
 
-	ids, err := backend.client.Document.Query().
-		Where(
-			document.HasAnnotationsWith(
-				annotation.And(
-					annotation.NameEQ(name),
-					annotation.ValueIn(values...),
-				),
-			),
-		).
-		QueryMetadata().
-		IDs(backend.ctx)
+	predicates := []predicate.Document{
+		document.HasAnnotationsWith(annotation.NameEQ(name)),
+	}
+
+	if len(values) > 0 {
+		predicates = append(predicates, document.HasAnnotationsWith(annotation.ValueIn(values...)))
+	}
+
+	ids, err := backend.client.Document.Query().Where(predicates...).QueryMetadata().IDs(backend.ctx)
 	if err != nil {
 		return nil, fmt.Errorf("querying documents table: %w", err)
+	}
+
+	if len(ids) == 0 {
+		return []*sbom.Document{}, nil
 	}
 
 	return backend.GetDocumentsByID(ids...)
 }
 
+// GetDocumentUniqueAnnotation gets the value for a unique annotation.
+func (backend *Backend) GetDocumentUniqueAnnotation(documentID, name string) (string, error) {
+	if backend.client == nil {
+		return "", errUninitializedClient
+	}
+
+	result, err := backend.client.Annotation.Query().
+		Where(
+			annotation.HasDocumentWith(document.MetadataIDEQ(documentID)),
+			annotation.NameEQ(name),
+			annotation.IsUniqueEQ(true),
+		).
+		Only(backend.ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return "", nil
+		}
+
+		return "", fmt.Errorf("retrieving unique annotation for document: %w", err)
+	}
+
+	return result.Value, nil
+}
+
 // RemoveAnnotations removes all annotations with the specified name from
 // the document, limited to a set of annotation values if specified.
 func (backend *Backend) RemoveAnnotations(documentID, name string, values ...string) error {
-	tx, err := backend.txClient()
-	if err != nil {
-		return err
-	}
-
-	_, err = tx.Annotation.Delete().
-		Where(
-			annotation.And(
+	return backend.withTx(
+		func(tx *ent.Tx) error {
+			predicates := []predicate.Annotation{
 				annotation.HasDocumentWith(document.MetadataIDEQ(documentID)),
 				annotation.NameEQ(name),
-				annotation.ValueIn(values...),
-			),
-		).
-		Exec(backend.ctx)
-	if err != nil {
-		return rollback(tx, fmt.Errorf("removing annotations: %w", err))
-	}
+			}
 
-	if err := tx.Commit(); err != nil {
-		return rollback(tx, err)
-	}
+			if len(values) > 0 {
+				predicates = append(predicates, annotation.ValueIn(values...))
+			}
 
-	return nil
-}
+			if _, err := tx.Annotation.Delete().Where(predicates...).Exec(backend.ctx); err != nil {
+				return fmt.Errorf("removing annotations: %w", err)
+			}
 
-// SetDocumentAlias set the value for the annotation named "alias".
-func (backend *Backend) SetDocumentAlias(documentID, value string) error {
-	if err := backend.RemoveAnnotations(documentID, "alias"); err != nil {
-		return err
-	}
-
-	return backend.AddAnnotations(documentID, "alias", value)
+			return nil
+		})
 }
 
 // SetAnnotations explicitly sets the named annotations for the specified document.
@@ -229,4 +180,23 @@ func (backend *Backend) SetAnnotations(documentID, name string, values ...string
 	}
 
 	return backend.AddAnnotations(documentID, name, values...)
+}
+
+// SetUniqueAnnotation sets a named annotation value that is unique to the specified document.
+func (backend *Backend) SetUniqueAnnotation(documentID, name, value string) error {
+	documentUUID, err := backend.client.Document.Query().
+		Where(document.MetadataIDEQ(documentID)).
+		OnlyID(backend.ctx)
+	if err != nil {
+		return fmt.Errorf("%w", err)
+	}
+
+	return backend.withTx(
+		backend.saveAnnotations(&ent.Annotation{
+			DocumentID: documentUUID,
+			Name:       name,
+			Value:      value,
+			IsUnique:   true,
+		}),
+	)
 }

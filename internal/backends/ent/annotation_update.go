@@ -59,6 +59,20 @@ func (au *AnnotationUpdate) SetNillableValue(s *string) *AnnotationUpdate {
 	return au
 }
 
+// SetIsUnique sets the "is_unique" field.
+func (au *AnnotationUpdate) SetIsUnique(b bool) *AnnotationUpdate {
+	au.mutation.SetIsUnique(b)
+	return au
+}
+
+// SetNillableIsUnique sets the "is_unique" field if the given value is not nil.
+func (au *AnnotationUpdate) SetNillableIsUnique(b *bool) *AnnotationUpdate {
+	if b != nil {
+		au.SetIsUnique(*b)
+	}
+	return au
+}
+
 // Mutation returns the AnnotationMutation object of the builder.
 func (au *AnnotationUpdate) Mutation() *AnnotationMutation {
 	return au.mutation
@@ -106,6 +120,9 @@ func (au *AnnotationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := au.mutation.Value(); ok {
 		_spec.SetField(annotation.FieldValue, field.TypeString, value)
 	}
+	if value, ok := au.mutation.IsUnique(); ok {
+		_spec.SetField(annotation.FieldIsUnique, field.TypeBool, value)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, au.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{annotation.Label}
@@ -150,6 +167,20 @@ func (auo *AnnotationUpdateOne) SetValue(s string) *AnnotationUpdateOne {
 func (auo *AnnotationUpdateOne) SetNillableValue(s *string) *AnnotationUpdateOne {
 	if s != nil {
 		auo.SetValue(*s)
+	}
+	return auo
+}
+
+// SetIsUnique sets the "is_unique" field.
+func (auo *AnnotationUpdateOne) SetIsUnique(b bool) *AnnotationUpdateOne {
+	auo.mutation.SetIsUnique(b)
+	return auo
+}
+
+// SetNillableIsUnique sets the "is_unique" field if the given value is not nil.
+func (auo *AnnotationUpdateOne) SetNillableIsUnique(b *bool) *AnnotationUpdateOne {
+	if b != nil {
+		auo.SetIsUnique(*b)
 	}
 	return auo
 }
@@ -230,6 +261,9 @@ func (auo *AnnotationUpdateOne) sqlSave(ctx context.Context) (_node *Annotation,
 	}
 	if value, ok := auo.mutation.Value(); ok {
 		_spec.SetField(annotation.FieldValue, field.TypeString, value)
+	}
+	if value, ok := auo.mutation.IsUnique(); ok {
+		_spec.SetField(annotation.FieldIsUnique, field.TypeBool, value)
 	}
 	_node = &Annotation{config: auo.config}
 	_spec.Assign = _node.assignValues

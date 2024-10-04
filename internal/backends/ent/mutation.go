@@ -61,6 +61,7 @@ type AnnotationMutation struct {
 	id              *int
 	name            *string
 	value           *string
+	is_unique       *bool
 	clearedFields   map[string]struct{}
 	document        *uuid.UUID
 	cleareddocument bool
@@ -288,6 +289,42 @@ func (m *AnnotationMutation) ResetValue() {
 	m.value = nil
 }
 
+// SetIsUnique sets the "is_unique" field.
+func (m *AnnotationMutation) SetIsUnique(b bool) {
+	m.is_unique = &b
+}
+
+// IsUnique returns the value of the "is_unique" field in the mutation.
+func (m *AnnotationMutation) IsUnique() (r bool, exists bool) {
+	v := m.is_unique
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldIsUnique returns the old "is_unique" field's value of the Annotation entity.
+// If the Annotation object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AnnotationMutation) OldIsUnique(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldIsUnique is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldIsUnique requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldIsUnique: %w", err)
+	}
+	return oldValue.IsUnique, nil
+}
+
+// ResetIsUnique resets all changes to the "is_unique" field.
+func (m *AnnotationMutation) ResetIsUnique() {
+	m.is_unique = nil
+}
+
 // ClearDocument clears the "document" edge to the Document entity.
 func (m *AnnotationMutation) ClearDocument() {
 	m.cleareddocument = true
@@ -349,7 +386,7 @@ func (m *AnnotationMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *AnnotationMutation) Fields() []string {
-	fields := make([]string, 0, 3)
+	fields := make([]string, 0, 4)
 	if m.document != nil {
 		fields = append(fields, annotation.FieldDocumentID)
 	}
@@ -358,6 +395,9 @@ func (m *AnnotationMutation) Fields() []string {
 	}
 	if m.value != nil {
 		fields = append(fields, annotation.FieldValue)
+	}
+	if m.is_unique != nil {
+		fields = append(fields, annotation.FieldIsUnique)
 	}
 	return fields
 }
@@ -373,6 +413,8 @@ func (m *AnnotationMutation) Field(name string) (ent.Value, bool) {
 		return m.Name()
 	case annotation.FieldValue:
 		return m.Value()
+	case annotation.FieldIsUnique:
+		return m.IsUnique()
 	}
 	return nil, false
 }
@@ -388,6 +430,8 @@ func (m *AnnotationMutation) OldField(ctx context.Context, name string) (ent.Val
 		return m.OldName(ctx)
 	case annotation.FieldValue:
 		return m.OldValue(ctx)
+	case annotation.FieldIsUnique:
+		return m.OldIsUnique(ctx)
 	}
 	return nil, fmt.Errorf("unknown Annotation field %s", name)
 }
@@ -417,6 +461,13 @@ func (m *AnnotationMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetValue(v)
+		return nil
+	case annotation.FieldIsUnique:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetIsUnique(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Annotation field %s", name)
@@ -484,6 +535,9 @@ func (m *AnnotationMutation) ResetField(name string) error {
 		return nil
 	case annotation.FieldValue:
 		m.ResetValue()
+		return nil
+	case annotation.FieldIsUnique:
+		m.ResetIsUnique()
 		return nil
 	}
 	return fmt.Errorf("unknown Annotation field %s", name)

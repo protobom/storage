@@ -53,6 +53,20 @@ func (ac *AnnotationCreate) SetValue(s string) *AnnotationCreate {
 	return ac
 }
 
+// SetIsUnique sets the "is_unique" field.
+func (ac *AnnotationCreate) SetIsUnique(b bool) *AnnotationCreate {
+	ac.mutation.SetIsUnique(b)
+	return ac
+}
+
+// SetNillableIsUnique sets the "is_unique" field if the given value is not nil.
+func (ac *AnnotationCreate) SetNillableIsUnique(b *bool) *AnnotationCreate {
+	if b != nil {
+		ac.SetIsUnique(*b)
+	}
+	return ac
+}
+
 // SetDocument sets the "document" edge to the Document entity.
 func (ac *AnnotationCreate) SetDocument(d *Document) *AnnotationCreate {
 	return ac.SetDocumentID(d.ID)
@@ -97,6 +111,10 @@ func (ac *AnnotationCreate) defaults() {
 		v := annotation.DefaultDocumentID()
 		ac.mutation.SetDocumentID(v)
 	}
+	if _, ok := ac.mutation.IsUnique(); !ok {
+		v := annotation.DefaultIsUnique
+		ac.mutation.SetIsUnique(v)
+	}
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -106,6 +124,9 @@ func (ac *AnnotationCreate) check() error {
 	}
 	if _, ok := ac.mutation.Value(); !ok {
 		return &ValidationError{Name: "value", err: errors.New(`ent: missing required field "Annotation.value"`)}
+	}
+	if _, ok := ac.mutation.IsUnique(); !ok {
+		return &ValidationError{Name: "is_unique", err: errors.New(`ent: missing required field "Annotation.is_unique"`)}
 	}
 	return nil
 }
@@ -141,6 +162,10 @@ func (ac *AnnotationCreate) createSpec() (*Annotation, *sqlgraph.CreateSpec) {
 	if value, ok := ac.mutation.Value(); ok {
 		_spec.SetField(annotation.FieldValue, field.TypeString, value)
 		_node.Value = value
+	}
+	if value, ok := ac.mutation.IsUnique(); ok {
+		_spec.SetField(annotation.FieldIsUnique, field.TypeBool, value)
+		_node.IsUnique = value
 	}
 	if nodes := ac.mutation.DocumentIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -235,6 +260,18 @@ func (u *AnnotationUpsert) UpdateValue() *AnnotationUpsert {
 	return u
 }
 
+// SetIsUnique sets the "is_unique" field.
+func (u *AnnotationUpsert) SetIsUnique(v bool) *AnnotationUpsert {
+	u.Set(annotation.FieldIsUnique, v)
+	return u
+}
+
+// UpdateIsUnique sets the "is_unique" field to the value that was provided on create.
+func (u *AnnotationUpsert) UpdateIsUnique() *AnnotationUpsert {
+	u.SetExcluded(annotation.FieldIsUnique)
+	return u
+}
+
 // UpdateNewValues updates the mutable fields using the new values that were set on create.
 // Using this option is equivalent to using:
 //
@@ -305,6 +342,20 @@ func (u *AnnotationUpsertOne) SetValue(v string) *AnnotationUpsertOne {
 func (u *AnnotationUpsertOne) UpdateValue() *AnnotationUpsertOne {
 	return u.Update(func(s *AnnotationUpsert) {
 		s.UpdateValue()
+	})
+}
+
+// SetIsUnique sets the "is_unique" field.
+func (u *AnnotationUpsertOne) SetIsUnique(v bool) *AnnotationUpsertOne {
+	return u.Update(func(s *AnnotationUpsert) {
+		s.SetIsUnique(v)
+	})
+}
+
+// UpdateIsUnique sets the "is_unique" field to the value that was provided on create.
+func (u *AnnotationUpsertOne) UpdateIsUnique() *AnnotationUpsertOne {
+	return u.Update(func(s *AnnotationUpsert) {
+		s.UpdateIsUnique()
 	})
 }
 
@@ -544,6 +595,20 @@ func (u *AnnotationUpsertBulk) SetValue(v string) *AnnotationUpsertBulk {
 func (u *AnnotationUpsertBulk) UpdateValue() *AnnotationUpsertBulk {
 	return u.Update(func(s *AnnotationUpsert) {
 		s.UpdateValue()
+	})
+}
+
+// SetIsUnique sets the "is_unique" field.
+func (u *AnnotationUpsertBulk) SetIsUnique(v bool) *AnnotationUpsertBulk {
+	return u.Update(func(s *AnnotationUpsert) {
+		s.SetIsUnique(v)
+	})
+}
+
+// UpdateIsUnique sets the "is_unique" field to the value that was provided on create.
+func (u *AnnotationUpsertBulk) UpdateIsUnique() *AnnotationUpsertBulk {
+	return u.Update(func(s *AnnotationUpsert) {
+		s.UpdateIsUnique()
 	})
 }
 
