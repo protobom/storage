@@ -3,6 +3,7 @@
 // SPDX-FileType: SOURCE
 // SPDX-License-Identifier: Apache-2.0
 // --------------------------------------------------------------
+
 package schema
 
 import (
@@ -24,13 +25,8 @@ func (EdgeType) Mixin() []ent.Mixin {
 }
 
 func (EdgeType) Fields() []ent.Field {
-	values := []string{}
-	for idx := range len(sbom.Edge_Type_name) {
-		values = append(values, sbom.Edge_Type_name[int32(idx)])
-	}
-
 	return []ent.Field{
-		field.Enum("type").Values(values...),
+		field.Enum("type").Values(enumValues(new(sbom.Edge_Type))...),
 		field.String("node_id"),
 		field.String("to_node_id"),
 	}

@@ -3,6 +3,7 @@
 // SPDX-FileType: SOURCE
 // SPDX-License-Identifier: Apache-2.0
 // --------------------------------------------------------------
+
 package schema
 
 import (
@@ -13,6 +14,7 @@ import (
 	"entgo.io/ent/schema/mixin"
 	"github.com/google/uuid"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
 type (
@@ -61,4 +63,16 @@ func (UUIDMixin) Fields() []ent.Field {
 			Immutable().
 			Annotations(schema.Comment("Unique identifier field")),
 	}
+}
+
+// enumValues returns the values of a protobuf enum type deterministically, preserving their order.
+func enumValues(enum protoreflect.Enum) []string {
+	values := []string{}
+
+	enumValues := enum.Descriptor().Values()
+	for idx := range enumValues.Len() {
+		values = append(values, string(enumValues.Get(idx).Name()))
+	}
+
+	return values
 }

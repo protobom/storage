@@ -4,6 +4,7 @@
 // SPDX-FileType: SOURCE
 // SPDX-License-Identifier: Apache-2.0
 // --------------------------------------------------------------
+
 package ent
 
 import (

@@ -3,6 +3,7 @@
 // SPDX-FileType: SOURCE
 // SPDX-License-Identifier: Apache-2.0
 // --------------------------------------------------------------
+
 package schema
 
 import (
@@ -24,14 +25,9 @@ func (Purpose) Mixin() []ent.Mixin {
 }
 
 func (Purpose) Fields() []ent.Field {
-	values := []string{}
-	for idx := range len(sbom.Purpose_name) {
-		values = append(values, sbom.Purpose_name[int32(idx)])
-	}
-
 	return []ent.Field{
 		field.String("node_id").Optional(),
-		field.Enum("primary_purpose").Values(values...),
+		field.Enum("primary_purpose").Values(enumValues(new(sbom.Purpose))...),
 	}
 }
 

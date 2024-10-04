@@ -3,6 +3,7 @@
 // SPDX-FileType: SOURCE
 // SPDX-License-Identifier: Apache-2.0
 // --------------------------------------------------------------
+
 package schema
 
 import (
@@ -26,14 +27,12 @@ func (DocumentType) Mixin() []ent.Mixin {
 }
 
 func (DocumentType) Fields() []ent.Field {
-	values := []string{}
-	for idx := range len(sbom.DocumentType_SBOMType_name) {
-		values = append(values, sbom.DocumentType_SBOMType_name[int32(idx)])
-	}
-
 	return []ent.Field{
 		field.String("metadata_id").Optional(),
-		field.Enum("type").Values(values...).Optional().Nillable(),
+		field.Enum("type").
+			Values(enumValues(new(sbom.DocumentType_SBOMType))...).
+			Optional().
+			Nillable(),
 		field.String("name").Optional().Nillable(),
 		field.String("description").Optional().Nillable(),
 	}

@@ -3,6 +3,7 @@
 // SPDX-FileType: SOURCE
 // SPDX-License-Identifier: Apache-2.0
 // --------------------------------------------------------------
+
 package schema
 
 import (
@@ -26,17 +27,13 @@ func (ExternalReference) Mixin() []ent.Mixin {
 }
 
 func (ExternalReference) Fields() []ent.Field {
-	values := []string{}
-	for idx := range len(sbom.ExternalReference_ExternalReferenceType_name) {
-		values = append(values, sbom.ExternalReference_ExternalReferenceType_name[int32(idx)])
-	}
-
 	return []ent.Field{
 		field.String("node_id").Optional(),
 		field.String("url"),
 		field.String("comment"),
 		field.String("authority").Optional(),
-		field.Enum("type").Values(values...),
+		field.Enum("type").
+			Values(enumValues(new(sbom.ExternalReference_ExternalReferenceType))...),
 		field.JSON("hashes", map[int32]string{}).Optional(),
 	}
 }

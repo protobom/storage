@@ -3,6 +3,7 @@
 // SPDX-FileType: SOURCE
 // SPDX-License-Identifier: Apache-2.0
 // --------------------------------------------------------------
+
 package ent
 
 import (
@@ -435,14 +436,6 @@ func (backend *Backend) setNodeID(builder interface{ SetNodeID(string) }) {
 	if nodeID, ok := backend.ctx.Value(nodeIDKey{}).(string); ok {
 		builder.SetNodeID(nodeID)
 	}
-}
-
-func rollback(tx *ent.Tx, err error) error {
-	if rollbackErr := tx.Rollback(); rollbackErr != nil {
-		return fmt.Errorf("rolling back transaction: %w", rollbackErr)
-	}
-
-	return err
 }
 
 func uuidFromHash(msg proto.Message) (uuid.UUID, error) {
