@@ -75,7 +75,6 @@ func (backend *Backend) Store(doc *sbom.Document, opts *storage.StoreOptions) er
 		func(tx *ent.Tx) error {
 			return tx.Document.Create().
 				SetID(id).
-				SetProtoMessage(doc).
 				OnConflict().
 				Ignore().
 				Exec(backend.ctx)

@@ -267,10 +267,10 @@ func (mu *MetadataUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 	}
 	if value, ok := mu.mutation.ProtoMessage(); ok {
-		_spec.SetField(metadata.FieldProtoMessage, field.TypeJSON, value)
+		_spec.SetField(metadata.FieldProtoMessage, field.TypeBytes, value)
 	}
 	if mu.mutation.ProtoMessageCleared() {
-		_spec.ClearField(metadata.FieldProtoMessage, field.TypeJSON)
+		_spec.ClearField(metadata.FieldProtoMessage, field.TypeBytes)
 	}
 	if value, ok := mu.mutation.Version(); ok {
 		_spec.SetField(metadata.FieldVersion, field.TypeString, value)
@@ -698,10 +698,10 @@ func (muo *MetadataUpdateOne) sqlSave(ctx context.Context) (_node *Metadata, err
 		}
 	}
 	if value, ok := muo.mutation.ProtoMessage(); ok {
-		_spec.SetField(metadata.FieldProtoMessage, field.TypeJSON, value)
+		_spec.SetField(metadata.FieldProtoMessage, field.TypeBytes, value)
 	}
 	if muo.mutation.ProtoMessageCleared() {
-		_spec.ClearField(metadata.FieldProtoMessage, field.TypeJSON)
+		_spec.ClearField(metadata.FieldProtoMessage, field.TypeBytes)
 	}
 	if value, ok := muo.mutation.Version(); ok {
 		_spec.SetField(metadata.FieldVersion, field.TypeString, value)

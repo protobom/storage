@@ -283,10 +283,10 @@ func (pu *PersonUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 	}
 	if value, ok := pu.mutation.ProtoMessage(); ok {
-		_spec.SetField(person.FieldProtoMessage, field.TypeJSON, value)
+		_spec.SetField(person.FieldProtoMessage, field.TypeBytes, value)
 	}
 	if pu.mutation.ProtoMessageCleared() {
-		_spec.ClearField(person.FieldProtoMessage, field.TypeJSON)
+		_spec.ClearField(person.FieldProtoMessage, field.TypeBytes)
 	}
 	if value, ok := pu.mutation.Name(); ok {
 		_spec.SetField(person.FieldName, field.TypeString, value)
@@ -732,10 +732,10 @@ func (puo *PersonUpdateOne) sqlSave(ctx context.Context) (_node *Person, err err
 		}
 	}
 	if value, ok := puo.mutation.ProtoMessage(); ok {
-		_spec.SetField(person.FieldProtoMessage, field.TypeJSON, value)
+		_spec.SetField(person.FieldProtoMessage, field.TypeBytes, value)
 	}
 	if puo.mutation.ProtoMessageCleared() {
-		_spec.ClearField(person.FieldProtoMessage, field.TypeJSON)
+		_spec.ClearField(person.FieldProtoMessage, field.TypeBytes)
 	}
 	if value, ok := puo.mutation.Name(); ok {
 		_spec.SetField(person.FieldName, field.TypeString, value)

@@ -188,7 +188,7 @@ func (tc *ToolCreate) createSpec() (*Tool, *sqlgraph.CreateSpec) {
 		_spec.ID.Value = &id
 	}
 	if value, ok := tc.mutation.ProtoMessage(); ok {
-		_spec.SetField(tool.FieldProtoMessage, field.TypeJSON, value)
+		_spec.SetField(tool.FieldProtoMessage, field.TypeBytes, value)
 		_node.ProtoMessage = value
 	}
 	if value, ok := tc.mutation.Name(); ok {

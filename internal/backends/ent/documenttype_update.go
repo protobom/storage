@@ -192,10 +192,10 @@ func (dtu *DocumentTypeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 	}
 	if value, ok := dtu.mutation.ProtoMessage(); ok {
-		_spec.SetField(documenttype.FieldProtoMessage, field.TypeJSON, value)
+		_spec.SetField(documenttype.FieldProtoMessage, field.TypeBytes, value)
 	}
 	if dtu.mutation.ProtoMessageCleared() {
-		_spec.ClearField(documenttype.FieldProtoMessage, field.TypeJSON)
+		_spec.ClearField(documenttype.FieldProtoMessage, field.TypeBytes)
 	}
 	if value, ok := dtu.mutation.GetType(); ok {
 		_spec.SetField(documenttype.FieldType, field.TypeEnum, value)
@@ -452,10 +452,10 @@ func (dtuo *DocumentTypeUpdateOne) sqlSave(ctx context.Context) (_node *Document
 		}
 	}
 	if value, ok := dtuo.mutation.ProtoMessage(); ok {
-		_spec.SetField(documenttype.FieldProtoMessage, field.TypeJSON, value)
+		_spec.SetField(documenttype.FieldProtoMessage, field.TypeBytes, value)
 	}
 	if dtuo.mutation.ProtoMessageCleared() {
-		_spec.ClearField(documenttype.FieldProtoMessage, field.TypeJSON)
+		_spec.ClearField(documenttype.FieldProtoMessage, field.TypeBytes)
 	}
 	if value, ok := dtuo.mutation.GetType(); ok {
 		_spec.SetField(documenttype.FieldType, field.TypeEnum, value)

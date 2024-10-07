@@ -8,7 +8,6 @@
 package ent
 
 import (
-	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -100,7 +99,7 @@ func (*Metadata) scanValues(columns []string) ([]any, error) {
 	for i := range columns {
 		switch columns[i] {
 		case metadata.FieldProtoMessage:
-			values[i] = new([]byte)
+			values[i] = new(sbom.Metadata)
 		case metadata.FieldID, metadata.FieldVersion, metadata.FieldName, metadata.FieldComment:
 			values[i] = new(sql.NullString)
 		case metadata.FieldDate:
@@ -127,12 +126,10 @@ func (m *Metadata) assignValues(columns []string, values []any) error {
 				m.ID = value.String
 			}
 		case metadata.FieldProtoMessage:
-			if value, ok := values[i].(*[]byte); !ok {
+			if value, ok := values[i].(*sbom.Metadata); !ok {
 				return fmt.Errorf("unexpected type %T for field proto_message", values[i])
-			} else if value != nil && len(*value) > 0 {
-				if err := json.Unmarshal(*value, &m.ProtoMessage); err != nil {
-					return fmt.Errorf("unmarshal field proto_message: %w", err)
-				}
+			} else if value != nil {
+				m.ProtoMessage = value
 			}
 		case metadata.FieldVersion:
 			if value, ok := values[i].(*sql.NullString); !ok {

@@ -260,7 +260,7 @@ func (pc *PersonCreate) createSpec() (*Person, *sqlgraph.CreateSpec) {
 		_spec.ID.Value = &id
 	}
 	if value, ok := pc.mutation.ProtoMessage(); ok {
-		_spec.SetField(person.FieldProtoMessage, field.TypeJSON, value)
+		_spec.SetField(person.FieldProtoMessage, field.TypeBytes, value)
 		_node.ProtoMessage = value
 	}
 	if value, ok := pc.mutation.Name(); ok {

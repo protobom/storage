@@ -12,7 +12,6 @@ import (
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
 	"github.com/google/uuid"
-	"github.com/protobom/protobom/pkg/sbom"
 )
 
 type Document struct {
@@ -21,7 +20,6 @@ type Document struct {
 
 func (Document) Mixin() []ent.Mixin {
 	return []ent.Mixin{
-		ProtoMessageMixin{ProtoMessageType: &sbom.Document{}},
 		UUIDMixin{},
 	}
 }

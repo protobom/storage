@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/google/uuid"
+	"github.com/protobom/protobom/pkg/sbom"
 	"github.com/protobom/storage/internal/backends/ent/predicate"
 )
 
@@ -64,6 +65,11 @@ func DocumentID(v uuid.UUID) predicate.Tool {
 	return predicate.Tool(sql.FieldEQ(FieldDocumentID, v))
 }
 
+// ProtoMessage applies equality check predicate on the "proto_message" field. It's identical to ProtoMessageEQ.
+func ProtoMessage(v *sbom.Tool) predicate.Tool {
+	return predicate.Tool(sql.FieldEQ(FieldProtoMessage, v))
+}
+
 // MetadataID applies equality check predicate on the "metadata_id" field. It's identical to MetadataIDEQ.
 func MetadataID(v string) predicate.Tool {
 	return predicate.Tool(sql.FieldEQ(FieldMetadataID, v))
@@ -112,6 +118,46 @@ func DocumentIDIsNil() predicate.Tool {
 // DocumentIDNotNil applies the NotNil predicate on the "document_id" field.
 func DocumentIDNotNil() predicate.Tool {
 	return predicate.Tool(sql.FieldNotNull(FieldDocumentID))
+}
+
+// ProtoMessageEQ applies the EQ predicate on the "proto_message" field.
+func ProtoMessageEQ(v *sbom.Tool) predicate.Tool {
+	return predicate.Tool(sql.FieldEQ(FieldProtoMessage, v))
+}
+
+// ProtoMessageNEQ applies the NEQ predicate on the "proto_message" field.
+func ProtoMessageNEQ(v *sbom.Tool) predicate.Tool {
+	return predicate.Tool(sql.FieldNEQ(FieldProtoMessage, v))
+}
+
+// ProtoMessageIn applies the In predicate on the "proto_message" field.
+func ProtoMessageIn(vs ...*sbom.Tool) predicate.Tool {
+	return predicate.Tool(sql.FieldIn(FieldProtoMessage, vs...))
+}
+
+// ProtoMessageNotIn applies the NotIn predicate on the "proto_message" field.
+func ProtoMessageNotIn(vs ...*sbom.Tool) predicate.Tool {
+	return predicate.Tool(sql.FieldNotIn(FieldProtoMessage, vs...))
+}
+
+// ProtoMessageGT applies the GT predicate on the "proto_message" field.
+func ProtoMessageGT(v *sbom.Tool) predicate.Tool {
+	return predicate.Tool(sql.FieldGT(FieldProtoMessage, v))
+}
+
+// ProtoMessageGTE applies the GTE predicate on the "proto_message" field.
+func ProtoMessageGTE(v *sbom.Tool) predicate.Tool {
+	return predicate.Tool(sql.FieldGTE(FieldProtoMessage, v))
+}
+
+// ProtoMessageLT applies the LT predicate on the "proto_message" field.
+func ProtoMessageLT(v *sbom.Tool) predicate.Tool {
+	return predicate.Tool(sql.FieldLT(FieldProtoMessage, v))
+}
+
+// ProtoMessageLTE applies the LTE predicate on the "proto_message" field.
+func ProtoMessageLTE(v *sbom.Tool) predicate.Tool {
+	return predicate.Tool(sql.FieldLTE(FieldProtoMessage, v))
 }
 
 // ProtoMessageIsNil applies the IsNil predicate on the "proto_message" field.

@@ -21,7 +21,7 @@ type Tool struct {
 func (Tool) Mixin() []ent.Mixin {
 	return []ent.Mixin{
 		DocumentMixin{},
-		ProtoMessageMixin{ProtoMessageType: &sbom.Tool{}},
+		ProtoMessageMixin[*sbom.Tool]{},
 		UUIDMixin{},
 	}
 }

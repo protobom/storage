@@ -22,9 +22,8 @@ type (
 		mixin.Schema
 	}
 
-	ProtoMessageMixin struct {
+	ProtoMessageMixin[T proto.Message] struct {
 		mixin.Schema
-		ProtoMessageType proto.Message
 	}
 
 	UUIDMixin struct {
@@ -50,9 +49,11 @@ func (DocumentMixin) Edges() []ent.Edge {
 	}
 }
 
-func (m ProtoMessageMixin) Fields() []ent.Field {
+func (m ProtoMessageMixin[T]) Fields() []ent.Field {
+	var goType T
+
 	return []ent.Field{
-		field.JSON("proto_message", m.ProtoMessageType).Optional(),
+		field.Bytes("proto_message").GoType(goType).Optional(),
 	}
 }
 

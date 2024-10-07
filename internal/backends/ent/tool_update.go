@@ -161,10 +161,10 @@ func (tu *ToolUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 	}
 	if value, ok := tu.mutation.ProtoMessage(); ok {
-		_spec.SetField(tool.FieldProtoMessage, field.TypeJSON, value)
+		_spec.SetField(tool.FieldProtoMessage, field.TypeBytes, value)
 	}
 	if tu.mutation.ProtoMessageCleared() {
-		_spec.ClearField(tool.FieldProtoMessage, field.TypeJSON)
+		_spec.ClearField(tool.FieldProtoMessage, field.TypeBytes)
 	}
 	if value, ok := tu.mutation.Name(); ok {
 		_spec.SetField(tool.FieldName, field.TypeString, value)
@@ -381,10 +381,10 @@ func (tuo *ToolUpdateOne) sqlSave(ctx context.Context) (_node *Tool, err error) 
 		}
 	}
 	if value, ok := tuo.mutation.ProtoMessage(); ok {
-		_spec.SetField(tool.FieldProtoMessage, field.TypeJSON, value)
+		_spec.SetField(tool.FieldProtoMessage, field.TypeBytes, value)
 	}
 	if tuo.mutation.ProtoMessageCleared() {
-		_spec.ClearField(tool.FieldProtoMessage, field.TypeJSON)
+		_spec.ClearField(tool.FieldProtoMessage, field.TypeBytes)
 	}
 	if value, ok := tuo.mutation.Name(); ok {
 		_spec.SetField(tool.FieldName, field.TypeString, value)

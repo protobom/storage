@@ -217,7 +217,7 @@ func (mc *MetadataCreate) createSpec() (*Metadata, *sqlgraph.CreateSpec) {
 		_spec.ID.Value = id
 	}
 	if value, ok := mc.mutation.ProtoMessage(); ok {
-		_spec.SetField(metadata.FieldProtoMessage, field.TypeJSON, value)
+		_spec.SetField(metadata.FieldProtoMessage, field.TypeBytes, value)
 		_node.ProtoMessage = value
 	}
 	if value, ok := mc.mutation.Version(); ok {

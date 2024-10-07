@@ -624,7 +624,6 @@ type DocumentMutation struct {
 	op                 Op
 	typ                string
 	id                 *uuid.UUID
-	proto_message      **sbom.Document
 	clearedFields      map[string]struct{}
 	annotations        map[int]struct{}
 	removedannotations map[int]struct{}
@@ -740,55 +739,6 @@ func (m *DocumentMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
 	default:
 		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
 	}
-}
-
-// SetProtoMessage sets the "proto_message" field.
-func (m *DocumentMutation) SetProtoMessage(s *sbom.Document) {
-	m.proto_message = &s
-}
-
-// ProtoMessage returns the value of the "proto_message" field in the mutation.
-func (m *DocumentMutation) ProtoMessage() (r *sbom.Document, exists bool) {
-	v := m.proto_message
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldProtoMessage returns the old "proto_message" field's value of the Document entity.
-// If the Document object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *DocumentMutation) OldProtoMessage(ctx context.Context) (v *sbom.Document, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldProtoMessage is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldProtoMessage requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldProtoMessage: %w", err)
-	}
-	return oldValue.ProtoMessage, nil
-}
-
-// ClearProtoMessage clears the value of the "proto_message" field.
-func (m *DocumentMutation) ClearProtoMessage() {
-	m.proto_message = nil
-	m.clearedFields[document.FieldProtoMessage] = struct{}{}
-}
-
-// ProtoMessageCleared returns if the "proto_message" field was cleared in this mutation.
-func (m *DocumentMutation) ProtoMessageCleared() bool {
-	_, ok := m.clearedFields[document.FieldProtoMessage]
-	return ok
-}
-
-// ResetProtoMessage resets all changes to the "proto_message" field.
-func (m *DocumentMutation) ResetProtoMessage() {
-	m.proto_message = nil
-	delete(m.clearedFields, document.FieldProtoMessage)
 }
 
 // SetMetadataID sets the "metadata_id" field.
@@ -1031,10 +981,7 @@ func (m *DocumentMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *DocumentMutation) Fields() []string {
-	fields := make([]string, 0, 3)
-	if m.proto_message != nil {
-		fields = append(fields, document.FieldProtoMessage)
-	}
+	fields := make([]string, 0, 2)
 	if m.metadata != nil {
 		fields = append(fields, document.FieldMetadataID)
 	}
@@ -1049,8 +996,6 @@ func (m *DocumentMutation) Fields() []string {
 // schema.
 func (m *DocumentMutation) Field(name string) (ent.Value, bool) {
 	switch name {
-	case document.FieldProtoMessage:
-		return m.ProtoMessage()
 	case document.FieldMetadataID:
 		return m.MetadataID()
 	case document.FieldNodeListID:
@@ -1064,8 +1009,6 @@ func (m *DocumentMutation) Field(name string) (ent.Value, bool) {
 // database failed.
 func (m *DocumentMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
 	switch name {
-	case document.FieldProtoMessage:
-		return m.OldProtoMessage(ctx)
 	case document.FieldMetadataID:
 		return m.OldMetadataID(ctx)
 	case document.FieldNodeListID:
@@ -1079,13 +1022,6 @@ func (m *DocumentMutation) OldField(ctx context.Context, name string) (ent.Value
 // type.
 func (m *DocumentMutation) SetField(name string, value ent.Value) error {
 	switch name {
-	case document.FieldProtoMessage:
-		v, ok := value.(*sbom.Document)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetProtoMessage(v)
-		return nil
 	case document.FieldMetadataID:
 		v, ok := value.(string)
 		if !ok {
@@ -1130,9 +1066,6 @@ func (m *DocumentMutation) AddField(name string, value ent.Value) error {
 // mutation.
 func (m *DocumentMutation) ClearedFields() []string {
 	var fields []string
-	if m.FieldCleared(document.FieldProtoMessage) {
-		fields = append(fields, document.FieldProtoMessage)
-	}
 	if m.FieldCleared(document.FieldMetadataID) {
 		fields = append(fields, document.FieldMetadataID)
 	}
@@ -1153,9 +1086,6 @@ func (m *DocumentMutation) FieldCleared(name string) bool {
 // error if the field is not defined in the schema.
 func (m *DocumentMutation) ClearField(name string) error {
 	switch name {
-	case document.FieldProtoMessage:
-		m.ClearProtoMessage()
-		return nil
 	case document.FieldMetadataID:
 		m.ClearMetadataID()
 		return nil
@@ -1170,9 +1100,6 @@ func (m *DocumentMutation) ClearField(name string) error {
 // It returns an error if the field is not defined in the schema.
 func (m *DocumentMutation) ResetField(name string) error {
 	switch name {
-	case document.FieldProtoMessage:
-		m.ResetProtoMessage()
-		return nil
 	case document.FieldMetadataID:
 		m.ResetMetadataID()
 		return nil

@@ -206,10 +206,10 @@ func (eru *ExternalReferenceUpdate) sqlSave(ctx context.Context) (n int, err err
 		}
 	}
 	if value, ok := eru.mutation.ProtoMessage(); ok {
-		_spec.SetField(externalreference.FieldProtoMessage, field.TypeJSON, value)
+		_spec.SetField(externalreference.FieldProtoMessage, field.TypeBytes, value)
 	}
 	if eru.mutation.ProtoMessageCleared() {
-		_spec.ClearField(externalreference.FieldProtoMessage, field.TypeJSON)
+		_spec.ClearField(externalreference.FieldProtoMessage, field.TypeBytes)
 	}
 	if value, ok := eru.mutation.URL(); ok {
 		_spec.SetField(externalreference.FieldURL, field.TypeString, value)
@@ -483,10 +483,10 @@ func (eruo *ExternalReferenceUpdateOne) sqlSave(ctx context.Context) (_node *Ext
 		}
 	}
 	if value, ok := eruo.mutation.ProtoMessage(); ok {
-		_spec.SetField(externalreference.FieldProtoMessage, field.TypeJSON, value)
+		_spec.SetField(externalreference.FieldProtoMessage, field.TypeBytes, value)
 	}
 	if eruo.mutation.ProtoMessageCleared() {
-		_spec.ClearField(externalreference.FieldProtoMessage, field.TypeJSON)
+		_spec.ClearField(externalreference.FieldProtoMessage, field.TypeBytes)
 	}
 	if value, ok := eruo.mutation.URL(); ok {
 		_spec.SetField(externalreference.FieldURL, field.TypeString, value)

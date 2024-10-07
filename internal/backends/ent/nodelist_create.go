@@ -152,7 +152,7 @@ func (nlc *NodeListCreate) createSpec() (*NodeList, *sqlgraph.CreateSpec) {
 		_spec.ID.Value = &id
 	}
 	if value, ok := nlc.mutation.ProtoMessage(); ok {
-		_spec.SetField(nodelist.FieldProtoMessage, field.TypeJSON, value)
+		_spec.SetField(nodelist.FieldProtoMessage, field.TypeBytes, value)
 		_node.ProtoMessage = value
 	}
 	if value, ok := nlc.mutation.RootElements(); ok {

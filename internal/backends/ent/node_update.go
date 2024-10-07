@@ -700,10 +700,10 @@ func (nu *NodeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 	}
 	if value, ok := nu.mutation.ProtoMessage(); ok {
-		_spec.SetField(node.FieldProtoMessage, field.TypeJSON, value)
+		_spec.SetField(node.FieldProtoMessage, field.TypeBytes, value)
 	}
 	if nu.mutation.ProtoMessageCleared() {
-		_spec.ClearField(node.FieldProtoMessage, field.TypeJSON)
+		_spec.ClearField(node.FieldProtoMessage, field.TypeBytes)
 	}
 	if value, ok := nu.mutation.NodeListID(); ok {
 		_spec.SetField(node.FieldNodeListID, field.TypeUUID, value)
@@ -1876,10 +1876,10 @@ func (nuo *NodeUpdateOne) sqlSave(ctx context.Context) (_node *Node, err error) 
 		}
 	}
 	if value, ok := nuo.mutation.ProtoMessage(); ok {
-		_spec.SetField(node.FieldProtoMessage, field.TypeJSON, value)
+		_spec.SetField(node.FieldProtoMessage, field.TypeBytes, value)
 	}
 	if nuo.mutation.ProtoMessageCleared() {
-		_spec.ClearField(node.FieldProtoMessage, field.TypeJSON)
+		_spec.ClearField(node.FieldProtoMessage, field.TypeBytes)
 	}
 	if value, ok := nuo.mutation.NodeListID(); ok {
 		_spec.SetField(node.FieldNodeListID, field.TypeUUID, value)

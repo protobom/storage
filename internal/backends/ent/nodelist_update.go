@@ -148,10 +148,10 @@ func (nlu *NodeListUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 	}
 	if value, ok := nlu.mutation.ProtoMessage(); ok {
-		_spec.SetField(nodelist.FieldProtoMessage, field.TypeJSON, value)
+		_spec.SetField(nodelist.FieldProtoMessage, field.TypeBytes, value)
 	}
 	if nlu.mutation.ProtoMessageCleared() {
-		_spec.ClearField(nodelist.FieldProtoMessage, field.TypeJSON)
+		_spec.ClearField(nodelist.FieldProtoMessage, field.TypeBytes)
 	}
 	if value, ok := nlu.mutation.RootElements(); ok {
 		_spec.SetField(nodelist.FieldRootElements, field.TypeJSON, value)
@@ -369,10 +369,10 @@ func (nluo *NodeListUpdateOne) sqlSave(ctx context.Context) (_node *NodeList, er
 		}
 	}
 	if value, ok := nluo.mutation.ProtoMessage(); ok {
-		_spec.SetField(nodelist.FieldProtoMessage, field.TypeJSON, value)
+		_spec.SetField(nodelist.FieldProtoMessage, field.TypeBytes, value)
 	}
 	if nluo.mutation.ProtoMessageCleared() {
-		_spec.ClearField(nodelist.FieldProtoMessage, field.TypeJSON)
+		_spec.ClearField(nodelist.FieldProtoMessage, field.TypeBytes)
 	}
 	if value, ok := nluo.mutation.RootElements(); ok {
 		_spec.SetField(nodelist.FieldRootElements, field.TypeJSON, value)

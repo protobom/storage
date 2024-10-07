@@ -8,14 +8,12 @@
 package ent
 
 import (
-	"encoding/json"
 	"fmt"
 	"strings"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/google/uuid"
-	"github.com/protobom/protobom/pkg/sbom"
 	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/metadata"
 	"github.com/protobom/storage/internal/backends/ent/nodelist"
@@ -26,8 +24,6 @@ type Document struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID uuid.UUID `json:"id,omitempty"`
-	// ProtoMessage holds the value of the "proto_message" field.
-	ProtoMessage *sbom.Document `json:"proto_message,omitempty"`
 	// MetadataID holds the value of the "metadata_id" field.
 	MetadataID string `json:"metadata_id,omitempty"`
 	// NodeListID holds the value of the "node_list_id" field.
@@ -87,8 +83,6 @@ func (*Document) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case document.FieldProtoMessage:
-			values[i] = new([]byte)
 		case document.FieldMetadataID:
 			values[i] = new(sql.NullString)
 		case document.FieldID, document.FieldNodeListID:
@@ -113,14 +107,6 @@ func (d *Document) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value != nil {
 				d.ID = *value
-			}
-		case document.FieldProtoMessage:
-			if value, ok := values[i].(*[]byte); !ok {
-				return fmt.Errorf("unexpected type %T for field proto_message", values[i])
-			} else if value != nil && len(*value) > 0 {
-				if err := json.Unmarshal(*value, &d.ProtoMessage); err != nil {
-					return fmt.Errorf("unmarshal field proto_message: %w", err)
-				}
 			}
 		case document.FieldMetadataID:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -185,9 +171,6 @@ func (d *Document) String() string {
 	var builder strings.Builder
 	builder.WriteString("Document(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", d.ID))
-	builder.WriteString("proto_message=")
-	builder.WriteString(fmt.Sprintf("%v", d.ProtoMessage))
-	builder.WriteString(", ")
 	builder.WriteString("metadata_id=")
 	builder.WriteString(d.MetadataID)
 	builder.WriteString(", ")

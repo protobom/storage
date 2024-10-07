@@ -474,7 +474,7 @@ func (nc *NodeCreate) createSpec() (*Node, *sqlgraph.CreateSpec) {
 		_spec.ID.Value = id
 	}
 	if value, ok := nc.mutation.ProtoMessage(); ok {
-		_spec.SetField(node.FieldProtoMessage, field.TypeJSON, value)
+		_spec.SetField(node.FieldProtoMessage, field.TypeBytes, value)
 		_node.ProtoMessage = value
 	}
 	if value, ok := nc.mutation.NodeListID(); ok {

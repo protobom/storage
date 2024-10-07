@@ -17,8 +17,6 @@ const (
 	Label = "document"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
-	// FieldProtoMessage holds the string denoting the proto_message field in the database.
-	FieldProtoMessage = "proto_message"
 	// FieldMetadataID holds the string denoting the metadata_id field in the database.
 	FieldMetadataID = "metadata_id"
 	// FieldNodeListID holds the string denoting the node_list_id field in the database.
@@ -57,7 +55,6 @@ const (
 // Columns holds all SQL columns for document fields.
 var Columns = []string{
 	FieldID,
-	FieldProtoMessage,
 	FieldMetadataID,
 	FieldNodeListID,
 }

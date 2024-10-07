@@ -21,7 +21,7 @@ type DocumentType struct {
 func (DocumentType) Mixin() []ent.Mixin {
 	return []ent.Mixin{
 		DocumentMixin{},
-		ProtoMessageMixin{ProtoMessageType: &sbom.DocumentType{}},
+		ProtoMessageMixin[*sbom.DocumentType]{},
 		UUIDMixin{},
 	}
 }

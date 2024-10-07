@@ -17,7 +17,6 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
-	"github.com/protobom/protobom/pkg/sbom"
 	"github.com/protobom/storage/internal/backends/ent/annotation"
 	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/metadata"
@@ -30,12 +29,6 @@ type DocumentCreate struct {
 	mutation *DocumentMutation
 	hooks    []Hook
 	conflict []sql.ConflictOption
-}
-
-// SetProtoMessage sets the "proto_message" field.
-func (dc *DocumentCreate) SetProtoMessage(s *sbom.Document) *DocumentCreate {
-	dc.mutation.SetProtoMessage(s)
-	return dc
 }
 
 // SetMetadataID sets the "metadata_id" field.
@@ -167,10 +160,6 @@ func (dc *DocumentCreate) createSpec() (*Document, *sqlgraph.CreateSpec) {
 		_node.ID = id
 		_spec.ID.Value = &id
 	}
-	if value, ok := dc.mutation.ProtoMessage(); ok {
-		_spec.SetField(document.FieldProtoMessage, field.TypeJSON, value)
-		_node.ProtoMessage = value
-	}
 	if nodes := dc.mutation.AnnotationsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
@@ -228,7 +217,7 @@ func (dc *DocumentCreate) createSpec() (*Document, *sqlgraph.CreateSpec) {
 // of the `INSERT` statement. For example:
 //
 //	client.Document.Create().
-//		SetProtoMessage(v).
+//		SetMetadataID(v).
 //		OnConflict(
 //			// Update the row with the new values
 //			// the was proposed for insertion.
@@ -237,7 +226,7 @@ func (dc *DocumentCreate) createSpec() (*Document, *sqlgraph.CreateSpec) {
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.DocumentUpsert) {
-//			SetProtoMessage(v+v).
+//			SetMetadataID(v+v).
 //		}).
 //		Exec(ctx)
 func (dc *DocumentCreate) OnConflict(opts ...sql.ConflictOption) *DocumentUpsertOne {
@@ -272,24 +261,6 @@ type (
 		*sql.UpdateSet
 	}
 )
-
-// SetProtoMessage sets the "proto_message" field.
-func (u *DocumentUpsert) SetProtoMessage(v *sbom.Document) *DocumentUpsert {
-	u.Set(document.FieldProtoMessage, v)
-	return u
-}
-
-// UpdateProtoMessage sets the "proto_message" field to the value that was provided on create.
-func (u *DocumentUpsert) UpdateProtoMessage() *DocumentUpsert {
-	u.SetExcluded(document.FieldProtoMessage)
-	return u
-}
-
-// ClearProtoMessage clears the value of the "proto_message" field.
-func (u *DocumentUpsert) ClearProtoMessage() *DocumentUpsert {
-	u.SetNull(document.FieldProtoMessage)
-	return u
-}
 
 // UpdateNewValues updates the mutable fields using the new values that were set on create except the ID field.
 // Using this option is equivalent to using:
@@ -343,27 +314,6 @@ func (u *DocumentUpsertOne) Update(set func(*DocumentUpsert)) *DocumentUpsertOne
 		set(&DocumentUpsert{UpdateSet: update})
 	}))
 	return u
-}
-
-// SetProtoMessage sets the "proto_message" field.
-func (u *DocumentUpsertOne) SetProtoMessage(v *sbom.Document) *DocumentUpsertOne {
-	return u.Update(func(s *DocumentUpsert) {
-		s.SetProtoMessage(v)
-	})
-}
-
-// UpdateProtoMessage sets the "proto_message" field to the value that was provided on create.
-func (u *DocumentUpsertOne) UpdateProtoMessage() *DocumentUpsertOne {
-	return u.Update(func(s *DocumentUpsert) {
-		s.UpdateProtoMessage()
-	})
-}
-
-// ClearProtoMessage clears the value of the "proto_message" field.
-func (u *DocumentUpsertOne) ClearProtoMessage() *DocumentUpsertOne {
-	return u.Update(func(s *DocumentUpsert) {
-		s.ClearProtoMessage()
-	})
 }
 
 // Exec executes the query.
@@ -501,7 +451,7 @@ func (dcb *DocumentCreateBulk) ExecX(ctx context.Context) {
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.DocumentUpsert) {
-//			SetProtoMessage(v+v).
+//			SetMetadataID(v+v).
 //		}).
 //		Exec(ctx)
 func (dcb *DocumentCreateBulk) OnConflict(opts ...sql.ConflictOption) *DocumentUpsertBulk {
@@ -584,27 +534,6 @@ func (u *DocumentUpsertBulk) Update(set func(*DocumentUpsert)) *DocumentUpsertBu
 		set(&DocumentUpsert{UpdateSet: update})
 	}))
 	return u
-}
-
-// SetProtoMessage sets the "proto_message" field.
-func (u *DocumentUpsertBulk) SetProtoMessage(v *sbom.Document) *DocumentUpsertBulk {
-	return u.Update(func(s *DocumentUpsert) {
-		s.SetProtoMessage(v)
-	})
-}
-
-// UpdateProtoMessage sets the "proto_message" field to the value that was provided on create.
-func (u *DocumentUpsertBulk) UpdateProtoMessage() *DocumentUpsertBulk {
-	return u.Update(func(s *DocumentUpsert) {
-		s.UpdateProtoMessage()
-	})
-}
-
-// ClearProtoMessage clears the value of the "proto_message" field.
-func (u *DocumentUpsertBulk) ClearProtoMessage() *DocumentUpsertBulk {
-	return u.Update(func(s *DocumentUpsert) {
-		s.ClearProtoMessage()
-	})
 }
 
 // Exec executes the query.

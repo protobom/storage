@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/google/uuid"
+	"github.com/protobom/protobom/pkg/sbom"
 	"github.com/protobom/storage/internal/backends/ent/predicate"
 )
 
@@ -64,6 +65,11 @@ func DocumentID(v uuid.UUID) predicate.DocumentType {
 	return predicate.DocumentType(sql.FieldEQ(FieldDocumentID, v))
 }
 
+// ProtoMessage applies equality check predicate on the "proto_message" field. It's identical to ProtoMessageEQ.
+func ProtoMessage(v *sbom.DocumentType) predicate.DocumentType {
+	return predicate.DocumentType(sql.FieldEQ(FieldProtoMessage, v))
+}
+
 // MetadataID applies equality check predicate on the "metadata_id" field. It's identical to MetadataIDEQ.
 func MetadataID(v string) predicate.DocumentType {
 	return predicate.DocumentType(sql.FieldEQ(FieldMetadataID, v))
@@ -107,6 +113,46 @@ func DocumentIDIsNil() predicate.DocumentType {
 // DocumentIDNotNil applies the NotNil predicate on the "document_id" field.
 func DocumentIDNotNil() predicate.DocumentType {
 	return predicate.DocumentType(sql.FieldNotNull(FieldDocumentID))
+}
+
+// ProtoMessageEQ applies the EQ predicate on the "proto_message" field.
+func ProtoMessageEQ(v *sbom.DocumentType) predicate.DocumentType {
+	return predicate.DocumentType(sql.FieldEQ(FieldProtoMessage, v))
+}
+
+// ProtoMessageNEQ applies the NEQ predicate on the "proto_message" field.
+func ProtoMessageNEQ(v *sbom.DocumentType) predicate.DocumentType {
+	return predicate.DocumentType(sql.FieldNEQ(FieldProtoMessage, v))
+}
+
+// ProtoMessageIn applies the In predicate on the "proto_message" field.
+func ProtoMessageIn(vs ...*sbom.DocumentType) predicate.DocumentType {
+	return predicate.DocumentType(sql.FieldIn(FieldProtoMessage, vs...))
+}
+
+// ProtoMessageNotIn applies the NotIn predicate on the "proto_message" field.
+func ProtoMessageNotIn(vs ...*sbom.DocumentType) predicate.DocumentType {
+	return predicate.DocumentType(sql.FieldNotIn(FieldProtoMessage, vs...))
+}
+
+// ProtoMessageGT applies the GT predicate on the "proto_message" field.
+func ProtoMessageGT(v *sbom.DocumentType) predicate.DocumentType {
+	return predicate.DocumentType(sql.FieldGT(FieldProtoMessage, v))
+}
+
+// ProtoMessageGTE applies the GTE predicate on the "proto_message" field.
+func ProtoMessageGTE(v *sbom.DocumentType) predicate.DocumentType {
+	return predicate.DocumentType(sql.FieldGTE(FieldProtoMessage, v))
+}
+
+// ProtoMessageLT applies the LT predicate on the "proto_message" field.
+func ProtoMessageLT(v *sbom.DocumentType) predicate.DocumentType {
+	return predicate.DocumentType(sql.FieldLT(FieldProtoMessage, v))
+}
+
+// ProtoMessageLTE applies the LTE predicate on the "proto_message" field.
+func ProtoMessageLTE(v *sbom.DocumentType) predicate.DocumentType {
+	return predicate.DocumentType(sql.FieldLTE(FieldProtoMessage, v))
 }
 
 // ProtoMessageIsNil applies the IsNil predicate on the "proto_message" field.

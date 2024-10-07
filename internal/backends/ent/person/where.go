@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/google/uuid"
+	"github.com/protobom/protobom/pkg/sbom"
 	"github.com/protobom/storage/internal/backends/ent/predicate"
 )
 
@@ -62,6 +63,11 @@ func IDLTE(id uuid.UUID) predicate.Person {
 // DocumentID applies equality check predicate on the "document_id" field. It's identical to DocumentIDEQ.
 func DocumentID(v uuid.UUID) predicate.Person {
 	return predicate.Person(sql.FieldEQ(FieldDocumentID, v))
+}
+
+// ProtoMessage applies equality check predicate on the "proto_message" field. It's identical to ProtoMessageEQ.
+func ProtoMessage(v *sbom.Person) predicate.Person {
+	return predicate.Person(sql.FieldEQ(FieldProtoMessage, v))
 }
 
 // MetadataID applies equality check predicate on the "metadata_id" field. It's identical to MetadataIDEQ.
@@ -127,6 +133,46 @@ func DocumentIDIsNil() predicate.Person {
 // DocumentIDNotNil applies the NotNil predicate on the "document_id" field.
 func DocumentIDNotNil() predicate.Person {
 	return predicate.Person(sql.FieldNotNull(FieldDocumentID))
+}
+
+// ProtoMessageEQ applies the EQ predicate on the "proto_message" field.
+func ProtoMessageEQ(v *sbom.Person) predicate.Person {
+	return predicate.Person(sql.FieldEQ(FieldProtoMessage, v))
+}
+
+// ProtoMessageNEQ applies the NEQ predicate on the "proto_message" field.
+func ProtoMessageNEQ(v *sbom.Person) predicate.Person {
+	return predicate.Person(sql.FieldNEQ(FieldProtoMessage, v))
+}
+
+// ProtoMessageIn applies the In predicate on the "proto_message" field.
+func ProtoMessageIn(vs ...*sbom.Person) predicate.Person {
+	return predicate.Person(sql.FieldIn(FieldProtoMessage, vs...))
+}
+
+// ProtoMessageNotIn applies the NotIn predicate on the "proto_message" field.
+func ProtoMessageNotIn(vs ...*sbom.Person) predicate.Person {
+	return predicate.Person(sql.FieldNotIn(FieldProtoMessage, vs...))
+}
+
+// ProtoMessageGT applies the GT predicate on the "proto_message" field.
+func ProtoMessageGT(v *sbom.Person) predicate.Person {
+	return predicate.Person(sql.FieldGT(FieldProtoMessage, v))
+}
+
+// ProtoMessageGTE applies the GTE predicate on the "proto_message" field.
+func ProtoMessageGTE(v *sbom.Person) predicate.Person {
+	return predicate.Person(sql.FieldGTE(FieldProtoMessage, v))
+}
+
+// ProtoMessageLT applies the LT predicate on the "proto_message" field.
+func ProtoMessageLT(v *sbom.Person) predicate.Person {
+	return predicate.Person(sql.FieldLT(FieldProtoMessage, v))
+}
+
+// ProtoMessageLTE applies the LTE predicate on the "proto_message" field.
+func ProtoMessageLTE(v *sbom.Person) predicate.Person {
+	return predicate.Person(sql.FieldLTE(FieldProtoMessage, v))
 }
 
 // ProtoMessageIsNil applies the IsNil predicate on the "proto_message" field.

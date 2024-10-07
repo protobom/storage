@@ -22,7 +22,7 @@ type Node struct {
 func (Node) Mixin() []ent.Mixin {
 	return []ent.Mixin{
 		DocumentMixin{},
-		ProtoMessageMixin{ProtoMessageType: &sbom.Node{}},
+		ProtoMessageMixin[*sbom.Node]{},
 	}
 }
 

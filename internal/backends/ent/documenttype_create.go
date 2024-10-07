@@ -208,7 +208,7 @@ func (dtc *DocumentTypeCreate) createSpec() (*DocumentType, *sqlgraph.CreateSpec
 		_spec.ID.Value = &id
 	}
 	if value, ok := dtc.mutation.ProtoMessage(); ok {
-		_spec.SetField(documenttype.FieldProtoMessage, field.TypeJSON, value)
+		_spec.SetField(documenttype.FieldProtoMessage, field.TypeBytes, value)
 		_node.ProtoMessage = value
 	}
 	if value, ok := dtc.mutation.GetType(); ok {

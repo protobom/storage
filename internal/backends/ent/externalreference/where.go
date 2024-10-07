@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/google/uuid"
+	"github.com/protobom/protobom/pkg/sbom"
 	"github.com/protobom/storage/internal/backends/ent/predicate"
 )
 
@@ -64,6 +65,11 @@ func DocumentID(v uuid.UUID) predicate.ExternalReference {
 	return predicate.ExternalReference(sql.FieldEQ(FieldDocumentID, v))
 }
 
+// ProtoMessage applies equality check predicate on the "proto_message" field. It's identical to ProtoMessageEQ.
+func ProtoMessage(v *sbom.ExternalReference) predicate.ExternalReference {
+	return predicate.ExternalReference(sql.FieldEQ(FieldProtoMessage, v))
+}
+
 // NodeID applies equality check predicate on the "node_id" field. It's identical to NodeIDEQ.
 func NodeID(v string) predicate.ExternalReference {
 	return predicate.ExternalReference(sql.FieldEQ(FieldNodeID, v))
@@ -112,6 +118,46 @@ func DocumentIDIsNil() predicate.ExternalReference {
 // DocumentIDNotNil applies the NotNil predicate on the "document_id" field.
 func DocumentIDNotNil() predicate.ExternalReference {
 	return predicate.ExternalReference(sql.FieldNotNull(FieldDocumentID))
+}
+
+// ProtoMessageEQ applies the EQ predicate on the "proto_message" field.
+func ProtoMessageEQ(v *sbom.ExternalReference) predicate.ExternalReference {
+	return predicate.ExternalReference(sql.FieldEQ(FieldProtoMessage, v))
+}
+
+// ProtoMessageNEQ applies the NEQ predicate on the "proto_message" field.
+func ProtoMessageNEQ(v *sbom.ExternalReference) predicate.ExternalReference {
+	return predicate.ExternalReference(sql.FieldNEQ(FieldProtoMessage, v))
+}
+
+// ProtoMessageIn applies the In predicate on the "proto_message" field.
+func ProtoMessageIn(vs ...*sbom.ExternalReference) predicate.ExternalReference {
+	return predicate.ExternalReference(sql.FieldIn(FieldProtoMessage, vs...))
+}
+
+// ProtoMessageNotIn applies the NotIn predicate on the "proto_message" field.
+func ProtoMessageNotIn(vs ...*sbom.ExternalReference) predicate.ExternalReference {
+	return predicate.ExternalReference(sql.FieldNotIn(FieldProtoMessage, vs...))
+}
+
+// ProtoMessageGT applies the GT predicate on the "proto_message" field.
+func ProtoMessageGT(v *sbom.ExternalReference) predicate.ExternalReference {
+	return predicate.ExternalReference(sql.FieldGT(FieldProtoMessage, v))
+}
+
+// ProtoMessageGTE applies the GTE predicate on the "proto_message" field.
+func ProtoMessageGTE(v *sbom.ExternalReference) predicate.ExternalReference {
+	return predicate.ExternalReference(sql.FieldGTE(FieldProtoMessage, v))
+}
+
+// ProtoMessageLT applies the LT predicate on the "proto_message" field.
+func ProtoMessageLT(v *sbom.ExternalReference) predicate.ExternalReference {
+	return predicate.ExternalReference(sql.FieldLT(FieldProtoMessage, v))
+}
+
+// ProtoMessageLTE applies the LTE predicate on the "proto_message" field.
+func ProtoMessageLTE(v *sbom.ExternalReference) predicate.ExternalReference {
+	return predicate.ExternalReference(sql.FieldLTE(FieldProtoMessage, v))
 }
 
 // ProtoMessageIsNil applies the IsNil predicate on the "proto_message" field.

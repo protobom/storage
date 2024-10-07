@@ -71,8 +71,10 @@ func (*NodeList) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case nodelist.FieldProtoMessage, nodelist.FieldRootElements:
+		case nodelist.FieldRootElements:
 			values[i] = new([]byte)
+		case nodelist.FieldProtoMessage:
+			values[i] = new(sbom.NodeList)
 		case nodelist.FieldID:
 			values[i] = new(uuid.UUID)
 		default:
@@ -97,12 +99,10 @@ func (nl *NodeList) assignValues(columns []string, values []any) error {
 				nl.ID = *value
 			}
 		case nodelist.FieldProtoMessage:
-			if value, ok := values[i].(*[]byte); !ok {
+			if value, ok := values[i].(*sbom.NodeList); !ok {
 				return fmt.Errorf("unexpected type %T for field proto_message", values[i])
-			} else if value != nil && len(*value) > 0 {
-				if err := json.Unmarshal(*value, &nl.ProtoMessage); err != nil {
-					return fmt.Errorf("unmarshal field proto_message: %w", err)
-				}
+			} else if value != nil {
+				nl.ProtoMessage = value
 			}
 		case nodelist.FieldRootElements:
 			if value, ok := values[i].(*[]byte); !ok {

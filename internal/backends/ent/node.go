@@ -193,8 +193,10 @@ func (*Node) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case node.FieldProtoMessage, node.FieldLicenses, node.FieldAttribution, node.FieldFileTypes, node.FieldHashes, node.FieldIdentifiers:
+		case node.FieldLicenses, node.FieldAttribution, node.FieldFileTypes, node.FieldHashes, node.FieldIdentifiers:
 			values[i] = new([]byte)
+		case node.FieldProtoMessage:
+			values[i] = new(sbom.Node)
 		case node.FieldID, node.FieldType, node.FieldName, node.FieldVersion, node.FieldFileName, node.FieldURLHome, node.FieldURLDownload, node.FieldLicenseConcluded, node.FieldLicenseComments, node.FieldCopyright, node.FieldSourceInfo, node.FieldComment, node.FieldSummary, node.FieldDescription:
 			values[i] = new(sql.NullString)
 		case node.FieldReleaseDate, node.FieldBuildDate, node.FieldValidUntilDate:
@@ -229,12 +231,10 @@ func (n *Node) assignValues(columns []string, values []any) error {
 				n.DocumentID = *value
 			}
 		case node.FieldProtoMessage:
-			if value, ok := values[i].(*[]byte); !ok {
+			if value, ok := values[i].(*sbom.Node); !ok {
 				return fmt.Errorf("unexpected type %T for field proto_message", values[i])
-			} else if value != nil && len(*value) > 0 {
-				if err := json.Unmarshal(*value, &n.ProtoMessage); err != nil {
-					return fmt.Errorf("unmarshal field proto_message: %w", err)
-				}
+			} else if value != nil {
+				n.ProtoMessage = value
 			}
 		case node.FieldNodeListID:
 			if value, ok := values[i].(*uuid.UUID); !ok {

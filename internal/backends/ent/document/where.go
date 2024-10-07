@@ -69,16 +69,6 @@ func NodeListID(v uuid.UUID) predicate.Document {
 	return predicate.Document(sql.FieldEQ(FieldNodeListID, v))
 }
 
-// ProtoMessageIsNil applies the IsNil predicate on the "proto_message" field.
-func ProtoMessageIsNil() predicate.Document {
-	return predicate.Document(sql.FieldIsNull(FieldProtoMessage))
-}
-
-// ProtoMessageNotNil applies the NotNil predicate on the "proto_message" field.
-func ProtoMessageNotNil() predicate.Document {
-	return predicate.Document(sql.FieldNotNull(FieldProtoMessage))
-}
-
 // MetadataIDEQ applies the EQ predicate on the "metadata_id" field.
 func MetadataIDEQ(v string) predicate.Document {
 	return predicate.Document(sql.FieldEQ(FieldMetadataID, v))

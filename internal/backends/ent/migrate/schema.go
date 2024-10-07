@@ -61,7 +61,6 @@ var (
 	// DocumentsColumns holds the columns for the "documents" table.
 	DocumentsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID, Unique: true},
-		{Name: "proto_message", Type: field.TypeJSON, Nullable: true},
 		{Name: "metadata_id", Type: field.TypeString, Unique: true, Nullable: true},
 		{Name: "node_list_id", Type: field.TypeUUID, Unique: true, Nullable: true},
 	}
@@ -73,13 +72,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "documents_metadata_document",
-				Columns:    []*schema.Column{DocumentsColumns[2]},
+				Columns:    []*schema.Column{DocumentsColumns[1]},
 				RefColumns: []*schema.Column{MetadataColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "documents_node_lists_document",
-				Columns:    []*schema.Column{DocumentsColumns[3]},
+				Columns:    []*schema.Column{DocumentsColumns[2]},
 				RefColumns: []*schema.Column{NodeListsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -88,14 +87,14 @@ var (
 			{
 				Name:    "idx_documents",
 				Unique:  true,
-				Columns: []*schema.Column{DocumentsColumns[2], DocumentsColumns[3]},
+				Columns: []*schema.Column{DocumentsColumns[1], DocumentsColumns[2]},
 			},
 		},
 	}
 	// DocumentTypesColumns holds the columns for the "document_types" table.
 	DocumentTypesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID, Unique: true},
-		{Name: "proto_message", Type: field.TypeJSON, Nullable: true},
+		{Name: "proto_message", Type: field.TypeBytes, Nullable: true},
 		{Name: "type", Type: field.TypeEnum, Nullable: true, Enums: []string{"OTHER", "DESIGN", "SOURCE", "BUILD", "ANALYZED", "DEPLOYED", "RUNTIME", "DISCOVERY", "DECOMISSION"}},
 		{Name: "name", Type: field.TypeString, Nullable: true},
 		{Name: "description", Type: field.TypeString, Nullable: true},
@@ -178,7 +177,7 @@ var (
 	// ExternalReferencesColumns holds the columns for the "external_references" table.
 	ExternalReferencesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID, Unique: true},
-		{Name: "proto_message", Type: field.TypeJSON, Nullable: true},
+		{Name: "proto_message", Type: field.TypeBytes, Nullable: true},
 		{Name: "url", Type: field.TypeString},
 		{Name: "comment", Type: field.TypeString},
 		{Name: "authority", Type: field.TypeString, Nullable: true},
@@ -217,7 +216,7 @@ var (
 	// MetadataColumns holds the columns for the "metadata" table.
 	MetadataColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeString},
-		{Name: "proto_message", Type: field.TypeJSON, Nullable: true},
+		{Name: "proto_message", Type: field.TypeBytes, Nullable: true},
 		{Name: "version", Type: field.TypeString},
 		{Name: "name", Type: field.TypeString},
 		{Name: "date", Type: field.TypeTime},
@@ -239,7 +238,7 @@ var (
 	// NodesColumns holds the columns for the "nodes" table.
 	NodesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeString},
-		{Name: "proto_message", Type: field.TypeJSON, Nullable: true},
+		{Name: "proto_message", Type: field.TypeBytes, Nullable: true},
 		{Name: "node_list_id", Type: field.TypeUUID, Nullable: true},
 		{Name: "type", Type: field.TypeEnum, Enums: []string{"PACKAGE", "FILE"}},
 		{Name: "name", Type: field.TypeString},
@@ -288,7 +287,7 @@ var (
 	// NodeListsColumns holds the columns for the "node_lists" table.
 	NodeListsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID, Unique: true},
-		{Name: "proto_message", Type: field.TypeJSON, Nullable: true},
+		{Name: "proto_message", Type: field.TypeBytes, Nullable: true},
 		{Name: "root_elements", Type: field.TypeJSON},
 	}
 	// NodeListsTable holds the schema information for the "node_lists" table.
@@ -300,7 +299,7 @@ var (
 	// PersonsColumns holds the columns for the "persons" table.
 	PersonsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID, Unique: true},
-		{Name: "proto_message", Type: field.TypeJSON, Nullable: true},
+		{Name: "proto_message", Type: field.TypeBytes, Nullable: true},
 		{Name: "name", Type: field.TypeString},
 		{Name: "is_org", Type: field.TypeBool},
 		{Name: "email", Type: field.TypeString},
@@ -405,7 +404,7 @@ var (
 	// ToolsColumns holds the columns for the "tools" table.
 	ToolsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID, Unique: true},
-		{Name: "proto_message", Type: field.TypeJSON, Nullable: true},
+		{Name: "proto_message", Type: field.TypeBytes, Nullable: true},
 		{Name: "name", Type: field.TypeString},
 		{Name: "version", Type: field.TypeString},
 		{Name: "vendor", Type: field.TypeString},

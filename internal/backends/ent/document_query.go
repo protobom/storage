@@ -377,12 +377,12 @@ func (dq *DocumentQuery) WithNodeList(opts ...func(*NodeListQuery)) *DocumentQue
 // Example:
 //
 //	var v []struct {
-//		ProtoMessage *sbom.Document `json:"proto_message,omitempty"`
+//		MetadataID string `json:"metadata_id,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.Document.Query().
-//		GroupBy(document.FieldProtoMessage).
+//		GroupBy(document.FieldMetadataID).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (dq *DocumentQuery) GroupBy(field string, fields ...string) *DocumentGroupBy {
@@ -400,11 +400,11 @@ func (dq *DocumentQuery) GroupBy(field string, fields ...string) *DocumentGroupB
 // Example:
 //
 //	var v []struct {
-//		ProtoMessage *sbom.Document `json:"proto_message,omitempty"`
+//		MetadataID string `json:"metadata_id,omitempty"`
 //	}
 //
 //	client.Document.Query().
-//		Select(document.FieldProtoMessage).
+//		Select(document.FieldMetadataID).
 //		Scan(ctx, &v)
 func (dq *DocumentQuery) Select(fields ...string) *DocumentSelect {
 	dq.ctx.Fields = append(dq.ctx.Fields, fields...)

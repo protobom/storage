@@ -86,8 +86,10 @@ func (*ExternalReference) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case externalreference.FieldProtoMessage, externalreference.FieldHashes:
+		case externalreference.FieldHashes:
 			values[i] = new([]byte)
+		case externalreference.FieldProtoMessage:
+			values[i] = new(sbom.ExternalReference)
 		case externalreference.FieldNodeID, externalreference.FieldURL, externalreference.FieldComment, externalreference.FieldAuthority, externalreference.FieldType:
 			values[i] = new(sql.NullString)
 		case externalreference.FieldID, externalreference.FieldDocumentID:
@@ -120,12 +122,10 @@ func (er *ExternalReference) assignValues(columns []string, values []any) error 
 				er.DocumentID = *value
 			}
 		case externalreference.FieldProtoMessage:
-			if value, ok := values[i].(*[]byte); !ok {
+			if value, ok := values[i].(*sbom.ExternalReference); !ok {
 				return fmt.Errorf("unexpected type %T for field proto_message", values[i])
-			} else if value != nil && len(*value) > 0 {
-				if err := json.Unmarshal(*value, &er.ProtoMessage); err != nil {
-					return fmt.Errorf("unmarshal field proto_message: %w", err)
-				}
+			} else if value != nil {
+				er.ProtoMessage = value
 			}
 		case externalreference.FieldNodeID:
 			if value, ok := values[i].(*sql.NullString); !ok {

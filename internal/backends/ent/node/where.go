@@ -13,6 +13,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/google/uuid"
+	"github.com/protobom/protobom/pkg/sbom"
 	"github.com/protobom/storage/internal/backends/ent/predicate"
 )
 
@@ -74,6 +75,11 @@ func IDContainsFold(id string) predicate.Node {
 // DocumentID applies equality check predicate on the "document_id" field. It's identical to DocumentIDEQ.
 func DocumentID(v uuid.UUID) predicate.Node {
 	return predicate.Node(sql.FieldEQ(FieldDocumentID, v))
+}
+
+// ProtoMessage applies equality check predicate on the "proto_message" field. It's identical to ProtoMessageEQ.
+func ProtoMessage(v *sbom.Node) predicate.Node {
+	return predicate.Node(sql.FieldEQ(FieldProtoMessage, v))
 }
 
 // NodeListID applies equality check predicate on the "node_list_id" field. It's identical to NodeListIDEQ.
@@ -184,6 +190,46 @@ func DocumentIDIsNil() predicate.Node {
 // DocumentIDNotNil applies the NotNil predicate on the "document_id" field.
 func DocumentIDNotNil() predicate.Node {
 	return predicate.Node(sql.FieldNotNull(FieldDocumentID))
+}
+
+// ProtoMessageEQ applies the EQ predicate on the "proto_message" field.
+func ProtoMessageEQ(v *sbom.Node) predicate.Node {
+	return predicate.Node(sql.FieldEQ(FieldProtoMessage, v))
+}
+
+// ProtoMessageNEQ applies the NEQ predicate on the "proto_message" field.
+func ProtoMessageNEQ(v *sbom.Node) predicate.Node {
+	return predicate.Node(sql.FieldNEQ(FieldProtoMessage, v))
+}
+
+// ProtoMessageIn applies the In predicate on the "proto_message" field.
+func ProtoMessageIn(vs ...*sbom.Node) predicate.Node {
+	return predicate.Node(sql.FieldIn(FieldProtoMessage, vs...))
+}
+
+// ProtoMessageNotIn applies the NotIn predicate on the "proto_message" field.
+func ProtoMessageNotIn(vs ...*sbom.Node) predicate.Node {
+	return predicate.Node(sql.FieldNotIn(FieldProtoMessage, vs...))
+}
+
+// ProtoMessageGT applies the GT predicate on the "proto_message" field.
+func ProtoMessageGT(v *sbom.Node) predicate.Node {
+	return predicate.Node(sql.FieldGT(FieldProtoMessage, v))
+}
+
+// ProtoMessageGTE applies the GTE predicate on the "proto_message" field.
+func ProtoMessageGTE(v *sbom.Node) predicate.Node {
+	return predicate.Node(sql.FieldGTE(FieldProtoMessage, v))
+}
+
+// ProtoMessageLT applies the LT predicate on the "proto_message" field.
+func ProtoMessageLT(v *sbom.Node) predicate.Node {
+	return predicate.Node(sql.FieldLT(FieldProtoMessage, v))
+}
+
+// ProtoMessageLTE applies the LTE predicate on the "proto_message" field.
+func ProtoMessageLTE(v *sbom.Node) predicate.Node {
+	return predicate.Node(sql.FieldLTE(FieldProtoMessage, v))
 }
 
 // ProtoMessageIsNil applies the IsNil predicate on the "proto_message" field.

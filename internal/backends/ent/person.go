@@ -8,7 +8,6 @@
 package ent
 
 import (
-	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -129,7 +128,7 @@ func (*Person) scanValues(columns []string) ([]any, error) {
 	for i := range columns {
 		switch columns[i] {
 		case person.FieldProtoMessage:
-			values[i] = new([]byte)
+			values[i] = new(sbom.Person)
 		case person.FieldIsOrg:
 			values[i] = new(sql.NullBool)
 		case person.FieldMetadataID, person.FieldNodeID, person.FieldName, person.FieldEmail, person.FieldURL, person.FieldPhone:
@@ -168,12 +167,10 @@ func (pe *Person) assignValues(columns []string, values []any) error {
 				pe.DocumentID = *value
 			}
 		case person.FieldProtoMessage:
-			if value, ok := values[i].(*[]byte); !ok {
+			if value, ok := values[i].(*sbom.Person); !ok {
 				return fmt.Errorf("unexpected type %T for field proto_message", values[i])
-			} else if value != nil && len(*value) > 0 {
-				if err := json.Unmarshal(*value, &pe.ProtoMessage); err != nil {
-					return fmt.Errorf("unmarshal field proto_message: %w", err)
-				}
+			} else if value != nil {
+				pe.ProtoMessage = value
 			}
 		case person.FieldMetadataID:
 			if value, ok := values[i].(*sql.NullString); !ok {

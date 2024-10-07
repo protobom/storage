@@ -17,11 +17,12 @@ import (
 
 	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/externalreference"
+	"github.com/protobom/storage/internal/backends/ent/predicate"
 )
 
 var (
-	errMultipleDocuments = errors.New("multiple documents matching ID")
-	errMissingDocument   = errors.New("no documents matching IDs")
+	ErrMultipleDocuments = errors.New("multiple documents matching ID")
+	ErrMissingDocument   = errors.New("no documents matching IDs")
 )
 
 // Retrieve implements the storage.Retriever interface.
@@ -38,9 +39,9 @@ func (backend *Backend) Retrieve(id string, _ *storage.RetrieveOptions) (doc *sb
 	case getDocsErr != nil:
 		err = fmt.Errorf("querying documents: %w", getDocsErr)
 	case len(documents) == 0:
-		err = fmt.Errorf("%w %s", errMissingDocument, id)
+		err = fmt.Errorf("%w %s", ErrMissingDocument, id)
 	case len(documents) > 1:
-		err = fmt.Errorf("%w %s", errMultipleDocuments, id)
+		err = fmt.Errorf("%w %s", ErrMultipleDocuments, id)
 	default:
 		doc = documents[0]
 	}
@@ -50,19 +51,26 @@ func (backend *Backend) Retrieve(id string, _ *storage.RetrieveOptions) (doc *sb
 
 func (backend *Backend) GetDocumentsByID(ids ...string) ([]*sbom.Document, error) {
 	documents := []*sbom.Document{}
-	query := backend.client.Document.Query()
 
+	predicates := []predicate.Document{}
 	if len(ids) > 0 {
-		query.Where(document.MetadataIDIn(ids...))
+		predicates = append(predicates, document.MetadataIDIn(ids...))
 	}
 
-	results, err := query.All(backend.ctx)
+	results, err := backend.client.Document.Query().
+		Where(predicates...).
+		WithMetadata().
+		WithNodeList().
+		All(backend.ctx)
 	if err != nil {
 		return nil, fmt.Errorf("querying documents table: %w", err)
 	}
 
 	for idx := range results {
-		documents = append(documents, results[idx].ProtoMessage)
+		documents = append(documents, &sbom.Document{
+			Metadata: results[idx].Edges.Metadata.ProtoMessage,
+			NodeList: results[idx].Edges.NodeList.ProtoMessage,
+		})
 	}
 
 	return documents, nil
@@ -71,9 +79,9 @@ func (backend *Backend) GetDocumentsByID(ids ...string) ([]*sbom.Document, error
 func (backend *Backend) GetExternalReferencesByDocumentID(
 	id string, types ...string,
 ) ([]*sbom.ExternalReference, error) {
-	query := backend.client.ExternalReference.Query().
-		Select("proto_message").
-		Where(externalreference.HasDocumentWith(document.MetadataIDEQ(id)))
+	predicates := []predicate.ExternalReference{
+		externalreference.HasDocumentWith(document.MetadataIDEQ(id)),
+	}
 
 	typeValues := []any{}
 	for idx := range types {
@@ -81,14 +89,15 @@ func (backend *Backend) GetExternalReferencesByDocumentID(
 	}
 
 	if len(typeValues) > 0 {
-		query.Where(
-			func(s *sql.Selector) {
-				s.Where(sqljson.ValueIn("proto_message", typeValues, sqljson.Path("type")))
-			},
-		)
+		predicates = append(predicates, func(s *sql.Selector) {
+			s.Where(sqljson.ValueIn("proto_message", typeValues, sqljson.Path("type")))
+		})
 	}
 
-	results, err := query.All(backend.ctx)
+	results, err := backend.client.ExternalReference.Query().
+		Select("proto_message").
+		Where(predicates...).
+		All(backend.ctx)
 	if err != nil {
 		return nil, fmt.Errorf("querying external references: %w", err)
 	}
