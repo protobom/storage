@@ -4,6 +4,7 @@
 // SPDX-FileType: SOURCE
 // SPDX-License-Identifier: Apache-2.0
 // --------------------------------------------------------------
+
 package ent
 
 import (
@@ -15,6 +16,8 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/google/uuid"
+	"github.com/protobom/protobom/pkg/sbom"
 	"github.com/protobom/storage/internal/backends/ent/documenttype"
 	"github.com/protobom/storage/internal/backends/ent/metadata"
 	"github.com/protobom/storage/internal/backends/ent/person"
@@ -32,6 +35,18 @@ type MetadataUpdate struct {
 // Where appends a list predicates to the MetadataUpdate builder.
 func (mu *MetadataUpdate) Where(ps ...predicate.Metadata) *MetadataUpdate {
 	mu.mutation.Where(ps...)
+	return mu
+}
+
+// SetProtoMessage sets the "proto_message" field.
+func (mu *MetadataUpdate) SetProtoMessage(s *sbom.Metadata) *MetadataUpdate {
+	mu.mutation.SetProtoMessage(s)
+	return mu
+}
+
+// ClearProtoMessage clears the value of the "proto_message" field.
+func (mu *MetadataUpdate) ClearProtoMessage() *MetadataUpdate {
+	mu.mutation.ClearProtoMessage()
 	return mu
 }
 
@@ -92,14 +107,14 @@ func (mu *MetadataUpdate) SetNillableComment(s *string) *MetadataUpdate {
 }
 
 // AddToolIDs adds the "tools" edge to the Tool entity by IDs.
-func (mu *MetadataUpdate) AddToolIDs(ids ...int) *MetadataUpdate {
+func (mu *MetadataUpdate) AddToolIDs(ids ...uuid.UUID) *MetadataUpdate {
 	mu.mutation.AddToolIDs(ids...)
 	return mu
 }
 
 // AddTools adds the "tools" edges to the Tool entity.
 func (mu *MetadataUpdate) AddTools(t ...*Tool) *MetadataUpdate {
-	ids := make([]int, len(t))
+	ids := make([]uuid.UUID, len(t))
 	for i := range t {
 		ids[i] = t[i].ID
 	}
@@ -107,14 +122,14 @@ func (mu *MetadataUpdate) AddTools(t ...*Tool) *MetadataUpdate {
 }
 
 // AddAuthorIDs adds the "authors" edge to the Person entity by IDs.
-func (mu *MetadataUpdate) AddAuthorIDs(ids ...int) *MetadataUpdate {
+func (mu *MetadataUpdate) AddAuthorIDs(ids ...uuid.UUID) *MetadataUpdate {
 	mu.mutation.AddAuthorIDs(ids...)
 	return mu
 }
 
 // AddAuthors adds the "authors" edges to the Person entity.
 func (mu *MetadataUpdate) AddAuthors(p ...*Person) *MetadataUpdate {
-	ids := make([]int, len(p))
+	ids := make([]uuid.UUID, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -122,14 +137,14 @@ func (mu *MetadataUpdate) AddAuthors(p ...*Person) *MetadataUpdate {
 }
 
 // AddDocumentTypeIDs adds the "document_types" edge to the DocumentType entity by IDs.
-func (mu *MetadataUpdate) AddDocumentTypeIDs(ids ...int) *MetadataUpdate {
+func (mu *MetadataUpdate) AddDocumentTypeIDs(ids ...uuid.UUID) *MetadataUpdate {
 	mu.mutation.AddDocumentTypeIDs(ids...)
 	return mu
 }
 
 // AddDocumentTypes adds the "document_types" edges to the DocumentType entity.
 func (mu *MetadataUpdate) AddDocumentTypes(d ...*DocumentType) *MetadataUpdate {
-	ids := make([]int, len(d))
+	ids := make([]uuid.UUID, len(d))
 	for i := range d {
 		ids[i] = d[i].ID
 	}
@@ -148,14 +163,14 @@ func (mu *MetadataUpdate) ClearTools() *MetadataUpdate {
 }
 
 // RemoveToolIDs removes the "tools" edge to Tool entities by IDs.
-func (mu *MetadataUpdate) RemoveToolIDs(ids ...int) *MetadataUpdate {
+func (mu *MetadataUpdate) RemoveToolIDs(ids ...uuid.UUID) *MetadataUpdate {
 	mu.mutation.RemoveToolIDs(ids...)
 	return mu
 }
 
 // RemoveTools removes "tools" edges to Tool entities.
 func (mu *MetadataUpdate) RemoveTools(t ...*Tool) *MetadataUpdate {
-	ids := make([]int, len(t))
+	ids := make([]uuid.UUID, len(t))
 	for i := range t {
 		ids[i] = t[i].ID
 	}
@@ -169,14 +184,14 @@ func (mu *MetadataUpdate) ClearAuthors() *MetadataUpdate {
 }
 
 // RemoveAuthorIDs removes the "authors" edge to Person entities by IDs.
-func (mu *MetadataUpdate) RemoveAuthorIDs(ids ...int) *MetadataUpdate {
+func (mu *MetadataUpdate) RemoveAuthorIDs(ids ...uuid.UUID) *MetadataUpdate {
 	mu.mutation.RemoveAuthorIDs(ids...)
 	return mu
 }
 
 // RemoveAuthors removes "authors" edges to Person entities.
 func (mu *MetadataUpdate) RemoveAuthors(p ...*Person) *MetadataUpdate {
-	ids := make([]int, len(p))
+	ids := make([]uuid.UUID, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -190,14 +205,14 @@ func (mu *MetadataUpdate) ClearDocumentTypes() *MetadataUpdate {
 }
 
 // RemoveDocumentTypeIDs removes the "document_types" edge to DocumentType entities by IDs.
-func (mu *MetadataUpdate) RemoveDocumentTypeIDs(ids ...int) *MetadataUpdate {
+func (mu *MetadataUpdate) RemoveDocumentTypeIDs(ids ...uuid.UUID) *MetadataUpdate {
 	mu.mutation.RemoveDocumentTypeIDs(ids...)
 	return mu
 }
 
 // RemoveDocumentTypes removes "document_types" edges to DocumentType entities.
 func (mu *MetadataUpdate) RemoveDocumentTypes(d ...*DocumentType) *MetadataUpdate {
-	ids := make([]int, len(d))
+	ids := make([]uuid.UUID, len(d))
 	for i := range d {
 		ids[i] = d[i].ID
 	}
@@ -251,6 +266,12 @@ func (mu *MetadataUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
+	if value, ok := mu.mutation.ProtoMessage(); ok {
+		_spec.SetField(metadata.FieldProtoMessage, field.TypeBytes, value)
+	}
+	if mu.mutation.ProtoMessageCleared() {
+		_spec.ClearField(metadata.FieldProtoMessage, field.TypeBytes)
+	}
 	if value, ok := mu.mutation.Version(); ok {
 		_spec.SetField(metadata.FieldVersion, field.TypeString, value)
 	}
@@ -271,7 +292,7 @@ func (mu *MetadataUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{metadata.ToolsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(tool.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(tool.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -284,7 +305,7 @@ func (mu *MetadataUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{metadata.ToolsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(tool.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(tool.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -300,7 +321,7 @@ func (mu *MetadataUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{metadata.ToolsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(tool.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(tool.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -316,7 +337,7 @@ func (mu *MetadataUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{metadata.AuthorsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -329,7 +350,7 @@ func (mu *MetadataUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{metadata.AuthorsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -345,7 +366,7 @@ func (mu *MetadataUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{metadata.AuthorsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -361,7 +382,7 @@ func (mu *MetadataUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{metadata.DocumentTypesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(documenttype.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(documenttype.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -374,7 +395,7 @@ func (mu *MetadataUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{metadata.DocumentTypesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(documenttype.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(documenttype.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -390,7 +411,7 @@ func (mu *MetadataUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{metadata.DocumentTypesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(documenttype.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(documenttype.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -416,6 +437,18 @@ type MetadataUpdateOne struct {
 	fields   []string
 	hooks    []Hook
 	mutation *MetadataMutation
+}
+
+// SetProtoMessage sets the "proto_message" field.
+func (muo *MetadataUpdateOne) SetProtoMessage(s *sbom.Metadata) *MetadataUpdateOne {
+	muo.mutation.SetProtoMessage(s)
+	return muo
+}
+
+// ClearProtoMessage clears the value of the "proto_message" field.
+func (muo *MetadataUpdateOne) ClearProtoMessage() *MetadataUpdateOne {
+	muo.mutation.ClearProtoMessage()
+	return muo
 }
 
 // SetVersion sets the "version" field.
@@ -475,14 +508,14 @@ func (muo *MetadataUpdateOne) SetNillableComment(s *string) *MetadataUpdateOne {
 }
 
 // AddToolIDs adds the "tools" edge to the Tool entity by IDs.
-func (muo *MetadataUpdateOne) AddToolIDs(ids ...int) *MetadataUpdateOne {
+func (muo *MetadataUpdateOne) AddToolIDs(ids ...uuid.UUID) *MetadataUpdateOne {
 	muo.mutation.AddToolIDs(ids...)
 	return muo
 }
 
 // AddTools adds the "tools" edges to the Tool entity.
 func (muo *MetadataUpdateOne) AddTools(t ...*Tool) *MetadataUpdateOne {
-	ids := make([]int, len(t))
+	ids := make([]uuid.UUID, len(t))
 	for i := range t {
 		ids[i] = t[i].ID
 	}
@@ -490,14 +523,14 @@ func (muo *MetadataUpdateOne) AddTools(t ...*Tool) *MetadataUpdateOne {
 }
 
 // AddAuthorIDs adds the "authors" edge to the Person entity by IDs.
-func (muo *MetadataUpdateOne) AddAuthorIDs(ids ...int) *MetadataUpdateOne {
+func (muo *MetadataUpdateOne) AddAuthorIDs(ids ...uuid.UUID) *MetadataUpdateOne {
 	muo.mutation.AddAuthorIDs(ids...)
 	return muo
 }
 
 // AddAuthors adds the "authors" edges to the Person entity.
 func (muo *MetadataUpdateOne) AddAuthors(p ...*Person) *MetadataUpdateOne {
-	ids := make([]int, len(p))
+	ids := make([]uuid.UUID, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -505,14 +538,14 @@ func (muo *MetadataUpdateOne) AddAuthors(p ...*Person) *MetadataUpdateOne {
 }
 
 // AddDocumentTypeIDs adds the "document_types" edge to the DocumentType entity by IDs.
-func (muo *MetadataUpdateOne) AddDocumentTypeIDs(ids ...int) *MetadataUpdateOne {
+func (muo *MetadataUpdateOne) AddDocumentTypeIDs(ids ...uuid.UUID) *MetadataUpdateOne {
 	muo.mutation.AddDocumentTypeIDs(ids...)
 	return muo
 }
 
 // AddDocumentTypes adds the "document_types" edges to the DocumentType entity.
 func (muo *MetadataUpdateOne) AddDocumentTypes(d ...*DocumentType) *MetadataUpdateOne {
-	ids := make([]int, len(d))
+	ids := make([]uuid.UUID, len(d))
 	for i := range d {
 		ids[i] = d[i].ID
 	}
@@ -531,14 +564,14 @@ func (muo *MetadataUpdateOne) ClearTools() *MetadataUpdateOne {
 }
 
 // RemoveToolIDs removes the "tools" edge to Tool entities by IDs.
-func (muo *MetadataUpdateOne) RemoveToolIDs(ids ...int) *MetadataUpdateOne {
+func (muo *MetadataUpdateOne) RemoveToolIDs(ids ...uuid.UUID) *MetadataUpdateOne {
 	muo.mutation.RemoveToolIDs(ids...)
 	return muo
 }
 
 // RemoveTools removes "tools" edges to Tool entities.
 func (muo *MetadataUpdateOne) RemoveTools(t ...*Tool) *MetadataUpdateOne {
-	ids := make([]int, len(t))
+	ids := make([]uuid.UUID, len(t))
 	for i := range t {
 		ids[i] = t[i].ID
 	}
@@ -552,14 +585,14 @@ func (muo *MetadataUpdateOne) ClearAuthors() *MetadataUpdateOne {
 }
 
 // RemoveAuthorIDs removes the "authors" edge to Person entities by IDs.
-func (muo *MetadataUpdateOne) RemoveAuthorIDs(ids ...int) *MetadataUpdateOne {
+func (muo *MetadataUpdateOne) RemoveAuthorIDs(ids ...uuid.UUID) *MetadataUpdateOne {
 	muo.mutation.RemoveAuthorIDs(ids...)
 	return muo
 }
 
 // RemoveAuthors removes "authors" edges to Person entities.
 func (muo *MetadataUpdateOne) RemoveAuthors(p ...*Person) *MetadataUpdateOne {
-	ids := make([]int, len(p))
+	ids := make([]uuid.UUID, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -573,14 +606,14 @@ func (muo *MetadataUpdateOne) ClearDocumentTypes() *MetadataUpdateOne {
 }
 
 // RemoveDocumentTypeIDs removes the "document_types" edge to DocumentType entities by IDs.
-func (muo *MetadataUpdateOne) RemoveDocumentTypeIDs(ids ...int) *MetadataUpdateOne {
+func (muo *MetadataUpdateOne) RemoveDocumentTypeIDs(ids ...uuid.UUID) *MetadataUpdateOne {
 	muo.mutation.RemoveDocumentTypeIDs(ids...)
 	return muo
 }
 
 // RemoveDocumentTypes removes "document_types" edges to DocumentType entities.
 func (muo *MetadataUpdateOne) RemoveDocumentTypes(d ...*DocumentType) *MetadataUpdateOne {
-	ids := make([]int, len(d))
+	ids := make([]uuid.UUID, len(d))
 	for i := range d {
 		ids[i] = d[i].ID
 	}
@@ -664,6 +697,12 @@ func (muo *MetadataUpdateOne) sqlSave(ctx context.Context) (_node *Metadata, err
 			}
 		}
 	}
+	if value, ok := muo.mutation.ProtoMessage(); ok {
+		_spec.SetField(metadata.FieldProtoMessage, field.TypeBytes, value)
+	}
+	if muo.mutation.ProtoMessageCleared() {
+		_spec.ClearField(metadata.FieldProtoMessage, field.TypeBytes)
+	}
 	if value, ok := muo.mutation.Version(); ok {
 		_spec.SetField(metadata.FieldVersion, field.TypeString, value)
 	}
@@ -684,7 +723,7 @@ func (muo *MetadataUpdateOne) sqlSave(ctx context.Context) (_node *Metadata, err
 			Columns: []string{metadata.ToolsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(tool.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(tool.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -697,7 +736,7 @@ func (muo *MetadataUpdateOne) sqlSave(ctx context.Context) (_node *Metadata, err
 			Columns: []string{metadata.ToolsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(tool.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(tool.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -713,7 +752,7 @@ func (muo *MetadataUpdateOne) sqlSave(ctx context.Context) (_node *Metadata, err
 			Columns: []string{metadata.ToolsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(tool.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(tool.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -729,7 +768,7 @@ func (muo *MetadataUpdateOne) sqlSave(ctx context.Context) (_node *Metadata, err
 			Columns: []string{metadata.AuthorsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -742,7 +781,7 @@ func (muo *MetadataUpdateOne) sqlSave(ctx context.Context) (_node *Metadata, err
 			Columns: []string{metadata.AuthorsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -758,7 +797,7 @@ func (muo *MetadataUpdateOne) sqlSave(ctx context.Context) (_node *Metadata, err
 			Columns: []string{metadata.AuthorsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -774,7 +813,7 @@ func (muo *MetadataUpdateOne) sqlSave(ctx context.Context) (_node *Metadata, err
 			Columns: []string{metadata.DocumentTypesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(documenttype.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(documenttype.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -787,7 +826,7 @@ func (muo *MetadataUpdateOne) sqlSave(ctx context.Context) (_node *Metadata, err
 			Columns: []string{metadata.DocumentTypesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(documenttype.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(documenttype.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -803,7 +842,7 @@ func (muo *MetadataUpdateOne) sqlSave(ctx context.Context) (_node *Metadata, err
 			Columns: []string{metadata.DocumentTypesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(documenttype.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(documenttype.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

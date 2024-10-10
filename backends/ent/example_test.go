@@ -3,6 +3,7 @@
 // SPDX-FileType: SOURCE
 // SPDX-License-Identifier: Apache-2.0
 // --------------------------------------------------------------
+
 package ent_test
 
 import (
@@ -70,6 +71,14 @@ func Example() {
 	//   "node_list": {
 	//     "nodes": [
 	//       {
+	//         "id": "protobom-auto--000000001",
+	//         "name": "Acme Application",
+	//         "version": "9.1.1",
+	//         "primary_purpose": [
+	//           1
+	//         ]
+	//       },
+	//       {
 	//         "id": "pkg:npm/acme/component@1.0.0",
 	//         "name": "tomcat-catalina",
 	//         "version": "9.0.14",
@@ -88,14 +97,6 @@ func Example() {
 	//         },
 	//         "primary_purpose": [
 	//           16
-	//         ]
-	//       },
-	//       {
-	//         "id": "protobom-auto--000000001",
-	//         "name": "Acme Application",
-	//         "version": "9.1.1",
-	//         "primary_purpose": [
-	//           1
 	//         ]
 	//       },
 	//       {

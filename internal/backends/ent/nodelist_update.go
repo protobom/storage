@@ -4,6 +4,7 @@
 // SPDX-FileType: SOURCE
 // SPDX-License-Identifier: Apache-2.0
 // --------------------------------------------------------------
+
 package ent
 
 import (
@@ -15,6 +16,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/dialect/sql/sqljson"
 	"entgo.io/ent/schema/field"
+	"github.com/protobom/protobom/pkg/sbom"
 	"github.com/protobom/storage/internal/backends/ent/node"
 	"github.com/protobom/storage/internal/backends/ent/nodelist"
 	"github.com/protobom/storage/internal/backends/ent/predicate"
@@ -30,6 +32,18 @@ type NodeListUpdate struct {
 // Where appends a list predicates to the NodeListUpdate builder.
 func (nlu *NodeListUpdate) Where(ps ...predicate.NodeList) *NodeListUpdate {
 	nlu.mutation.Where(ps...)
+	return nlu
+}
+
+// SetProtoMessage sets the "proto_message" field.
+func (nlu *NodeListUpdate) SetProtoMessage(sl *sbom.NodeList) *NodeListUpdate {
+	nlu.mutation.SetProtoMessage(sl)
+	return nlu
+}
+
+// ClearProtoMessage clears the value of the "proto_message" field.
+func (nlu *NodeListUpdate) ClearProtoMessage() *NodeListUpdate {
+	nlu.mutation.ClearProtoMessage()
 	return nlu
 }
 
@@ -125,13 +139,19 @@ func (nlu *NodeListUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if err := nlu.check(); err != nil {
 		return n, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(nodelist.Table, nodelist.Columns, sqlgraph.NewFieldSpec(nodelist.FieldID, field.TypeInt))
+	_spec := sqlgraph.NewUpdateSpec(nodelist.Table, nodelist.Columns, sqlgraph.NewFieldSpec(nodelist.FieldID, field.TypeUUID))
 	if ps := nlu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := nlu.mutation.ProtoMessage(); ok {
+		_spec.SetField(nodelist.FieldProtoMessage, field.TypeBytes, value)
+	}
+	if nlu.mutation.ProtoMessageCleared() {
+		_spec.ClearField(nodelist.FieldProtoMessage, field.TypeBytes)
 	}
 	if value, ok := nlu.mutation.RootElements(); ok {
 		_spec.SetField(nodelist.FieldRootElements, field.TypeJSON, value)
@@ -204,6 +224,18 @@ type NodeListUpdateOne struct {
 	fields   []string
 	hooks    []Hook
 	mutation *NodeListMutation
+}
+
+// SetProtoMessage sets the "proto_message" field.
+func (nluo *NodeListUpdateOne) SetProtoMessage(sl *sbom.NodeList) *NodeListUpdateOne {
+	nluo.mutation.SetProtoMessage(sl)
+	return nluo
+}
+
+// ClearProtoMessage clears the value of the "proto_message" field.
+func (nluo *NodeListUpdateOne) ClearProtoMessage() *NodeListUpdateOne {
+	nluo.mutation.ClearProtoMessage()
+	return nluo
 }
 
 // SetRootElements sets the "root_elements" field.
@@ -311,7 +343,7 @@ func (nluo *NodeListUpdateOne) sqlSave(ctx context.Context) (_node *NodeList, er
 	if err := nluo.check(); err != nil {
 		return _node, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(nodelist.Table, nodelist.Columns, sqlgraph.NewFieldSpec(nodelist.FieldID, field.TypeInt))
+	_spec := sqlgraph.NewUpdateSpec(nodelist.Table, nodelist.Columns, sqlgraph.NewFieldSpec(nodelist.FieldID, field.TypeUUID))
 	id, ok := nluo.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "NodeList.id" for update`)}
@@ -335,6 +367,12 @@ func (nluo *NodeListUpdateOne) sqlSave(ctx context.Context) (_node *NodeList, er
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := nluo.mutation.ProtoMessage(); ok {
+		_spec.SetField(nodelist.FieldProtoMessage, field.TypeBytes, value)
+	}
+	if nluo.mutation.ProtoMessageCleared() {
+		_spec.ClearField(nodelist.FieldProtoMessage, field.TypeBytes)
 	}
 	if value, ok := nluo.mutation.RootElements(); ok {
 		_spec.SetField(nodelist.FieldRootElements, field.TypeJSON, value)
