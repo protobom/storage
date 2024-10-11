@@ -8,6 +8,7 @@ package ent_test
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -26,8 +27,8 @@ func Example() {
 	dbFile := filepath.Join(cwd, "example.db")
 
 	// Remove example.db if it already exists.
-	if _, err := os.Stat(dbFile); err == nil {
-		os.Remove(dbFile)
+	if err := os.Remove(dbFile); err != nil && !errors.Is(err, os.ErrNotExist) {
+		panic(err)
 	}
 
 	rdr := reader.New()
@@ -48,7 +49,7 @@ func Example() {
 		panic(err)
 	}
 
-	retrieved, err := backend.Retrieve(sbom.Metadata.Id, nil)
+	retrieved, err := backend.Retrieve(sbom.GetMetadata().GetId(), nil)
 	if err != nil {
 		panic(err)
 	}

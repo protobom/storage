@@ -46,7 +46,7 @@ func (backend *Backend) Retrieve(id string, _ *storage.RetrieveOptions) (doc *sb
 		doc = documents[0]
 	}
 
-	return
+	return doc, err
 }
 
 func (backend *Backend) GetDocumentsByID(ids ...string) ([]*sbom.Document, error) {

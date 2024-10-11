@@ -49,7 +49,7 @@ func (DocumentMixin) Edges() []ent.Edge {
 	}
 }
 
-func (m ProtoMessageMixin[T]) Fields() []ent.Field {
+func (ProtoMessageMixin[T]) Fields() []ent.Field {
 	var goType T
 
 	return []ent.Field{
