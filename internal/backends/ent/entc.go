@@ -17,9 +17,16 @@ import (
 )
 
 func main() {
+	// Parse the template file.
+	tmpl := gen.MustParse(gen.NewTemplate("header").ParseFiles("template/header.tmpl"))
+
 	if err := entc.Generate("./schema", &gen.Config{
-		Features:  []gen.Feature{gen.FeatureUpsert},
-		Templates: []*gen.Template{gen.MustParse(gen.NewTemplate("header").ParseFiles("template/header.tmpl"))},
+		Features: []gen.Feature{
+			gen.FeatureExecQuery,
+			gen.FeatureUpsert,
+			gen.FeatureVersionedMigration,
+		},
+		Templates: []*gen.Template{tmpl},
 	}); err != nil {
 		log.Fatalf("running ent codegen: %v", err)
 	}

@@ -7,3 +7,4 @@
 package ent
 
 //go:generate go run -mod=mod entc.go
+//go:generate go run -mod=mod migrate/main.go v0.1.5
