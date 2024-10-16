@@ -4,6 +4,7 @@
 // SPDX-FileType: SOURCE
 // SPDX-License-Identifier: Apache-2.0
 // --------------------------------------------------------------
+
 package ent
 
 import (
@@ -14,6 +15,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/google/uuid"
 	"github.com/protobom/storage/internal/backends/ent/annotation"
 	"github.com/protobom/storage/internal/backends/ent/document"
 )
@@ -27,8 +29,16 @@ type AnnotationCreate struct {
 }
 
 // SetDocumentID sets the "document_id" field.
-func (ac *AnnotationCreate) SetDocumentID(s string) *AnnotationCreate {
-	ac.mutation.SetDocumentID(s)
+func (ac *AnnotationCreate) SetDocumentID(u uuid.UUID) *AnnotationCreate {
+	ac.mutation.SetDocumentID(u)
+	return ac
+}
+
+// SetNillableDocumentID sets the "document_id" field if the given value is not nil.
+func (ac *AnnotationCreate) SetNillableDocumentID(u *uuid.UUID) *AnnotationCreate {
+	if u != nil {
+		ac.SetDocumentID(*u)
+	}
 	return ac
 }
 
@@ -98,6 +108,10 @@ func (ac *AnnotationCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (ac *AnnotationCreate) defaults() {
+	if _, ok := ac.mutation.DocumentID(); !ok {
+		v := annotation.DefaultDocumentID()
+		ac.mutation.SetDocumentID(v)
+	}
 	if _, ok := ac.mutation.IsUnique(); !ok {
 		v := annotation.DefaultIsUnique
 		ac.mutation.SetIsUnique(v)
@@ -106,9 +120,6 @@ func (ac *AnnotationCreate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (ac *AnnotationCreate) check() error {
-	if _, ok := ac.mutation.DocumentID(); !ok {
-		return &ValidationError{Name: "document_id", err: errors.New(`ent: missing required field "Annotation.document_id"`)}
-	}
 	if _, ok := ac.mutation.Name(); !ok {
 		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "Annotation.name"`)}
 	}
@@ -117,9 +128,6 @@ func (ac *AnnotationCreate) check() error {
 	}
 	if _, ok := ac.mutation.IsUnique(); !ok {
 		return &ValidationError{Name: "is_unique", err: errors.New(`ent: missing required field "Annotation.is_unique"`)}
-	}
-	if len(ac.mutation.DocumentIDs()) == 0 {
-		return &ValidationError{Name: "document", err: errors.New(`ent: missing required edge "Annotation.document"`)}
 	}
 	return nil
 }
@@ -163,12 +171,12 @@ func (ac *AnnotationCreate) createSpec() (*Annotation, *sqlgraph.CreateSpec) {
 	if nodes := ac.mutation.DocumentIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
-			Inverse: true,
+			Inverse: false,
 			Table:   annotation.DocumentTable,
 			Columns: []string{annotation.DocumentColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(document.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(document.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -229,18 +237,6 @@ type (
 	}
 )
 
-// SetDocumentID sets the "document_id" field.
-func (u *AnnotationUpsert) SetDocumentID(v string) *AnnotationUpsert {
-	u.Set(annotation.FieldDocumentID, v)
-	return u
-}
-
-// UpdateDocumentID sets the "document_id" field to the value that was provided on create.
-func (u *AnnotationUpsert) UpdateDocumentID() *AnnotationUpsert {
-	u.SetExcluded(annotation.FieldDocumentID)
-	return u
-}
-
 // SetName sets the "name" field.
 func (u *AnnotationUpsert) SetName(v string) *AnnotationUpsert {
 	u.Set(annotation.FieldName, v)
@@ -287,6 +283,11 @@ func (u *AnnotationUpsert) UpdateIsUnique() *AnnotationUpsert {
 //		Exec(ctx)
 func (u *AnnotationUpsertOne) UpdateNewValues() *AnnotationUpsertOne {
 	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
+		if _, exists := u.create.mutation.DocumentID(); exists {
+			s.SetIgnore(annotation.FieldDocumentID)
+		}
+	}))
 	return u
 }
 
@@ -315,20 +316,6 @@ func (u *AnnotationUpsertOne) Update(set func(*AnnotationUpsert)) *AnnotationUps
 		set(&AnnotationUpsert{UpdateSet: update})
 	}))
 	return u
-}
-
-// SetDocumentID sets the "document_id" field.
-func (u *AnnotationUpsertOne) SetDocumentID(v string) *AnnotationUpsertOne {
-	return u.Update(func(s *AnnotationUpsert) {
-		s.SetDocumentID(v)
-	})
-}
-
-// UpdateDocumentID sets the "document_id" field to the value that was provided on create.
-func (u *AnnotationUpsertOne) UpdateDocumentID() *AnnotationUpsertOne {
-	return u.Update(func(s *AnnotationUpsert) {
-		s.UpdateDocumentID()
-	})
 }
 
 // SetName sets the "name" field.
@@ -547,6 +534,13 @@ type AnnotationUpsertBulk struct {
 //		Exec(ctx)
 func (u *AnnotationUpsertBulk) UpdateNewValues() *AnnotationUpsertBulk {
 	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
+		for _, b := range u.create.builders {
+			if _, exists := b.mutation.DocumentID(); exists {
+				s.SetIgnore(annotation.FieldDocumentID)
+			}
+		}
+	}))
 	return u
 }
 
@@ -575,20 +569,6 @@ func (u *AnnotationUpsertBulk) Update(set func(*AnnotationUpsert)) *AnnotationUp
 		set(&AnnotationUpsert{UpdateSet: update})
 	}))
 	return u
-}
-
-// SetDocumentID sets the "document_id" field.
-func (u *AnnotationUpsertBulk) SetDocumentID(v string) *AnnotationUpsertBulk {
-	return u.Update(func(s *AnnotationUpsert) {
-		s.SetDocumentID(v)
-	})
-}
-
-// UpdateDocumentID sets the "document_id" field to the value that was provided on create.
-func (u *AnnotationUpsertBulk) UpdateDocumentID() *AnnotationUpsertBulk {
-	return u.Update(func(s *AnnotationUpsert) {
-		s.UpdateDocumentID()
-	})
 }
 
 // SetName sets the "name" field.

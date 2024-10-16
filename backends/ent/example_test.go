@@ -3,10 +3,12 @@
 // SPDX-FileType: SOURCE
 // SPDX-License-Identifier: Apache-2.0
 // --------------------------------------------------------------
+
 package ent_test
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -25,8 +27,8 @@ func Example() {
 	dbFile := filepath.Join(cwd, "example.db")
 
 	// Remove example.db if it already exists.
-	if _, err := os.Stat(dbFile); err == nil {
-		os.Remove(dbFile)
+	if err := os.Remove(dbFile); err != nil && !errors.Is(err, os.ErrNotExist) {
+		panic(err)
 	}
 
 	rdr := reader.New()
@@ -47,7 +49,7 @@ func Example() {
 		panic(err)
 	}
 
-	retrieved, err := backend.Retrieve(sbom.Metadata.Id, nil)
+	retrieved, err := backend.Retrieve(sbom.GetMetadata().GetId(), nil)
 	if err != nil {
 		panic(err)
 	}
@@ -70,6 +72,14 @@ func Example() {
 	//   "node_list": {
 	//     "nodes": [
 	//       {
+	//         "id": "protobom-auto--000000001",
+	//         "name": "Acme Application",
+	//         "version": "9.1.1",
+	//         "primary_purpose": [
+	//           1
+	//         ]
+	//       },
+	//       {
 	//         "id": "pkg:npm/acme/component@1.0.0",
 	//         "name": "tomcat-catalina",
 	//         "version": "9.0.14",
@@ -88,14 +98,6 @@ func Example() {
 	//         },
 	//         "primary_purpose": [
 	//           16
-	//         ]
-	//       },
-	//       {
-	//         "id": "protobom-auto--000000001",
-	//         "name": "Acme Application",
-	//         "version": "9.1.1",
-	//         "primary_purpose": [
-	//           1
 	//         ]
 	//       },
 	//       {

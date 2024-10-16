@@ -12,6 +12,7 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"github.com/google/uuid"
 )
 
 const (
@@ -19,6 +20,12 @@ const (
 	Label = "node"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
+	// FieldDocumentID holds the string denoting the document_id field in the database.
+	FieldDocumentID = "document_id"
+	// FieldProtoMessage holds the string denoting the proto_message field in the database.
+	FieldProtoMessage = "proto_message"
+	// FieldNodeListID holds the string denoting the node_list_id field in the database.
+	FieldNodeListID = "node_list_id"
 	// FieldType holds the string denoting the type field in the database.
 	FieldType = "type"
 	// FieldName holds the string denoting the name field in the database.
@@ -57,28 +64,39 @@ const (
 	FieldAttribution = "attribution"
 	// FieldFileTypes holds the string denoting the file_types field in the database.
 	FieldFileTypes = "file_types"
+	// FieldHashes holds the string denoting the hashes field in the database.
+	FieldHashes = "hashes"
+	// FieldIdentifiers holds the string denoting the identifiers field in the database.
+	FieldIdentifiers = "identifiers"
+	// EdgeDocument holds the string denoting the document edge name in mutations.
+	EdgeDocument = "document"
 	// EdgeSuppliers holds the string denoting the suppliers edge name in mutations.
 	EdgeSuppliers = "suppliers"
 	// EdgeOriginators holds the string denoting the originators edge name in mutations.
 	EdgeOriginators = "originators"
 	// EdgeExternalReferences holds the string denoting the external_references edge name in mutations.
 	EdgeExternalReferences = "external_references"
-	// EdgeIdentifiers holds the string denoting the identifiers edge name in mutations.
-	EdgeIdentifiers = "identifiers"
-	// EdgeHashes holds the string denoting the hashes edge name in mutations.
-	EdgeHashes = "hashes"
 	// EdgePrimaryPurpose holds the string denoting the primary_purpose edge name in mutations.
 	EdgePrimaryPurpose = "primary_purpose"
 	// EdgeToNodes holds the string denoting the to_nodes edge name in mutations.
 	EdgeToNodes = "to_nodes"
 	// EdgeNodes holds the string denoting the nodes edge name in mutations.
 	EdgeNodes = "nodes"
+	// EdgeProperties holds the string denoting the properties edge name in mutations.
+	EdgeProperties = "properties"
 	// EdgeNodeLists holds the string denoting the node_lists edge name in mutations.
 	EdgeNodeLists = "node_lists"
 	// EdgeEdgeTypes holds the string denoting the edge_types edge name in mutations.
 	EdgeEdgeTypes = "edge_types"
 	// Table holds the table name of the node in the database.
 	Table = "nodes"
+	// DocumentTable is the table that holds the document relation/edge.
+	DocumentTable = "nodes"
+	// DocumentInverseTable is the table name for the Document entity.
+	// It exists in this package in order to avoid circular dependency with the "document" package.
+	DocumentInverseTable = "documents"
+	// DocumentColumn is the table column denoting the document relation/edge.
+	DocumentColumn = "document_id"
 	// SuppliersTable is the table that holds the suppliers relation/edge.
 	SuppliersTable = "persons"
 	// SuppliersInverseTable is the table name for the Person entity.
@@ -100,20 +118,6 @@ const (
 	ExternalReferencesInverseTable = "external_references"
 	// ExternalReferencesColumn is the table column denoting the external_references relation/edge.
 	ExternalReferencesColumn = "node_id"
-	// IdentifiersTable is the table that holds the identifiers relation/edge.
-	IdentifiersTable = "identifiers_entries"
-	// IdentifiersInverseTable is the table name for the IdentifiersEntry entity.
-	// It exists in this package in order to avoid circular dependency with the "identifiersentry" package.
-	IdentifiersInverseTable = "identifiers_entries"
-	// IdentifiersColumn is the table column denoting the identifiers relation/edge.
-	IdentifiersColumn = "node_id"
-	// HashesTable is the table that holds the hashes relation/edge.
-	HashesTable = "hashes_entries"
-	// HashesInverseTable is the table name for the HashesEntry entity.
-	// It exists in this package in order to avoid circular dependency with the "hashesentry" package.
-	HashesInverseTable = "hashes_entries"
-	// HashesColumn is the table column denoting the hashes relation/edge.
-	HashesColumn = "node_id"
 	// PrimaryPurposeTable is the table that holds the primary_purpose relation/edge.
 	PrimaryPurposeTable = "purposes"
 	// PrimaryPurposeInverseTable is the table name for the Purpose entity.
@@ -125,6 +129,13 @@ const (
 	ToNodesTable = "edge_types"
 	// NodesTable is the table that holds the nodes relation/edge. The primary key declared below.
 	NodesTable = "edge_types"
+	// PropertiesTable is the table that holds the properties relation/edge.
+	PropertiesTable = "properties"
+	// PropertiesInverseTable is the table name for the Property entity.
+	// It exists in this package in order to avoid circular dependency with the "property" package.
+	PropertiesInverseTable = "properties"
+	// PropertiesColumn is the table column denoting the properties relation/edge.
+	PropertiesColumn = "node_id"
 	// NodeListsTable is the table that holds the node_lists relation/edge. The primary key declared below.
 	NodeListsTable = "node_list_nodes"
 	// NodeListsInverseTable is the table name for the NodeList entity.
@@ -142,6 +153,9 @@ const (
 // Columns holds all SQL columns for node fields.
 var Columns = []string{
 	FieldID,
+	FieldDocumentID,
+	FieldProtoMessage,
+	FieldNodeListID,
 	FieldType,
 	FieldName,
 	FieldVersion,
@@ -161,6 +175,8 @@ var Columns = []string{
 	FieldValidUntilDate,
 	FieldAttribution,
 	FieldFileTypes,
+	FieldHashes,
+	FieldIdentifiers,
 }
 
 var (
@@ -186,6 +202,8 @@ func ValidColumn(column string) bool {
 }
 
 var (
+	// DefaultDocumentID holds the default value on creation for the "document_id" field.
+	DefaultDocumentID func() uuid.UUID
 	// IDValidator is a validator for the "id" field. It is called by the builders before save.
 	IDValidator func(string) error
 )
@@ -219,6 +237,16 @@ type OrderOption func(*sql.Selector)
 // ByID orders the results by the id field.
 func ByID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldID, opts...).ToFunc()
+}
+
+// ByDocumentID orders the results by the document_id field.
+func ByDocumentID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDocumentID, opts...).ToFunc()
+}
+
+// ByNodeListID orders the results by the node_list_id field.
+func ByNodeListID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldNodeListID, opts...).ToFunc()
 }
 
 // ByType orders the results by the type field.
@@ -301,6 +329,13 @@ func ByValidUntilDate(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldValidUntilDate, opts...).ToFunc()
 }
 
+// ByDocumentField orders the results by document field.
+func ByDocumentField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newDocumentStep(), sql.OrderByField(field, opts...))
+	}
+}
+
 // BySuppliersCount orders the results by suppliers count.
 func BySuppliersCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -340,34 +375,6 @@ func ByExternalReferencesCount(opts ...sql.OrderTermOption) OrderOption {
 func ByExternalReferences(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	return func(s *sql.Selector) {
 		sqlgraph.OrderByNeighborTerms(s, newExternalReferencesStep(), append([]sql.OrderTerm{term}, terms...)...)
-	}
-}
-
-// ByIdentifiersCount orders the results by identifiers count.
-func ByIdentifiersCount(opts ...sql.OrderTermOption) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborsCount(s, newIdentifiersStep(), opts...)
-	}
-}
-
-// ByIdentifiers orders the results by identifiers terms.
-func ByIdentifiers(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newIdentifiersStep(), append([]sql.OrderTerm{term}, terms...)...)
-	}
-}
-
-// ByHashesCount orders the results by hashes count.
-func ByHashesCount(opts ...sql.OrderTermOption) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborsCount(s, newHashesStep(), opts...)
-	}
-}
-
-// ByHashes orders the results by hashes terms.
-func ByHashes(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newHashesStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
 
@@ -413,6 +420,20 @@ func ByNodes(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	}
 }
 
+// ByPropertiesCount orders the results by properties count.
+func ByPropertiesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newPropertiesStep(), opts...)
+	}
+}
+
+// ByProperties orders the results by properties terms.
+func ByProperties(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newPropertiesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
 // ByNodeListsCount orders the results by node_lists count.
 func ByNodeListsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -440,6 +461,13 @@ func ByEdgeTypes(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newEdgeTypesStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+func newDocumentStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(DocumentInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, false, DocumentTable, DocumentColumn),
+	)
+}
 func newSuppliersStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -461,20 +489,6 @@ func newExternalReferencesStep() *sqlgraph.Step {
 		sqlgraph.Edge(sqlgraph.O2M, false, ExternalReferencesTable, ExternalReferencesColumn),
 	)
 }
-func newIdentifiersStep() *sqlgraph.Step {
-	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(IdentifiersInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2M, false, IdentifiersTable, IdentifiersColumn),
-	)
-}
-func newHashesStep() *sqlgraph.Step {
-	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(HashesInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2M, false, HashesTable, HashesColumn),
-	)
-}
 func newPrimaryPurposeStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -494,6 +508,13 @@ func newNodesStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(Table, FieldID),
 		sqlgraph.Edge(sqlgraph.M2M, false, NodesTable, NodesPrimaryKey...),
+	)
+}
+func newPropertiesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(PropertiesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, PropertiesTable, PropertiesColumn),
 	)
 }
 func newNodeListsStep() *sqlgraph.Step {

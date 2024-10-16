@@ -10,6 +10,7 @@ package annotation
 import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"github.com/google/uuid"
 	"github.com/protobom/storage/internal/backends/ent/predicate"
 )
 
@@ -59,7 +60,7 @@ func IDLTE(id int) predicate.Annotation {
 }
 
 // DocumentID applies equality check predicate on the "document_id" field. It's identical to DocumentIDEQ.
-func DocumentID(v string) predicate.Annotation {
+func DocumentID(v uuid.UUID) predicate.Annotation {
 	return predicate.Annotation(sql.FieldEQ(FieldDocumentID, v))
 }
 
@@ -79,68 +80,33 @@ func IsUnique(v bool) predicate.Annotation {
 }
 
 // DocumentIDEQ applies the EQ predicate on the "document_id" field.
-func DocumentIDEQ(v string) predicate.Annotation {
+func DocumentIDEQ(v uuid.UUID) predicate.Annotation {
 	return predicate.Annotation(sql.FieldEQ(FieldDocumentID, v))
 }
 
 // DocumentIDNEQ applies the NEQ predicate on the "document_id" field.
-func DocumentIDNEQ(v string) predicate.Annotation {
+func DocumentIDNEQ(v uuid.UUID) predicate.Annotation {
 	return predicate.Annotation(sql.FieldNEQ(FieldDocumentID, v))
 }
 
 // DocumentIDIn applies the In predicate on the "document_id" field.
-func DocumentIDIn(vs ...string) predicate.Annotation {
+func DocumentIDIn(vs ...uuid.UUID) predicate.Annotation {
 	return predicate.Annotation(sql.FieldIn(FieldDocumentID, vs...))
 }
 
 // DocumentIDNotIn applies the NotIn predicate on the "document_id" field.
-func DocumentIDNotIn(vs ...string) predicate.Annotation {
+func DocumentIDNotIn(vs ...uuid.UUID) predicate.Annotation {
 	return predicate.Annotation(sql.FieldNotIn(FieldDocumentID, vs...))
 }
 
-// DocumentIDGT applies the GT predicate on the "document_id" field.
-func DocumentIDGT(v string) predicate.Annotation {
-	return predicate.Annotation(sql.FieldGT(FieldDocumentID, v))
+// DocumentIDIsNil applies the IsNil predicate on the "document_id" field.
+func DocumentIDIsNil() predicate.Annotation {
+	return predicate.Annotation(sql.FieldIsNull(FieldDocumentID))
 }
 
-// DocumentIDGTE applies the GTE predicate on the "document_id" field.
-func DocumentIDGTE(v string) predicate.Annotation {
-	return predicate.Annotation(sql.FieldGTE(FieldDocumentID, v))
-}
-
-// DocumentIDLT applies the LT predicate on the "document_id" field.
-func DocumentIDLT(v string) predicate.Annotation {
-	return predicate.Annotation(sql.FieldLT(FieldDocumentID, v))
-}
-
-// DocumentIDLTE applies the LTE predicate on the "document_id" field.
-func DocumentIDLTE(v string) predicate.Annotation {
-	return predicate.Annotation(sql.FieldLTE(FieldDocumentID, v))
-}
-
-// DocumentIDContains applies the Contains predicate on the "document_id" field.
-func DocumentIDContains(v string) predicate.Annotation {
-	return predicate.Annotation(sql.FieldContains(FieldDocumentID, v))
-}
-
-// DocumentIDHasPrefix applies the HasPrefix predicate on the "document_id" field.
-func DocumentIDHasPrefix(v string) predicate.Annotation {
-	return predicate.Annotation(sql.FieldHasPrefix(FieldDocumentID, v))
-}
-
-// DocumentIDHasSuffix applies the HasSuffix predicate on the "document_id" field.
-func DocumentIDHasSuffix(v string) predicate.Annotation {
-	return predicate.Annotation(sql.FieldHasSuffix(FieldDocumentID, v))
-}
-
-// DocumentIDEqualFold applies the EqualFold predicate on the "document_id" field.
-func DocumentIDEqualFold(v string) predicate.Annotation {
-	return predicate.Annotation(sql.FieldEqualFold(FieldDocumentID, v))
-}
-
-// DocumentIDContainsFold applies the ContainsFold predicate on the "document_id" field.
-func DocumentIDContainsFold(v string) predicate.Annotation {
-	return predicate.Annotation(sql.FieldContainsFold(FieldDocumentID, v))
+// DocumentIDNotNil applies the NotNil predicate on the "document_id" field.
+func DocumentIDNotNil() predicate.Annotation {
+	return predicate.Annotation(sql.FieldNotNull(FieldDocumentID))
 }
 
 // NameEQ applies the EQ predicate on the "name" field.
@@ -288,7 +254,7 @@ func HasDocument() predicate.Annotation {
 	return predicate.Annotation(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, DocumentTable, DocumentColumn),
+			sqlgraph.Edge(sqlgraph.M2O, false, DocumentTable, DocumentColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})

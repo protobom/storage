@@ -10,6 +10,7 @@ package annotation
 import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"github.com/google/uuid"
 )
 
 const (
@@ -47,6 +48,12 @@ var Columns = []string{
 	FieldIsUnique,
 }
 
+// ForeignKeys holds the SQL foreign-keys that are owned by the "annotations"
+// table and are not defined as standalone fields in the schema.
+var ForeignKeys = []string{
+	"document_annotations",
+}
+
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {
 	for i := range Columns {
@@ -54,10 +61,17 @@ func ValidColumn(column string) bool {
 			return true
 		}
 	}
+	for i := range ForeignKeys {
+		if column == ForeignKeys[i] {
+			return true
+		}
+	}
 	return false
 }
 
 var (
+	// DefaultDocumentID holds the default value on creation for the "document_id" field.
+	DefaultDocumentID func() uuid.UUID
 	// DefaultIsUnique holds the default value on creation for the "is_unique" field.
 	DefaultIsUnique bool
 )
@@ -100,6 +114,6 @@ func newDocumentStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(DocumentInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.M2O, true, DocumentTable, DocumentColumn),
+		sqlgraph.Edge(sqlgraph.M2O, false, DocumentTable, DocumentColumn),
 	)
 }

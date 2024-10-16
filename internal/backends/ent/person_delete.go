@@ -4,6 +4,7 @@
 // SPDX-FileType: SOURCE
 // SPDX-License-Identifier: Apache-2.0
 // --------------------------------------------------------------
+
 package ent
 
 import (
@@ -44,7 +45,7 @@ func (pd *PersonDelete) ExecX(ctx context.Context) int {
 }
 
 func (pd *PersonDelete) sqlExec(ctx context.Context) (int, error) {
-	_spec := sqlgraph.NewDeleteSpec(person.Table, sqlgraph.NewFieldSpec(person.FieldID, field.TypeInt))
+	_spec := sqlgraph.NewDeleteSpec(person.Table, sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID))
 	if ps := pd.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {

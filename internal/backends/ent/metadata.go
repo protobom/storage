@@ -4,6 +4,7 @@
 // SPDX-FileType: SOURCE
 // SPDX-License-Identifier: Apache-2.0
 // --------------------------------------------------------------
+
 package ent
 
 import (
@@ -13,6 +14,7 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/protobom/protobom/pkg/sbom"
 	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/metadata"
 )
@@ -22,6 +24,8 @@ type Metadata struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID string `json:"id,omitempty"`
+	// ProtoMessage holds the value of the "proto_message" field.
+	ProtoMessage *sbom.Metadata `json:"proto_message,omitempty"`
 	// Version holds the value of the "version" field.
 	Version string `json:"version,omitempty"`
 	// Name holds the value of the "name" field.
@@ -94,6 +98,8 @@ func (*Metadata) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case metadata.FieldProtoMessage:
+			values[i] = new(sbom.Metadata)
 		case metadata.FieldID, metadata.FieldVersion, metadata.FieldName, metadata.FieldComment:
 			values[i] = new(sql.NullString)
 		case metadata.FieldDate:
@@ -118,6 +124,12 @@ func (m *Metadata) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value.Valid {
 				m.ID = value.String
+			}
+		case metadata.FieldProtoMessage:
+			if value, ok := values[i].(*sbom.Metadata); !ok {
+				return fmt.Errorf("unexpected type %T for field proto_message", values[i])
+			} else if value != nil {
+				m.ProtoMessage = value
 			}
 		case metadata.FieldVersion:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -199,6 +211,9 @@ func (m *Metadata) String() string {
 	var builder strings.Builder
 	builder.WriteString("Metadata(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", m.ID))
+	builder.WriteString("proto_message=")
+	builder.WriteString(fmt.Sprintf("%v", m.ProtoMessage))
+	builder.WriteString(", ")
 	builder.WriteString("version=")
 	builder.WriteString(m.Version)
 	builder.WriteString(", ")

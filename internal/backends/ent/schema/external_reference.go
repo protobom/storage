@@ -3,6 +3,7 @@
 // SPDX-FileType: SOURCE
 // SPDX-License-Identifier: Apache-2.0
 // --------------------------------------------------------------
+
 package schema
 
 import (
@@ -10,87 +11,35 @@ import (
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
+	"github.com/protobom/protobom/pkg/sbom"
 )
 
 type ExternalReference struct {
 	ent.Schema
 }
 
-func (ExternalReference) Fields() []ent.Field { //nolint:funlen
+func (ExternalReference) Mixin() []ent.Mixin {
+	return []ent.Mixin{
+		DocumentMixin{},
+		ProtoMessageMixin[*sbom.ExternalReference]{},
+		UUIDMixin{},
+	}
+}
+
+func (ExternalReference) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("node_id").Optional(),
 		field.String("url"),
 		field.String("comment"),
 		field.String("authority").Optional(),
-		field.Enum("type").Values(
-			"UNKNOWN",
-			"ATTESTATION",
-			"BINARY",
-			"BOM",
-			"BOWER",
-			"BUILD_META",
-			"BUILD_SYSTEM",
-			"CERTIFICATION_REPORT",
-			"CHAT",
-			"CODIFIED_INFRASTRUCTURE",
-			"COMPONENT_ANALYSIS_REPORT",
-			"CONFIGURATION",
-			"DISTRIBUTION_INTAKE",
-			"DOCUMENTATION",
-			"DOWNLOAD",
-			"DYNAMIC_ANALYSIS_REPORT",
-			"EOL_NOTICE",
-			"EVIDENCE",
-			"EXPORT_CONTROL_ASSESSMENT",
-			"FORMULATION",
-			"FUNDING",
-			"ISSUE_TRACKER",
-			"LICENSE",
-			"LOG",
-			"MAILING_LIST",
-			"MATURITY_REPORT",
-			"MAVEN_CENTRAL",
-			"METRICS",
-			"MODEL_CARD",
-			"NPM",
-			"NUGET",
-			"OTHER",
-			"POAM",
-			"PRIVACY_ASSESSMENT",
-			"PRODUCT_METADATA",
-			"PURCHASE_ORDER",
-			"QUALITY_ASSESSMENT_REPORT",
-			"QUALITY_METRICS",
-			"RELEASE_HISTORY",
-			"RELEASE_NOTES",
-			"RISK_ASSESSMENT",
-			"RUNTIME_ANALYSIS_REPORT",
-			"SECURE_SOFTWARE_ATTESTATION",
-			"SECURITY_ADVERSARY_MODEL",
-			"SECURITY_ADVISORY",
-			"SECURITY_CONTACT",
-			"SECURITY_FIX",
-			"SECURITY_OTHER",
-			"SECURITY_PENTEST_REPORT",
-			"SECURITY_POLICY",
-			"SECURITY_SWID",
-			"SECURITY_THREAT_MODEL",
-			"SOCIAL",
-			"SOURCE_ARTIFACT",
-			"STATIC_ANALYSIS_REPORT",
-			"SUPPORT",
-			"VCS",
-			"VULNERABILITY_ASSERTION",
-			"VULNERABILITY_DISCLOSURE_REPORT",
-			"VULNERABILITY_EXPLOITABILITY_ASSESSMENT",
-			"WEBSITE",
-		),
+		field.Enum("type").
+			Values(enumValues(new(sbom.ExternalReference_ExternalReferenceType))...),
+		field.JSON("hashes", map[int32]string{}).Optional(),
 	}
 }
 
 func (ExternalReference) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.To("hashes", HashesEntry.Type),
 		edge.From("node", Node.Type).Ref("external_references").Unique().Field("node_id"),
 	}
 }

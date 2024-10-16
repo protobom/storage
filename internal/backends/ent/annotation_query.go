@@ -4,6 +4,7 @@
 // SPDX-FileType: SOURCE
 // SPDX-License-Identifier: Apache-2.0
 // --------------------------------------------------------------
+
 package ent
 
 import (
@@ -15,6 +16,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/google/uuid"
 	"github.com/protobom/storage/internal/backends/ent/annotation"
 	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/predicate"
@@ -28,6 +30,7 @@ type AnnotationQuery struct {
 	inters       []Interceptor
 	predicates   []predicate.Annotation
 	withDocument *DocumentQuery
+	withFKs      bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -78,7 +81,7 @@ func (aq *AnnotationQuery) QueryDocument() *DocumentQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(annotation.Table, annotation.FieldID, selector),
 			sqlgraph.To(document.Table, document.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, annotation.DocumentTable, annotation.DocumentColumn),
+			sqlgraph.Edge(sqlgraph.M2O, false, annotation.DocumentTable, annotation.DocumentColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(aq.driver.Dialect(), step)
 		return fromU, nil
@@ -302,7 +305,7 @@ func (aq *AnnotationQuery) WithDocument(opts ...func(*DocumentQuery)) *Annotatio
 // Example:
 //
 //	var v []struct {
-//		DocumentID string `json:"document_id,omitempty"`
+//		DocumentID uuid.UUID `json:"document_id,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
@@ -325,7 +328,7 @@ func (aq *AnnotationQuery) GroupBy(field string, fields ...string) *AnnotationGr
 // Example:
 //
 //	var v []struct {
-//		DocumentID string `json:"document_id,omitempty"`
+//		DocumentID uuid.UUID `json:"document_id,omitempty"`
 //	}
 //
 //	client.Annotation.Query().
@@ -373,11 +376,15 @@ func (aq *AnnotationQuery) prepareQuery(ctx context.Context) error {
 func (aq *AnnotationQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Annotation, error) {
 	var (
 		nodes       = []*Annotation{}
+		withFKs     = aq.withFKs
 		_spec       = aq.querySpec()
 		loadedTypes = [1]bool{
 			aq.withDocument != nil,
 		}
 	)
+	if withFKs {
+		_spec.Node.Columns = append(_spec.Node.Columns, annotation.ForeignKeys...)
+	}
 	_spec.ScanValues = func(columns []string) ([]any, error) {
 		return (*Annotation).scanValues(nil, columns)
 	}
@@ -406,8 +413,8 @@ func (aq *AnnotationQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*A
 }
 
 func (aq *AnnotationQuery) loadDocument(ctx context.Context, query *DocumentQuery, nodes []*Annotation, init func(*Annotation), assign func(*Annotation, *Document)) error {
-	ids := make([]string, 0, len(nodes))
-	nodeids := make(map[string][]*Annotation)
+	ids := make([]uuid.UUID, 0, len(nodes))
+	nodeids := make(map[uuid.UUID][]*Annotation)
 	for i := range nodes {
 		fk := nodes[i].DocumentID
 		if _, ok := nodeids[fk]; !ok {

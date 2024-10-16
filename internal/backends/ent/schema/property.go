@@ -3,6 +3,7 @@
 // SPDX-FileType: SOURCE
 // SPDX-License-Identifier: Apache-2.0
 // --------------------------------------------------------------
+
 package schema
 
 import (
@@ -10,39 +11,42 @@ import (
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
+	"github.com/protobom/protobom/pkg/sbom"
 )
 
-type IdentifiersEntry struct {
+type Property struct {
 	ent.Schema
 }
 
-func (IdentifiersEntry) Fields() []ent.Field {
-	return []ent.Field{
-		field.String("node_id").Optional(),
-		field.Enum("software_identifier_type").Values(
-			"UNKNOWN_IDENTIFIER_TYPE",
-			"PURL",
-			"CPE22",
-			"CPE23",
-			"GITOID",
-		),
-		field.String("software_identifier_value"),
+func (Property) Mixin() []ent.Mixin {
+	return []ent.Mixin{
+		DocumentMixin{},
+		ProtoMessageMixin[*sbom.Property]{},
+		UUIDMixin{},
 	}
 }
 
-func (IdentifiersEntry) Edges() []ent.Edge {
+func (Property) Fields() []ent.Field {
+	return []ent.Field{
+		field.String("node_id").Optional(),
+		field.String("name"),
+		field.String("data"),
+	}
+}
+
+func (Property) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("node", Node.Type).
-			Ref("identifiers").
+			Ref("properties").
 			Unique().
 			Field("node_id"),
 	}
 }
 
-func (IdentifiersEntry) Indexes() []ent.Index {
+func (Property) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("node_id", "software_identifier_type", "software_identifier_value").
+		index.Fields("name", "data").
 			Unique().
-			StorageKey("idx_identifiers_entries"),
+			StorageKey("idx_property"),
 	}
 }

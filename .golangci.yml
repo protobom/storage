@@ -82,17 +82,20 @@ linters:
     - prealloc
     - predeclared
     - promlinter
+    - protogetter
     - revive
     - staticcheck
     - stylecheck
     - tagliatelle
     - testpackage
+    - testifylint
     - thelper
     - tparallel
     - typecheck
     - unconvert
     - unparam
     - unused
+    - varnamelen
     - wastedassign
     - whitespace
     - wrapcheck
@@ -107,21 +110,14 @@ linters-settings:
     # https://golangci-lint.run/usage/linters/#exhaustive
     default-signifies-exhaustive: true
 
-  govet:
-    enable:
-      - fieldalignment
-
-  godox:
-    keywords:
-      - BUG
-      - FIXME
-      - HACK
-
   gci:
     sections:
       - standard
       - default
       - prefix(github.com/protobom/storage)
+
+  gocognit:
+    min-complexity: 10
 
   gocritic:
     enabled-checks:
@@ -164,6 +160,67 @@ linters-settings:
       - unnamedResult
       - unnecessaryBlock
 
+  godox:
+    keywords:
+      - BUG
+      - FIXME
+      - HACK
+
+  govet:
+    enable:
+      - fieldalignment
+
   nolintlint:
     allow-unused: false
     require-specific: true
+
+  revive:
+    enable-all-rules: true
+
+    rules:
+      - name: add-constant
+        exclude: [TEST]
+        arguments:
+          - maxLitCount: "5"
+            allowStrs: '""'
+            allowInts: 0,1,2
+            allowFloats: 0.0,0.,1.0,1.,2.0,2.
+            ignoreFuncs: os\.*,fmt\.*,make,viper\.*
+
+      # Handled by the `gocognit` linter
+      - name: cognitive-complexity
+        disabled: true
+
+      - name: confusing-naming
+        exclude: [TEST]
+
+      # Handled by the `cyclop` linter
+      - name: cyclomatic
+        disabled: true
+
+      - name: exported
+        arguments: [checkPrivateReceivers, sayRepetitiveInsteadOfStutters]
+
+      - name: function-length
+        exclude: [TEST]
+
+      # Handled by the `lll` linter
+      - name: line-length-limit
+        disabled: true
+
+      - name: max-public-structs
+        exclude: [TEST]
+
+      - name: unhandled-error
+        arguments: [fmt\..*]
+
+      - name: unused-parameter
+        arguments:
+          # Ignore all parameters beginning with "_"
+          - allowRegex: ^_
+
+  testifylint:
+    enable-all: true
+
+  varnamelen:
+    ignore-names: [fn, id, tx]

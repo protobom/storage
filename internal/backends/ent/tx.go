@@ -4,6 +4,7 @@
 // SPDX-FileType: SOURCE
 // SPDX-License-Identifier: Apache-2.0
 // --------------------------------------------------------------
+
 package ent
 
 import (
@@ -28,10 +29,6 @@ type Tx struct {
 	EdgeType *EdgeTypeClient
 	// ExternalReference is the client for interacting with the ExternalReference builders.
 	ExternalReference *ExternalReferenceClient
-	// HashesEntry is the client for interacting with the HashesEntry builders.
-	HashesEntry *HashesEntryClient
-	// IdentifiersEntry is the client for interacting with the IdentifiersEntry builders.
-	IdentifiersEntry *IdentifiersEntryClient
 	// Metadata is the client for interacting with the Metadata builders.
 	Metadata *MetadataClient
 	// Node is the client for interacting with the Node builders.
@@ -40,6 +37,8 @@ type Tx struct {
 	NodeList *NodeListClient
 	// Person is the client for interacting with the Person builders.
 	Person *PersonClient
+	// Property is the client for interacting with the Property builders.
+	Property *PropertyClient
 	// Purpose is the client for interacting with the Purpose builders.
 	Purpose *PurposeClient
 	// Tool is the client for interacting with the Tool builders.
@@ -180,12 +179,11 @@ func (tx *Tx) init() {
 	tx.DocumentType = NewDocumentTypeClient(tx.config)
 	tx.EdgeType = NewEdgeTypeClient(tx.config)
 	tx.ExternalReference = NewExternalReferenceClient(tx.config)
-	tx.HashesEntry = NewHashesEntryClient(tx.config)
-	tx.IdentifiersEntry = NewIdentifiersEntryClient(tx.config)
 	tx.Metadata = NewMetadataClient(tx.config)
 	tx.Node = NewNodeClient(tx.config)
 	tx.NodeList = NewNodeListClient(tx.config)
 	tx.Person = NewPersonClient(tx.config)
+	tx.Property = NewPropertyClient(tx.config)
 	tx.Purpose = NewPurposeClient(tx.config)
 	tx.Tool = NewToolClient(tx.config)
 }

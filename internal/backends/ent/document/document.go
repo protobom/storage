@@ -17,40 +17,46 @@ const (
 	Label = "document"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
+	// FieldMetadataID holds the string denoting the metadata_id field in the database.
+	FieldMetadataID = "metadata_id"
+	// FieldNodeListID holds the string denoting the node_list_id field in the database.
+	FieldNodeListID = "node_list_id"
+	// EdgeAnnotations holds the string denoting the annotations edge name in mutations.
+	EdgeAnnotations = "annotations"
 	// EdgeMetadata holds the string denoting the metadata edge name in mutations.
 	EdgeMetadata = "metadata"
 	// EdgeNodeList holds the string denoting the node_list edge name in mutations.
 	EdgeNodeList = "node_list"
-	// EdgeAnnotations holds the string denoting the annotations edge name in mutations.
-	EdgeAnnotations = "annotations"
 	// Table holds the table name of the document in the database.
 	Table = "documents"
-	// MetadataTable is the table that holds the metadata relation/edge.
-	MetadataTable = "metadata"
-	// MetadataInverseTable is the table name for the Metadata entity.
-	// It exists in this package in order to avoid circular dependency with the "metadata" package.
-	MetadataInverseTable = "metadata"
-	// MetadataColumn is the table column denoting the metadata relation/edge.
-	MetadataColumn = "id"
-	// NodeListTable is the table that holds the node_list relation/edge.
-	NodeListTable = "node_lists"
-	// NodeListInverseTable is the table name for the NodeList entity.
-	// It exists in this package in order to avoid circular dependency with the "nodelist" package.
-	NodeListInverseTable = "node_lists"
-	// NodeListColumn is the table column denoting the node_list relation/edge.
-	NodeListColumn = "document_id"
 	// AnnotationsTable is the table that holds the annotations relation/edge.
 	AnnotationsTable = "annotations"
 	// AnnotationsInverseTable is the table name for the Annotation entity.
 	// It exists in this package in order to avoid circular dependency with the "annotation" package.
 	AnnotationsInverseTable = "annotations"
 	// AnnotationsColumn is the table column denoting the annotations relation/edge.
-	AnnotationsColumn = "document_id"
+	AnnotationsColumn = "document_annotations"
+	// MetadataTable is the table that holds the metadata relation/edge.
+	MetadataTable = "documents"
+	// MetadataInverseTable is the table name for the Metadata entity.
+	// It exists in this package in order to avoid circular dependency with the "metadata" package.
+	MetadataInverseTable = "metadata"
+	// MetadataColumn is the table column denoting the metadata relation/edge.
+	MetadataColumn = "metadata_id"
+	// NodeListTable is the table that holds the node_list relation/edge.
+	NodeListTable = "documents"
+	// NodeListInverseTable is the table name for the NodeList entity.
+	// It exists in this package in order to avoid circular dependency with the "nodelist" package.
+	NodeListInverseTable = "node_lists"
+	// NodeListColumn is the table column denoting the node_list relation/edge.
+	NodeListColumn = "node_list_id"
 )
 
 // Columns holds all SQL columns for document fields.
 var Columns = []string{
 	FieldID,
+	FieldMetadataID,
+	FieldNodeListID,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -71,18 +77,14 @@ func ByID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldID, opts...).ToFunc()
 }
 
-// ByMetadataField orders the results by metadata field.
-func ByMetadataField(field string, opts ...sql.OrderTermOption) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newMetadataStep(), sql.OrderByField(field, opts...))
-	}
+// ByMetadataID orders the results by the metadata_id field.
+func ByMetadataID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldMetadataID, opts...).ToFunc()
 }
 
-// ByNodeListField orders the results by node_list field.
-func ByNodeListField(field string, opts ...sql.OrderTermOption) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newNodeListStep(), sql.OrderByField(field, opts...))
-	}
+// ByNodeListID orders the results by the node_list_id field.
+func ByNodeListID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldNodeListID, opts...).ToFunc()
 }
 
 // ByAnnotationsCount orders the results by annotations count.
@@ -98,24 +100,38 @@ func ByAnnotations(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newAnnotationsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
-func newMetadataStep() *sqlgraph.Step {
-	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(MetadataInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2O, false, MetadataTable, MetadataColumn),
-	)
+
+// ByMetadataField orders the results by metadata field.
+func ByMetadataField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newMetadataStep(), sql.OrderByField(field, opts...))
+	}
 }
-func newNodeListStep() *sqlgraph.Step {
-	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(NodeListInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2O, false, NodeListTable, NodeListColumn),
-	)
+
+// ByNodeListField orders the results by node_list field.
+func ByNodeListField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newNodeListStep(), sql.OrderByField(field, opts...))
+	}
 }
 func newAnnotationsStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(AnnotationsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, AnnotationsTable, AnnotationsColumn),
+	)
+}
+func newMetadataStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(MetadataInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2O, true, MetadataTable, MetadataColumn),
+	)
+}
+func newNodeListStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(NodeListInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2O, true, NodeListTable, NodeListColumn),
 	)
 }

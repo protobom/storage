@@ -12,6 +12,7 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"github.com/google/uuid"
 )
 
 const (
@@ -19,18 +20,29 @@ const (
 	Label = "edge_type"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
+	// FieldDocumentID holds the string denoting the document_id field in the database.
+	FieldDocumentID = "document_id"
 	// FieldType holds the string denoting the type field in the database.
 	FieldType = "type"
 	// FieldNodeID holds the string denoting the node_id field in the database.
 	FieldNodeID = "node_id"
 	// FieldToNodeID holds the string denoting the to_node_id field in the database.
 	FieldToNodeID = "to_node_id"
+	// EdgeDocument holds the string denoting the document edge name in mutations.
+	EdgeDocument = "document"
 	// EdgeFrom holds the string denoting the from edge name in mutations.
 	EdgeFrom = "from"
 	// EdgeTo holds the string denoting the to edge name in mutations.
 	EdgeTo = "to"
 	// Table holds the table name of the edgetype in the database.
 	Table = "edge_types"
+	// DocumentTable is the table that holds the document relation/edge.
+	DocumentTable = "edge_types"
+	// DocumentInverseTable is the table name for the Document entity.
+	// It exists in this package in order to avoid circular dependency with the "document" package.
+	DocumentInverseTable = "documents"
+	// DocumentColumn is the table column denoting the document relation/edge.
+	DocumentColumn = "document_id"
 	// FromTable is the table that holds the from relation/edge.
 	FromTable = "edge_types"
 	// FromInverseTable is the table name for the Node entity.
@@ -50,6 +62,7 @@ const (
 // Columns holds all SQL columns for edgetype fields.
 var Columns = []string{
 	FieldID,
+	FieldDocumentID,
 	FieldType,
 	FieldNodeID,
 	FieldToNodeID,
@@ -64,6 +77,11 @@ func ValidColumn(column string) bool {
 	}
 	return false
 }
+
+var (
+	// DefaultDocumentID holds the default value on creation for the "document_id" field.
+	DefaultDocumentID func() uuid.UUID
+)
 
 // Type defines the type for the "type" enum field.
 type Type string
@@ -139,6 +157,11 @@ func ByID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldID, opts...).ToFunc()
 }
 
+// ByDocumentID orders the results by the document_id field.
+func ByDocumentID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDocumentID, opts...).ToFunc()
+}
+
 // ByType orders the results by the type field.
 func ByType(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldType, opts...).ToFunc()
@@ -154,6 +177,13 @@ func ByToNodeID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldToNodeID, opts...).ToFunc()
 }
 
+// ByDocumentField orders the results by document field.
+func ByDocumentField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newDocumentStep(), sql.OrderByField(field, opts...))
+	}
+}
+
 // ByFromField orders the results by from field.
 func ByFromField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -166,6 +196,13 @@ func ByToField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
 		sqlgraph.OrderByNeighborTerms(s, newToStep(), sql.OrderByField(field, opts...))
 	}
+}
+func newDocumentStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(DocumentInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, false, DocumentTable, DocumentColumn),
+	)
 }
 func newFromStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(

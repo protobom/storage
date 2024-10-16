@@ -3,6 +3,7 @@
 // SPDX-FileType: SOURCE
 // SPDX-License-Identifier: Apache-2.0
 // --------------------------------------------------------------
+
 package ent
 
 import (
@@ -109,7 +110,7 @@ func (backend *Backend) WithDatabaseFile(file string) *Backend {
 	return backend
 }
 
-func (backend *Backend) withTx(fns ...txFunc) error {
+func (backend *Backend) withTx(fns ...TxFunc) error {
 	if backend.client == nil {
 		return fmt.Errorf("%w", errUninitializedClient)
 	}
