@@ -14,7 +14,9 @@ import (
 	"database/sql"
 	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"strings"
 
@@ -29,9 +31,13 @@ import (
 const dsn = "sqlite://:memory:?_pragma=foreign_keys(1)"
 
 func main() {
-	if len(os.Args) != 2 {
-		log.Fatalln("migration name is required. Use: 'go run -mod=mod internal/backends/ent/migrate/main.go <name>'")
+	output, err := exec.Command("git", "branch", "--show-current").Output()
+	if err != nil {
+		log.Fatal("failed getting current Git branch")
 	}
+
+	output = regexp.MustCompile(`^\d+-|\n`).ReplaceAll(output, []byte(""))
+	migrationName := string(regexp.MustCompile(`^\d+-|[^\w]+`).ReplaceAll(output, []byte("_")))
 
 	// Register the SQLite driver as "sqlite3".
 	if !slices.Contains(sql.Drivers(), "sqlite3") {
@@ -52,7 +58,7 @@ func main() {
 
 	// Create a local migration directory able to understand Atlas migration file format for replay.
 	if err := os.MkdirAll(migrationDir, 0755); err != nil {
-		log.Fatalf("creating migration directory: %v", err)
+		log.Fatalf("failed creating migration directory: %v", err)
 	}
 
 	localDir, err := atlas.NewLocalDir(migrationDir)
@@ -70,7 +76,7 @@ func main() {
 	}
 
 	// Generate migrations using Atlas support for MySQL (note the Ent dialect option passed above).
-	err = migrate.NamedDiff(ctx, dsn, os.Args[1], opts...)
+	err = migrate.NamedDiff(ctx, dsn, string(migrationName), opts...)
 	if err != nil {
 		log.Fatalf("failed generating migration file: %v", err)
 	}

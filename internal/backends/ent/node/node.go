@@ -82,6 +82,8 @@ const (
 	EdgeToNodes = "to_nodes"
 	// EdgeNodes holds the string denoting the nodes edge name in mutations.
 	EdgeNodes = "nodes"
+	// EdgeProperties holds the string denoting the properties edge name in mutations.
+	EdgeProperties = "properties"
 	// EdgeNodeLists holds the string denoting the node_lists edge name in mutations.
 	EdgeNodeLists = "node_lists"
 	// EdgeEdgeTypes holds the string denoting the edge_types edge name in mutations.
@@ -127,6 +129,13 @@ const (
 	ToNodesTable = "edge_types"
 	// NodesTable is the table that holds the nodes relation/edge. The primary key declared below.
 	NodesTable = "edge_types"
+	// PropertiesTable is the table that holds the properties relation/edge.
+	PropertiesTable = "properties"
+	// PropertiesInverseTable is the table name for the Property entity.
+	// It exists in this package in order to avoid circular dependency with the "property" package.
+	PropertiesInverseTable = "properties"
+	// PropertiesColumn is the table column denoting the properties relation/edge.
+	PropertiesColumn = "node_id"
 	// NodeListsTable is the table that holds the node_lists relation/edge. The primary key declared below.
 	NodeListsTable = "node_list_nodes"
 	// NodeListsInverseTable is the table name for the NodeList entity.
@@ -411,6 +420,20 @@ func ByNodes(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	}
 }
 
+// ByPropertiesCount orders the results by properties count.
+func ByPropertiesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newPropertiesStep(), opts...)
+	}
+}
+
+// ByProperties orders the results by properties terms.
+func ByProperties(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newPropertiesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
 // ByNodeListsCount orders the results by node_lists count.
 func ByNodeListsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -485,6 +508,13 @@ func newNodesStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(Table, FieldID),
 		sqlgraph.Edge(sqlgraph.M2M, false, NodesTable, NodesPrimaryKey...),
+	)
+}
+func newPropertiesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(PropertiesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, PropertiesTable, PropertiesColumn),
 	)
 }
 func newNodeListsStep() *sqlgraph.Step {

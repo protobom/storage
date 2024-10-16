@@ -38,6 +38,9 @@ type NodeList func(*sql.Selector)
 // Person is the predicate function for person builders.
 type Person func(*sql.Selector)
 
+// Property is the predicate function for property builders.
+type Property func(*sql.Selector)
+
 // Purpose is the predicate function for purpose builders.
 type Purpose func(*sql.Selector)
 

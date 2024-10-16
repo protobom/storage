@@ -25,6 +25,7 @@ import (
 	"github.com/protobom/storage/internal/backends/ent/node"
 	"github.com/protobom/storage/internal/backends/ent/nodelist"
 	"github.com/protobom/storage/internal/backends/ent/person"
+	"github.com/protobom/storage/internal/backends/ent/property"
 	"github.com/protobom/storage/internal/backends/ent/purpose"
 )
 
@@ -295,6 +296,21 @@ func (nc *NodeCreate) AddNodes(n ...*Node) *NodeCreate {
 		ids[i] = n[i].ID
 	}
 	return nc.AddNodeIDs(ids...)
+}
+
+// AddPropertyIDs adds the "properties" edge to the Property entity by IDs.
+func (nc *NodeCreate) AddPropertyIDs(ids ...uuid.UUID) *NodeCreate {
+	nc.mutation.AddPropertyIDs(ids...)
+	return nc
+}
+
+// AddProperties adds the "properties" edges to the Property entity.
+func (nc *NodeCreate) AddProperties(p ...*Property) *NodeCreate {
+	ids := make([]uuid.UUID, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return nc.AddPropertyIDs(ids...)
 }
 
 // AddNodeListIDs adds the "node_lists" edge to the NodeList entity by IDs.
@@ -675,6 +691,22 @@ func (nc *NodeCreate) createSpec() (*Node, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := nc.mutation.PropertiesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   node.PropertiesTable,
+			Columns: []string{node.PropertiesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(property.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

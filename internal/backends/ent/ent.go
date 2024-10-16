@@ -26,6 +26,7 @@ import (
 	"github.com/protobom/storage/internal/backends/ent/node"
 	"github.com/protobom/storage/internal/backends/ent/nodelist"
 	"github.com/protobom/storage/internal/backends/ent/person"
+	"github.com/protobom/storage/internal/backends/ent/property"
 	"github.com/protobom/storage/internal/backends/ent/purpose"
 	"github.com/protobom/storage/internal/backends/ent/tool"
 )
@@ -97,6 +98,7 @@ func checkColumn(table, column string) error {
 			node.Table:              node.ValidColumn,
 			nodelist.Table:          nodelist.ValidColumn,
 			person.Table:            person.ValidColumn,
+			property.Table:          property.ValidColumn,
 			purpose.Table:           purpose.ValidColumn,
 			tool.Table:              tool.ValidColumn,
 		})

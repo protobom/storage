@@ -25,6 +25,7 @@ import (
 	"github.com/protobom/storage/internal/backends/ent/nodelist"
 	"github.com/protobom/storage/internal/backends/ent/person"
 	"github.com/protobom/storage/internal/backends/ent/predicate"
+	"github.com/protobom/storage/internal/backends/ent/property"
 	"github.com/protobom/storage/internal/backends/ent/purpose"
 )
 
@@ -42,6 +43,7 @@ type NodeQuery struct {
 	withPrimaryPurpose     *PurposeQuery
 	withToNodes            *NodeQuery
 	withNodes              *NodeQuery
+	withProperties         *PropertyQuery
 	withNodeLists          *NodeListQuery
 	withEdgeTypes          *EdgeTypeQuery
 	// intermediate query (i.e. traversal path).
@@ -227,6 +229,28 @@ func (nq *NodeQuery) QueryNodes() *NodeQuery {
 			sqlgraph.From(node.Table, node.FieldID, selector),
 			sqlgraph.To(node.Table, node.FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, false, node.NodesTable, node.NodesPrimaryKey...),
+		)
+		fromU = sqlgraph.SetNeighbors(nq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryProperties chains the current query on the "properties" edge.
+func (nq *NodeQuery) QueryProperties() *PropertyQuery {
+	query := (&PropertyClient{config: nq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := nq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := nq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(node.Table, node.FieldID, selector),
+			sqlgraph.To(property.Table, property.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, node.PropertiesTable, node.PropertiesColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(nq.driver.Dialect(), step)
 		return fromU, nil
@@ -477,6 +501,7 @@ func (nq *NodeQuery) Clone() *NodeQuery {
 		withPrimaryPurpose:     nq.withPrimaryPurpose.Clone(),
 		withToNodes:            nq.withToNodes.Clone(),
 		withNodes:              nq.withNodes.Clone(),
+		withProperties:         nq.withProperties.Clone(),
 		withNodeLists:          nq.withNodeLists.Clone(),
 		withEdgeTypes:          nq.withEdgeTypes.Clone(),
 		// clone intermediate query.
@@ -559,6 +584,17 @@ func (nq *NodeQuery) WithNodes(opts ...func(*NodeQuery)) *NodeQuery {
 		opt(query)
 	}
 	nq.withNodes = query
+	return nq
+}
+
+// WithProperties tells the query-builder to eager-load the nodes that are connected to
+// the "properties" edge. The optional arguments are used to configure the query builder of the edge.
+func (nq *NodeQuery) WithProperties(opts ...func(*PropertyQuery)) *NodeQuery {
+	query := (&PropertyClient{config: nq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	nq.withProperties = query
 	return nq
 }
 
@@ -662,7 +698,7 @@ func (nq *NodeQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Node, e
 	var (
 		nodes       = []*Node{}
 		_spec       = nq.querySpec()
-		loadedTypes = [9]bool{
+		loadedTypes = [10]bool{
 			nq.withDocument != nil,
 			nq.withSuppliers != nil,
 			nq.withOriginators != nil,
@@ -670,6 +706,7 @@ func (nq *NodeQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Node, e
 			nq.withPrimaryPurpose != nil,
 			nq.withToNodes != nil,
 			nq.withNodes != nil,
+			nq.withProperties != nil,
 			nq.withNodeLists != nil,
 			nq.withEdgeTypes != nil,
 		}
@@ -739,6 +776,13 @@ func (nq *NodeQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Node, e
 		if err := nq.loadNodes(ctx, query, nodes,
 			func(n *Node) { n.Edges.Nodes = []*Node{} },
 			func(n *Node, e *Node) { n.Edges.Nodes = append(n.Edges.Nodes, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := nq.withProperties; query != nil {
+		if err := nq.loadProperties(ctx, query, nodes,
+			func(n *Node) { n.Edges.Properties = []*Property{} },
+			func(n *Node, e *Property) { n.Edges.Properties = append(n.Edges.Properties, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -1029,6 +1073,36 @@ func (nq *NodeQuery) loadNodes(ctx context.Context, query *NodeQuery, nodes []*N
 		for kn := range nodes {
 			assign(kn, n)
 		}
+	}
+	return nil
+}
+func (nq *NodeQuery) loadProperties(ctx context.Context, query *PropertyQuery, nodes []*Node, init func(*Node), assign func(*Node, *Property)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[string]*Node)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(property.FieldNodeID)
+	}
+	query.Where(predicate.Property(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(node.PropertiesColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.NodeID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "node_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
 	}
 	return nil
 }

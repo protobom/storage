@@ -367,6 +367,42 @@ var (
 			},
 		},
 	}
+	// PropertiesColumns holds the columns for the "properties" table.
+	PropertiesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID, Unique: true},
+		{Name: "proto_message", Type: field.TypeBytes, Nullable: true},
+		{Name: "name", Type: field.TypeString},
+		{Name: "data", Type: field.TypeString},
+		{Name: "node_id", Type: field.TypeString, Nullable: true},
+		{Name: "document_id", Type: field.TypeUUID, Nullable: true},
+	}
+	// PropertiesTable holds the schema information for the "properties" table.
+	PropertiesTable = &schema.Table{
+		Name:       "properties",
+		Columns:    PropertiesColumns,
+		PrimaryKey: []*schema.Column{PropertiesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "properties_nodes_properties",
+				Columns:    []*schema.Column{PropertiesColumns[4]},
+				RefColumns: []*schema.Column{NodesColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "properties_documents_document",
+				Columns:    []*schema.Column{PropertiesColumns[5]},
+				RefColumns: []*schema.Column{DocumentsColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "idx_property",
+				Unique:  true,
+				Columns: []*schema.Column{PropertiesColumns[2], PropertiesColumns[3]},
+			},
+		},
+	}
 	// PurposesColumns holds the columns for the "purposes" table.
 	PurposesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -474,6 +510,7 @@ var (
 		NodesTable,
 		NodeListsTable,
 		PersonsTable,
+		PropertiesTable,
 		PurposesTable,
 		ToolsTable,
 		NodeListNodesTable,
@@ -498,6 +535,8 @@ func init() {
 	PersonsTable.ForeignKeys[2].RefTable = NodesTable
 	PersonsTable.ForeignKeys[3].RefTable = DocumentsTable
 	PersonsTable.ForeignKeys[4].RefTable = PersonsTable
+	PropertiesTable.ForeignKeys[0].RefTable = NodesTable
+	PropertiesTable.ForeignKeys[1].RefTable = DocumentsTable
 	PurposesTable.ForeignKeys[0].RefTable = NodesTable
 	PurposesTable.ForeignKeys[1].RefTable = DocumentsTable
 	ToolsTable.ForeignKeys[0].RefTable = MetadataTable

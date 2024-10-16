@@ -266,6 +266,7 @@ func (backend *Backend) saveNodes(nodes []*sbom.Node) TxFunc {
 
 		for _, srcNode := range nodes {
 			nodeID := srcNode.GetId()
+			backend.ctx = context.WithValue(backend.ctx, nodeIDKey{}, nodeID)
 			newNode := tx.Node.Create().
 				SetID(nodeID).
 				SetProtoMessage(srcNode).
@@ -292,14 +293,13 @@ func (backend *Backend) saveNodes(nodes []*sbom.Node) TxFunc {
 			addNodeListIDs(backend.ctx, newNode)
 			setDocumentID(backend.ctx, newNode)
 
-			backend.ctx = context.WithValue(backend.ctx, nodeIDKey{}, nodeID)
-
 			builders = append(builders, newNode)
 
 			fns = append(fns,
 				backend.saveExternalReferences(srcNode.GetExternalReferences(), nodeID),
 				backend.savePersons(srcNode.GetOriginators()),
 				backend.savePersons(srcNode.GetSuppliers()),
+				backend.saveProperties(srcNode.GetProperties(), nodeID),
 				backend.savePurposes(srcNode.GetPrimaryPurpose(), nodeID),
 			)
 		}
@@ -365,6 +365,41 @@ func (backend *Backend) savePersons(persons []*sbom.Person) TxFunc { //nolint:go
 	}
 }
 
+func (backend *Backend) saveProperties(properties []*sbom.Property, nodeID string) TxFunc {
+	return func(tx *ent.Tx) error {
+		builders := []*ent.PropertyCreate{}
+
+		for _, prop := range properties {
+			id, err := uuidFromHash(prop)
+			if err != nil {
+				return err
+			}
+
+			newProp := tx.Property.Create().
+				SetID(id).
+				SetProtoMessage(prop).
+				SetNodeID(nodeID).
+				SetName(prop.GetName()).
+				SetData(prop.GetData())
+
+			setDocumentID(backend.ctx, newProp)
+			setNodeID(backend.ctx, newProp)
+
+			builders = append(builders, newProp)
+		}
+
+		err := tx.Property.CreateBulk(builders...).
+			OnConflict().
+			Ignore().
+			Exec(backend.ctx)
+		if err != nil && !ent.IsConstraintError(err) {
+			return fmt.Errorf("saving property: %w", err)
+		}
+
+		return nil
+	}
+}
+
 func (backend *Backend) savePurposes(purposes []sbom.Purpose, nodeID string) TxFunc {
 	return func(tx *ent.Tx) error {
 		builders := []*ent.PurposeCreate{}
@@ -419,7 +454,7 @@ func (backend *Backend) saveTools(tools []*sbom.Tool) TxFunc {
 			Ignore().
 			Exec(backend.ctx)
 		if err != nil && !ent.IsConstraintError(err) {
-			return fmt.Errorf("saving Tool: %w", err)
+			return fmt.Errorf("saving tool: %w", err)
 		}
 
 		return nil

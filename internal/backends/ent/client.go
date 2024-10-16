@@ -30,6 +30,7 @@ import (
 	"github.com/protobom/storage/internal/backends/ent/node"
 	"github.com/protobom/storage/internal/backends/ent/nodelist"
 	"github.com/protobom/storage/internal/backends/ent/person"
+	"github.com/protobom/storage/internal/backends/ent/property"
 	"github.com/protobom/storage/internal/backends/ent/purpose"
 	"github.com/protobom/storage/internal/backends/ent/tool"
 
@@ -59,6 +60,8 @@ type Client struct {
 	NodeList *NodeListClient
 	// Person is the client for interacting with the Person builders.
 	Person *PersonClient
+	// Property is the client for interacting with the Property builders.
+	Property *PropertyClient
 	// Purpose is the client for interacting with the Purpose builders.
 	Purpose *PurposeClient
 	// Tool is the client for interacting with the Tool builders.
@@ -83,6 +86,7 @@ func (c *Client) init() {
 	c.Node = NewNodeClient(c.config)
 	c.NodeList = NewNodeListClient(c.config)
 	c.Person = NewPersonClient(c.config)
+	c.Property = NewPropertyClient(c.config)
 	c.Purpose = NewPurposeClient(c.config)
 	c.Tool = NewToolClient(c.config)
 }
@@ -186,6 +190,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		Node:              NewNodeClient(cfg),
 		NodeList:          NewNodeListClient(cfg),
 		Person:            NewPersonClient(cfg),
+		Property:          NewPropertyClient(cfg),
 		Purpose:           NewPurposeClient(cfg),
 		Tool:              NewToolClient(cfg),
 	}, nil
@@ -216,6 +221,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		Node:              NewNodeClient(cfg),
 		NodeList:          NewNodeListClient(cfg),
 		Person:            NewPersonClient(cfg),
+		Property:          NewPropertyClient(cfg),
 		Purpose:           NewPurposeClient(cfg),
 		Tool:              NewToolClient(cfg),
 	}, nil
@@ -248,7 +254,7 @@ func (c *Client) Close() error {
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
 		c.Annotation, c.Document, c.DocumentType, c.EdgeType, c.ExternalReference,
-		c.Metadata, c.Node, c.NodeList, c.Person, c.Purpose, c.Tool,
+		c.Metadata, c.Node, c.NodeList, c.Person, c.Property, c.Purpose, c.Tool,
 	} {
 		n.Use(hooks...)
 	}
@@ -259,7 +265,7 @@ func (c *Client) Use(hooks ...Hook) {
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
 		c.Annotation, c.Document, c.DocumentType, c.EdgeType, c.ExternalReference,
-		c.Metadata, c.Node, c.NodeList, c.Person, c.Purpose, c.Tool,
+		c.Metadata, c.Node, c.NodeList, c.Person, c.Property, c.Purpose, c.Tool,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -286,6 +292,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.NodeList.mutate(ctx, m)
 	case *PersonMutation:
 		return c.Person.mutate(ctx, m)
+	case *PropertyMutation:
+		return c.Property.mutate(ctx, m)
 	case *PurposeMutation:
 		return c.Purpose.mutate(ctx, m)
 	case *ToolMutation:
@@ -1553,6 +1561,22 @@ func (c *NodeClient) QueryNodes(n *Node) *NodeQuery {
 	return query
 }
 
+// QueryProperties queries the properties edge of a Node.
+func (c *NodeClient) QueryProperties(n *Node) *PropertyQuery {
+	query := (&PropertyClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := n.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(node.Table, node.FieldID, id),
+			sqlgraph.To(property.Table, property.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, node.PropertiesTable, node.PropertiesColumn),
+		)
+		fromV = sqlgraph.Neighbors(n.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QueryNodeLists queries the node_lists edge of a Node.
 func (c *NodeClient) QueryNodeLists(n *Node) *NodeListQuery {
 	query := (&NodeListClient{config: c.config}).Query()
@@ -1988,6 +2012,171 @@ func (c *PersonClient) mutate(ctx context.Context, m *PersonMutation) (Value, er
 	}
 }
 
+// PropertyClient is a client for the Property schema.
+type PropertyClient struct {
+	config
+}
+
+// NewPropertyClient returns a client for the Property from the given config.
+func NewPropertyClient(c config) *PropertyClient {
+	return &PropertyClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `property.Hooks(f(g(h())))`.
+func (c *PropertyClient) Use(hooks ...Hook) {
+	c.hooks.Property = append(c.hooks.Property, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `property.Intercept(f(g(h())))`.
+func (c *PropertyClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Property = append(c.inters.Property, interceptors...)
+}
+
+// Create returns a builder for creating a Property entity.
+func (c *PropertyClient) Create() *PropertyCreate {
+	mutation := newPropertyMutation(c.config, OpCreate)
+	return &PropertyCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Property entities.
+func (c *PropertyClient) CreateBulk(builders ...*PropertyCreate) *PropertyCreateBulk {
+	return &PropertyCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *PropertyClient) MapCreateBulk(slice any, setFunc func(*PropertyCreate, int)) *PropertyCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &PropertyCreateBulk{err: fmt.Errorf("calling to PropertyClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*PropertyCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &PropertyCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Property.
+func (c *PropertyClient) Update() *PropertyUpdate {
+	mutation := newPropertyMutation(c.config, OpUpdate)
+	return &PropertyUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *PropertyClient) UpdateOne(pr *Property) *PropertyUpdateOne {
+	mutation := newPropertyMutation(c.config, OpUpdateOne, withProperty(pr))
+	return &PropertyUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *PropertyClient) UpdateOneID(id uuid.UUID) *PropertyUpdateOne {
+	mutation := newPropertyMutation(c.config, OpUpdateOne, withPropertyID(id))
+	return &PropertyUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Property.
+func (c *PropertyClient) Delete() *PropertyDelete {
+	mutation := newPropertyMutation(c.config, OpDelete)
+	return &PropertyDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *PropertyClient) DeleteOne(pr *Property) *PropertyDeleteOne {
+	return c.DeleteOneID(pr.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *PropertyClient) DeleteOneID(id uuid.UUID) *PropertyDeleteOne {
+	builder := c.Delete().Where(property.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &PropertyDeleteOne{builder}
+}
+
+// Query returns a query builder for Property.
+func (c *PropertyClient) Query() *PropertyQuery {
+	return &PropertyQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeProperty},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a Property entity by its id.
+func (c *PropertyClient) Get(ctx context.Context, id uuid.UUID) (*Property, error) {
+	return c.Query().Where(property.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *PropertyClient) GetX(ctx context.Context, id uuid.UUID) *Property {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryDocument queries the document edge of a Property.
+func (c *PropertyClient) QueryDocument(pr *Property) *DocumentQuery {
+	query := (&DocumentClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := pr.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(property.Table, property.FieldID, id),
+			sqlgraph.To(document.Table, document.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, property.DocumentTable, property.DocumentColumn),
+		)
+		fromV = sqlgraph.Neighbors(pr.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryNode queries the node edge of a Property.
+func (c *PropertyClient) QueryNode(pr *Property) *NodeQuery {
+	query := (&NodeClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := pr.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(property.Table, property.FieldID, id),
+			sqlgraph.To(node.Table, node.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, property.NodeTable, property.NodeColumn),
+		)
+		fromV = sqlgraph.Neighbors(pr.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *PropertyClient) Hooks() []Hook {
+	return c.hooks.Property
+}
+
+// Interceptors returns the client interceptors.
+func (c *PropertyClient) Interceptors() []Interceptor {
+	return c.inters.Property
+}
+
+func (c *PropertyClient) mutate(ctx context.Context, m *PropertyMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&PropertyCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&PropertyUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&PropertyUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&PropertyDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Property mutation op: %q", m.Op())
+	}
+}
+
 // PurposeClient is a client for the Purpose schema.
 type PurposeClient struct {
 	config
@@ -2322,11 +2511,11 @@ func (c *ToolClient) mutate(ctx context.Context, m *ToolMutation) (Value, error)
 type (
 	hooks struct {
 		Annotation, Document, DocumentType, EdgeType, ExternalReference, Metadata, Node,
-		NodeList, Person, Purpose, Tool []ent.Hook
+		NodeList, Person, Property, Purpose, Tool []ent.Hook
 	}
 	inters struct {
 		Annotation, Document, DocumentType, EdgeType, ExternalReference, Metadata, Node,
-		NodeList, Person, Purpose, Tool []ent.Interceptor
+		NodeList, Person, Property, Purpose, Tool []ent.Interceptor
 	}
 )
 

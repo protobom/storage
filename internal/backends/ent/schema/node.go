@@ -61,6 +61,7 @@ func (Node) Edges() []ent.Edge {
 		edge.To("external_references", ExternalReference.Type),
 		edge.To("primary_purpose", Purpose.Type),
 		edge.To("nodes", Node.Type).From("to_nodes").Through("edge_types", EdgeType.Type),
+		edge.To("properties", Property.Type),
 		edge.From("node_lists", NodeList.Type).Ref("nodes"),
 	}
 }

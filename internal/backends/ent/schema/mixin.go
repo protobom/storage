@@ -18,14 +18,17 @@ import (
 )
 
 type (
+	// DocumentMixin adds the `document` edge and corresponding `document_id` edge field.
 	DocumentMixin struct {
 		mixin.Schema
 	}
 
+	// ProtoMessageMixin adds the `proto_message` field containing the wire format bytes.
 	ProtoMessageMixin[T proto.Message] struct {
 		mixin.Schema
 	}
 
+	// UUIDMixin replaces the default integer `id` field with a generated UUID.
 	UUIDMixin struct {
 		mixin.Schema
 	}
