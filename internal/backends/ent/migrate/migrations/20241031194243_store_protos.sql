@@ -273,5 +273,21 @@ CREATE TABLE `properties` (
 );
 -- Create index "idx_property" to table: "properties"
 CREATE UNIQUE INDEX `idx_property` ON `properties` (`name`, `data`);
+-- Create "source_data" table
+CREATE TABLE `source_data` (
+  `id` uuid NOT NULL,
+  `proto_message` blob NULL,
+  `format` text NOT NULL,
+  `size` integer NOT NULL,
+  `uri` text NULL,
+  `hashes` json NULL,
+  `metadata_id` text NOT NULL,
+  `document_id` uuid NULL,
+  PRIMARY KEY (`id`),
+  CONSTRAINT `source_data_metadata_source_data` FOREIGN KEY (`metadata_id`) REFERENCES `metadata` (`id`) ON DELETE NO ACTION,
+  CONSTRAINT `source_data_documents_document` FOREIGN KEY (`document_id`) REFERENCES `documents` (`id`) ON DELETE SET NULL
+);
+-- Create index "idx_source_data" to table: "source_data"
+CREATE UNIQUE INDEX `idx_source_data` ON `source_data` (`format`, `size`, `uri`);
 -- Enable back the enforcement of foreign-keys constraints
 PRAGMA foreign_keys = on;

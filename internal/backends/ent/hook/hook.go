@@ -146,6 +146,18 @@ func (f PurposeFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, err
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.PurposeMutation", m)
 }
 
+// The SourceDataFunc type is an adapter to allow the use of ordinary
+// function as SourceData mutator.
+type SourceDataFunc func(context.Context, *ent.SourceDataMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f SourceDataFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.SourceDataMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.SourceDataMutation", m)
+}
+
 // The ToolFunc type is an adapter to allow the use of ordinary
 // function as Tool mutator.
 type ToolFunc func(context.Context, *ent.ToolMutation) (ent.Value, error)

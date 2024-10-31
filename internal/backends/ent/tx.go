@@ -41,6 +41,8 @@ type Tx struct {
 	Property *PropertyClient
 	// Purpose is the client for interacting with the Purpose builders.
 	Purpose *PurposeClient
+	// SourceData is the client for interacting with the SourceData builders.
+	SourceData *SourceDataClient
 	// Tool is the client for interacting with the Tool builders.
 	Tool *ToolClient
 
@@ -185,6 +187,7 @@ func (tx *Tx) init() {
 	tx.Person = NewPersonClient(tx.config)
 	tx.Property = NewPropertyClient(tx.config)
 	tx.Purpose = NewPurposeClient(tx.config)
+	tx.SourceData = NewSourceDataClient(tx.config)
 	tx.Tool = NewToolClient(tx.config)
 }
 

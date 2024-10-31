@@ -57,7 +57,7 @@ func (backend *Backend) Store(doc *sbom.Document, opts *storage.StoreOptions) er
 	annotations := slices.Concat(backend.Options.Annotations, backendOpts.Annotations)
 	clear(backend.Options.Annotations)
 
-	id, err := uuidFromHash(doc)
+	id, err := GenerateUUID(doc)
 	if err != nil {
 		return err
 	}
@@ -114,7 +114,7 @@ func (backend *Backend) saveAnnotations(annotations ...*ent.Annotation) TxFunc {
 func (backend *Backend) saveDocumentTypes(docTypes []*sbom.DocumentType) TxFunc {
 	return func(tx *ent.Tx) error {
 		for _, docType := range docTypes {
-			id, err := uuidFromHash(docType)
+			id, err := GenerateUUID(docType)
 			if err != nil {
 				return err
 			}
@@ -167,7 +167,7 @@ func (backend *Backend) saveEdges(edges []*sbom.Edge) TxFunc {
 func (backend *Backend) saveExternalReferences(refs []*sbom.ExternalReference, nodeID string) TxFunc {
 	return func(tx *ent.Tx) error {
 		for _, ref := range refs {
-			id, err := uuidFromHash(ref)
+			id, err := GenerateUUID(ref)
 			if err != nil {
 				return err
 			}
@@ -228,7 +228,7 @@ func (backend *Backend) saveMetadata(metadata *sbom.Metadata) TxFunc {
 
 func (backend *Backend) saveNodeList(nodeList *sbom.NodeList) TxFunc {
 	return func(tx *ent.Tx) error {
-		id, err := uuidFromHash(nodeList)
+		id, err := GenerateUUID(nodeList)
 		if err != nil {
 			return err
 		}
@@ -327,7 +327,7 @@ func (backend *Backend) savePersons(persons []*sbom.Person) TxFunc { //nolint:go
 		builders := []*ent.PersonCreate{}
 
 		for _, person := range persons {
-			id, err := uuidFromHash(person)
+			id, err := GenerateUUID(person)
 			if err != nil {
 				return err
 			}
@@ -370,7 +370,7 @@ func (backend *Backend) saveProperties(properties []*sbom.Property, nodeID strin
 		builders := []*ent.PropertyCreate{}
 
 		for _, prop := range properties {
-			id, err := uuidFromHash(prop)
+			id, err := GenerateUUID(prop)
 			if err != nil {
 				return err
 			}
@@ -431,7 +431,7 @@ func (backend *Backend) saveTools(tools []*sbom.Tool) TxFunc {
 		builders := []*ent.ToolCreate{}
 
 		for _, tool := range tools {
-			id, err := uuidFromHash(tool)
+			id, err := GenerateUUID(tool)
 			if err != nil {
 				return err
 			}
@@ -459,6 +459,16 @@ func (backend *Backend) saveTools(tools []*sbom.Tool) TxFunc {
 
 		return nil
 	}
+}
+
+// GenerateUUID returns a deterministic UUID derived from the hash of a protobuf message.
+func GenerateUUID(msg proto.Message) (uuid.UUID, error) {
+	data, err := proto.MarshalOptions{Deterministic: true}.Marshal(msg)
+	if err != nil {
+		return uuid.Nil, fmt.Errorf("marshaling proto: %w", err)
+	}
+
+	return uuid.NewHash(sha256.New(), uuid.Max, data, int(uuid.Max.Version())), nil
 }
 
 func addNodeListIDs[T interface{ AddNodeListIDs(...uuid.UUID) T }](ctx context.Context, builder T) {
@@ -489,13 +499,4 @@ func setNodeID[T interface{ SetNodeID(string) T }](ctx context.Context, builder 
 	if nodeID, ok := ctx.Value(nodeIDKey{}).(string); ok {
 		builder.SetNodeID(nodeID)
 	}
-}
-
-func uuidFromHash(msg proto.Message) (uuid.UUID, error) {
-	data, err := proto.MarshalOptions{Deterministic: true}.Marshal(msg)
-	if err != nil {
-		return uuid.Nil, fmt.Errorf("marshaling proto: %w", err)
-	}
-
-	return uuid.NewHash(sha256.New(), uuid.Max, data, int(uuid.Max.Version())), nil
 }

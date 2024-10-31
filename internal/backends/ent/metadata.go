@@ -48,11 +48,13 @@ type MetadataEdges struct {
 	Authors []*Person `json:"authors,omitempty"`
 	// DocumentTypes holds the value of the document_types edge.
 	DocumentTypes []*DocumentType `json:"document_types,omitempty"`
+	// SourceData holds the value of the source_data edge.
+	SourceData []*SourceData `json:"source_data,omitempty"`
 	// Document holds the value of the document edge.
 	Document *Document `json:"document,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [4]bool
+	loadedTypes [5]bool
 }
 
 // ToolsOrErr returns the Tools value or an error if the edge
@@ -82,12 +84,21 @@ func (e MetadataEdges) DocumentTypesOrErr() ([]*DocumentType, error) {
 	return nil, &NotLoadedError{edge: "document_types"}
 }
 
+// SourceDataOrErr returns the SourceData value or an error if the edge
+// was not loaded in eager-loading.
+func (e MetadataEdges) SourceDataOrErr() ([]*SourceData, error) {
+	if e.loadedTypes[3] {
+		return e.SourceData, nil
+	}
+	return nil, &NotLoadedError{edge: "source_data"}
+}
+
 // DocumentOrErr returns the Document value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
 func (e MetadataEdges) DocumentOrErr() (*Document, error) {
 	if e.Document != nil {
 		return e.Document, nil
-	} else if e.loadedTypes[3] {
+	} else if e.loadedTypes[4] {
 		return nil, &NotFoundError{label: document.Label}
 	}
 	return nil, &NotLoadedError{edge: "document"}
@@ -181,6 +192,11 @@ func (m *Metadata) QueryAuthors() *PersonQuery {
 // QueryDocumentTypes queries the "document_types" edge of the Metadata entity.
 func (m *Metadata) QueryDocumentTypes() *DocumentTypeQuery {
 	return NewMetadataClient(m.config).QueryDocumentTypes(m)
+}
+
+// QuerySourceData queries the "source_data" edge of the Metadata entity.
+func (m *Metadata) QuerySourceData() *SourceDataQuery {
+	return NewMetadataClient(m.config).QuerySourceData(m)
 }
 
 // QueryDocument queries the "document" edge of the Metadata entity.

@@ -23,6 +23,7 @@ import (
 	"github.com/protobom/storage/internal/backends/ent/documenttype"
 	"github.com/protobom/storage/internal/backends/ent/metadata"
 	"github.com/protobom/storage/internal/backends/ent/person"
+	"github.com/protobom/storage/internal/backends/ent/sourcedata"
 	"github.com/protobom/storage/internal/backends/ent/tool"
 )
 
@@ -113,6 +114,21 @@ func (mc *MetadataCreate) AddDocumentTypes(d ...*DocumentType) *MetadataCreate {
 		ids[i] = d[i].ID
 	}
 	return mc.AddDocumentTypeIDs(ids...)
+}
+
+// AddSourceDatumIDs adds the "source_data" edge to the SourceData entity by IDs.
+func (mc *MetadataCreate) AddSourceDatumIDs(ids ...uuid.UUID) *MetadataCreate {
+	mc.mutation.AddSourceDatumIDs(ids...)
+	return mc
+}
+
+// AddSourceData adds the "source_data" edges to the SourceData entity.
+func (mc *MetadataCreate) AddSourceData(s ...*SourceData) *MetadataCreate {
+	ids := make([]uuid.UUID, len(s))
+	for i := range s {
+		ids[i] = s[i].ID
+	}
+	return mc.AddSourceDatumIDs(ids...)
 }
 
 // SetDocumentID sets the "document" edge to the Document entity by ID.
@@ -277,6 +293,22 @@ func (mc *MetadataCreate) createSpec() (*Metadata, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(documenttype.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := mc.mutation.SourceDataIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   metadata.SourceDataTable,
+			Columns: []string{metadata.SourceDataColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(sourcedata.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

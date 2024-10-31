@@ -437,6 +437,44 @@ var (
 			},
 		},
 	}
+	// SourceDataColumns holds the columns for the "source_data" table.
+	SourceDataColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID, Unique: true},
+		{Name: "proto_message", Type: field.TypeBytes, Nullable: true},
+		{Name: "format", Type: field.TypeString},
+		{Name: "size", Type: field.TypeInt64},
+		{Name: "uri", Type: field.TypeString, Nullable: true},
+		{Name: "hashes", Type: field.TypeJSON, Nullable: true},
+		{Name: "metadata_id", Type: field.TypeString},
+		{Name: "document_id", Type: field.TypeUUID, Nullable: true},
+	}
+	// SourceDataTable holds the schema information for the "source_data" table.
+	SourceDataTable = &schema.Table{
+		Name:       "source_data",
+		Columns:    SourceDataColumns,
+		PrimaryKey: []*schema.Column{SourceDataColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "source_data_metadata_source_data",
+				Columns:    []*schema.Column{SourceDataColumns[6]},
+				RefColumns: []*schema.Column{MetadataColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "source_data_documents_document",
+				Columns:    []*schema.Column{SourceDataColumns[7]},
+				RefColumns: []*schema.Column{DocumentsColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "idx_source_data",
+				Unique:  true,
+				Columns: []*schema.Column{SourceDataColumns[2], SourceDataColumns[3], SourceDataColumns[4]},
+			},
+		},
+	}
 	// ToolsColumns holds the columns for the "tools" table.
 	ToolsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID, Unique: true},
@@ -512,6 +550,7 @@ var (
 		PersonsTable,
 		PropertiesTable,
 		PurposesTable,
+		SourceDataTable,
 		ToolsTable,
 		NodeListNodesTable,
 	}
@@ -539,6 +578,8 @@ func init() {
 	PropertiesTable.ForeignKeys[1].RefTable = DocumentsTable
 	PurposesTable.ForeignKeys[0].RefTable = NodesTable
 	PurposesTable.ForeignKeys[1].RefTable = DocumentsTable
+	SourceDataTable.ForeignKeys[0].RefTable = MetadataTable
+	SourceDataTable.ForeignKeys[1].RefTable = DocumentsTable
 	ToolsTable.ForeignKeys[0].RefTable = MetadataTable
 	ToolsTable.ForeignKeys[1].RefTable = DocumentsTable
 	NodeListNodesTable.ForeignKeys[0].RefTable = NodeListsTable

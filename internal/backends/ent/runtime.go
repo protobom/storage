@@ -19,6 +19,7 @@ import (
 	"github.com/protobom/storage/internal/backends/ent/property"
 	"github.com/protobom/storage/internal/backends/ent/purpose"
 	"github.com/protobom/storage/internal/backends/ent/schema"
+	"github.com/protobom/storage/internal/backends/ent/sourcedata"
 	"github.com/protobom/storage/internal/backends/ent/tool"
 )
 
@@ -112,6 +113,15 @@ func init() {
 	purposeDescDocumentID := purposeMixinFields0[0].Descriptor()
 	// purpose.DefaultDocumentID holds the default value on creation for the document_id field.
 	purpose.DefaultDocumentID = purposeDescDocumentID.Default.(func() uuid.UUID)
+	sourcedataMixin := schema.SourceData{}.Mixin()
+	sourcedataMixinFields0 := sourcedataMixin[0].Fields()
+	_ = sourcedataMixinFields0
+	sourcedataFields := schema.SourceData{}.Fields()
+	_ = sourcedataFields
+	// sourcedataDescDocumentID is the schema descriptor for document_id field.
+	sourcedataDescDocumentID := sourcedataMixinFields0[0].Descriptor()
+	// sourcedata.DefaultDocumentID holds the default value on creation for the document_id field.
+	sourcedata.DefaultDocumentID = sourcedataDescDocumentID.Default.(func() uuid.UUID)
 	toolMixin := schema.Tool{}.Mixin()
 	toolMixinFields0 := toolMixin[0].Fields()
 	_ = toolMixinFields0

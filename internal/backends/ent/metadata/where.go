@@ -450,6 +450,29 @@ func HasDocumentTypesWith(preds ...predicate.DocumentType) predicate.Metadata {
 	})
 }
 
+// HasSourceData applies the HasEdge predicate on the "source_data" edge.
+func HasSourceData() predicate.Metadata {
+	return predicate.Metadata(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, SourceDataTable, SourceDataColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasSourceDataWith applies the HasEdge predicate on the "source_data" edge with a given conditions (other predicates).
+func HasSourceDataWith(preds ...predicate.SourceData) predicate.Metadata {
+	return predicate.Metadata(func(s *sql.Selector) {
+		step := newSourceDataStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // HasDocument applies the HasEdge predicate on the "document" edge.
 func HasDocument() predicate.Metadata {
 	return predicate.Metadata(func(s *sql.Selector) {

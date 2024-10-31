@@ -54,20 +54,29 @@ func Example() {
 		panic(err)
 	}
 
+	// Remove source data URI to allow comparison.
+	retrieved.GetMetadata().GetSourceData().Uri = nil
+
 	output, err := json.MarshalIndent(retrieved, "", "  ")
 	if err != nil {
 		panic(err)
 	}
 
 	fmt.Println(string(output))
-
 	//nolint:lll
 	// Output:
 	// {
 	//   "metadata": {
 	//     "id": "urn:uuid:3e671687-395b-41f5-a30f-a58921a69b79",
 	//     "version": "1",
-	//     "date": {}
+	//     "date": {},
+	//     "source_data": {
+	//       "format": "application/vnd.cyclonedx+json;version=1.5",
+	//       "hashes": {
+	//         "3": "71a3948e45c0bcd83a617ed94674079778d10a0578932e6e536533339b1bbea5"
+	//       },
+	//       "size": 5263
+	//     }
 	//   },
 	//   "node_list": {
 	//     "nodes": [

@@ -44,5 +44,8 @@ type Property func(*sql.Selector)
 // Purpose is the predicate function for purpose builders.
 type Purpose func(*sql.Selector)
 
+// SourceData is the predicate function for sourcedata builders.
+type SourceData func(*sql.Selector)
+
 // Tool is the predicate function for tool builders.
 type Tool func(*sql.Selector)

@@ -32,6 +32,7 @@ import (
 	"github.com/protobom/storage/internal/backends/ent/person"
 	"github.com/protobom/storage/internal/backends/ent/property"
 	"github.com/protobom/storage/internal/backends/ent/purpose"
+	"github.com/protobom/storage/internal/backends/ent/sourcedata"
 	"github.com/protobom/storage/internal/backends/ent/tool"
 
 	stdsql "database/sql"
@@ -64,6 +65,8 @@ type Client struct {
 	Property *PropertyClient
 	// Purpose is the client for interacting with the Purpose builders.
 	Purpose *PurposeClient
+	// SourceData is the client for interacting with the SourceData builders.
+	SourceData *SourceDataClient
 	// Tool is the client for interacting with the Tool builders.
 	Tool *ToolClient
 }
@@ -88,6 +91,7 @@ func (c *Client) init() {
 	c.Person = NewPersonClient(c.config)
 	c.Property = NewPropertyClient(c.config)
 	c.Purpose = NewPurposeClient(c.config)
+	c.SourceData = NewSourceDataClient(c.config)
 	c.Tool = NewToolClient(c.config)
 }
 
@@ -192,6 +196,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		Person:            NewPersonClient(cfg),
 		Property:          NewPropertyClient(cfg),
 		Purpose:           NewPurposeClient(cfg),
+		SourceData:        NewSourceDataClient(cfg),
 		Tool:              NewToolClient(cfg),
 	}, nil
 }
@@ -223,6 +228,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		Person:            NewPersonClient(cfg),
 		Property:          NewPropertyClient(cfg),
 		Purpose:           NewPurposeClient(cfg),
+		SourceData:        NewSourceDataClient(cfg),
 		Tool:              NewToolClient(cfg),
 	}, nil
 }
@@ -254,7 +260,8 @@ func (c *Client) Close() error {
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
 		c.Annotation, c.Document, c.DocumentType, c.EdgeType, c.ExternalReference,
-		c.Metadata, c.Node, c.NodeList, c.Person, c.Property, c.Purpose, c.Tool,
+		c.Metadata, c.Node, c.NodeList, c.Person, c.Property, c.Purpose, c.SourceData,
+		c.Tool,
 	} {
 		n.Use(hooks...)
 	}
@@ -265,7 +272,8 @@ func (c *Client) Use(hooks ...Hook) {
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
 		c.Annotation, c.Document, c.DocumentType, c.EdgeType, c.ExternalReference,
-		c.Metadata, c.Node, c.NodeList, c.Person, c.Property, c.Purpose, c.Tool,
+		c.Metadata, c.Node, c.NodeList, c.Person, c.Property, c.Purpose, c.SourceData,
+		c.Tool,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -296,6 +304,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.Property.mutate(ctx, m)
 	case *PurposeMutation:
 		return c.Purpose.mutate(ctx, m)
+	case *SourceDataMutation:
+		return c.SourceData.mutate(ctx, m)
 	case *ToolMutation:
 		return c.Tool.mutate(ctx, m)
 	default:
@@ -1293,6 +1303,22 @@ func (c *MetadataClient) QueryDocumentTypes(m *Metadata) *DocumentTypeQuery {
 			sqlgraph.From(metadata.Table, metadata.FieldID, id),
 			sqlgraph.To(documenttype.Table, documenttype.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, metadata.DocumentTypesTable, metadata.DocumentTypesColumn),
+		)
+		fromV = sqlgraph.Neighbors(m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QuerySourceData queries the source_data edge of a Metadata.
+func (c *MetadataClient) QuerySourceData(m *Metadata) *SourceDataQuery {
+	query := (&SourceDataClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(metadata.Table, metadata.FieldID, id),
+			sqlgraph.To(sourcedata.Table, sourcedata.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, metadata.SourceDataTable, metadata.SourceDataColumn),
 		)
 		fromV = sqlgraph.Neighbors(m.driver.Dialect(), step)
 		return fromV, nil
@@ -2342,6 +2368,171 @@ func (c *PurposeClient) mutate(ctx context.Context, m *PurposeMutation) (Value, 
 	}
 }
 
+// SourceDataClient is a client for the SourceData schema.
+type SourceDataClient struct {
+	config
+}
+
+// NewSourceDataClient returns a client for the SourceData from the given config.
+func NewSourceDataClient(c config) *SourceDataClient {
+	return &SourceDataClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `sourcedata.Hooks(f(g(h())))`.
+func (c *SourceDataClient) Use(hooks ...Hook) {
+	c.hooks.SourceData = append(c.hooks.SourceData, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `sourcedata.Intercept(f(g(h())))`.
+func (c *SourceDataClient) Intercept(interceptors ...Interceptor) {
+	c.inters.SourceData = append(c.inters.SourceData, interceptors...)
+}
+
+// Create returns a builder for creating a SourceData entity.
+func (c *SourceDataClient) Create() *SourceDataCreate {
+	mutation := newSourceDataMutation(c.config, OpCreate)
+	return &SourceDataCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of SourceData entities.
+func (c *SourceDataClient) CreateBulk(builders ...*SourceDataCreate) *SourceDataCreateBulk {
+	return &SourceDataCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *SourceDataClient) MapCreateBulk(slice any, setFunc func(*SourceDataCreate, int)) *SourceDataCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &SourceDataCreateBulk{err: fmt.Errorf("calling to SourceDataClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*SourceDataCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &SourceDataCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for SourceData.
+func (c *SourceDataClient) Update() *SourceDataUpdate {
+	mutation := newSourceDataMutation(c.config, OpUpdate)
+	return &SourceDataUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *SourceDataClient) UpdateOne(sd *SourceData) *SourceDataUpdateOne {
+	mutation := newSourceDataMutation(c.config, OpUpdateOne, withSourceData(sd))
+	return &SourceDataUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *SourceDataClient) UpdateOneID(id uuid.UUID) *SourceDataUpdateOne {
+	mutation := newSourceDataMutation(c.config, OpUpdateOne, withSourceDataID(id))
+	return &SourceDataUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for SourceData.
+func (c *SourceDataClient) Delete() *SourceDataDelete {
+	mutation := newSourceDataMutation(c.config, OpDelete)
+	return &SourceDataDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *SourceDataClient) DeleteOne(sd *SourceData) *SourceDataDeleteOne {
+	return c.DeleteOneID(sd.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *SourceDataClient) DeleteOneID(id uuid.UUID) *SourceDataDeleteOne {
+	builder := c.Delete().Where(sourcedata.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &SourceDataDeleteOne{builder}
+}
+
+// Query returns a query builder for SourceData.
+func (c *SourceDataClient) Query() *SourceDataQuery {
+	return &SourceDataQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeSourceData},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a SourceData entity by its id.
+func (c *SourceDataClient) Get(ctx context.Context, id uuid.UUID) (*SourceData, error) {
+	return c.Query().Where(sourcedata.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *SourceDataClient) GetX(ctx context.Context, id uuid.UUID) *SourceData {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryDocument queries the document edge of a SourceData.
+func (c *SourceDataClient) QueryDocument(sd *SourceData) *DocumentQuery {
+	query := (&DocumentClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := sd.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(sourcedata.Table, sourcedata.FieldID, id),
+			sqlgraph.To(document.Table, document.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, sourcedata.DocumentTable, sourcedata.DocumentColumn),
+		)
+		fromV = sqlgraph.Neighbors(sd.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryMetadata queries the metadata edge of a SourceData.
+func (c *SourceDataClient) QueryMetadata(sd *SourceData) *MetadataQuery {
+	query := (&MetadataClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := sd.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(sourcedata.Table, sourcedata.FieldID, id),
+			sqlgraph.To(metadata.Table, metadata.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, sourcedata.MetadataTable, sourcedata.MetadataColumn),
+		)
+		fromV = sqlgraph.Neighbors(sd.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *SourceDataClient) Hooks() []Hook {
+	return c.hooks.SourceData
+}
+
+// Interceptors returns the client interceptors.
+func (c *SourceDataClient) Interceptors() []Interceptor {
+	return c.inters.SourceData
+}
+
+func (c *SourceDataClient) mutate(ctx context.Context, m *SourceDataMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&SourceDataCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&SourceDataUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&SourceDataUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&SourceDataDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown SourceData mutation op: %q", m.Op())
+	}
+}
+
 // ToolClient is a client for the Tool schema.
 type ToolClient struct {
 	config
@@ -2511,11 +2702,11 @@ func (c *ToolClient) mutate(ctx context.Context, m *ToolMutation) (Value, error)
 type (
 	hooks struct {
 		Annotation, Document, DocumentType, EdgeType, ExternalReference, Metadata, Node,
-		NodeList, Person, Property, Purpose, Tool []ent.Hook
+		NodeList, Person, Property, Purpose, SourceData, Tool []ent.Hook
 	}
 	inters struct {
 		Annotation, Document, DocumentType, EdgeType, ExternalReference, Metadata, Node,
-		NodeList, Person, Property, Purpose, Tool []ent.Interceptor
+		NodeList, Person, Property, Purpose, SourceData, Tool []ent.Interceptor
 	}
 )
 

@@ -30,6 +30,7 @@ import (
 	"github.com/protobom/storage/internal/backends/ent/predicate"
 	"github.com/protobom/storage/internal/backends/ent/property"
 	"github.com/protobom/storage/internal/backends/ent/purpose"
+	"github.com/protobom/storage/internal/backends/ent/sourcedata"
 	"github.com/protobom/storage/internal/backends/ent/tool"
 )
 
@@ -53,6 +54,7 @@ const (
 	TypePerson            = "Person"
 	TypeProperty          = "Property"
 	TypePurpose           = "Purpose"
+	TypeSourceData        = "SourceData"
 	TypeTool              = "Tool"
 )
 
@@ -3662,6 +3664,9 @@ type MetadataMutation struct {
 	document_types        map[uuid.UUID]struct{}
 	removeddocument_types map[uuid.UUID]struct{}
 	cleareddocument_types bool
+	source_data           map[uuid.UUID]struct{}
+	removedsource_data    map[uuid.UUID]struct{}
+	clearedsource_data    bool
 	document              *uuid.UUID
 	cleareddocument       bool
 	done                  bool
@@ -4128,6 +4133,60 @@ func (m *MetadataMutation) ResetDocumentTypes() {
 	m.removeddocument_types = nil
 }
 
+// AddSourceDatumIDs adds the "source_data" edge to the SourceData entity by ids.
+func (m *MetadataMutation) AddSourceDatumIDs(ids ...uuid.UUID) {
+	if m.source_data == nil {
+		m.source_data = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.source_data[ids[i]] = struct{}{}
+	}
+}
+
+// ClearSourceData clears the "source_data" edge to the SourceData entity.
+func (m *MetadataMutation) ClearSourceData() {
+	m.clearedsource_data = true
+}
+
+// SourceDataCleared reports if the "source_data" edge to the SourceData entity was cleared.
+func (m *MetadataMutation) SourceDataCleared() bool {
+	return m.clearedsource_data
+}
+
+// RemoveSourceDatumIDs removes the "source_data" edge to the SourceData entity by IDs.
+func (m *MetadataMutation) RemoveSourceDatumIDs(ids ...uuid.UUID) {
+	if m.removedsource_data == nil {
+		m.removedsource_data = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.source_data, ids[i])
+		m.removedsource_data[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedSourceData returns the removed IDs of the "source_data" edge to the SourceData entity.
+func (m *MetadataMutation) RemovedSourceDataIDs() (ids []uuid.UUID) {
+	for id := range m.removedsource_data {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// SourceDataIDs returns the "source_data" edge IDs in the mutation.
+func (m *MetadataMutation) SourceDataIDs() (ids []uuid.UUID) {
+	for id := range m.source_data {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetSourceData resets all changes to the "source_data" edge.
+func (m *MetadataMutation) ResetSourceData() {
+	m.source_data = nil
+	m.clearedsource_data = false
+	m.removedsource_data = nil
+}
+
 // SetDocumentID sets the "document" edge to the Document entity by id.
 func (m *MetadataMutation) SetDocumentID(id uuid.UUID) {
 	m.document = &id
@@ -4377,7 +4436,7 @@ func (m *MetadataMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *MetadataMutation) AddedEdges() []string {
-	edges := make([]string, 0, 4)
+	edges := make([]string, 0, 5)
 	if m.tools != nil {
 		edges = append(edges, metadata.EdgeTools)
 	}
@@ -4386,6 +4445,9 @@ func (m *MetadataMutation) AddedEdges() []string {
 	}
 	if m.document_types != nil {
 		edges = append(edges, metadata.EdgeDocumentTypes)
+	}
+	if m.source_data != nil {
+		edges = append(edges, metadata.EdgeSourceData)
 	}
 	if m.document != nil {
 		edges = append(edges, metadata.EdgeDocument)
@@ -4415,6 +4477,12 @@ func (m *MetadataMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case metadata.EdgeSourceData:
+		ids := make([]ent.Value, 0, len(m.source_data))
+		for id := range m.source_data {
+			ids = append(ids, id)
+		}
+		return ids
 	case metadata.EdgeDocument:
 		if id := m.document; id != nil {
 			return []ent.Value{*id}
@@ -4425,7 +4493,7 @@ func (m *MetadataMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *MetadataMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 4)
+	edges := make([]string, 0, 5)
 	if m.removedtools != nil {
 		edges = append(edges, metadata.EdgeTools)
 	}
@@ -4434,6 +4502,9 @@ func (m *MetadataMutation) RemovedEdges() []string {
 	}
 	if m.removeddocument_types != nil {
 		edges = append(edges, metadata.EdgeDocumentTypes)
+	}
+	if m.removedsource_data != nil {
+		edges = append(edges, metadata.EdgeSourceData)
 	}
 	return edges
 }
@@ -4460,13 +4531,19 @@ func (m *MetadataMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case metadata.EdgeSourceData:
+		ids := make([]ent.Value, 0, len(m.removedsource_data))
+		for id := range m.removedsource_data {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *MetadataMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 4)
+	edges := make([]string, 0, 5)
 	if m.clearedtools {
 		edges = append(edges, metadata.EdgeTools)
 	}
@@ -4475,6 +4552,9 @@ func (m *MetadataMutation) ClearedEdges() []string {
 	}
 	if m.cleareddocument_types {
 		edges = append(edges, metadata.EdgeDocumentTypes)
+	}
+	if m.clearedsource_data {
+		edges = append(edges, metadata.EdgeSourceData)
 	}
 	if m.cleareddocument {
 		edges = append(edges, metadata.EdgeDocument)
@@ -4492,6 +4572,8 @@ func (m *MetadataMutation) EdgeCleared(name string) bool {
 		return m.clearedauthors
 	case metadata.EdgeDocumentTypes:
 		return m.cleareddocument_types
+	case metadata.EdgeSourceData:
+		return m.clearedsource_data
 	case metadata.EdgeDocument:
 		return m.cleareddocument
 	}
@@ -4521,6 +4603,9 @@ func (m *MetadataMutation) ResetEdge(name string) error {
 		return nil
 	case metadata.EdgeDocumentTypes:
 		m.ResetDocumentTypes()
+		return nil
+	case metadata.EdgeSourceData:
+		m.ResetSourceData()
 		return nil
 	case metadata.EdgeDocument:
 		m.ResetDocument()
@@ -10042,6 +10127,877 @@ func (m *PurposeMutation) ResetEdge(name string) error {
 		return nil
 	}
 	return fmt.Errorf("unknown Purpose edge %s", name)
+}
+
+// SourceDataMutation represents an operation that mutates the SourceData nodes in the graph.
+type SourceDataMutation struct {
+	config
+	op              Op
+	typ             string
+	id              *uuid.UUID
+	proto_message   **sbom.SourceData
+	format          *string
+	size            *int64
+	addsize         *int64
+	uri             *string
+	hashes          *map[int32]string
+	clearedFields   map[string]struct{}
+	document        *uuid.UUID
+	cleareddocument bool
+	metadata        *string
+	clearedmetadata bool
+	done            bool
+	oldValue        func(context.Context) (*SourceData, error)
+	predicates      []predicate.SourceData
+}
+
+var _ ent.Mutation = (*SourceDataMutation)(nil)
+
+// sourcedataOption allows management of the mutation configuration using functional options.
+type sourcedataOption func(*SourceDataMutation)
+
+// newSourceDataMutation creates new mutation for the SourceData entity.
+func newSourceDataMutation(c config, op Op, opts ...sourcedataOption) *SourceDataMutation {
+	m := &SourceDataMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeSourceData,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withSourceDataID sets the ID field of the mutation.
+func withSourceDataID(id uuid.UUID) sourcedataOption {
+	return func(m *SourceDataMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *SourceData
+		)
+		m.oldValue = func(ctx context.Context) (*SourceData, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().SourceData.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withSourceData sets the old SourceData of the mutation.
+func withSourceData(node *SourceData) sourcedataOption {
+	return func(m *SourceDataMutation) {
+		m.oldValue = func(context.Context) (*SourceData, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m SourceDataMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m SourceDataMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of SourceData entities.
+func (m *SourceDataMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *SourceDataMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *SourceDataMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().SourceData.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetDocumentID sets the "document_id" field.
+func (m *SourceDataMutation) SetDocumentID(u uuid.UUID) {
+	m.document = &u
+}
+
+// DocumentID returns the value of the "document_id" field in the mutation.
+func (m *SourceDataMutation) DocumentID() (r uuid.UUID, exists bool) {
+	v := m.document
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDocumentID returns the old "document_id" field's value of the SourceData entity.
+// If the SourceData object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SourceDataMutation) OldDocumentID(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDocumentID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDocumentID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDocumentID: %w", err)
+	}
+	return oldValue.DocumentID, nil
+}
+
+// ClearDocumentID clears the value of the "document_id" field.
+func (m *SourceDataMutation) ClearDocumentID() {
+	m.document = nil
+	m.clearedFields[sourcedata.FieldDocumentID] = struct{}{}
+}
+
+// DocumentIDCleared returns if the "document_id" field was cleared in this mutation.
+func (m *SourceDataMutation) DocumentIDCleared() bool {
+	_, ok := m.clearedFields[sourcedata.FieldDocumentID]
+	return ok
+}
+
+// ResetDocumentID resets all changes to the "document_id" field.
+func (m *SourceDataMutation) ResetDocumentID() {
+	m.document = nil
+	delete(m.clearedFields, sourcedata.FieldDocumentID)
+}
+
+// SetProtoMessage sets the "proto_message" field.
+func (m *SourceDataMutation) SetProtoMessage(sd *sbom.SourceData) {
+	m.proto_message = &sd
+}
+
+// ProtoMessage returns the value of the "proto_message" field in the mutation.
+func (m *SourceDataMutation) ProtoMessage() (r *sbom.SourceData, exists bool) {
+	v := m.proto_message
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldProtoMessage returns the old "proto_message" field's value of the SourceData entity.
+// If the SourceData object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SourceDataMutation) OldProtoMessage(ctx context.Context) (v *sbom.SourceData, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldProtoMessage is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldProtoMessage requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldProtoMessage: %w", err)
+	}
+	return oldValue.ProtoMessage, nil
+}
+
+// ClearProtoMessage clears the value of the "proto_message" field.
+func (m *SourceDataMutation) ClearProtoMessage() {
+	m.proto_message = nil
+	m.clearedFields[sourcedata.FieldProtoMessage] = struct{}{}
+}
+
+// ProtoMessageCleared returns if the "proto_message" field was cleared in this mutation.
+func (m *SourceDataMutation) ProtoMessageCleared() bool {
+	_, ok := m.clearedFields[sourcedata.FieldProtoMessage]
+	return ok
+}
+
+// ResetProtoMessage resets all changes to the "proto_message" field.
+func (m *SourceDataMutation) ResetProtoMessage() {
+	m.proto_message = nil
+	delete(m.clearedFields, sourcedata.FieldProtoMessage)
+}
+
+// SetMetadataID sets the "metadata_id" field.
+func (m *SourceDataMutation) SetMetadataID(s string) {
+	m.metadata = &s
+}
+
+// MetadataID returns the value of the "metadata_id" field in the mutation.
+func (m *SourceDataMutation) MetadataID() (r string, exists bool) {
+	v := m.metadata
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldMetadataID returns the old "metadata_id" field's value of the SourceData entity.
+// If the SourceData object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SourceDataMutation) OldMetadataID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldMetadataID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldMetadataID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldMetadataID: %w", err)
+	}
+	return oldValue.MetadataID, nil
+}
+
+// ResetMetadataID resets all changes to the "metadata_id" field.
+func (m *SourceDataMutation) ResetMetadataID() {
+	m.metadata = nil
+}
+
+// SetFormat sets the "format" field.
+func (m *SourceDataMutation) SetFormat(s string) {
+	m.format = &s
+}
+
+// Format returns the value of the "format" field in the mutation.
+func (m *SourceDataMutation) Format() (r string, exists bool) {
+	v := m.format
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldFormat returns the old "format" field's value of the SourceData entity.
+// If the SourceData object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SourceDataMutation) OldFormat(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldFormat is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldFormat requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldFormat: %w", err)
+	}
+	return oldValue.Format, nil
+}
+
+// ResetFormat resets all changes to the "format" field.
+func (m *SourceDataMutation) ResetFormat() {
+	m.format = nil
+}
+
+// SetSize sets the "size" field.
+func (m *SourceDataMutation) SetSize(i int64) {
+	m.size = &i
+	m.addsize = nil
+}
+
+// Size returns the value of the "size" field in the mutation.
+func (m *SourceDataMutation) Size() (r int64, exists bool) {
+	v := m.size
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSize returns the old "size" field's value of the SourceData entity.
+// If the SourceData object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SourceDataMutation) OldSize(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSize is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSize requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSize: %w", err)
+	}
+	return oldValue.Size, nil
+}
+
+// AddSize adds i to the "size" field.
+func (m *SourceDataMutation) AddSize(i int64) {
+	if m.addsize != nil {
+		*m.addsize += i
+	} else {
+		m.addsize = &i
+	}
+}
+
+// AddedSize returns the value that was added to the "size" field in this mutation.
+func (m *SourceDataMutation) AddedSize() (r int64, exists bool) {
+	v := m.addsize
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetSize resets all changes to the "size" field.
+func (m *SourceDataMutation) ResetSize() {
+	m.size = nil
+	m.addsize = nil
+}
+
+// SetURI sets the "uri" field.
+func (m *SourceDataMutation) SetURI(s string) {
+	m.uri = &s
+}
+
+// URI returns the value of the "uri" field in the mutation.
+func (m *SourceDataMutation) URI() (r string, exists bool) {
+	v := m.uri
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldURI returns the old "uri" field's value of the SourceData entity.
+// If the SourceData object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SourceDataMutation) OldURI(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldURI is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldURI requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldURI: %w", err)
+	}
+	return oldValue.URI, nil
+}
+
+// ClearURI clears the value of the "uri" field.
+func (m *SourceDataMutation) ClearURI() {
+	m.uri = nil
+	m.clearedFields[sourcedata.FieldURI] = struct{}{}
+}
+
+// URICleared returns if the "uri" field was cleared in this mutation.
+func (m *SourceDataMutation) URICleared() bool {
+	_, ok := m.clearedFields[sourcedata.FieldURI]
+	return ok
+}
+
+// ResetURI resets all changes to the "uri" field.
+func (m *SourceDataMutation) ResetURI() {
+	m.uri = nil
+	delete(m.clearedFields, sourcedata.FieldURI)
+}
+
+// SetHashes sets the "hashes" field.
+func (m *SourceDataMutation) SetHashes(value map[int32]string) {
+	m.hashes = &value
+}
+
+// Hashes returns the value of the "hashes" field in the mutation.
+func (m *SourceDataMutation) Hashes() (r map[int32]string, exists bool) {
+	v := m.hashes
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldHashes returns the old "hashes" field's value of the SourceData entity.
+// If the SourceData object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SourceDataMutation) OldHashes(ctx context.Context) (v map[int32]string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldHashes is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldHashes requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldHashes: %w", err)
+	}
+	return oldValue.Hashes, nil
+}
+
+// ClearHashes clears the value of the "hashes" field.
+func (m *SourceDataMutation) ClearHashes() {
+	m.hashes = nil
+	m.clearedFields[sourcedata.FieldHashes] = struct{}{}
+}
+
+// HashesCleared returns if the "hashes" field was cleared in this mutation.
+func (m *SourceDataMutation) HashesCleared() bool {
+	_, ok := m.clearedFields[sourcedata.FieldHashes]
+	return ok
+}
+
+// ResetHashes resets all changes to the "hashes" field.
+func (m *SourceDataMutation) ResetHashes() {
+	m.hashes = nil
+	delete(m.clearedFields, sourcedata.FieldHashes)
+}
+
+// ClearDocument clears the "document" edge to the Document entity.
+func (m *SourceDataMutation) ClearDocument() {
+	m.cleareddocument = true
+	m.clearedFields[sourcedata.FieldDocumentID] = struct{}{}
+}
+
+// DocumentCleared reports if the "document" edge to the Document entity was cleared.
+func (m *SourceDataMutation) DocumentCleared() bool {
+	return m.DocumentIDCleared() || m.cleareddocument
+}
+
+// DocumentIDs returns the "document" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// DocumentID instead. It exists only for internal usage by the builders.
+func (m *SourceDataMutation) DocumentIDs() (ids []uuid.UUID) {
+	if id := m.document; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetDocument resets all changes to the "document" edge.
+func (m *SourceDataMutation) ResetDocument() {
+	m.document = nil
+	m.cleareddocument = false
+}
+
+// ClearMetadata clears the "metadata" edge to the Metadata entity.
+func (m *SourceDataMutation) ClearMetadata() {
+	m.clearedmetadata = true
+	m.clearedFields[sourcedata.FieldMetadataID] = struct{}{}
+}
+
+// MetadataCleared reports if the "metadata" edge to the Metadata entity was cleared.
+func (m *SourceDataMutation) MetadataCleared() bool {
+	return m.clearedmetadata
+}
+
+// MetadataIDs returns the "metadata" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// MetadataID instead. It exists only for internal usage by the builders.
+func (m *SourceDataMutation) MetadataIDs() (ids []string) {
+	if id := m.metadata; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetMetadata resets all changes to the "metadata" edge.
+func (m *SourceDataMutation) ResetMetadata() {
+	m.metadata = nil
+	m.clearedmetadata = false
+}
+
+// Where appends a list predicates to the SourceDataMutation builder.
+func (m *SourceDataMutation) Where(ps ...predicate.SourceData) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the SourceDataMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *SourceDataMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.SourceData, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *SourceDataMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *SourceDataMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (SourceData).
+func (m *SourceDataMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *SourceDataMutation) Fields() []string {
+	fields := make([]string, 0, 7)
+	if m.document != nil {
+		fields = append(fields, sourcedata.FieldDocumentID)
+	}
+	if m.proto_message != nil {
+		fields = append(fields, sourcedata.FieldProtoMessage)
+	}
+	if m.metadata != nil {
+		fields = append(fields, sourcedata.FieldMetadataID)
+	}
+	if m.format != nil {
+		fields = append(fields, sourcedata.FieldFormat)
+	}
+	if m.size != nil {
+		fields = append(fields, sourcedata.FieldSize)
+	}
+	if m.uri != nil {
+		fields = append(fields, sourcedata.FieldURI)
+	}
+	if m.hashes != nil {
+		fields = append(fields, sourcedata.FieldHashes)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *SourceDataMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case sourcedata.FieldDocumentID:
+		return m.DocumentID()
+	case sourcedata.FieldProtoMessage:
+		return m.ProtoMessage()
+	case sourcedata.FieldMetadataID:
+		return m.MetadataID()
+	case sourcedata.FieldFormat:
+		return m.Format()
+	case sourcedata.FieldSize:
+		return m.Size()
+	case sourcedata.FieldURI:
+		return m.URI()
+	case sourcedata.FieldHashes:
+		return m.Hashes()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *SourceDataMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case sourcedata.FieldDocumentID:
+		return m.OldDocumentID(ctx)
+	case sourcedata.FieldProtoMessage:
+		return m.OldProtoMessage(ctx)
+	case sourcedata.FieldMetadataID:
+		return m.OldMetadataID(ctx)
+	case sourcedata.FieldFormat:
+		return m.OldFormat(ctx)
+	case sourcedata.FieldSize:
+		return m.OldSize(ctx)
+	case sourcedata.FieldURI:
+		return m.OldURI(ctx)
+	case sourcedata.FieldHashes:
+		return m.OldHashes(ctx)
+	}
+	return nil, fmt.Errorf("unknown SourceData field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *SourceDataMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case sourcedata.FieldDocumentID:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDocumentID(v)
+		return nil
+	case sourcedata.FieldProtoMessage:
+		v, ok := value.(*sbom.SourceData)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetProtoMessage(v)
+		return nil
+	case sourcedata.FieldMetadataID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetMetadataID(v)
+		return nil
+	case sourcedata.FieldFormat:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetFormat(v)
+		return nil
+	case sourcedata.FieldSize:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSize(v)
+		return nil
+	case sourcedata.FieldURI:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetURI(v)
+		return nil
+	case sourcedata.FieldHashes:
+		v, ok := value.(map[int32]string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetHashes(v)
+		return nil
+	}
+	return fmt.Errorf("unknown SourceData field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *SourceDataMutation) AddedFields() []string {
+	var fields []string
+	if m.addsize != nil {
+		fields = append(fields, sourcedata.FieldSize)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *SourceDataMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case sourcedata.FieldSize:
+		return m.AddedSize()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *SourceDataMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case sourcedata.FieldSize:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddSize(v)
+		return nil
+	}
+	return fmt.Errorf("unknown SourceData numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *SourceDataMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(sourcedata.FieldDocumentID) {
+		fields = append(fields, sourcedata.FieldDocumentID)
+	}
+	if m.FieldCleared(sourcedata.FieldProtoMessage) {
+		fields = append(fields, sourcedata.FieldProtoMessage)
+	}
+	if m.FieldCleared(sourcedata.FieldURI) {
+		fields = append(fields, sourcedata.FieldURI)
+	}
+	if m.FieldCleared(sourcedata.FieldHashes) {
+		fields = append(fields, sourcedata.FieldHashes)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *SourceDataMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *SourceDataMutation) ClearField(name string) error {
+	switch name {
+	case sourcedata.FieldDocumentID:
+		m.ClearDocumentID()
+		return nil
+	case sourcedata.FieldProtoMessage:
+		m.ClearProtoMessage()
+		return nil
+	case sourcedata.FieldURI:
+		m.ClearURI()
+		return nil
+	case sourcedata.FieldHashes:
+		m.ClearHashes()
+		return nil
+	}
+	return fmt.Errorf("unknown SourceData nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *SourceDataMutation) ResetField(name string) error {
+	switch name {
+	case sourcedata.FieldDocumentID:
+		m.ResetDocumentID()
+		return nil
+	case sourcedata.FieldProtoMessage:
+		m.ResetProtoMessage()
+		return nil
+	case sourcedata.FieldMetadataID:
+		m.ResetMetadataID()
+		return nil
+	case sourcedata.FieldFormat:
+		m.ResetFormat()
+		return nil
+	case sourcedata.FieldSize:
+		m.ResetSize()
+		return nil
+	case sourcedata.FieldURI:
+		m.ResetURI()
+		return nil
+	case sourcedata.FieldHashes:
+		m.ResetHashes()
+		return nil
+	}
+	return fmt.Errorf("unknown SourceData field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *SourceDataMutation) AddedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.document != nil {
+		edges = append(edges, sourcedata.EdgeDocument)
+	}
+	if m.metadata != nil {
+		edges = append(edges, sourcedata.EdgeMetadata)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *SourceDataMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case sourcedata.EdgeDocument:
+		if id := m.document; id != nil {
+			return []ent.Value{*id}
+		}
+	case sourcedata.EdgeMetadata:
+		if id := m.metadata; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *SourceDataMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 2)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *SourceDataMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *SourceDataMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.cleareddocument {
+		edges = append(edges, sourcedata.EdgeDocument)
+	}
+	if m.clearedmetadata {
+		edges = append(edges, sourcedata.EdgeMetadata)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *SourceDataMutation) EdgeCleared(name string) bool {
+	switch name {
+	case sourcedata.EdgeDocument:
+		return m.cleareddocument
+	case sourcedata.EdgeMetadata:
+		return m.clearedmetadata
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *SourceDataMutation) ClearEdge(name string) error {
+	switch name {
+	case sourcedata.EdgeDocument:
+		m.ClearDocument()
+		return nil
+	case sourcedata.EdgeMetadata:
+		m.ClearMetadata()
+		return nil
+	}
+	return fmt.Errorf("unknown SourceData unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *SourceDataMutation) ResetEdge(name string) error {
+	switch name {
+	case sourcedata.EdgeDocument:
+		m.ResetDocument()
+		return nil
+	case sourcedata.EdgeMetadata:
+		m.ResetMetadata()
+		return nil
+	}
+	return fmt.Errorf("unknown SourceData edge %s", name)
 }
 
 // ToolMutation represents an operation that mutates the Tool nodes in the graph.

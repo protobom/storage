@@ -33,6 +33,8 @@ const (
 	EdgeAuthors = "authors"
 	// EdgeDocumentTypes holds the string denoting the document_types edge name in mutations.
 	EdgeDocumentTypes = "document_types"
+	// EdgeSourceData holds the string denoting the source_data edge name in mutations.
+	EdgeSourceData = "source_data"
 	// EdgeDocument holds the string denoting the document edge name in mutations.
 	EdgeDocument = "document"
 	// Table holds the table name of the metadata in the database.
@@ -58,6 +60,13 @@ const (
 	DocumentTypesInverseTable = "document_types"
 	// DocumentTypesColumn is the table column denoting the document_types relation/edge.
 	DocumentTypesColumn = "metadata_id"
+	// SourceDataTable is the table that holds the source_data relation/edge.
+	SourceDataTable = "source_data"
+	// SourceDataInverseTable is the table name for the SourceData entity.
+	// It exists in this package in order to avoid circular dependency with the "sourcedata" package.
+	SourceDataInverseTable = "source_data"
+	// SourceDataColumn is the table column denoting the source_data relation/edge.
+	SourceDataColumn = "metadata_id"
 	// DocumentTable is the table that holds the document relation/edge.
 	DocumentTable = "documents"
 	// DocumentInverseTable is the table name for the Document entity.
@@ -162,6 +171,20 @@ func ByDocumentTypes(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	}
 }
 
+// BySourceDataCount orders the results by source_data count.
+func BySourceDataCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newSourceDataStep(), opts...)
+	}
+}
+
+// BySourceData orders the results by source_data terms.
+func BySourceData(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newSourceDataStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
 // ByDocumentField orders the results by document field.
 func ByDocumentField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -187,6 +210,13 @@ func newDocumentTypesStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(DocumentTypesInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, DocumentTypesTable, DocumentTypesColumn),
+	)
+}
+func newSourceDataStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(SourceDataInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, SourceDataTable, SourceDataColumn),
 	)
 }
 func newDocumentStep() *sqlgraph.Step {
