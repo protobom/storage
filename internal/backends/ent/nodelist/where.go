@@ -105,16 +105,6 @@ func ProtoMessageLTE(v *sbom.NodeList) predicate.NodeList {
 	return predicate.NodeList(sql.FieldLTE(FieldProtoMessage, v))
 }
 
-// ProtoMessageIsNil applies the IsNil predicate on the "proto_message" field.
-func ProtoMessageIsNil() predicate.NodeList {
-	return predicate.NodeList(sql.FieldIsNull(FieldProtoMessage))
-}
-
-// ProtoMessageNotNil applies the NotNil predicate on the "proto_message" field.
-func ProtoMessageNotNil() predicate.NodeList {
-	return predicate.NodeList(sql.FieldNotNull(FieldProtoMessage))
-}
-
 // HasNodes applies the HasEdge predicate on the "nodes" edge.
 func HasNodes() predicate.NodeList {
 	return predicate.NodeList(func(s *sql.Selector) {

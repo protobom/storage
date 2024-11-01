@@ -86,10 +86,10 @@ func (*ExternalReference) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case externalreference.FieldProtoMessage:
+			values[i] = &sql.NullScanner{S: new(sbom.ExternalReference)}
 		case externalreference.FieldHashes:
 			values[i] = new([]byte)
-		case externalreference.FieldProtoMessage:
-			values[i] = new(sbom.ExternalReference)
 		case externalreference.FieldNodeID, externalreference.FieldURL, externalreference.FieldComment, externalreference.FieldAuthority, externalreference.FieldType:
 			values[i] = new(sql.NullString)
 		case externalreference.FieldID, externalreference.FieldDocumentID:
@@ -122,10 +122,10 @@ func (er *ExternalReference) assignValues(columns []string, values []any) error 
 				er.DocumentID = *value
 			}
 		case externalreference.FieldProtoMessage:
-			if value, ok := values[i].(*sbom.ExternalReference); !ok {
+			if value, ok := values[i].(*sql.NullScanner); !ok {
 				return fmt.Errorf("unexpected type %T for field proto_message", values[i])
-			} else if value != nil {
-				er.ProtoMessage = value
+			} else if value.Valid {
+				er.ProtoMessage = value.S.(*sbom.ExternalReference)
 			}
 		case externalreference.FieldNodeID:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -214,8 +214,10 @@ func (er *ExternalReference) String() string {
 	builder.WriteString("document_id=")
 	builder.WriteString(fmt.Sprintf("%v", er.DocumentID))
 	builder.WriteString(", ")
-	builder.WriteString("proto_message=")
-	builder.WriteString(fmt.Sprintf("%v", er.ProtoMessage))
+	if v := er.ProtoMessage; v != nil {
+		builder.WriteString("proto_message=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
 	builder.WriteString(", ")
 	builder.WriteString("node_id=")
 	builder.WriteString(er.NodeID)

@@ -15,7 +15,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/protobom/protobom/pkg/sbom"
 	"github.com/protobom/storage/internal/backends/ent/externalreference"
 	"github.com/protobom/storage/internal/backends/ent/node"
 	"github.com/protobom/storage/internal/backends/ent/predicate"
@@ -31,18 +30,6 @@ type ExternalReferenceUpdate struct {
 // Where appends a list predicates to the ExternalReferenceUpdate builder.
 func (eru *ExternalReferenceUpdate) Where(ps ...predicate.ExternalReference) *ExternalReferenceUpdate {
 	eru.mutation.Where(ps...)
-	return eru
-}
-
-// SetProtoMessage sets the "proto_message" field.
-func (eru *ExternalReferenceUpdate) SetProtoMessage(sr *sbom.ExternalReference) *ExternalReferenceUpdate {
-	eru.mutation.SetProtoMessage(sr)
-	return eru
-}
-
-// ClearProtoMessage clears the value of the "proto_message" field.
-func (eru *ExternalReferenceUpdate) ClearProtoMessage() *ExternalReferenceUpdate {
-	eru.mutation.ClearProtoMessage()
 	return eru
 }
 
@@ -205,12 +192,6 @@ func (eru *ExternalReferenceUpdate) sqlSave(ctx context.Context) (n int, err err
 			}
 		}
 	}
-	if value, ok := eru.mutation.ProtoMessage(); ok {
-		_spec.SetField(externalreference.FieldProtoMessage, field.TypeBytes, value)
-	}
-	if eru.mutation.ProtoMessageCleared() {
-		_spec.ClearField(externalreference.FieldProtoMessage, field.TypeBytes)
-	}
 	if value, ok := eru.mutation.URL(); ok {
 		_spec.SetField(externalreference.FieldURL, field.TypeString, value)
 	}
@@ -279,18 +260,6 @@ type ExternalReferenceUpdateOne struct {
 	fields   []string
 	hooks    []Hook
 	mutation *ExternalReferenceMutation
-}
-
-// SetProtoMessage sets the "proto_message" field.
-func (eruo *ExternalReferenceUpdateOne) SetProtoMessage(sr *sbom.ExternalReference) *ExternalReferenceUpdateOne {
-	eruo.mutation.SetProtoMessage(sr)
-	return eruo
-}
-
-// ClearProtoMessage clears the value of the "proto_message" field.
-func (eruo *ExternalReferenceUpdateOne) ClearProtoMessage() *ExternalReferenceUpdateOne {
-	eruo.mutation.ClearProtoMessage()
-	return eruo
 }
 
 // SetNodeID sets the "node_id" field.
@@ -481,12 +450,6 @@ func (eruo *ExternalReferenceUpdateOne) sqlSave(ctx context.Context) (_node *Ext
 				ps[i](selector)
 			}
 		}
-	}
-	if value, ok := eruo.mutation.ProtoMessage(); ok {
-		_spec.SetField(externalreference.FieldProtoMessage, field.TypeBytes, value)
-	}
-	if eruo.mutation.ProtoMessageCleared() {
-		_spec.ClearField(externalreference.FieldProtoMessage, field.TypeBytes)
 	}
 	if value, ok := eruo.mutation.URL(); ok {
 		_spec.SetField(externalreference.FieldURL, field.TypeString, value)

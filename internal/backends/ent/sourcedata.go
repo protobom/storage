@@ -84,10 +84,10 @@ func (*SourceData) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case sourcedata.FieldProtoMessage:
+			values[i] = &sql.NullScanner{S: new(sbom.SourceData)}
 		case sourcedata.FieldHashes:
 			values[i] = new([]byte)
-		case sourcedata.FieldProtoMessage:
-			values[i] = new(sbom.SourceData)
 		case sourcedata.FieldSize:
 			values[i] = new(sql.NullInt64)
 		case sourcedata.FieldMetadataID, sourcedata.FieldFormat, sourcedata.FieldURI:
@@ -122,10 +122,10 @@ func (sd *SourceData) assignValues(columns []string, values []any) error {
 				sd.DocumentID = *value
 			}
 		case sourcedata.FieldProtoMessage:
-			if value, ok := values[i].(*sbom.SourceData); !ok {
+			if value, ok := values[i].(*sql.NullScanner); !ok {
 				return fmt.Errorf("unexpected type %T for field proto_message", values[i])
-			} else if value != nil {
-				sd.ProtoMessage = value
+			} else if value.Valid {
+				sd.ProtoMessage = value.S.(*sbom.SourceData)
 			}
 		case sourcedata.FieldMetadataID:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -209,8 +209,10 @@ func (sd *SourceData) String() string {
 	builder.WriteString("document_id=")
 	builder.WriteString(fmt.Sprintf("%v", sd.DocumentID))
 	builder.WriteString(", ")
-	builder.WriteString("proto_message=")
-	builder.WriteString(fmt.Sprintf("%v", sd.ProtoMessage))
+	if v := sd.ProtoMessage; v != nil {
+		builder.WriteString("proto_message=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
 	builder.WriteString(", ")
 	builder.WriteString("metadata_id=")
 	builder.WriteString(sd.MetadataID)

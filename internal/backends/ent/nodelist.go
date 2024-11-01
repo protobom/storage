@@ -71,10 +71,10 @@ func (*NodeList) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case nodelist.FieldProtoMessage:
+			values[i] = &sql.NullScanner{S: new(sbom.NodeList)}
 		case nodelist.FieldRootElements:
 			values[i] = new([]byte)
-		case nodelist.FieldProtoMessage:
-			values[i] = new(sbom.NodeList)
 		case nodelist.FieldID:
 			values[i] = new(uuid.UUID)
 		default:
@@ -99,10 +99,10 @@ func (nl *NodeList) assignValues(columns []string, values []any) error {
 				nl.ID = *value
 			}
 		case nodelist.FieldProtoMessage:
-			if value, ok := values[i].(*sbom.NodeList); !ok {
+			if value, ok := values[i].(*sql.NullScanner); !ok {
 				return fmt.Errorf("unexpected type %T for field proto_message", values[i])
-			} else if value != nil {
-				nl.ProtoMessage = value
+			} else if value.Valid {
+				nl.ProtoMessage = value.S.(*sbom.NodeList)
 			}
 		case nodelist.FieldRootElements:
 			if value, ok := values[i].(*[]byte); !ok {
@@ -158,8 +158,10 @@ func (nl *NodeList) String() string {
 	var builder strings.Builder
 	builder.WriteString("NodeList(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", nl.ID))
-	builder.WriteString("proto_message=")
-	builder.WriteString(fmt.Sprintf("%v", nl.ProtoMessage))
+	if v := nl.ProtoMessage; v != nil {
+		builder.WriteString("proto_message=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
 	builder.WriteString(", ")
 	builder.WriteString("root_elements=")
 	builder.WriteString(fmt.Sprintf("%v", nl.RootElements))

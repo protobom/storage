@@ -82,7 +82,7 @@ func (*DocumentType) scanValues(columns []string) ([]any, error) {
 	for i := range columns {
 		switch columns[i] {
 		case documenttype.FieldProtoMessage:
-			values[i] = new(sbom.DocumentType)
+			values[i] = &sql.NullScanner{S: new(sbom.DocumentType)}
 		case documenttype.FieldMetadataID, documenttype.FieldType, documenttype.FieldName, documenttype.FieldDescription:
 			values[i] = new(sql.NullString)
 		case documenttype.FieldID, documenttype.FieldDocumentID:
@@ -115,10 +115,10 @@ func (dt *DocumentType) assignValues(columns []string, values []any) error {
 				dt.DocumentID = *value
 			}
 		case documenttype.FieldProtoMessage:
-			if value, ok := values[i].(*sbom.DocumentType); !ok {
+			if value, ok := values[i].(*sql.NullScanner); !ok {
 				return fmt.Errorf("unexpected type %T for field proto_message", values[i])
-			} else if value != nil {
-				dt.ProtoMessage = value
+			} else if value.Valid {
+				dt.ProtoMessage = value.S.(*sbom.DocumentType)
 			}
 		case documenttype.FieldMetadataID:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -196,8 +196,10 @@ func (dt *DocumentType) String() string {
 	builder.WriteString("document_id=")
 	builder.WriteString(fmt.Sprintf("%v", dt.DocumentID))
 	builder.WriteString(", ")
-	builder.WriteString("proto_message=")
-	builder.WriteString(fmt.Sprintf("%v", dt.ProtoMessage))
+	if v := dt.ProtoMessage; v != nil {
+		builder.WriteString("proto_message=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
 	builder.WriteString(", ")
 	builder.WriteString("metadata_id=")
 	builder.WriteString(dt.MetadataID)

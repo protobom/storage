@@ -136,6 +136,9 @@ func (pc *PropertyCreate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (pc *PropertyCreate) check() error {
+	if _, ok := pc.mutation.ProtoMessage(); !ok {
+		return &ValidationError{Name: "proto_message", err: errors.New(`ent: missing required field "Property.proto_message"`)}
+	}
 	if _, ok := pc.mutation.Name(); !ok {
 		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "Property.name"`)}
 	}
@@ -276,24 +279,6 @@ type (
 	}
 )
 
-// SetProtoMessage sets the "proto_message" field.
-func (u *PropertyUpsert) SetProtoMessage(v *sbom.Property) *PropertyUpsert {
-	u.Set(property.FieldProtoMessage, v)
-	return u
-}
-
-// UpdateProtoMessage sets the "proto_message" field to the value that was provided on create.
-func (u *PropertyUpsert) UpdateProtoMessage() *PropertyUpsert {
-	u.SetExcluded(property.FieldProtoMessage)
-	return u
-}
-
-// ClearProtoMessage clears the value of the "proto_message" field.
-func (u *PropertyUpsert) ClearProtoMessage() *PropertyUpsert {
-	u.SetNull(property.FieldProtoMessage)
-	return u
-}
-
 // SetNodeID sets the "node_id" field.
 func (u *PropertyUpsert) SetNodeID(v string) *PropertyUpsert {
 	u.Set(property.FieldNodeID, v)
@@ -356,6 +341,9 @@ func (u *PropertyUpsertOne) UpdateNewValues() *PropertyUpsertOne {
 		if _, exists := u.create.mutation.DocumentID(); exists {
 			s.SetIgnore(property.FieldDocumentID)
 		}
+		if _, exists := u.create.mutation.ProtoMessage(); exists {
+			s.SetIgnore(property.FieldProtoMessage)
+		}
 	}))
 	return u
 }
@@ -385,27 +373,6 @@ func (u *PropertyUpsertOne) Update(set func(*PropertyUpsert)) *PropertyUpsertOne
 		set(&PropertyUpsert{UpdateSet: update})
 	}))
 	return u
-}
-
-// SetProtoMessage sets the "proto_message" field.
-func (u *PropertyUpsertOne) SetProtoMessage(v *sbom.Property) *PropertyUpsertOne {
-	return u.Update(func(s *PropertyUpsert) {
-		s.SetProtoMessage(v)
-	})
-}
-
-// UpdateProtoMessage sets the "proto_message" field to the value that was provided on create.
-func (u *PropertyUpsertOne) UpdateProtoMessage() *PropertyUpsertOne {
-	return u.Update(func(s *PropertyUpsert) {
-		s.UpdateProtoMessage()
-	})
-}
-
-// ClearProtoMessage clears the value of the "proto_message" field.
-func (u *PropertyUpsertOne) ClearProtoMessage() *PropertyUpsertOne {
-	return u.Update(func(s *PropertyUpsert) {
-		s.ClearProtoMessage()
-	})
 }
 
 // SetNodeID sets the "node_id" field.
@@ -643,6 +610,9 @@ func (u *PropertyUpsertBulk) UpdateNewValues() *PropertyUpsertBulk {
 			if _, exists := b.mutation.DocumentID(); exists {
 				s.SetIgnore(property.FieldDocumentID)
 			}
+			if _, exists := b.mutation.ProtoMessage(); exists {
+				s.SetIgnore(property.FieldProtoMessage)
+			}
 		}
 	}))
 	return u
@@ -673,27 +643,6 @@ func (u *PropertyUpsertBulk) Update(set func(*PropertyUpsert)) *PropertyUpsertBu
 		set(&PropertyUpsert{UpdateSet: update})
 	}))
 	return u
-}
-
-// SetProtoMessage sets the "proto_message" field.
-func (u *PropertyUpsertBulk) SetProtoMessage(v *sbom.Property) *PropertyUpsertBulk {
-	return u.Update(func(s *PropertyUpsert) {
-		s.SetProtoMessage(v)
-	})
-}
-
-// UpdateProtoMessage sets the "proto_message" field to the value that was provided on create.
-func (u *PropertyUpsertBulk) UpdateProtoMessage() *PropertyUpsertBulk {
-	return u.Update(func(s *PropertyUpsert) {
-		s.UpdateProtoMessage()
-	})
-}
-
-// ClearProtoMessage clears the value of the "proto_message" field.
-func (u *PropertyUpsertBulk) ClearProtoMessage() *PropertyUpsertBulk {
-	return u.Update(func(s *PropertyUpsert) {
-		s.ClearProtoMessage()
-	})
 }
 
 // SetNodeID sets the "node_id" field.

@@ -15,7 +15,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/protobom/protobom/pkg/sbom"
 	"github.com/protobom/storage/internal/backends/ent/node"
 	"github.com/protobom/storage/internal/backends/ent/predicate"
 	"github.com/protobom/storage/internal/backends/ent/property"
@@ -31,18 +30,6 @@ type PropertyUpdate struct {
 // Where appends a list predicates to the PropertyUpdate builder.
 func (pu *PropertyUpdate) Where(ps ...predicate.Property) *PropertyUpdate {
 	pu.mutation.Where(ps...)
-	return pu
-}
-
-// SetProtoMessage sets the "proto_message" field.
-func (pu *PropertyUpdate) SetProtoMessage(s *sbom.Property) *PropertyUpdate {
-	pu.mutation.SetProtoMessage(s)
-	return pu
-}
-
-// ClearProtoMessage clears the value of the "proto_message" field.
-func (pu *PropertyUpdate) ClearProtoMessage() *PropertyUpdate {
-	pu.mutation.ClearProtoMessage()
 	return pu
 }
 
@@ -146,12 +133,6 @@ func (pu *PropertyUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
-	if value, ok := pu.mutation.ProtoMessage(); ok {
-		_spec.SetField(property.FieldProtoMessage, field.TypeBytes, value)
-	}
-	if pu.mutation.ProtoMessageCleared() {
-		_spec.ClearField(property.FieldProtoMessage, field.TypeBytes)
-	}
 	if value, ok := pu.mutation.Name(); ok {
 		_spec.SetField(property.FieldName, field.TypeString, value)
 	}
@@ -205,18 +186,6 @@ type PropertyUpdateOne struct {
 	fields   []string
 	hooks    []Hook
 	mutation *PropertyMutation
-}
-
-// SetProtoMessage sets the "proto_message" field.
-func (puo *PropertyUpdateOne) SetProtoMessage(s *sbom.Property) *PropertyUpdateOne {
-	puo.mutation.SetProtoMessage(s)
-	return puo
-}
-
-// ClearProtoMessage clears the value of the "proto_message" field.
-func (puo *PropertyUpdateOne) ClearProtoMessage() *PropertyUpdateOne {
-	puo.mutation.ClearProtoMessage()
-	return puo
 }
 
 // SetNodeID sets the "node_id" field.
@@ -348,12 +317,6 @@ func (puo *PropertyUpdateOne) sqlSave(ctx context.Context) (_node *Property, err
 				ps[i](selector)
 			}
 		}
-	}
-	if value, ok := puo.mutation.ProtoMessage(); ok {
-		_spec.SetField(property.FieldProtoMessage, field.TypeBytes, value)
-	}
-	if puo.mutation.ProtoMessageCleared() {
-		_spec.ClearField(property.FieldProtoMessage, field.TypeBytes)
 	}
 	if value, ok := puo.mutation.Name(); ok {
 		_spec.SetField(property.FieldName, field.TypeString, value)

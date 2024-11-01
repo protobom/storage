@@ -94,7 +94,7 @@ var (
 	// DocumentTypesColumns holds the columns for the "document_types" table.
 	DocumentTypesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID, Unique: true},
-		{Name: "proto_message", Type: field.TypeBytes, Nullable: true},
+		{Name: "proto_message", Type: field.TypeBytes},
 		{Name: "type", Type: field.TypeEnum, Nullable: true, Enums: []string{"OTHER", "DESIGN", "SOURCE", "BUILD", "ANALYZED", "DEPLOYED", "RUNTIME", "DISCOVERY", "DECOMISSION"}},
 		{Name: "name", Type: field.TypeString, Nullable: true},
 		{Name: "description", Type: field.TypeString, Nullable: true},
@@ -177,7 +177,7 @@ var (
 	// ExternalReferencesColumns holds the columns for the "external_references" table.
 	ExternalReferencesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID, Unique: true},
-		{Name: "proto_message", Type: field.TypeBytes, Nullable: true},
+		{Name: "proto_message", Type: field.TypeBytes},
 		{Name: "url", Type: field.TypeString},
 		{Name: "comment", Type: field.TypeString},
 		{Name: "authority", Type: field.TypeString, Nullable: true},
@@ -216,7 +216,7 @@ var (
 	// MetadataColumns holds the columns for the "metadata" table.
 	MetadataColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeString},
-		{Name: "proto_message", Type: field.TypeBytes, Nullable: true},
+		{Name: "proto_message", Type: field.TypeBytes},
 		{Name: "version", Type: field.TypeString},
 		{Name: "name", Type: field.TypeString},
 		{Name: "date", Type: field.TypeTime},
@@ -238,7 +238,7 @@ var (
 	// NodesColumns holds the columns for the "nodes" table.
 	NodesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeString},
-		{Name: "proto_message", Type: field.TypeBytes, Nullable: true},
+		{Name: "proto_message", Type: field.TypeBytes},
 		{Name: "node_list_id", Type: field.TypeUUID, Nullable: true},
 		{Name: "type", Type: field.TypeEnum, Enums: []string{"PACKAGE", "FILE"}},
 		{Name: "name", Type: field.TypeString},
@@ -287,7 +287,7 @@ var (
 	// NodeListsColumns holds the columns for the "node_lists" table.
 	NodeListsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID, Unique: true},
-		{Name: "proto_message", Type: field.TypeBytes, Nullable: true},
+		{Name: "proto_message", Type: field.TypeBytes},
 		{Name: "root_elements", Type: field.TypeJSON},
 	}
 	// NodeListsTable holds the schema information for the "node_lists" table.
@@ -299,7 +299,7 @@ var (
 	// PersonsColumns holds the columns for the "persons" table.
 	PersonsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID, Unique: true},
-		{Name: "proto_message", Type: field.TypeBytes, Nullable: true},
+		{Name: "proto_message", Type: field.TypeBytes},
 		{Name: "name", Type: field.TypeString},
 		{Name: "is_org", Type: field.TypeBool},
 		{Name: "email", Type: field.TypeString},
@@ -370,7 +370,7 @@ var (
 	// PropertiesColumns holds the columns for the "properties" table.
 	PropertiesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID, Unique: true},
-		{Name: "proto_message", Type: field.TypeBytes, Nullable: true},
+		{Name: "proto_message", Type: field.TypeBytes},
 		{Name: "name", Type: field.TypeString},
 		{Name: "data", Type: field.TypeString},
 		{Name: "node_id", Type: field.TypeString, Nullable: true},
@@ -440,7 +440,7 @@ var (
 	// SourceDataColumns holds the columns for the "source_data" table.
 	SourceDataColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID, Unique: true},
-		{Name: "proto_message", Type: field.TypeBytes, Nullable: true},
+		{Name: "proto_message", Type: field.TypeBytes},
 		{Name: "format", Type: field.TypeString},
 		{Name: "size", Type: field.TypeInt64},
 		{Name: "uri", Type: field.TypeString, Nullable: true},
@@ -478,7 +478,7 @@ var (
 	// ToolsColumns holds the columns for the "tools" table.
 	ToolsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID, Unique: true},
-		{Name: "proto_message", Type: field.TypeBytes, Nullable: true},
+		{Name: "proto_message", Type: field.TypeBytes},
 		{Name: "name", Type: field.TypeString},
 		{Name: "version", Type: field.TypeString},
 		{Name: "vendor", Type: field.TypeString},

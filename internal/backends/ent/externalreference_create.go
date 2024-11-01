@@ -162,6 +162,9 @@ func (erc *ExternalReferenceCreate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (erc *ExternalReferenceCreate) check() error {
+	if _, ok := erc.mutation.ProtoMessage(); !ok {
+		return &ValidationError{Name: "proto_message", err: errors.New(`ent: missing required field "ExternalReference.proto_message"`)}
+	}
 	if _, ok := erc.mutation.URL(); !ok {
 		return &ValidationError{Name: "url", err: errors.New(`ent: missing required field "ExternalReference.url"`)}
 	}
@@ -322,24 +325,6 @@ type (
 	}
 )
 
-// SetProtoMessage sets the "proto_message" field.
-func (u *ExternalReferenceUpsert) SetProtoMessage(v *sbom.ExternalReference) *ExternalReferenceUpsert {
-	u.Set(externalreference.FieldProtoMessage, v)
-	return u
-}
-
-// UpdateProtoMessage sets the "proto_message" field to the value that was provided on create.
-func (u *ExternalReferenceUpsert) UpdateProtoMessage() *ExternalReferenceUpsert {
-	u.SetExcluded(externalreference.FieldProtoMessage)
-	return u
-}
-
-// ClearProtoMessage clears the value of the "proto_message" field.
-func (u *ExternalReferenceUpsert) ClearProtoMessage() *ExternalReferenceUpsert {
-	u.SetNull(externalreference.FieldProtoMessage)
-	return u
-}
-
 // SetNodeID sets the "node_id" field.
 func (u *ExternalReferenceUpsert) SetNodeID(v string) *ExternalReferenceUpsert {
 	u.Set(externalreference.FieldNodeID, v)
@@ -450,6 +435,9 @@ func (u *ExternalReferenceUpsertOne) UpdateNewValues() *ExternalReferenceUpsertO
 		if _, exists := u.create.mutation.DocumentID(); exists {
 			s.SetIgnore(externalreference.FieldDocumentID)
 		}
+		if _, exists := u.create.mutation.ProtoMessage(); exists {
+			s.SetIgnore(externalreference.FieldProtoMessage)
+		}
 	}))
 	return u
 }
@@ -479,27 +467,6 @@ func (u *ExternalReferenceUpsertOne) Update(set func(*ExternalReferenceUpsert)) 
 		set(&ExternalReferenceUpsert{UpdateSet: update})
 	}))
 	return u
-}
-
-// SetProtoMessage sets the "proto_message" field.
-func (u *ExternalReferenceUpsertOne) SetProtoMessage(v *sbom.ExternalReference) *ExternalReferenceUpsertOne {
-	return u.Update(func(s *ExternalReferenceUpsert) {
-		s.SetProtoMessage(v)
-	})
-}
-
-// UpdateProtoMessage sets the "proto_message" field to the value that was provided on create.
-func (u *ExternalReferenceUpsertOne) UpdateProtoMessage() *ExternalReferenceUpsertOne {
-	return u.Update(func(s *ExternalReferenceUpsert) {
-		s.UpdateProtoMessage()
-	})
-}
-
-// ClearProtoMessage clears the value of the "proto_message" field.
-func (u *ExternalReferenceUpsertOne) ClearProtoMessage() *ExternalReferenceUpsertOne {
-	return u.Update(func(s *ExternalReferenceUpsert) {
-		s.ClearProtoMessage()
-	})
 }
 
 // SetNodeID sets the "node_id" field.
@@ -793,6 +760,9 @@ func (u *ExternalReferenceUpsertBulk) UpdateNewValues() *ExternalReferenceUpsert
 			if _, exists := b.mutation.DocumentID(); exists {
 				s.SetIgnore(externalreference.FieldDocumentID)
 			}
+			if _, exists := b.mutation.ProtoMessage(); exists {
+				s.SetIgnore(externalreference.FieldProtoMessage)
+			}
 		}
 	}))
 	return u
@@ -823,27 +793,6 @@ func (u *ExternalReferenceUpsertBulk) Update(set func(*ExternalReferenceUpsert))
 		set(&ExternalReferenceUpsert{UpdateSet: update})
 	}))
 	return u
-}
-
-// SetProtoMessage sets the "proto_message" field.
-func (u *ExternalReferenceUpsertBulk) SetProtoMessage(v *sbom.ExternalReference) *ExternalReferenceUpsertBulk {
-	return u.Update(func(s *ExternalReferenceUpsert) {
-		s.SetProtoMessage(v)
-	})
-}
-
-// UpdateProtoMessage sets the "proto_message" field to the value that was provided on create.
-func (u *ExternalReferenceUpsertBulk) UpdateProtoMessage() *ExternalReferenceUpsertBulk {
-	return u.Update(func(s *ExternalReferenceUpsert) {
-		s.UpdateProtoMessage()
-	})
-}
-
-// ClearProtoMessage clears the value of the "proto_message" field.
-func (u *ExternalReferenceUpsertBulk) ClearProtoMessage() *ExternalReferenceUpsertBulk {
-	return u.Update(func(s *ExternalReferenceUpsert) {
-		s.ClearProtoMessage()
-	})
 }
 
 // SetNodeID sets the "node_id" field.

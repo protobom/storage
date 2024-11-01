@@ -166,6 +166,9 @@ func (dtc *DocumentTypeCreate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (dtc *DocumentTypeCreate) check() error {
+	if _, ok := dtc.mutation.ProtoMessage(); !ok {
+		return &ValidationError{Name: "proto_message", err: errors.New(`ent: missing required field "DocumentType.proto_message"`)}
+	}
 	if v, ok := dtc.mutation.GetType(); ok {
 		if err := documenttype.TypeValidator(v); err != nil {
 			return &ValidationError{Name: "type", err: fmt.Errorf(`ent: validator failed for field "DocumentType.type": %w`, err)}
@@ -309,24 +312,6 @@ type (
 	}
 )
 
-// SetProtoMessage sets the "proto_message" field.
-func (u *DocumentTypeUpsert) SetProtoMessage(v *sbom.DocumentType) *DocumentTypeUpsert {
-	u.Set(documenttype.FieldProtoMessage, v)
-	return u
-}
-
-// UpdateProtoMessage sets the "proto_message" field to the value that was provided on create.
-func (u *DocumentTypeUpsert) UpdateProtoMessage() *DocumentTypeUpsert {
-	u.SetExcluded(documenttype.FieldProtoMessage)
-	return u
-}
-
-// ClearProtoMessage clears the value of the "proto_message" field.
-func (u *DocumentTypeUpsert) ClearProtoMessage() *DocumentTypeUpsert {
-	u.SetNull(documenttype.FieldProtoMessage)
-	return u
-}
-
 // SetMetadataID sets the "metadata_id" field.
 func (u *DocumentTypeUpsert) SetMetadataID(v string) *DocumentTypeUpsert {
 	u.Set(documenttype.FieldMetadataID, v)
@@ -419,6 +404,9 @@ func (u *DocumentTypeUpsertOne) UpdateNewValues() *DocumentTypeUpsertOne {
 		if _, exists := u.create.mutation.DocumentID(); exists {
 			s.SetIgnore(documenttype.FieldDocumentID)
 		}
+		if _, exists := u.create.mutation.ProtoMessage(); exists {
+			s.SetIgnore(documenttype.FieldProtoMessage)
+		}
 	}))
 	return u
 }
@@ -448,27 +436,6 @@ func (u *DocumentTypeUpsertOne) Update(set func(*DocumentTypeUpsert)) *DocumentT
 		set(&DocumentTypeUpsert{UpdateSet: update})
 	}))
 	return u
-}
-
-// SetProtoMessage sets the "proto_message" field.
-func (u *DocumentTypeUpsertOne) SetProtoMessage(v *sbom.DocumentType) *DocumentTypeUpsertOne {
-	return u.Update(func(s *DocumentTypeUpsert) {
-		s.SetProtoMessage(v)
-	})
-}
-
-// UpdateProtoMessage sets the "proto_message" field to the value that was provided on create.
-func (u *DocumentTypeUpsertOne) UpdateProtoMessage() *DocumentTypeUpsertOne {
-	return u.Update(func(s *DocumentTypeUpsert) {
-		s.UpdateProtoMessage()
-	})
-}
-
-// ClearProtoMessage clears the value of the "proto_message" field.
-func (u *DocumentTypeUpsertOne) ClearProtoMessage() *DocumentTypeUpsertOne {
-	return u.Update(func(s *DocumentTypeUpsert) {
-		s.ClearProtoMessage()
-	})
 }
 
 // SetMetadataID sets the "metadata_id" field.
@@ -741,6 +708,9 @@ func (u *DocumentTypeUpsertBulk) UpdateNewValues() *DocumentTypeUpsertBulk {
 			if _, exists := b.mutation.DocumentID(); exists {
 				s.SetIgnore(documenttype.FieldDocumentID)
 			}
+			if _, exists := b.mutation.ProtoMessage(); exists {
+				s.SetIgnore(documenttype.FieldProtoMessage)
+			}
 		}
 	}))
 	return u
@@ -771,27 +741,6 @@ func (u *DocumentTypeUpsertBulk) Update(set func(*DocumentTypeUpsert)) *Document
 		set(&DocumentTypeUpsert{UpdateSet: update})
 	}))
 	return u
-}
-
-// SetProtoMessage sets the "proto_message" field.
-func (u *DocumentTypeUpsertBulk) SetProtoMessage(v *sbom.DocumentType) *DocumentTypeUpsertBulk {
-	return u.Update(func(s *DocumentTypeUpsert) {
-		s.SetProtoMessage(v)
-	})
-}
-
-// UpdateProtoMessage sets the "proto_message" field to the value that was provided on create.
-func (u *DocumentTypeUpsertBulk) UpdateProtoMessage() *DocumentTypeUpsertBulk {
-	return u.Update(func(s *DocumentTypeUpsert) {
-		s.UpdateProtoMessage()
-	})
-}
-
-// ClearProtoMessage clears the value of the "proto_message" field.
-func (u *DocumentTypeUpsertBulk) ClearProtoMessage() *DocumentTypeUpsertBulk {
-	return u.Update(func(s *DocumentTypeUpsert) {
-		s.ClearProtoMessage()
-	})
 }
 
 // SetMetadataID sets the "metadata_id" field.

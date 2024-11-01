@@ -109,6 +109,9 @@ func (nlc *NodeListCreate) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (nlc *NodeListCreate) check() error {
+	if _, ok := nlc.mutation.ProtoMessage(); !ok {
+		return &ValidationError{Name: "proto_message", err: errors.New(`ent: missing required field "NodeList.proto_message"`)}
+	}
 	if _, ok := nlc.mutation.RootElements(); !ok {
 		return &ValidationError{Name: "root_elements", err: errors.New(`ent: missing required field "NodeList.root_elements"`)}
 	}
@@ -243,24 +246,6 @@ type (
 	}
 )
 
-// SetProtoMessage sets the "proto_message" field.
-func (u *NodeListUpsert) SetProtoMessage(v *sbom.NodeList) *NodeListUpsert {
-	u.Set(nodelist.FieldProtoMessage, v)
-	return u
-}
-
-// UpdateProtoMessage sets the "proto_message" field to the value that was provided on create.
-func (u *NodeListUpsert) UpdateProtoMessage() *NodeListUpsert {
-	u.SetExcluded(nodelist.FieldProtoMessage)
-	return u
-}
-
-// ClearProtoMessage clears the value of the "proto_message" field.
-func (u *NodeListUpsert) ClearProtoMessage() *NodeListUpsert {
-	u.SetNull(nodelist.FieldProtoMessage)
-	return u
-}
-
 // SetRootElements sets the "root_elements" field.
 func (u *NodeListUpsert) SetRootElements(v []string) *NodeListUpsert {
 	u.Set(nodelist.FieldRootElements, v)
@@ -289,6 +274,9 @@ func (u *NodeListUpsertOne) UpdateNewValues() *NodeListUpsertOne {
 	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
 		if _, exists := u.create.mutation.ID(); exists {
 			s.SetIgnore(nodelist.FieldID)
+		}
+		if _, exists := u.create.mutation.ProtoMessage(); exists {
+			s.SetIgnore(nodelist.FieldProtoMessage)
 		}
 	}))
 	return u
@@ -319,27 +307,6 @@ func (u *NodeListUpsertOne) Update(set func(*NodeListUpsert)) *NodeListUpsertOne
 		set(&NodeListUpsert{UpdateSet: update})
 	}))
 	return u
-}
-
-// SetProtoMessage sets the "proto_message" field.
-func (u *NodeListUpsertOne) SetProtoMessage(v *sbom.NodeList) *NodeListUpsertOne {
-	return u.Update(func(s *NodeListUpsert) {
-		s.SetProtoMessage(v)
-	})
-}
-
-// UpdateProtoMessage sets the "proto_message" field to the value that was provided on create.
-func (u *NodeListUpsertOne) UpdateProtoMessage() *NodeListUpsertOne {
-	return u.Update(func(s *NodeListUpsert) {
-		s.UpdateProtoMessage()
-	})
-}
-
-// ClearProtoMessage clears the value of the "proto_message" field.
-func (u *NodeListUpsertOne) ClearProtoMessage() *NodeListUpsertOne {
-	return u.Update(func(s *NodeListUpsert) {
-		s.ClearProtoMessage()
-	})
 }
 
 // SetRootElements sets the "root_elements" field.
@@ -538,6 +505,9 @@ func (u *NodeListUpsertBulk) UpdateNewValues() *NodeListUpsertBulk {
 			if _, exists := b.mutation.ID(); exists {
 				s.SetIgnore(nodelist.FieldID)
 			}
+			if _, exists := b.mutation.ProtoMessage(); exists {
+				s.SetIgnore(nodelist.FieldProtoMessage)
+			}
 		}
 	}))
 	return u
@@ -568,27 +538,6 @@ func (u *NodeListUpsertBulk) Update(set func(*NodeListUpsert)) *NodeListUpsertBu
 		set(&NodeListUpsert{UpdateSet: update})
 	}))
 	return u
-}
-
-// SetProtoMessage sets the "proto_message" field.
-func (u *NodeListUpsertBulk) SetProtoMessage(v *sbom.NodeList) *NodeListUpsertBulk {
-	return u.Update(func(s *NodeListUpsert) {
-		s.SetProtoMessage(v)
-	})
-}
-
-// UpdateProtoMessage sets the "proto_message" field to the value that was provided on create.
-func (u *NodeListUpsertBulk) UpdateProtoMessage() *NodeListUpsertBulk {
-	return u.Update(func(s *NodeListUpsert) {
-		s.UpdateProtoMessage()
-	})
-}
-
-// ClearProtoMessage clears the value of the "proto_message" field.
-func (u *NodeListUpsertBulk) ClearProtoMessage() *NodeListUpsertBulk {
-	return u.Update(func(s *NodeListUpsert) {
-		s.ClearProtoMessage()
-	})
 }
 
 // SetRootElements sets the "root_elements" field.

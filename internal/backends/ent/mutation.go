@@ -1438,22 +1438,9 @@ func (m *DocumentTypeMutation) OldProtoMessage(ctx context.Context) (v *sbom.Doc
 	return oldValue.ProtoMessage, nil
 }
 
-// ClearProtoMessage clears the value of the "proto_message" field.
-func (m *DocumentTypeMutation) ClearProtoMessage() {
-	m.proto_message = nil
-	m.clearedFields[documenttype.FieldProtoMessage] = struct{}{}
-}
-
-// ProtoMessageCleared returns if the "proto_message" field was cleared in this mutation.
-func (m *DocumentTypeMutation) ProtoMessageCleared() bool {
-	_, ok := m.clearedFields[documenttype.FieldProtoMessage]
-	return ok
-}
-
 // ResetProtoMessage resets all changes to the "proto_message" field.
 func (m *DocumentTypeMutation) ResetProtoMessage() {
 	m.proto_message = nil
-	delete(m.clearedFields, documenttype.FieldProtoMessage)
 }
 
 // SetMetadataID sets the "metadata_id" field.
@@ -1884,9 +1871,6 @@ func (m *DocumentTypeMutation) ClearedFields() []string {
 	if m.FieldCleared(documenttype.FieldDocumentID) {
 		fields = append(fields, documenttype.FieldDocumentID)
 	}
-	if m.FieldCleared(documenttype.FieldProtoMessage) {
-		fields = append(fields, documenttype.FieldProtoMessage)
-	}
 	if m.FieldCleared(documenttype.FieldMetadataID) {
 		fields = append(fields, documenttype.FieldMetadataID)
 	}
@@ -1915,9 +1899,6 @@ func (m *DocumentTypeMutation) ClearField(name string) error {
 	switch name {
 	case documenttype.FieldDocumentID:
 		m.ClearDocumentID()
-		return nil
-	case documenttype.FieldProtoMessage:
-		m.ClearProtoMessage()
 		return nil
 	case documenttype.FieldMetadataID:
 		m.ClearMetadataID()
@@ -2941,22 +2922,9 @@ func (m *ExternalReferenceMutation) OldProtoMessage(ctx context.Context) (v *sbo
 	return oldValue.ProtoMessage, nil
 }
 
-// ClearProtoMessage clears the value of the "proto_message" field.
-func (m *ExternalReferenceMutation) ClearProtoMessage() {
-	m.proto_message = nil
-	m.clearedFields[externalreference.FieldProtoMessage] = struct{}{}
-}
-
-// ProtoMessageCleared returns if the "proto_message" field was cleared in this mutation.
-func (m *ExternalReferenceMutation) ProtoMessageCleared() bool {
-	_, ok := m.clearedFields[externalreference.FieldProtoMessage]
-	return ok
-}
-
 // ResetProtoMessage resets all changes to the "proto_message" field.
 func (m *ExternalReferenceMutation) ResetProtoMessage() {
 	m.proto_message = nil
-	delete(m.clearedFields, externalreference.FieldProtoMessage)
 }
 
 // SetNodeID sets the "node_id" field.
@@ -3474,9 +3442,6 @@ func (m *ExternalReferenceMutation) ClearedFields() []string {
 	if m.FieldCleared(externalreference.FieldDocumentID) {
 		fields = append(fields, externalreference.FieldDocumentID)
 	}
-	if m.FieldCleared(externalreference.FieldProtoMessage) {
-		fields = append(fields, externalreference.FieldProtoMessage)
-	}
 	if m.FieldCleared(externalreference.FieldNodeID) {
 		fields = append(fields, externalreference.FieldNodeID)
 	}
@@ -3502,9 +3467,6 @@ func (m *ExternalReferenceMutation) ClearField(name string) error {
 	switch name {
 	case externalreference.FieldDocumentID:
 		m.ClearDocumentID()
-		return nil
-	case externalreference.FieldProtoMessage:
-		m.ClearProtoMessage()
 		return nil
 	case externalreference.FieldNodeID:
 		m.ClearNodeID()
@@ -3809,22 +3771,9 @@ func (m *MetadataMutation) OldProtoMessage(ctx context.Context) (v *sbom.Metadat
 	return oldValue.ProtoMessage, nil
 }
 
-// ClearProtoMessage clears the value of the "proto_message" field.
-func (m *MetadataMutation) ClearProtoMessage() {
-	m.proto_message = nil
-	m.clearedFields[metadata.FieldProtoMessage] = struct{}{}
-}
-
-// ProtoMessageCleared returns if the "proto_message" field was cleared in this mutation.
-func (m *MetadataMutation) ProtoMessageCleared() bool {
-	_, ok := m.clearedFields[metadata.FieldProtoMessage]
-	return ok
-}
-
 // ResetProtoMessage resets all changes to the "proto_message" field.
 func (m *MetadataMutation) ResetProtoMessage() {
 	m.proto_message = nil
-	delete(m.clearedFields, metadata.FieldProtoMessage)
 }
 
 // SetVersion sets the "version" field.
@@ -4386,11 +4335,7 @@ func (m *MetadataMutation) AddField(name string, value ent.Value) error {
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *MetadataMutation) ClearedFields() []string {
-	var fields []string
-	if m.FieldCleared(metadata.FieldProtoMessage) {
-		fields = append(fields, metadata.FieldProtoMessage)
-	}
-	return fields
+	return nil
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -4403,11 +4348,6 @@ func (m *MetadataMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *MetadataMutation) ClearField(name string) error {
-	switch name {
-	case metadata.FieldProtoMessage:
-		m.ClearProtoMessage()
-		return nil
-	}
 	return fmt.Errorf("unknown Metadata nullable field %s", name)
 }
 
@@ -4865,22 +4805,9 @@ func (m *NodeMutation) OldProtoMessage(ctx context.Context) (v *sbom.Node, err e
 	return oldValue.ProtoMessage, nil
 }
 
-// ClearProtoMessage clears the value of the "proto_message" field.
-func (m *NodeMutation) ClearProtoMessage() {
-	m.proto_message = nil
-	m.clearedFields[node.FieldProtoMessage] = struct{}{}
-}
-
-// ProtoMessageCleared returns if the "proto_message" field was cleared in this mutation.
-func (m *NodeMutation) ProtoMessageCleared() bool {
-	_, ok := m.clearedFields[node.FieldProtoMessage]
-	return ok
-}
-
 // ResetProtoMessage resets all changes to the "proto_message" field.
 func (m *NodeMutation) ResetProtoMessage() {
 	m.proto_message = nil
-	delete(m.clearedFields, node.FieldProtoMessage)
 }
 
 // SetNodeListID sets the "node_list_id" field.
@@ -6702,9 +6629,6 @@ func (m *NodeMutation) ClearedFields() []string {
 	if m.FieldCleared(node.FieldDocumentID) {
 		fields = append(fields, node.FieldDocumentID)
 	}
-	if m.FieldCleared(node.FieldProtoMessage) {
-		fields = append(fields, node.FieldProtoMessage)
-	}
 	if m.FieldCleared(node.FieldNodeListID) {
 		fields = append(fields, node.FieldNodeListID)
 	}
@@ -6730,9 +6654,6 @@ func (m *NodeMutation) ClearField(name string) error {
 	switch name {
 	case node.FieldDocumentID:
 		m.ClearDocumentID()
-		return nil
-	case node.FieldProtoMessage:
-		m.ClearProtoMessage()
 		return nil
 	case node.FieldNodeListID:
 		m.ClearNodeListID()
@@ -7292,22 +7213,9 @@ func (m *NodeListMutation) OldProtoMessage(ctx context.Context) (v *sbom.NodeLis
 	return oldValue.ProtoMessage, nil
 }
 
-// ClearProtoMessage clears the value of the "proto_message" field.
-func (m *NodeListMutation) ClearProtoMessage() {
-	m.proto_message = nil
-	m.clearedFields[nodelist.FieldProtoMessage] = struct{}{}
-}
-
-// ProtoMessageCleared returns if the "proto_message" field was cleared in this mutation.
-func (m *NodeListMutation) ProtoMessageCleared() bool {
-	_, ok := m.clearedFields[nodelist.FieldProtoMessage]
-	return ok
-}
-
 // ResetProtoMessage resets all changes to the "proto_message" field.
 func (m *NodeListMutation) ResetProtoMessage() {
 	m.proto_message = nil
-	delete(m.clearedFields, nodelist.FieldProtoMessage)
 }
 
 // SetRootElements sets the "root_elements" field.
@@ -7572,11 +7480,7 @@ func (m *NodeListMutation) AddField(name string, value ent.Value) error {
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *NodeListMutation) ClearedFields() []string {
-	var fields []string
-	if m.FieldCleared(nodelist.FieldProtoMessage) {
-		fields = append(fields, nodelist.FieldProtoMessage)
-	}
-	return fields
+	return nil
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -7589,11 +7493,6 @@ func (m *NodeListMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *NodeListMutation) ClearField(name string) error {
-	switch name {
-	case nodelist.FieldProtoMessage:
-		m.ClearProtoMessage()
-		return nil
-	}
 	return fmt.Errorf("unknown NodeList nullable field %s", name)
 }
 
@@ -7926,22 +7825,9 @@ func (m *PersonMutation) OldProtoMessage(ctx context.Context) (v *sbom.Person, e
 	return oldValue.ProtoMessage, nil
 }
 
-// ClearProtoMessage clears the value of the "proto_message" field.
-func (m *PersonMutation) ClearProtoMessage() {
-	m.proto_message = nil
-	m.clearedFields[person.FieldProtoMessage] = struct{}{}
-}
-
-// ProtoMessageCleared returns if the "proto_message" field was cleared in this mutation.
-func (m *PersonMutation) ProtoMessageCleared() bool {
-	_, ok := m.clearedFields[person.FieldProtoMessage]
-	return ok
-}
-
 // ResetProtoMessage resets all changes to the "proto_message" field.
 func (m *PersonMutation) ResetProtoMessage() {
 	m.proto_message = nil
-	delete(m.clearedFields, person.FieldProtoMessage)
 }
 
 // SetMetadataID sets the "metadata_id" field.
@@ -8616,9 +8502,6 @@ func (m *PersonMutation) ClearedFields() []string {
 	if m.FieldCleared(person.FieldDocumentID) {
 		fields = append(fields, person.FieldDocumentID)
 	}
-	if m.FieldCleared(person.FieldProtoMessage) {
-		fields = append(fields, person.FieldProtoMessage)
-	}
 	if m.FieldCleared(person.FieldMetadataID) {
 		fields = append(fields, person.FieldMetadataID)
 	}
@@ -8641,9 +8524,6 @@ func (m *PersonMutation) ClearField(name string) error {
 	switch name {
 	case person.FieldDocumentID:
 		m.ClearDocumentID()
-		return nil
-	case person.FieldProtoMessage:
-		m.ClearProtoMessage()
 		return nil
 	case person.FieldMetadataID:
 		m.ClearMetadataID()
@@ -9049,22 +8929,9 @@ func (m *PropertyMutation) OldProtoMessage(ctx context.Context) (v *sbom.Propert
 	return oldValue.ProtoMessage, nil
 }
 
-// ClearProtoMessage clears the value of the "proto_message" field.
-func (m *PropertyMutation) ClearProtoMessage() {
-	m.proto_message = nil
-	m.clearedFields[property.FieldProtoMessage] = struct{}{}
-}
-
-// ProtoMessageCleared returns if the "proto_message" field was cleared in this mutation.
-func (m *PropertyMutation) ProtoMessageCleared() bool {
-	_, ok := m.clearedFields[property.FieldProtoMessage]
-	return ok
-}
-
 // ResetProtoMessage resets all changes to the "proto_message" field.
 func (m *PropertyMutation) ResetProtoMessage() {
 	m.proto_message = nil
-	delete(m.clearedFields, property.FieldProtoMessage)
 }
 
 // SetNodeID sets the "node_id" field.
@@ -9406,9 +9273,6 @@ func (m *PropertyMutation) ClearedFields() []string {
 	if m.FieldCleared(property.FieldDocumentID) {
 		fields = append(fields, property.FieldDocumentID)
 	}
-	if m.FieldCleared(property.FieldProtoMessage) {
-		fields = append(fields, property.FieldProtoMessage)
-	}
 	if m.FieldCleared(property.FieldNodeID) {
 		fields = append(fields, property.FieldNodeID)
 	}
@@ -9428,9 +9292,6 @@ func (m *PropertyMutation) ClearField(name string) error {
 	switch name {
 	case property.FieldDocumentID:
 		m.ClearDocumentID()
-		return nil
-	case property.FieldProtoMessage:
-		m.ClearProtoMessage()
 		return nil
 	case property.FieldNodeID:
 		m.ClearNodeID()
@@ -10335,22 +10196,9 @@ func (m *SourceDataMutation) OldProtoMessage(ctx context.Context) (v *sbom.Sourc
 	return oldValue.ProtoMessage, nil
 }
 
-// ClearProtoMessage clears the value of the "proto_message" field.
-func (m *SourceDataMutation) ClearProtoMessage() {
-	m.proto_message = nil
-	m.clearedFields[sourcedata.FieldProtoMessage] = struct{}{}
-}
-
-// ProtoMessageCleared returns if the "proto_message" field was cleared in this mutation.
-func (m *SourceDataMutation) ProtoMessageCleared() bool {
-	_, ok := m.clearedFields[sourcedata.FieldProtoMessage]
-	return ok
-}
-
 // ResetProtoMessage resets all changes to the "proto_message" field.
 func (m *SourceDataMutation) ResetProtoMessage() {
 	m.proto_message = nil
-	delete(m.clearedFields, sourcedata.FieldProtoMessage)
 }
 
 // SetMetadataID sets the "metadata_id" field.
@@ -10840,9 +10688,6 @@ func (m *SourceDataMutation) ClearedFields() []string {
 	if m.FieldCleared(sourcedata.FieldDocumentID) {
 		fields = append(fields, sourcedata.FieldDocumentID)
 	}
-	if m.FieldCleared(sourcedata.FieldProtoMessage) {
-		fields = append(fields, sourcedata.FieldProtoMessage)
-	}
 	if m.FieldCleared(sourcedata.FieldURI) {
 		fields = append(fields, sourcedata.FieldURI)
 	}
@@ -10865,9 +10710,6 @@ func (m *SourceDataMutation) ClearField(name string) error {
 	switch name {
 	case sourcedata.FieldDocumentID:
 		m.ClearDocumentID()
-		return nil
-	case sourcedata.FieldProtoMessage:
-		m.ClearProtoMessage()
 		return nil
 	case sourcedata.FieldURI:
 		m.ClearURI()
@@ -11204,22 +11046,9 @@ func (m *ToolMutation) OldProtoMessage(ctx context.Context) (v *sbom.Tool, err e
 	return oldValue.ProtoMessage, nil
 }
 
-// ClearProtoMessage clears the value of the "proto_message" field.
-func (m *ToolMutation) ClearProtoMessage() {
-	m.proto_message = nil
-	m.clearedFields[tool.FieldProtoMessage] = struct{}{}
-}
-
-// ProtoMessageCleared returns if the "proto_message" field was cleared in this mutation.
-func (m *ToolMutation) ProtoMessageCleared() bool {
-	_, ok := m.clearedFields[tool.FieldProtoMessage]
-	return ok
-}
-
 // ResetProtoMessage resets all changes to the "proto_message" field.
 func (m *ToolMutation) ResetProtoMessage() {
 	m.proto_message = nil
-	delete(m.clearedFields, tool.FieldProtoMessage)
 }
 
 // SetMetadataID sets the "metadata_id" field.
@@ -11611,9 +11440,6 @@ func (m *ToolMutation) ClearedFields() []string {
 	if m.FieldCleared(tool.FieldDocumentID) {
 		fields = append(fields, tool.FieldDocumentID)
 	}
-	if m.FieldCleared(tool.FieldProtoMessage) {
-		fields = append(fields, tool.FieldProtoMessage)
-	}
 	if m.FieldCleared(tool.FieldMetadataID) {
 		fields = append(fields, tool.FieldMetadataID)
 	}
@@ -11633,9 +11459,6 @@ func (m *ToolMutation) ClearField(name string) error {
 	switch name {
 	case tool.FieldDocumentID:
 		m.ClearDocumentID()
-		return nil
-	case tool.FieldProtoMessage:
-		m.ClearProtoMessage()
 		return nil
 	case tool.FieldMetadataID:
 		m.ClearMetadataID()

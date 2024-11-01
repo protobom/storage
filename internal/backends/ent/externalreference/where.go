@@ -160,16 +160,6 @@ func ProtoMessageLTE(v *sbom.ExternalReference) predicate.ExternalReference {
 	return predicate.ExternalReference(sql.FieldLTE(FieldProtoMessage, v))
 }
 
-// ProtoMessageIsNil applies the IsNil predicate on the "proto_message" field.
-func ProtoMessageIsNil() predicate.ExternalReference {
-	return predicate.ExternalReference(sql.FieldIsNull(FieldProtoMessage))
-}
-
-// ProtoMessageNotNil applies the NotNil predicate on the "proto_message" field.
-func ProtoMessageNotNil() predicate.ExternalReference {
-	return predicate.ExternalReference(sql.FieldNotNull(FieldProtoMessage))
-}
-
 // NodeIDEQ applies the EQ predicate on the "node_id" field.
 func NodeIDEQ(v string) predicate.ExternalReference {
 	return predicate.ExternalReference(sql.FieldEQ(FieldNodeID, v))

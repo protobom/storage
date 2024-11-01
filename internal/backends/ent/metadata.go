@@ -110,7 +110,7 @@ func (*Metadata) scanValues(columns []string) ([]any, error) {
 	for i := range columns {
 		switch columns[i] {
 		case metadata.FieldProtoMessage:
-			values[i] = new(sbom.Metadata)
+			values[i] = &sql.NullScanner{S: new(sbom.Metadata)}
 		case metadata.FieldID, metadata.FieldVersion, metadata.FieldName, metadata.FieldComment:
 			values[i] = new(sql.NullString)
 		case metadata.FieldDate:
@@ -137,10 +137,10 @@ func (m *Metadata) assignValues(columns []string, values []any) error {
 				m.ID = value.String
 			}
 		case metadata.FieldProtoMessage:
-			if value, ok := values[i].(*sbom.Metadata); !ok {
+			if value, ok := values[i].(*sql.NullScanner); !ok {
 				return fmt.Errorf("unexpected type %T for field proto_message", values[i])
-			} else if value != nil {
-				m.ProtoMessage = value
+			} else if value.Valid {
+				m.ProtoMessage = value.S.(*sbom.Metadata)
 			}
 		case metadata.FieldVersion:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -227,8 +227,10 @@ func (m *Metadata) String() string {
 	var builder strings.Builder
 	builder.WriteString("Metadata(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", m.ID))
-	builder.WriteString("proto_message=")
-	builder.WriteString(fmt.Sprintf("%v", m.ProtoMessage))
+	if v := m.ProtoMessage; v != nil {
+		builder.WriteString("proto_message=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
 	builder.WriteString(", ")
 	builder.WriteString("version=")
 	builder.WriteString(m.Version)

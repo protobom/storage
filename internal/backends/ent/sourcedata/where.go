@@ -160,16 +160,6 @@ func ProtoMessageLTE(v *sbom.SourceData) predicate.SourceData {
 	return predicate.SourceData(sql.FieldLTE(FieldProtoMessage, v))
 }
 
-// ProtoMessageIsNil applies the IsNil predicate on the "proto_message" field.
-func ProtoMessageIsNil() predicate.SourceData {
-	return predicate.SourceData(sql.FieldIsNull(FieldProtoMessage))
-}
-
-// ProtoMessageNotNil applies the NotNil predicate on the "proto_message" field.
-func ProtoMessageNotNil() predicate.SourceData {
-	return predicate.SourceData(sql.FieldNotNull(FieldProtoMessage))
-}
-
 // MetadataIDEQ applies the EQ predicate on the "metadata_id" field.
 func MetadataIDEQ(v string) predicate.SourceData {
 	return predicate.SourceData(sql.FieldEQ(FieldMetadataID, v))

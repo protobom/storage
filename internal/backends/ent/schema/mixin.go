@@ -56,7 +56,7 @@ func (ProtoMessageMixin[T]) Fields() []ent.Field {
 	var goType T
 
 	return []ent.Field{
-		field.Bytes("proto_message").GoType(goType).Optional(),
+		field.Bytes("proto_message").GoType(goType).Nillable().Immutable(),
 	}
 }
 

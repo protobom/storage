@@ -45,7 +45,7 @@ CREATE UNIQUE INDEX `idx_documents` ON `documents` (`metadata_id`, `node_list_id
 -- Create "new_document_types" table
 CREATE TABLE `new_document_types` (
   `id` uuid NOT NULL,
-  `proto_message` blob NULL,
+  `proto_message` blob NOT NULL,
   `type` text NULL,
   `name` text NULL,
   `description` text NULL,
@@ -87,7 +87,7 @@ CREATE UNIQUE INDEX `edgetype_node_id_to_node_id` ON `edge_types` (`node_id`, `t
 -- Create "new_external_references" table
 CREATE TABLE `new_external_references` (
   `id` uuid NOT NULL,
-  `proto_message` blob NULL,
+  `proto_message` blob NOT NULL,
   `url` text NOT NULL,
   `comment` text NOT NULL,
   `authority` text NULL,
@@ -110,7 +110,7 @@ CREATE UNIQUE INDEX `idx_external_references` ON `external_references` (`node_id
 -- Create "new_metadata" table
 CREATE TABLE `new_metadata` (
   `id` text NOT NULL,
-  `proto_message` blob NULL,
+  `proto_message` blob NOT NULL,
   `version` text NOT NULL,
   `name` text NOT NULL,
   `date` datetime NOT NULL,
@@ -128,7 +128,7 @@ CREATE UNIQUE INDEX `idx_metadata` ON `metadata` (`id`, `version`, `name`);
 -- Create "new_nodes" table
 CREATE TABLE `new_nodes` (
   `id` text NOT NULL,
-  `proto_message` blob NULL,
+  `proto_message` blob NOT NULL,
   `node_list_id` uuid NULL,
   `type` text NOT NULL,
   `name` text NOT NULL,
@@ -166,7 +166,7 @@ CREATE UNIQUE INDEX `idx_nodes` ON `nodes` (`id`, `node_list_id`);
 -- Create "new_node_lists" table
 CREATE TABLE `new_node_lists` (
   `id` uuid NOT NULL,
-  `proto_message` blob NULL,
+  `proto_message` blob NOT NULL,
   `root_elements` json NOT NULL,
   PRIMARY KEY (`id`)
 );
@@ -179,7 +179,7 @@ ALTER TABLE `new_node_lists` RENAME TO `node_lists`;
 -- Create "new_persons" table
 CREATE TABLE `new_persons` (
   `id` uuid NOT NULL,
-  `proto_message` blob NULL,
+  `proto_message` blob NOT NULL,
   `name` text NOT NULL,
   `is_org` bool NOT NULL,
   `email` text NOT NULL,
@@ -227,7 +227,7 @@ CREATE UNIQUE INDEX `idx_purposes` ON `purposes` (`node_id`, `primary_purpose`);
 -- Create "new_tools" table
 CREATE TABLE `new_tools` (
   `id` uuid NOT NULL,
-  `proto_message` blob NULL,
+  `proto_message` blob NOT NULL,
   `name` text NOT NULL,
   `version` text NOT NULL,
   `vendor` text NOT NULL,
@@ -262,7 +262,7 @@ ALTER TABLE `new_node_list_nodes` RENAME TO `node_list_nodes`;
 -- Create "properties" table
 CREATE TABLE `properties` (
   `id` uuid NOT NULL,
-  `proto_message` blob NULL,
+  `proto_message` blob NOT NULL,
   `name` text NOT NULL,
   `data` text NOT NULL,
   `node_id` text NULL,
@@ -276,7 +276,7 @@ CREATE UNIQUE INDEX `idx_property` ON `properties` (`name`, `data`);
 -- Create "source_data" table
 CREATE TABLE `source_data` (
   `id` uuid NOT NULL,
-  `proto_message` blob NULL,
+  `proto_message` blob NOT NULL,
   `format` text NOT NULL,
   `size` integer NOT NULL,
   `uri` text NULL,

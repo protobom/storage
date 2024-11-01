@@ -208,6 +208,9 @@ func (pc *PersonCreate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (pc *PersonCreate) check() error {
+	if _, ok := pc.mutation.ProtoMessage(); !ok {
+		return &ValidationError{Name: "proto_message", err: errors.New(`ent: missing required field "Person.proto_message"`)}
+	}
 	if _, ok := pc.mutation.Name(); !ok {
 		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "Person.name"`)}
 	}
@@ -419,24 +422,6 @@ type (
 	}
 )
 
-// SetProtoMessage sets the "proto_message" field.
-func (u *PersonUpsert) SetProtoMessage(v *sbom.Person) *PersonUpsert {
-	u.Set(person.FieldProtoMessage, v)
-	return u
-}
-
-// UpdateProtoMessage sets the "proto_message" field to the value that was provided on create.
-func (u *PersonUpsert) UpdateProtoMessage() *PersonUpsert {
-	u.SetExcluded(person.FieldProtoMessage)
-	return u
-}
-
-// ClearProtoMessage clears the value of the "proto_message" field.
-func (u *PersonUpsert) ClearProtoMessage() *PersonUpsert {
-	u.SetNull(person.FieldProtoMessage)
-	return u
-}
-
 // SetMetadataID sets the "metadata_id" field.
 func (u *PersonUpsert) SetMetadataID(v string) *PersonUpsert {
 	u.Set(person.FieldMetadataID, v)
@@ -553,6 +538,9 @@ func (u *PersonUpsertOne) UpdateNewValues() *PersonUpsertOne {
 		if _, exists := u.create.mutation.DocumentID(); exists {
 			s.SetIgnore(person.FieldDocumentID)
 		}
+		if _, exists := u.create.mutation.ProtoMessage(); exists {
+			s.SetIgnore(person.FieldProtoMessage)
+		}
 	}))
 	return u
 }
@@ -582,27 +570,6 @@ func (u *PersonUpsertOne) Update(set func(*PersonUpsert)) *PersonUpsertOne {
 		set(&PersonUpsert{UpdateSet: update})
 	}))
 	return u
-}
-
-// SetProtoMessage sets the "proto_message" field.
-func (u *PersonUpsertOne) SetProtoMessage(v *sbom.Person) *PersonUpsertOne {
-	return u.Update(func(s *PersonUpsert) {
-		s.SetProtoMessage(v)
-	})
-}
-
-// UpdateProtoMessage sets the "proto_message" field to the value that was provided on create.
-func (u *PersonUpsertOne) UpdateProtoMessage() *PersonUpsertOne {
-	return u.Update(func(s *PersonUpsert) {
-		s.UpdateProtoMessage()
-	})
-}
-
-// ClearProtoMessage clears the value of the "proto_message" field.
-func (u *PersonUpsertOne) ClearProtoMessage() *PersonUpsertOne {
-	return u.Update(func(s *PersonUpsert) {
-		s.ClearProtoMessage()
-	})
 }
 
 // SetMetadataID sets the "metadata_id" field.
@@ -903,6 +870,9 @@ func (u *PersonUpsertBulk) UpdateNewValues() *PersonUpsertBulk {
 			if _, exists := b.mutation.DocumentID(); exists {
 				s.SetIgnore(person.FieldDocumentID)
 			}
+			if _, exists := b.mutation.ProtoMessage(); exists {
+				s.SetIgnore(person.FieldProtoMessage)
+			}
 		}
 	}))
 	return u
@@ -933,27 +903,6 @@ func (u *PersonUpsertBulk) Update(set func(*PersonUpsert)) *PersonUpsertBulk {
 		set(&PersonUpsert{UpdateSet: update})
 	}))
 	return u
-}
-
-// SetProtoMessage sets the "proto_message" field.
-func (u *PersonUpsertBulk) SetProtoMessage(v *sbom.Person) *PersonUpsertBulk {
-	return u.Update(func(s *PersonUpsert) {
-		s.SetProtoMessage(v)
-	})
-}
-
-// UpdateProtoMessage sets the "proto_message" field to the value that was provided on create.
-func (u *PersonUpsertBulk) UpdateProtoMessage() *PersonUpsertBulk {
-	return u.Update(func(s *PersonUpsert) {
-		s.UpdateProtoMessage()
-	})
-}
-
-// ClearProtoMessage clears the value of the "proto_message" field.
-func (u *PersonUpsertBulk) ClearProtoMessage() *PersonUpsertBulk {
-	return u.Update(func(s *PersonUpsert) {
-		s.ClearProtoMessage()
-	})
 }
 
 // SetMetadataID sets the "metadata_id" field.

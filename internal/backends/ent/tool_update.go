@@ -15,7 +15,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/protobom/protobom/pkg/sbom"
 	"github.com/protobom/storage/internal/backends/ent/metadata"
 	"github.com/protobom/storage/internal/backends/ent/predicate"
 	"github.com/protobom/storage/internal/backends/ent/tool"
@@ -31,18 +30,6 @@ type ToolUpdate struct {
 // Where appends a list predicates to the ToolUpdate builder.
 func (tu *ToolUpdate) Where(ps ...predicate.Tool) *ToolUpdate {
 	tu.mutation.Where(ps...)
-	return tu
-}
-
-// SetProtoMessage sets the "proto_message" field.
-func (tu *ToolUpdate) SetProtoMessage(s *sbom.Tool) *ToolUpdate {
-	tu.mutation.SetProtoMessage(s)
-	return tu
-}
-
-// ClearProtoMessage clears the value of the "proto_message" field.
-func (tu *ToolUpdate) ClearProtoMessage() *ToolUpdate {
-	tu.mutation.ClearProtoMessage()
 	return tu
 }
 
@@ -160,12 +147,6 @@ func (tu *ToolUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
-	if value, ok := tu.mutation.ProtoMessage(); ok {
-		_spec.SetField(tool.FieldProtoMessage, field.TypeBytes, value)
-	}
-	if tu.mutation.ProtoMessageCleared() {
-		_spec.ClearField(tool.FieldProtoMessage, field.TypeBytes)
-	}
 	if value, ok := tu.mutation.Name(); ok {
 		_spec.SetField(tool.FieldName, field.TypeString, value)
 	}
@@ -222,18 +203,6 @@ type ToolUpdateOne struct {
 	fields   []string
 	hooks    []Hook
 	mutation *ToolMutation
-}
-
-// SetProtoMessage sets the "proto_message" field.
-func (tuo *ToolUpdateOne) SetProtoMessage(s *sbom.Tool) *ToolUpdateOne {
-	tuo.mutation.SetProtoMessage(s)
-	return tuo
-}
-
-// ClearProtoMessage clears the value of the "proto_message" field.
-func (tuo *ToolUpdateOne) ClearProtoMessage() *ToolUpdateOne {
-	tuo.mutation.ClearProtoMessage()
-	return tuo
 }
 
 // SetMetadataID sets the "metadata_id" field.
@@ -379,12 +348,6 @@ func (tuo *ToolUpdateOne) sqlSave(ctx context.Context) (_node *Tool, err error) 
 				ps[i](selector)
 			}
 		}
-	}
-	if value, ok := tuo.mutation.ProtoMessage(); ok {
-		_spec.SetField(tool.FieldProtoMessage, field.TypeBytes, value)
-	}
-	if tuo.mutation.ProtoMessageCleared() {
-		_spec.ClearField(tool.FieldProtoMessage, field.TypeBytes)
 	}
 	if value, ok := tuo.mutation.Name(); ok {
 		_spec.SetField(tool.FieldName, field.TypeString, value)

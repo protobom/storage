@@ -176,6 +176,9 @@ func (mc *MetadataCreate) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (mc *MetadataCreate) check() error {
+	if _, ok := mc.mutation.ProtoMessage(); !ok {
+		return &ValidationError{Name: "proto_message", err: errors.New(`ent: missing required field "Metadata.proto_message"`)}
+	}
 	if _, ok := mc.mutation.Version(); !ok {
 		return &ValidationError{Name: "version", err: errors.New(`ent: missing required field "Metadata.version"`)}
 	}
@@ -384,24 +387,6 @@ type (
 	}
 )
 
-// SetProtoMessage sets the "proto_message" field.
-func (u *MetadataUpsert) SetProtoMessage(v *sbom.Metadata) *MetadataUpsert {
-	u.Set(metadata.FieldProtoMessage, v)
-	return u
-}
-
-// UpdateProtoMessage sets the "proto_message" field to the value that was provided on create.
-func (u *MetadataUpsert) UpdateProtoMessage() *MetadataUpsert {
-	u.SetExcluded(metadata.FieldProtoMessage)
-	return u
-}
-
-// ClearProtoMessage clears the value of the "proto_message" field.
-func (u *MetadataUpsert) ClearProtoMessage() *MetadataUpsert {
-	u.SetNull(metadata.FieldProtoMessage)
-	return u
-}
-
 // SetVersion sets the "version" field.
 func (u *MetadataUpsert) SetVersion(v string) *MetadataUpsert {
 	u.Set(metadata.FieldVersion, v)
@@ -467,6 +452,9 @@ func (u *MetadataUpsertOne) UpdateNewValues() *MetadataUpsertOne {
 		if _, exists := u.create.mutation.ID(); exists {
 			s.SetIgnore(metadata.FieldID)
 		}
+		if _, exists := u.create.mutation.ProtoMessage(); exists {
+			s.SetIgnore(metadata.FieldProtoMessage)
+		}
 	}))
 	return u
 }
@@ -496,27 +484,6 @@ func (u *MetadataUpsertOne) Update(set func(*MetadataUpsert)) *MetadataUpsertOne
 		set(&MetadataUpsert{UpdateSet: update})
 	}))
 	return u
-}
-
-// SetProtoMessage sets the "proto_message" field.
-func (u *MetadataUpsertOne) SetProtoMessage(v *sbom.Metadata) *MetadataUpsertOne {
-	return u.Update(func(s *MetadataUpsert) {
-		s.SetProtoMessage(v)
-	})
-}
-
-// UpdateProtoMessage sets the "proto_message" field to the value that was provided on create.
-func (u *MetadataUpsertOne) UpdateProtoMessage() *MetadataUpsertOne {
-	return u.Update(func(s *MetadataUpsert) {
-		s.UpdateProtoMessage()
-	})
-}
-
-// ClearProtoMessage clears the value of the "proto_message" field.
-func (u *MetadataUpsertOne) ClearProtoMessage() *MetadataUpsertOne {
-	return u.Update(func(s *MetadataUpsert) {
-		s.ClearProtoMessage()
-	})
 }
 
 // SetVersion sets the "version" field.
@@ -757,6 +724,9 @@ func (u *MetadataUpsertBulk) UpdateNewValues() *MetadataUpsertBulk {
 			if _, exists := b.mutation.ID(); exists {
 				s.SetIgnore(metadata.FieldID)
 			}
+			if _, exists := b.mutation.ProtoMessage(); exists {
+				s.SetIgnore(metadata.FieldProtoMessage)
+			}
 		}
 	}))
 	return u
@@ -787,27 +757,6 @@ func (u *MetadataUpsertBulk) Update(set func(*MetadataUpsert)) *MetadataUpsertBu
 		set(&MetadataUpsert{UpdateSet: update})
 	}))
 	return u
-}
-
-// SetProtoMessage sets the "proto_message" field.
-func (u *MetadataUpsertBulk) SetProtoMessage(v *sbom.Metadata) *MetadataUpsertBulk {
-	return u.Update(func(s *MetadataUpsert) {
-		s.SetProtoMessage(v)
-	})
-}
-
-// UpdateProtoMessage sets the "proto_message" field to the value that was provided on create.
-func (u *MetadataUpsertBulk) UpdateProtoMessage() *MetadataUpsertBulk {
-	return u.Update(func(s *MetadataUpsert) {
-		s.UpdateProtoMessage()
-	})
-}
-
-// ClearProtoMessage clears the value of the "proto_message" field.
-func (u *MetadataUpsertBulk) ClearProtoMessage() *MetadataUpsertBulk {
-	return u.Update(func(s *MetadataUpsert) {
-		s.ClearProtoMessage()
-	})
 }
 
 // SetVersion sets the "version" field.

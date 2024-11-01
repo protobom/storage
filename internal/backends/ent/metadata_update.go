@@ -17,7 +17,6 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
-	"github.com/protobom/protobom/pkg/sbom"
 	"github.com/protobom/storage/internal/backends/ent/documenttype"
 	"github.com/protobom/storage/internal/backends/ent/metadata"
 	"github.com/protobom/storage/internal/backends/ent/person"
@@ -36,18 +35,6 @@ type MetadataUpdate struct {
 // Where appends a list predicates to the MetadataUpdate builder.
 func (mu *MetadataUpdate) Where(ps ...predicate.Metadata) *MetadataUpdate {
 	mu.mutation.Where(ps...)
-	return mu
-}
-
-// SetProtoMessage sets the "proto_message" field.
-func (mu *MetadataUpdate) SetProtoMessage(s *sbom.Metadata) *MetadataUpdate {
-	mu.mutation.SetProtoMessage(s)
-	return mu
-}
-
-// ClearProtoMessage clears the value of the "proto_message" field.
-func (mu *MetadataUpdate) ClearProtoMessage() *MetadataUpdate {
-	mu.mutation.ClearProtoMessage()
 	return mu
 }
 
@@ -303,12 +290,6 @@ func (mu *MetadataUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
-	if value, ok := mu.mutation.ProtoMessage(); ok {
-		_spec.SetField(metadata.FieldProtoMessage, field.TypeBytes, value)
-	}
-	if mu.mutation.ProtoMessageCleared() {
-		_spec.ClearField(metadata.FieldProtoMessage, field.TypeBytes)
-	}
 	if value, ok := mu.mutation.Version(); ok {
 		_spec.SetField(metadata.FieldVersion, field.TypeString, value)
 	}
@@ -519,18 +500,6 @@ type MetadataUpdateOne struct {
 	fields   []string
 	hooks    []Hook
 	mutation *MetadataMutation
-}
-
-// SetProtoMessage sets the "proto_message" field.
-func (muo *MetadataUpdateOne) SetProtoMessage(s *sbom.Metadata) *MetadataUpdateOne {
-	muo.mutation.SetProtoMessage(s)
-	return muo
-}
-
-// ClearProtoMessage clears the value of the "proto_message" field.
-func (muo *MetadataUpdateOne) ClearProtoMessage() *MetadataUpdateOne {
-	muo.mutation.ClearProtoMessage()
-	return muo
 }
 
 // SetVersion sets the "version" field.
@@ -814,12 +783,6 @@ func (muo *MetadataUpdateOne) sqlSave(ctx context.Context) (_node *Metadata, err
 				ps[i](selector)
 			}
 		}
-	}
-	if value, ok := muo.mutation.ProtoMessage(); ok {
-		_spec.SetField(metadata.FieldProtoMessage, field.TypeBytes, value)
-	}
-	if muo.mutation.ProtoMessageCleared() {
-		_spec.ClearField(metadata.FieldProtoMessage, field.TypeBytes)
 	}
 	if value, ok := muo.mutation.Version(); ok {
 		_spec.SetField(metadata.FieldVersion, field.TypeString, value)

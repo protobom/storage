@@ -204,10 +204,10 @@ func (*Node) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case node.FieldProtoMessage:
+			values[i] = &sql.NullScanner{S: new(sbom.Node)}
 		case node.FieldLicenses, node.FieldAttribution, node.FieldFileTypes, node.FieldHashes, node.FieldIdentifiers:
 			values[i] = new([]byte)
-		case node.FieldProtoMessage:
-			values[i] = new(sbom.Node)
 		case node.FieldID, node.FieldType, node.FieldName, node.FieldVersion, node.FieldFileName, node.FieldURLHome, node.FieldURLDownload, node.FieldLicenseConcluded, node.FieldLicenseComments, node.FieldCopyright, node.FieldSourceInfo, node.FieldComment, node.FieldSummary, node.FieldDescription:
 			values[i] = new(sql.NullString)
 		case node.FieldReleaseDate, node.FieldBuildDate, node.FieldValidUntilDate:
@@ -242,10 +242,10 @@ func (n *Node) assignValues(columns []string, values []any) error {
 				n.DocumentID = *value
 			}
 		case node.FieldProtoMessage:
-			if value, ok := values[i].(*sbom.Node); !ok {
+			if value, ok := values[i].(*sql.NullScanner); !ok {
 				return fmt.Errorf("unexpected type %T for field proto_message", values[i])
-			} else if value != nil {
-				n.ProtoMessage = value
+			} else if value.Valid {
+				n.ProtoMessage = value.S.(*sbom.Node)
 			}
 		case node.FieldNodeListID:
 			if value, ok := values[i].(*uuid.UUID); !ok {
@@ -478,8 +478,10 @@ func (n *Node) String() string {
 	builder.WriteString("document_id=")
 	builder.WriteString(fmt.Sprintf("%v", n.DocumentID))
 	builder.WriteString(", ")
-	builder.WriteString("proto_message=")
-	builder.WriteString(fmt.Sprintf("%v", n.ProtoMessage))
+	if v := n.ProtoMessage; v != nil {
+		builder.WriteString("proto_message=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
 	builder.WriteString(", ")
 	builder.WriteString("node_list_id=")
 	builder.WriteString(fmt.Sprintf("%v", n.NodeListID))

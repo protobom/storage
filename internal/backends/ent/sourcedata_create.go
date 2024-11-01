@@ -148,6 +148,9 @@ func (sdc *SourceDataCreate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (sdc *SourceDataCreate) check() error {
+	if _, ok := sdc.mutation.ProtoMessage(); !ok {
+		return &ValidationError{Name: "proto_message", err: errors.New(`ent: missing required field "SourceData.proto_message"`)}
+	}
 	if _, ok := sdc.mutation.MetadataID(); !ok {
 		return &ValidationError{Name: "metadata_id", err: errors.New(`ent: missing required field "SourceData.metadata_id"`)}
 	}
@@ -302,24 +305,6 @@ type (
 	}
 )
 
-// SetProtoMessage sets the "proto_message" field.
-func (u *SourceDataUpsert) SetProtoMessage(v *sbom.SourceData) *SourceDataUpsert {
-	u.Set(sourcedata.FieldProtoMessage, v)
-	return u
-}
-
-// UpdateProtoMessage sets the "proto_message" field to the value that was provided on create.
-func (u *SourceDataUpsert) UpdateProtoMessage() *SourceDataUpsert {
-	u.SetExcluded(sourcedata.FieldProtoMessage)
-	return u
-}
-
-// ClearProtoMessage clears the value of the "proto_message" field.
-func (u *SourceDataUpsert) ClearProtoMessage() *SourceDataUpsert {
-	u.SetNull(sourcedata.FieldProtoMessage)
-	return u
-}
-
 // SetMetadataID sets the "metadata_id" field.
 func (u *SourceDataUpsert) SetMetadataID(v string) *SourceDataUpsert {
 	u.Set(sourcedata.FieldMetadataID, v)
@@ -418,6 +403,9 @@ func (u *SourceDataUpsertOne) UpdateNewValues() *SourceDataUpsertOne {
 		if _, exists := u.create.mutation.DocumentID(); exists {
 			s.SetIgnore(sourcedata.FieldDocumentID)
 		}
+		if _, exists := u.create.mutation.ProtoMessage(); exists {
+			s.SetIgnore(sourcedata.FieldProtoMessage)
+		}
 	}))
 	return u
 }
@@ -447,27 +435,6 @@ func (u *SourceDataUpsertOne) Update(set func(*SourceDataUpsert)) *SourceDataUps
 		set(&SourceDataUpsert{UpdateSet: update})
 	}))
 	return u
-}
-
-// SetProtoMessage sets the "proto_message" field.
-func (u *SourceDataUpsertOne) SetProtoMessage(v *sbom.SourceData) *SourceDataUpsertOne {
-	return u.Update(func(s *SourceDataUpsert) {
-		s.SetProtoMessage(v)
-	})
-}
-
-// UpdateProtoMessage sets the "proto_message" field to the value that was provided on create.
-func (u *SourceDataUpsertOne) UpdateProtoMessage() *SourceDataUpsertOne {
-	return u.Update(func(s *SourceDataUpsert) {
-		s.UpdateProtoMessage()
-	})
-}
-
-// ClearProtoMessage clears the value of the "proto_message" field.
-func (u *SourceDataUpsertOne) ClearProtoMessage() *SourceDataUpsertOne {
-	return u.Update(func(s *SourceDataUpsert) {
-		s.ClearProtoMessage()
-	})
 }
 
 // SetMetadataID sets the "metadata_id" field.
@@ -747,6 +714,9 @@ func (u *SourceDataUpsertBulk) UpdateNewValues() *SourceDataUpsertBulk {
 			if _, exists := b.mutation.DocumentID(); exists {
 				s.SetIgnore(sourcedata.FieldDocumentID)
 			}
+			if _, exists := b.mutation.ProtoMessage(); exists {
+				s.SetIgnore(sourcedata.FieldProtoMessage)
+			}
 		}
 	}))
 	return u
@@ -777,27 +747,6 @@ func (u *SourceDataUpsertBulk) Update(set func(*SourceDataUpsert)) *SourceDataUp
 		set(&SourceDataUpsert{UpdateSet: update})
 	}))
 	return u
-}
-
-// SetProtoMessage sets the "proto_message" field.
-func (u *SourceDataUpsertBulk) SetProtoMessage(v *sbom.SourceData) *SourceDataUpsertBulk {
-	return u.Update(func(s *SourceDataUpsert) {
-		s.SetProtoMessage(v)
-	})
-}
-
-// UpdateProtoMessage sets the "proto_message" field to the value that was provided on create.
-func (u *SourceDataUpsertBulk) UpdateProtoMessage() *SourceDataUpsertBulk {
-	return u.Update(func(s *SourceDataUpsert) {
-		s.UpdateProtoMessage()
-	})
-}
-
-// ClearProtoMessage clears the value of the "proto_message" field.
-func (u *SourceDataUpsertBulk) ClearProtoMessage() *SourceDataUpsertBulk {
-	return u.Update(func(s *SourceDataUpsert) {
-		s.ClearProtoMessage()
-	})
 }
 
 // SetMetadataID sets the "metadata_id" field.

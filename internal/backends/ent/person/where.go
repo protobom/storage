@@ -175,16 +175,6 @@ func ProtoMessageLTE(v *sbom.Person) predicate.Person {
 	return predicate.Person(sql.FieldLTE(FieldProtoMessage, v))
 }
 
-// ProtoMessageIsNil applies the IsNil predicate on the "proto_message" field.
-func ProtoMessageIsNil() predicate.Person {
-	return predicate.Person(sql.FieldIsNull(FieldProtoMessage))
-}
-
-// ProtoMessageNotNil applies the NotNil predicate on the "proto_message" field.
-func ProtoMessageNotNil() predicate.Person {
-	return predicate.Person(sql.FieldNotNull(FieldProtoMessage))
-}
-
 // MetadataIDEQ applies the EQ predicate on the "metadata_id" field.
 func MetadataIDEQ(v string) predicate.Person {
 	return predicate.Person(sql.FieldEQ(FieldMetadataID, v))

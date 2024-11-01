@@ -82,7 +82,7 @@ func (*Tool) scanValues(columns []string) ([]any, error) {
 	for i := range columns {
 		switch columns[i] {
 		case tool.FieldProtoMessage:
-			values[i] = new(sbom.Tool)
+			values[i] = &sql.NullScanner{S: new(sbom.Tool)}
 		case tool.FieldMetadataID, tool.FieldName, tool.FieldVersion, tool.FieldVendor:
 			values[i] = new(sql.NullString)
 		case tool.FieldID, tool.FieldDocumentID:
@@ -115,10 +115,10 @@ func (t *Tool) assignValues(columns []string, values []any) error {
 				t.DocumentID = *value
 			}
 		case tool.FieldProtoMessage:
-			if value, ok := values[i].(*sbom.Tool); !ok {
+			if value, ok := values[i].(*sql.NullScanner); !ok {
 				return fmt.Errorf("unexpected type %T for field proto_message", values[i])
-			} else if value != nil {
-				t.ProtoMessage = value
+			} else if value.Valid {
+				t.ProtoMessage = value.S.(*sbom.Tool)
 			}
 		case tool.FieldMetadataID:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -193,8 +193,10 @@ func (t *Tool) String() string {
 	builder.WriteString("document_id=")
 	builder.WriteString(fmt.Sprintf("%v", t.DocumentID))
 	builder.WriteString(", ")
-	builder.WriteString("proto_message=")
-	builder.WriteString(fmt.Sprintf("%v", t.ProtoMessage))
+	if v := t.ProtoMessage; v != nil {
+		builder.WriteString("proto_message=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
 	builder.WriteString(", ")
 	builder.WriteString("metadata_id=")
 	builder.WriteString(t.MetadataID)

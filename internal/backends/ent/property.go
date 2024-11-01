@@ -80,7 +80,7 @@ func (*Property) scanValues(columns []string) ([]any, error) {
 	for i := range columns {
 		switch columns[i] {
 		case property.FieldProtoMessage:
-			values[i] = new(sbom.Property)
+			values[i] = &sql.NullScanner{S: new(sbom.Property)}
 		case property.FieldNodeID, property.FieldName, property.FieldData:
 			values[i] = new(sql.NullString)
 		case property.FieldID, property.FieldDocumentID:
@@ -113,10 +113,10 @@ func (pr *Property) assignValues(columns []string, values []any) error {
 				pr.DocumentID = *value
 			}
 		case property.FieldProtoMessage:
-			if value, ok := values[i].(*sbom.Property); !ok {
+			if value, ok := values[i].(*sql.NullScanner); !ok {
 				return fmt.Errorf("unexpected type %T for field proto_message", values[i])
-			} else if value != nil {
-				pr.ProtoMessage = value
+			} else if value.Valid {
+				pr.ProtoMessage = value.S.(*sbom.Property)
 			}
 		case property.FieldNodeID:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -185,8 +185,10 @@ func (pr *Property) String() string {
 	builder.WriteString("document_id=")
 	builder.WriteString(fmt.Sprintf("%v", pr.DocumentID))
 	builder.WriteString(", ")
-	builder.WriteString("proto_message=")
-	builder.WriteString(fmt.Sprintf("%v", pr.ProtoMessage))
+	if v := pr.ProtoMessage; v != nil {
+		builder.WriteString("proto_message=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
 	builder.WriteString(", ")
 	builder.WriteString("node_id=")
 	builder.WriteString(pr.NodeID)

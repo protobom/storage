@@ -142,6 +142,9 @@ func (tc *ToolCreate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (tc *ToolCreate) check() error {
+	if _, ok := tc.mutation.ProtoMessage(); !ok {
+		return &ValidationError{Name: "proto_message", err: errors.New(`ent: missing required field "Tool.proto_message"`)}
+	}
 	if _, ok := tc.mutation.Name(); !ok {
 		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "Tool.name"`)}
 	}
@@ -289,24 +292,6 @@ type (
 	}
 )
 
-// SetProtoMessage sets the "proto_message" field.
-func (u *ToolUpsert) SetProtoMessage(v *sbom.Tool) *ToolUpsert {
-	u.Set(tool.FieldProtoMessage, v)
-	return u
-}
-
-// UpdateProtoMessage sets the "proto_message" field to the value that was provided on create.
-func (u *ToolUpsert) UpdateProtoMessage() *ToolUpsert {
-	u.SetExcluded(tool.FieldProtoMessage)
-	return u
-}
-
-// ClearProtoMessage clears the value of the "proto_message" field.
-func (u *ToolUpsert) ClearProtoMessage() *ToolUpsert {
-	u.SetNull(tool.FieldProtoMessage)
-	return u
-}
-
 // SetMetadataID sets the "metadata_id" field.
 func (u *ToolUpsert) SetMetadataID(v string) *ToolUpsert {
 	u.Set(tool.FieldMetadataID, v)
@@ -381,6 +366,9 @@ func (u *ToolUpsertOne) UpdateNewValues() *ToolUpsertOne {
 		if _, exists := u.create.mutation.DocumentID(); exists {
 			s.SetIgnore(tool.FieldDocumentID)
 		}
+		if _, exists := u.create.mutation.ProtoMessage(); exists {
+			s.SetIgnore(tool.FieldProtoMessage)
+		}
 	}))
 	return u
 }
@@ -410,27 +398,6 @@ func (u *ToolUpsertOne) Update(set func(*ToolUpsert)) *ToolUpsertOne {
 		set(&ToolUpsert{UpdateSet: update})
 	}))
 	return u
-}
-
-// SetProtoMessage sets the "proto_message" field.
-func (u *ToolUpsertOne) SetProtoMessage(v *sbom.Tool) *ToolUpsertOne {
-	return u.Update(func(s *ToolUpsert) {
-		s.SetProtoMessage(v)
-	})
-}
-
-// UpdateProtoMessage sets the "proto_message" field to the value that was provided on create.
-func (u *ToolUpsertOne) UpdateProtoMessage() *ToolUpsertOne {
-	return u.Update(func(s *ToolUpsert) {
-		s.UpdateProtoMessage()
-	})
-}
-
-// ClearProtoMessage clears the value of the "proto_message" field.
-func (u *ToolUpsertOne) ClearProtoMessage() *ToolUpsertOne {
-	return u.Update(func(s *ToolUpsert) {
-		s.ClearProtoMessage()
-	})
 }
 
 // SetMetadataID sets the "metadata_id" field.
@@ -682,6 +649,9 @@ func (u *ToolUpsertBulk) UpdateNewValues() *ToolUpsertBulk {
 			if _, exists := b.mutation.DocumentID(); exists {
 				s.SetIgnore(tool.FieldDocumentID)
 			}
+			if _, exists := b.mutation.ProtoMessage(); exists {
+				s.SetIgnore(tool.FieldProtoMessage)
+			}
 		}
 	}))
 	return u
@@ -712,27 +682,6 @@ func (u *ToolUpsertBulk) Update(set func(*ToolUpsert)) *ToolUpsertBulk {
 		set(&ToolUpsert{UpdateSet: update})
 	}))
 	return u
-}
-
-// SetProtoMessage sets the "proto_message" field.
-func (u *ToolUpsertBulk) SetProtoMessage(v *sbom.Tool) *ToolUpsertBulk {
-	return u.Update(func(s *ToolUpsert) {
-		s.SetProtoMessage(v)
-	})
-}
-
-// UpdateProtoMessage sets the "proto_message" field to the value that was provided on create.
-func (u *ToolUpsertBulk) UpdateProtoMessage() *ToolUpsertBulk {
-	return u.Update(func(s *ToolUpsert) {
-		s.UpdateProtoMessage()
-	})
-}
-
-// ClearProtoMessage clears the value of the "proto_message" field.
-func (u *ToolUpsertBulk) ClearProtoMessage() *ToolUpsertBulk {
-	return u.Update(func(s *ToolUpsert) {
-		s.ClearProtoMessage()
-	})
 }
 
 // SetMetadataID sets the "metadata_id" field.

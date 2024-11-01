@@ -15,7 +15,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/protobom/protobom/pkg/sbom"
 	"github.com/protobom/storage/internal/backends/ent/metadata"
 	"github.com/protobom/storage/internal/backends/ent/predicate"
 	"github.com/protobom/storage/internal/backends/ent/sourcedata"
@@ -31,18 +30,6 @@ type SourceDataUpdate struct {
 // Where appends a list predicates to the SourceDataUpdate builder.
 func (sdu *SourceDataUpdate) Where(ps ...predicate.SourceData) *SourceDataUpdate {
 	sdu.mutation.Where(ps...)
-	return sdu
-}
-
-// SetProtoMessage sets the "proto_message" field.
-func (sdu *SourceDataUpdate) SetProtoMessage(sd *sbom.SourceData) *SourceDataUpdate {
-	sdu.mutation.SetProtoMessage(sd)
-	return sdu
-}
-
-// ClearProtoMessage clears the value of the "proto_message" field.
-func (sdu *SourceDataUpdate) ClearProtoMessage() *SourceDataUpdate {
-	sdu.mutation.ClearProtoMessage()
 	return sdu
 }
 
@@ -190,12 +177,6 @@ func (sdu *SourceDataUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
-	if value, ok := sdu.mutation.ProtoMessage(); ok {
-		_spec.SetField(sourcedata.FieldProtoMessage, field.TypeBytes, value)
-	}
-	if sdu.mutation.ProtoMessageCleared() {
-		_spec.ClearField(sourcedata.FieldProtoMessage, field.TypeBytes)
-	}
 	if value, ok := sdu.mutation.Format(); ok {
 		_spec.SetField(sourcedata.FieldFormat, field.TypeString, value)
 	}
@@ -264,18 +245,6 @@ type SourceDataUpdateOne struct {
 	fields   []string
 	hooks    []Hook
 	mutation *SourceDataMutation
-}
-
-// SetProtoMessage sets the "proto_message" field.
-func (sduo *SourceDataUpdateOne) SetProtoMessage(sd *sbom.SourceData) *SourceDataUpdateOne {
-	sduo.mutation.SetProtoMessage(sd)
-	return sduo
-}
-
-// ClearProtoMessage clears the value of the "proto_message" field.
-func (sduo *SourceDataUpdateOne) ClearProtoMessage() *SourceDataUpdateOne {
-	sduo.mutation.ClearProtoMessage()
-	return sduo
 }
 
 // SetMetadataID sets the "metadata_id" field.
@@ -451,12 +420,6 @@ func (sduo *SourceDataUpdateOne) sqlSave(ctx context.Context) (_node *SourceData
 				ps[i](selector)
 			}
 		}
-	}
-	if value, ok := sduo.mutation.ProtoMessage(); ok {
-		_spec.SetField(sourcedata.FieldProtoMessage, field.TypeBytes, value)
-	}
-	if sduo.mutation.ProtoMessageCleared() {
-		_spec.ClearField(sourcedata.FieldProtoMessage, field.TypeBytes)
 	}
 	if value, ok := sduo.mutation.Format(); ok {
 		_spec.SetField(sourcedata.FieldFormat, field.TypeString, value)
