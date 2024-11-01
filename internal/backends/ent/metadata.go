@@ -4,6 +4,7 @@
 // SPDX-FileType: SOURCE
 // SPDX-License-Identifier: Apache-2.0
 // --------------------------------------------------------------
+
 package ent
 
 import (
@@ -13,6 +14,7 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/protobom/protobom/pkg/sbom"
 	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/metadata"
 )
@@ -22,6 +24,8 @@ type Metadata struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID string `json:"id,omitempty"`
+	// ProtoMessage holds the value of the "proto_message" field.
+	ProtoMessage *sbom.Metadata `json:"proto_message,omitempty"`
 	// Version holds the value of the "version" field.
 	Version string `json:"version,omitempty"`
 	// Name holds the value of the "name" field.
@@ -44,11 +48,13 @@ type MetadataEdges struct {
 	Authors []*Person `json:"authors,omitempty"`
 	// DocumentTypes holds the value of the document_types edge.
 	DocumentTypes []*DocumentType `json:"document_types,omitempty"`
+	// SourceData holds the value of the source_data edge.
+	SourceData []*SourceData `json:"source_data,omitempty"`
 	// Document holds the value of the document edge.
 	Document *Document `json:"document,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [4]bool
+	loadedTypes [5]bool
 }
 
 // ToolsOrErr returns the Tools value or an error if the edge
@@ -78,12 +84,21 @@ func (e MetadataEdges) DocumentTypesOrErr() ([]*DocumentType, error) {
 	return nil, &NotLoadedError{edge: "document_types"}
 }
 
+// SourceDataOrErr returns the SourceData value or an error if the edge
+// was not loaded in eager-loading.
+func (e MetadataEdges) SourceDataOrErr() ([]*SourceData, error) {
+	if e.loadedTypes[3] {
+		return e.SourceData, nil
+	}
+	return nil, &NotLoadedError{edge: "source_data"}
+}
+
 // DocumentOrErr returns the Document value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
 func (e MetadataEdges) DocumentOrErr() (*Document, error) {
 	if e.Document != nil {
 		return e.Document, nil
-	} else if e.loadedTypes[3] {
+	} else if e.loadedTypes[4] {
 		return nil, &NotFoundError{label: document.Label}
 	}
 	return nil, &NotLoadedError{edge: "document"}
@@ -94,6 +109,8 @@ func (*Metadata) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case metadata.FieldProtoMessage:
+			values[i] = &sql.NullScanner{S: new(sbom.Metadata)}
 		case metadata.FieldID, metadata.FieldVersion, metadata.FieldName, metadata.FieldComment:
 			values[i] = new(sql.NullString)
 		case metadata.FieldDate:
@@ -118,6 +135,12 @@ func (m *Metadata) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value.Valid {
 				m.ID = value.String
+			}
+		case metadata.FieldProtoMessage:
+			if value, ok := values[i].(*sql.NullScanner); !ok {
+				return fmt.Errorf("unexpected type %T for field proto_message", values[i])
+			} else if value.Valid {
+				m.ProtoMessage = value.S.(*sbom.Metadata)
 			}
 		case metadata.FieldVersion:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -171,6 +194,11 @@ func (m *Metadata) QueryDocumentTypes() *DocumentTypeQuery {
 	return NewMetadataClient(m.config).QueryDocumentTypes(m)
 }
 
+// QuerySourceData queries the "source_data" edge of the Metadata entity.
+func (m *Metadata) QuerySourceData() *SourceDataQuery {
+	return NewMetadataClient(m.config).QuerySourceData(m)
+}
+
 // QueryDocument queries the "document" edge of the Metadata entity.
 func (m *Metadata) QueryDocument() *DocumentQuery {
 	return NewMetadataClient(m.config).QueryDocument(m)
@@ -199,6 +227,11 @@ func (m *Metadata) String() string {
 	var builder strings.Builder
 	builder.WriteString("Metadata(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", m.ID))
+	if v := m.ProtoMessage; v != nil {
+		builder.WriteString("proto_message=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
 	builder.WriteString("version=")
 	builder.WriteString(m.Version)
 	builder.WriteString(", ")

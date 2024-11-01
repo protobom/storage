@@ -4,6 +4,7 @@
 // SPDX-FileType: SOURCE
 // SPDX-License-Identifier: Apache-2.0
 // --------------------------------------------------------------
+
 package ent
 
 import (
@@ -12,6 +13,9 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/google/uuid"
+	"github.com/protobom/protobom/pkg/sbom"
+	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/documenttype"
 	"github.com/protobom/storage/internal/backends/ent/metadata"
 )
@@ -20,7 +24,11 @@ import (
 type DocumentType struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID int `json:"id,omitempty"`
+	ID uuid.UUID `json:"id,omitempty"`
+	// DocumentID holds the value of the "document_id" field.
+	DocumentID uuid.UUID `json:"document_id,omitempty"`
+	// ProtoMessage holds the value of the "proto_message" field.
+	ProtoMessage *sbom.DocumentType `json:"proto_message,omitempty"`
 	// MetadataID holds the value of the "metadata_id" field.
 	MetadataID string `json:"metadata_id,omitempty"`
 	// Type holds the value of the "type" field.
@@ -37,11 +45,24 @@ type DocumentType struct {
 
 // DocumentTypeEdges holds the relations/edges for other nodes in the graph.
 type DocumentTypeEdges struct {
+	// Document holds the value of the document edge.
+	Document *Document `json:"document,omitempty"`
 	// Metadata holds the value of the metadata edge.
 	Metadata *Metadata `json:"metadata,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [1]bool
+	loadedTypes [2]bool
+}
+
+// DocumentOrErr returns the Document value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e DocumentTypeEdges) DocumentOrErr() (*Document, error) {
+	if e.Document != nil {
+		return e.Document, nil
+	} else if e.loadedTypes[0] {
+		return nil, &NotFoundError{label: document.Label}
+	}
+	return nil, &NotLoadedError{edge: "document"}
 }
 
 // MetadataOrErr returns the Metadata value or an error if the edge
@@ -49,7 +70,7 @@ type DocumentTypeEdges struct {
 func (e DocumentTypeEdges) MetadataOrErr() (*Metadata, error) {
 	if e.Metadata != nil {
 		return e.Metadata, nil
-	} else if e.loadedTypes[0] {
+	} else if e.loadedTypes[1] {
 		return nil, &NotFoundError{label: metadata.Label}
 	}
 	return nil, &NotLoadedError{edge: "metadata"}
@@ -60,10 +81,12 @@ func (*DocumentType) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case documenttype.FieldID:
-			values[i] = new(sql.NullInt64)
+		case documenttype.FieldProtoMessage:
+			values[i] = &sql.NullScanner{S: new(sbom.DocumentType)}
 		case documenttype.FieldMetadataID, documenttype.FieldType, documenttype.FieldName, documenttype.FieldDescription:
 			values[i] = new(sql.NullString)
+		case documenttype.FieldID, documenttype.FieldDocumentID:
+			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -80,11 +103,23 @@ func (dt *DocumentType) assignValues(columns []string, values []any) error {
 	for i := range columns {
 		switch columns[i] {
 		case documenttype.FieldID:
-			value, ok := values[i].(*sql.NullInt64)
-			if !ok {
-				return fmt.Errorf("unexpected type %T for field id", value)
+			if value, ok := values[i].(*uuid.UUID); !ok {
+				return fmt.Errorf("unexpected type %T for field id", values[i])
+			} else if value != nil {
+				dt.ID = *value
 			}
-			dt.ID = int(value.Int64)
+		case documenttype.FieldDocumentID:
+			if value, ok := values[i].(*uuid.UUID); !ok {
+				return fmt.Errorf("unexpected type %T for field document_id", values[i])
+			} else if value != nil {
+				dt.DocumentID = *value
+			}
+		case documenttype.FieldProtoMessage:
+			if value, ok := values[i].(*sql.NullScanner); !ok {
+				return fmt.Errorf("unexpected type %T for field proto_message", values[i])
+			} else if value.Valid {
+				dt.ProtoMessage = value.S.(*sbom.DocumentType)
+			}
 		case documenttype.FieldMetadataID:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field metadata_id", values[i])
@@ -125,6 +160,11 @@ func (dt *DocumentType) Value(name string) (ent.Value, error) {
 	return dt.selectValues.Get(name)
 }
 
+// QueryDocument queries the "document" edge of the DocumentType entity.
+func (dt *DocumentType) QueryDocument() *DocumentQuery {
+	return NewDocumentTypeClient(dt.config).QueryDocument(dt)
+}
+
 // QueryMetadata queries the "metadata" edge of the DocumentType entity.
 func (dt *DocumentType) QueryMetadata() *MetadataQuery {
 	return NewDocumentTypeClient(dt.config).QueryMetadata(dt)
@@ -153,6 +193,14 @@ func (dt *DocumentType) String() string {
 	var builder strings.Builder
 	builder.WriteString("DocumentType(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", dt.ID))
+	builder.WriteString("document_id=")
+	builder.WriteString(fmt.Sprintf("%v", dt.DocumentID))
+	builder.WriteString(", ")
+	if v := dt.ProtoMessage; v != nil {
+		builder.WriteString("proto_message=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
 	builder.WriteString("metadata_id=")
 	builder.WriteString(dt.MetadataID)
 	builder.WriteString(", ")

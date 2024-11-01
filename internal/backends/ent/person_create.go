@@ -4,6 +4,7 @@
 // SPDX-FileType: SOURCE
 // SPDX-License-Identifier: Apache-2.0
 // --------------------------------------------------------------
+
 package ent
 
 import (
@@ -11,9 +12,13 @@ import (
 	"errors"
 	"fmt"
 
+	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/google/uuid"
+	"github.com/protobom/protobom/pkg/sbom"
+	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/metadata"
 	"github.com/protobom/storage/internal/backends/ent/node"
 	"github.com/protobom/storage/internal/backends/ent/person"
@@ -25,6 +30,26 @@ type PersonCreate struct {
 	mutation *PersonMutation
 	hooks    []Hook
 	conflict []sql.ConflictOption
+}
+
+// SetDocumentID sets the "document_id" field.
+func (pc *PersonCreate) SetDocumentID(u uuid.UUID) *PersonCreate {
+	pc.mutation.SetDocumentID(u)
+	return pc
+}
+
+// SetNillableDocumentID sets the "document_id" field if the given value is not nil.
+func (pc *PersonCreate) SetNillableDocumentID(u *uuid.UUID) *PersonCreate {
+	if u != nil {
+		pc.SetDocumentID(*u)
+	}
+	return pc
+}
+
+// SetProtoMessage sets the "proto_message" field.
+func (pc *PersonCreate) SetProtoMessage(s *sbom.Person) *PersonCreate {
+	pc.mutation.SetProtoMessage(s)
+	return pc
 }
 
 // SetMetadataID sets the "metadata_id" field.
@@ -85,14 +110,25 @@ func (pc *PersonCreate) SetPhone(s string) *PersonCreate {
 	return pc
 }
 
+// SetID sets the "id" field.
+func (pc *PersonCreate) SetID(u uuid.UUID) *PersonCreate {
+	pc.mutation.SetID(u)
+	return pc
+}
+
+// SetDocument sets the "document" edge to the Document entity.
+func (pc *PersonCreate) SetDocument(d *Document) *PersonCreate {
+	return pc.SetDocumentID(d.ID)
+}
+
 // SetContactOwnerID sets the "contact_owner" edge to the Person entity by ID.
-func (pc *PersonCreate) SetContactOwnerID(id int) *PersonCreate {
+func (pc *PersonCreate) SetContactOwnerID(id uuid.UUID) *PersonCreate {
 	pc.mutation.SetContactOwnerID(id)
 	return pc
 }
 
 // SetNillableContactOwnerID sets the "contact_owner" edge to the Person entity by ID if the given value is not nil.
-func (pc *PersonCreate) SetNillableContactOwnerID(id *int) *PersonCreate {
+func (pc *PersonCreate) SetNillableContactOwnerID(id *uuid.UUID) *PersonCreate {
 	if id != nil {
 		pc = pc.SetContactOwnerID(*id)
 	}
@@ -105,14 +141,14 @@ func (pc *PersonCreate) SetContactOwner(p *Person) *PersonCreate {
 }
 
 // AddContactIDs adds the "contacts" edge to the Person entity by IDs.
-func (pc *PersonCreate) AddContactIDs(ids ...int) *PersonCreate {
+func (pc *PersonCreate) AddContactIDs(ids ...uuid.UUID) *PersonCreate {
 	pc.mutation.AddContactIDs(ids...)
 	return pc
 }
 
 // AddContacts adds the "contacts" edges to the Person entity.
 func (pc *PersonCreate) AddContacts(p ...*Person) *PersonCreate {
-	ids := make([]int, len(p))
+	ids := make([]uuid.UUID, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -136,6 +172,7 @@ func (pc *PersonCreate) Mutation() *PersonMutation {
 
 // Save creates the Person in the database.
 func (pc *PersonCreate) Save(ctx context.Context) (*Person, error) {
+	pc.defaults()
 	return withHooks(ctx, pc.sqlSave, pc.mutation, pc.hooks)
 }
 
@@ -161,8 +198,19 @@ func (pc *PersonCreate) ExecX(ctx context.Context) {
 	}
 }
 
+// defaults sets the default values of the builder before save.
+func (pc *PersonCreate) defaults() {
+	if _, ok := pc.mutation.DocumentID(); !ok {
+		v := person.DefaultDocumentID()
+		pc.mutation.SetDocumentID(v)
+	}
+}
+
 // check runs all checks and user-defined validators on the builder.
 func (pc *PersonCreate) check() error {
+	if _, ok := pc.mutation.ProtoMessage(); !ok {
+		return &ValidationError{Name: "proto_message", err: errors.New(`ent: missing required field "Person.proto_message"`)}
+	}
 	if _, ok := pc.mutation.Name(); !ok {
 		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "Person.name"`)}
 	}
@@ -192,8 +240,13 @@ func (pc *PersonCreate) sqlSave(ctx context.Context) (*Person, error) {
 		}
 		return nil, err
 	}
-	id := _spec.ID.Value.(int64)
-	_node.ID = int(id)
+	if _spec.ID.Value != nil {
+		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
+			_node.ID = *id
+		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
+			return nil, err
+		}
+	}
 	pc.mutation.id = &_node.ID
 	pc.mutation.done = true
 	return _node, nil
@@ -202,9 +255,17 @@ func (pc *PersonCreate) sqlSave(ctx context.Context) (*Person, error) {
 func (pc *PersonCreate) createSpec() (*Person, *sqlgraph.CreateSpec) {
 	var (
 		_node = &Person{config: pc.config}
-		_spec = sqlgraph.NewCreateSpec(person.Table, sqlgraph.NewFieldSpec(person.FieldID, field.TypeInt))
+		_spec = sqlgraph.NewCreateSpec(person.Table, sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID))
 	)
 	_spec.OnConflict = pc.conflict
+	if id, ok := pc.mutation.ID(); ok {
+		_node.ID = id
+		_spec.ID.Value = &id
+	}
+	if value, ok := pc.mutation.ProtoMessage(); ok {
+		_spec.SetField(person.FieldProtoMessage, field.TypeBytes, value)
+		_node.ProtoMessage = value
+	}
 	if value, ok := pc.mutation.Name(); ok {
 		_spec.SetField(person.FieldName, field.TypeString, value)
 		_node.Name = value
@@ -225,6 +286,23 @@ func (pc *PersonCreate) createSpec() (*Person, *sqlgraph.CreateSpec) {
 		_spec.SetField(person.FieldPhone, field.TypeString, value)
 		_node.Phone = value
 	}
+	if nodes := pc.mutation.DocumentIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   person.DocumentTable,
+			Columns: []string{person.DocumentColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(document.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.DocumentID = nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
 	if nodes := pc.mutation.ContactOwnerIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -233,7 +311,7 @@ func (pc *PersonCreate) createSpec() (*Person, *sqlgraph.CreateSpec) {
 			Columns: []string{person.ContactOwnerColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -250,7 +328,7 @@ func (pc *PersonCreate) createSpec() (*Person, *sqlgraph.CreateSpec) {
 			Columns: []string{person.ContactsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -299,7 +377,7 @@ func (pc *PersonCreate) createSpec() (*Person, *sqlgraph.CreateSpec) {
 // of the `INSERT` statement. For example:
 //
 //	client.Person.Create().
-//		SetMetadataID(v).
+//		SetDocumentID(v).
 //		OnConflict(
 //			// Update the row with the new values
 //			// the was proposed for insertion.
@@ -308,7 +386,7 @@ func (pc *PersonCreate) createSpec() (*Person, *sqlgraph.CreateSpec) {
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.PersonUpsert) {
-//			SetMetadataID(v+v).
+//			SetDocumentID(v+v).
 //		}).
 //		Exec(ctx)
 func (pc *PersonCreate) OnConflict(opts ...sql.ConflictOption) *PersonUpsertOne {
@@ -440,16 +518,30 @@ func (u *PersonUpsert) UpdatePhone() *PersonUpsert {
 	return u
 }
 
-// UpdateNewValues updates the mutable fields using the new values that were set on create.
+// UpdateNewValues updates the mutable fields using the new values that were set on create except the ID field.
 // Using this option is equivalent to using:
 //
 //	client.Person.Create().
 //		OnConflict(
 //			sql.ResolveWithNewValues(),
+//			sql.ResolveWith(func(u *sql.UpdateSet) {
+//				u.SetIgnore(person.FieldID)
+//			}),
 //		).
 //		Exec(ctx)
 func (u *PersonUpsertOne) UpdateNewValues() *PersonUpsertOne {
 	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
+		if _, exists := u.create.mutation.ID(); exists {
+			s.SetIgnore(person.FieldID)
+		}
+		if _, exists := u.create.mutation.DocumentID(); exists {
+			s.SetIgnore(person.FieldDocumentID)
+		}
+		if _, exists := u.create.mutation.ProtoMessage(); exists {
+			s.SetIgnore(person.FieldProtoMessage)
+		}
+	}))
 	return u
 }
 
@@ -608,7 +700,12 @@ func (u *PersonUpsertOne) ExecX(ctx context.Context) {
 }
 
 // Exec executes the UPSERT query and returns the inserted/updated ID.
-func (u *PersonUpsertOne) ID(ctx context.Context) (id int, err error) {
+func (u *PersonUpsertOne) ID(ctx context.Context) (id uuid.UUID, err error) {
+	if u.create.driver.Dialect() == dialect.MySQL {
+		// In case of "ON CONFLICT", there is no way to get back non-numeric ID
+		// fields from the database since MySQL does not support the RETURNING clause.
+		return id, errors.New("ent: PersonUpsertOne.ID is not supported by MySQL driver. Use PersonUpsertOne.Exec instead")
+	}
 	node, err := u.create.Save(ctx)
 	if err != nil {
 		return id, err
@@ -617,7 +714,7 @@ func (u *PersonUpsertOne) ID(ctx context.Context) (id int, err error) {
 }
 
 // IDX is like ID, but panics if an error occurs.
-func (u *PersonUpsertOne) IDX(ctx context.Context) int {
+func (u *PersonUpsertOne) IDX(ctx context.Context) uuid.UUID {
 	id, err := u.ID(ctx)
 	if err != nil {
 		panic(err)
@@ -644,6 +741,7 @@ func (pcb *PersonCreateBulk) Save(ctx context.Context) ([]*Person, error) {
 	for i := range pcb.builders {
 		func(i int, root context.Context) {
 			builder := pcb.builders[i]
+			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*PersonMutation)
 				if !ok {
@@ -671,10 +769,6 @@ func (pcb *PersonCreateBulk) Save(ctx context.Context) ([]*Person, error) {
 					return nil, err
 				}
 				mutation.id = &nodes[i].ID
-				if specs[i].ID.Value != nil {
-					id := specs[i].ID.Value.(int64)
-					nodes[i].ID = int(id)
-				}
 				mutation.done = true
 				return nodes[i], nil
 			})
@@ -726,7 +820,7 @@ func (pcb *PersonCreateBulk) ExecX(ctx context.Context) {
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.PersonUpsert) {
-//			SetMetadataID(v+v).
+//			SetDocumentID(v+v).
 //		}).
 //		Exec(ctx)
 func (pcb *PersonCreateBulk) OnConflict(opts ...sql.ConflictOption) *PersonUpsertBulk {
@@ -761,10 +855,26 @@ type PersonUpsertBulk struct {
 //	client.Person.Create().
 //		OnConflict(
 //			sql.ResolveWithNewValues(),
+//			sql.ResolveWith(func(u *sql.UpdateSet) {
+//				u.SetIgnore(person.FieldID)
+//			}),
 //		).
 //		Exec(ctx)
 func (u *PersonUpsertBulk) UpdateNewValues() *PersonUpsertBulk {
 	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
+		for _, b := range u.create.builders {
+			if _, exists := b.mutation.ID(); exists {
+				s.SetIgnore(person.FieldID)
+			}
+			if _, exists := b.mutation.DocumentID(); exists {
+				s.SetIgnore(person.FieldDocumentID)
+			}
+			if _, exists := b.mutation.ProtoMessage(); exists {
+				s.SetIgnore(person.FieldProtoMessage)
+			}
+		}
+	}))
 	return u
 }
 

@@ -4,6 +4,7 @@
 // SPDX-FileType: SOURCE
 // SPDX-License-Identifier: Apache-2.0
 // --------------------------------------------------------------
+
 package ent
 
 import (
@@ -11,11 +12,14 @@ import (
 	"errors"
 	"fmt"
 
+	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/google/uuid"
+	"github.com/protobom/protobom/pkg/sbom"
+	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/externalreference"
-	"github.com/protobom/storage/internal/backends/ent/hashesentry"
 	"github.com/protobom/storage/internal/backends/ent/node"
 )
 
@@ -25,6 +29,26 @@ type ExternalReferenceCreate struct {
 	mutation *ExternalReferenceMutation
 	hooks    []Hook
 	conflict []sql.ConflictOption
+}
+
+// SetDocumentID sets the "document_id" field.
+func (erc *ExternalReferenceCreate) SetDocumentID(u uuid.UUID) *ExternalReferenceCreate {
+	erc.mutation.SetDocumentID(u)
+	return erc
+}
+
+// SetNillableDocumentID sets the "document_id" field if the given value is not nil.
+func (erc *ExternalReferenceCreate) SetNillableDocumentID(u *uuid.UUID) *ExternalReferenceCreate {
+	if u != nil {
+		erc.SetDocumentID(*u)
+	}
+	return erc
+}
+
+// SetProtoMessage sets the "proto_message" field.
+func (erc *ExternalReferenceCreate) SetProtoMessage(sr *sbom.ExternalReference) *ExternalReferenceCreate {
+	erc.mutation.SetProtoMessage(sr)
+	return erc
 }
 
 // SetNodeID sets the "node_id" field.
@@ -73,19 +97,21 @@ func (erc *ExternalReferenceCreate) SetType(e externalreference.Type) *ExternalR
 	return erc
 }
 
-// AddHashIDs adds the "hashes" edge to the HashesEntry entity by IDs.
-func (erc *ExternalReferenceCreate) AddHashIDs(ids ...int) *ExternalReferenceCreate {
-	erc.mutation.AddHashIDs(ids...)
+// SetHashes sets the "hashes" field.
+func (erc *ExternalReferenceCreate) SetHashes(m map[int32]string) *ExternalReferenceCreate {
+	erc.mutation.SetHashes(m)
 	return erc
 }
 
-// AddHashes adds the "hashes" edges to the HashesEntry entity.
-func (erc *ExternalReferenceCreate) AddHashes(h ...*HashesEntry) *ExternalReferenceCreate {
-	ids := make([]int, len(h))
-	for i := range h {
-		ids[i] = h[i].ID
-	}
-	return erc.AddHashIDs(ids...)
+// SetID sets the "id" field.
+func (erc *ExternalReferenceCreate) SetID(u uuid.UUID) *ExternalReferenceCreate {
+	erc.mutation.SetID(u)
+	return erc
+}
+
+// SetDocument sets the "document" edge to the Document entity.
+func (erc *ExternalReferenceCreate) SetDocument(d *Document) *ExternalReferenceCreate {
+	return erc.SetDocumentID(d.ID)
 }
 
 // SetNode sets the "node" edge to the Node entity.
@@ -100,6 +126,7 @@ func (erc *ExternalReferenceCreate) Mutation() *ExternalReferenceMutation {
 
 // Save creates the ExternalReference in the database.
 func (erc *ExternalReferenceCreate) Save(ctx context.Context) (*ExternalReference, error) {
+	erc.defaults()
 	return withHooks(ctx, erc.sqlSave, erc.mutation, erc.hooks)
 }
 
@@ -125,8 +152,19 @@ func (erc *ExternalReferenceCreate) ExecX(ctx context.Context) {
 	}
 }
 
+// defaults sets the default values of the builder before save.
+func (erc *ExternalReferenceCreate) defaults() {
+	if _, ok := erc.mutation.DocumentID(); !ok {
+		v := externalreference.DefaultDocumentID()
+		erc.mutation.SetDocumentID(v)
+	}
+}
+
 // check runs all checks and user-defined validators on the builder.
 func (erc *ExternalReferenceCreate) check() error {
+	if _, ok := erc.mutation.ProtoMessage(); !ok {
+		return &ValidationError{Name: "proto_message", err: errors.New(`ent: missing required field "ExternalReference.proto_message"`)}
+	}
 	if _, ok := erc.mutation.URL(); !ok {
 		return &ValidationError{Name: "url", err: errors.New(`ent: missing required field "ExternalReference.url"`)}
 	}
@@ -155,8 +193,13 @@ func (erc *ExternalReferenceCreate) sqlSave(ctx context.Context) (*ExternalRefer
 		}
 		return nil, err
 	}
-	id := _spec.ID.Value.(int64)
-	_node.ID = int(id)
+	if _spec.ID.Value != nil {
+		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
+			_node.ID = *id
+		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
+			return nil, err
+		}
+	}
 	erc.mutation.id = &_node.ID
 	erc.mutation.done = true
 	return _node, nil
@@ -165,9 +208,17 @@ func (erc *ExternalReferenceCreate) sqlSave(ctx context.Context) (*ExternalRefer
 func (erc *ExternalReferenceCreate) createSpec() (*ExternalReference, *sqlgraph.CreateSpec) {
 	var (
 		_node = &ExternalReference{config: erc.config}
-		_spec = sqlgraph.NewCreateSpec(externalreference.Table, sqlgraph.NewFieldSpec(externalreference.FieldID, field.TypeInt))
+		_spec = sqlgraph.NewCreateSpec(externalreference.Table, sqlgraph.NewFieldSpec(externalreference.FieldID, field.TypeUUID))
 	)
 	_spec.OnConflict = erc.conflict
+	if id, ok := erc.mutation.ID(); ok {
+		_node.ID = id
+		_spec.ID.Value = &id
+	}
+	if value, ok := erc.mutation.ProtoMessage(); ok {
+		_spec.SetField(externalreference.FieldProtoMessage, field.TypeBytes, value)
+		_node.ProtoMessage = value
+	}
 	if value, ok := erc.mutation.URL(); ok {
 		_spec.SetField(externalreference.FieldURL, field.TypeString, value)
 		_node.URL = value
@@ -184,20 +235,25 @@ func (erc *ExternalReferenceCreate) createSpec() (*ExternalReference, *sqlgraph.
 		_spec.SetField(externalreference.FieldType, field.TypeEnum, value)
 		_node.Type = value
 	}
-	if nodes := erc.mutation.HashesIDs(); len(nodes) > 0 {
+	if value, ok := erc.mutation.Hashes(); ok {
+		_spec.SetField(externalreference.FieldHashes, field.TypeJSON, value)
+		_node.Hashes = value
+	}
+	if nodes := erc.mutation.DocumentIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2O,
 			Inverse: false,
-			Table:   externalreference.HashesTable,
-			Columns: []string{externalreference.HashesColumn},
+			Table:   externalreference.DocumentTable,
+			Columns: []string{externalreference.DocumentColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(hashesentry.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(document.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
+		_node.DocumentID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := erc.mutation.NodeIDs(); len(nodes) > 0 {
@@ -224,7 +280,7 @@ func (erc *ExternalReferenceCreate) createSpec() (*ExternalReference, *sqlgraph.
 // of the `INSERT` statement. For example:
 //
 //	client.ExternalReference.Create().
-//		SetNodeID(v).
+//		SetDocumentID(v).
 //		OnConflict(
 //			// Update the row with the new values
 //			// the was proposed for insertion.
@@ -233,7 +289,7 @@ func (erc *ExternalReferenceCreate) createSpec() (*ExternalReference, *sqlgraph.
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.ExternalReferenceUpsert) {
-//			SetNodeID(v+v).
+//			SetDocumentID(v+v).
 //		}).
 //		Exec(ctx)
 func (erc *ExternalReferenceCreate) OnConflict(opts ...sql.ConflictOption) *ExternalReferenceUpsertOne {
@@ -341,16 +397,48 @@ func (u *ExternalReferenceUpsert) UpdateType() *ExternalReferenceUpsert {
 	return u
 }
 
-// UpdateNewValues updates the mutable fields using the new values that were set on create.
+// SetHashes sets the "hashes" field.
+func (u *ExternalReferenceUpsert) SetHashes(v map[int32]string) *ExternalReferenceUpsert {
+	u.Set(externalreference.FieldHashes, v)
+	return u
+}
+
+// UpdateHashes sets the "hashes" field to the value that was provided on create.
+func (u *ExternalReferenceUpsert) UpdateHashes() *ExternalReferenceUpsert {
+	u.SetExcluded(externalreference.FieldHashes)
+	return u
+}
+
+// ClearHashes clears the value of the "hashes" field.
+func (u *ExternalReferenceUpsert) ClearHashes() *ExternalReferenceUpsert {
+	u.SetNull(externalreference.FieldHashes)
+	return u
+}
+
+// UpdateNewValues updates the mutable fields using the new values that were set on create except the ID field.
 // Using this option is equivalent to using:
 //
 //	client.ExternalReference.Create().
 //		OnConflict(
 //			sql.ResolveWithNewValues(),
+//			sql.ResolveWith(func(u *sql.UpdateSet) {
+//				u.SetIgnore(externalreference.FieldID)
+//			}),
 //		).
 //		Exec(ctx)
 func (u *ExternalReferenceUpsertOne) UpdateNewValues() *ExternalReferenceUpsertOne {
 	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
+		if _, exists := u.create.mutation.ID(); exists {
+			s.SetIgnore(externalreference.FieldID)
+		}
+		if _, exists := u.create.mutation.DocumentID(); exists {
+			s.SetIgnore(externalreference.FieldDocumentID)
+		}
+		if _, exists := u.create.mutation.ProtoMessage(); exists {
+			s.SetIgnore(externalreference.FieldProtoMessage)
+		}
+	}))
 	return u
 }
 
@@ -465,6 +553,27 @@ func (u *ExternalReferenceUpsertOne) UpdateType() *ExternalReferenceUpsertOne {
 	})
 }
 
+// SetHashes sets the "hashes" field.
+func (u *ExternalReferenceUpsertOne) SetHashes(v map[int32]string) *ExternalReferenceUpsertOne {
+	return u.Update(func(s *ExternalReferenceUpsert) {
+		s.SetHashes(v)
+	})
+}
+
+// UpdateHashes sets the "hashes" field to the value that was provided on create.
+func (u *ExternalReferenceUpsertOne) UpdateHashes() *ExternalReferenceUpsertOne {
+	return u.Update(func(s *ExternalReferenceUpsert) {
+		s.UpdateHashes()
+	})
+}
+
+// ClearHashes clears the value of the "hashes" field.
+func (u *ExternalReferenceUpsertOne) ClearHashes() *ExternalReferenceUpsertOne {
+	return u.Update(func(s *ExternalReferenceUpsert) {
+		s.ClearHashes()
+	})
+}
+
 // Exec executes the query.
 func (u *ExternalReferenceUpsertOne) Exec(ctx context.Context) error {
 	if len(u.create.conflict) == 0 {
@@ -481,7 +590,12 @@ func (u *ExternalReferenceUpsertOne) ExecX(ctx context.Context) {
 }
 
 // Exec executes the UPSERT query and returns the inserted/updated ID.
-func (u *ExternalReferenceUpsertOne) ID(ctx context.Context) (id int, err error) {
+func (u *ExternalReferenceUpsertOne) ID(ctx context.Context) (id uuid.UUID, err error) {
+	if u.create.driver.Dialect() == dialect.MySQL {
+		// In case of "ON CONFLICT", there is no way to get back non-numeric ID
+		// fields from the database since MySQL does not support the RETURNING clause.
+		return id, errors.New("ent: ExternalReferenceUpsertOne.ID is not supported by MySQL driver. Use ExternalReferenceUpsertOne.Exec instead")
+	}
 	node, err := u.create.Save(ctx)
 	if err != nil {
 		return id, err
@@ -490,7 +604,7 @@ func (u *ExternalReferenceUpsertOne) ID(ctx context.Context) (id int, err error)
 }
 
 // IDX is like ID, but panics if an error occurs.
-func (u *ExternalReferenceUpsertOne) IDX(ctx context.Context) int {
+func (u *ExternalReferenceUpsertOne) IDX(ctx context.Context) uuid.UUID {
 	id, err := u.ID(ctx)
 	if err != nil {
 		panic(err)
@@ -517,6 +631,7 @@ func (ercb *ExternalReferenceCreateBulk) Save(ctx context.Context) ([]*ExternalR
 	for i := range ercb.builders {
 		func(i int, root context.Context) {
 			builder := ercb.builders[i]
+			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*ExternalReferenceMutation)
 				if !ok {
@@ -544,10 +659,6 @@ func (ercb *ExternalReferenceCreateBulk) Save(ctx context.Context) ([]*ExternalR
 					return nil, err
 				}
 				mutation.id = &nodes[i].ID
-				if specs[i].ID.Value != nil {
-					id := specs[i].ID.Value.(int64)
-					nodes[i].ID = int(id)
-				}
 				mutation.done = true
 				return nodes[i], nil
 			})
@@ -599,7 +710,7 @@ func (ercb *ExternalReferenceCreateBulk) ExecX(ctx context.Context) {
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.ExternalReferenceUpsert) {
-//			SetNodeID(v+v).
+//			SetDocumentID(v+v).
 //		}).
 //		Exec(ctx)
 func (ercb *ExternalReferenceCreateBulk) OnConflict(opts ...sql.ConflictOption) *ExternalReferenceUpsertBulk {
@@ -634,10 +745,26 @@ type ExternalReferenceUpsertBulk struct {
 //	client.ExternalReference.Create().
 //		OnConflict(
 //			sql.ResolveWithNewValues(),
+//			sql.ResolveWith(func(u *sql.UpdateSet) {
+//				u.SetIgnore(externalreference.FieldID)
+//			}),
 //		).
 //		Exec(ctx)
 func (u *ExternalReferenceUpsertBulk) UpdateNewValues() *ExternalReferenceUpsertBulk {
 	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
+		for _, b := range u.create.builders {
+			if _, exists := b.mutation.ID(); exists {
+				s.SetIgnore(externalreference.FieldID)
+			}
+			if _, exists := b.mutation.DocumentID(); exists {
+				s.SetIgnore(externalreference.FieldDocumentID)
+			}
+			if _, exists := b.mutation.ProtoMessage(); exists {
+				s.SetIgnore(externalreference.FieldProtoMessage)
+			}
+		}
+	}))
 	return u
 }
 
@@ -749,6 +876,27 @@ func (u *ExternalReferenceUpsertBulk) SetType(v externalreference.Type) *Externa
 func (u *ExternalReferenceUpsertBulk) UpdateType() *ExternalReferenceUpsertBulk {
 	return u.Update(func(s *ExternalReferenceUpsert) {
 		s.UpdateType()
+	})
+}
+
+// SetHashes sets the "hashes" field.
+func (u *ExternalReferenceUpsertBulk) SetHashes(v map[int32]string) *ExternalReferenceUpsertBulk {
+	return u.Update(func(s *ExternalReferenceUpsert) {
+		s.SetHashes(v)
+	})
+}
+
+// UpdateHashes sets the "hashes" field to the value that was provided on create.
+func (u *ExternalReferenceUpsertBulk) UpdateHashes() *ExternalReferenceUpsertBulk {
+	return u.Update(func(s *ExternalReferenceUpsert) {
+		s.UpdateHashes()
+	})
+}
+
+// ClearHashes clears the value of the "hashes" field.
+func (u *ExternalReferenceUpsertBulk) ClearHashes() *ExternalReferenceUpsertBulk {
+	return u.Update(func(s *ExternalReferenceUpsert) {
+		s.ClearHashes()
 	})
 }
 

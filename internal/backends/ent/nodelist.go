@@ -4,6 +4,7 @@
 // SPDX-FileType: SOURCE
 // SPDX-License-Identifier: Apache-2.0
 // --------------------------------------------------------------
+
 package ent
 
 import (
@@ -13,6 +14,8 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/google/uuid"
+	"github.com/protobom/protobom/pkg/sbom"
 	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/nodelist"
 )
@@ -21,9 +24,9 @@ import (
 type NodeList struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID int `json:"id,omitempty"`
-	// DocumentID holds the value of the "document_id" field.
-	DocumentID string `json:"document_id,omitempty"`
+	ID uuid.UUID `json:"id,omitempty"`
+	// ProtoMessage holds the value of the "proto_message" field.
+	ProtoMessage *sbom.NodeList `json:"proto_message,omitempty"`
 	// RootElements holds the value of the "root_elements" field.
 	RootElements []string `json:"root_elements,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -68,12 +71,12 @@ func (*NodeList) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case nodelist.FieldProtoMessage:
+			values[i] = &sql.NullScanner{S: new(sbom.NodeList)}
 		case nodelist.FieldRootElements:
 			values[i] = new([]byte)
 		case nodelist.FieldID:
-			values[i] = new(sql.NullInt64)
-		case nodelist.FieldDocumentID:
-			values[i] = new(sql.NullString)
+			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -90,16 +93,16 @@ func (nl *NodeList) assignValues(columns []string, values []any) error {
 	for i := range columns {
 		switch columns[i] {
 		case nodelist.FieldID:
-			value, ok := values[i].(*sql.NullInt64)
-			if !ok {
-				return fmt.Errorf("unexpected type %T for field id", value)
+			if value, ok := values[i].(*uuid.UUID); !ok {
+				return fmt.Errorf("unexpected type %T for field id", values[i])
+			} else if value != nil {
+				nl.ID = *value
 			}
-			nl.ID = int(value.Int64)
-		case nodelist.FieldDocumentID:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field document_id", values[i])
+		case nodelist.FieldProtoMessage:
+			if value, ok := values[i].(*sql.NullScanner); !ok {
+				return fmt.Errorf("unexpected type %T for field proto_message", values[i])
 			} else if value.Valid {
-				nl.DocumentID = value.String
+				nl.ProtoMessage = value.S.(*sbom.NodeList)
 			}
 		case nodelist.FieldRootElements:
 			if value, ok := values[i].(*[]byte); !ok {
@@ -155,8 +158,10 @@ func (nl *NodeList) String() string {
 	var builder strings.Builder
 	builder.WriteString("NodeList(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", nl.ID))
-	builder.WriteString("document_id=")
-	builder.WriteString(nl.DocumentID)
+	if v := nl.ProtoMessage; v != nil {
+		builder.WriteString("proto_message=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
 	builder.WriteString(", ")
 	builder.WriteString("root_elements=")
 	builder.WriteString(fmt.Sprintf("%v", nl.RootElements))

@@ -3,10 +3,12 @@
 // SPDX-FileType: SOURCE
 // SPDX-License-Identifier: Apache-2.0
 // --------------------------------------------------------------
+
 package ent_test
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -25,8 +27,8 @@ func Example() {
 	dbFile := filepath.Join(cwd, "example.db")
 
 	// Remove example.db if it already exists.
-	if _, err := os.Stat(dbFile); err == nil {
-		os.Remove(dbFile)
+	if err := os.Remove(dbFile); err != nil && !errors.Is(err, os.ErrNotExist) {
+		panic(err)
 	}
 
 	rdr := reader.New()
@@ -47,10 +49,13 @@ func Example() {
 		panic(err)
 	}
 
-	retrieved, err := backend.Retrieve(sbom.Metadata.Id, nil)
+	retrieved, err := backend.Retrieve(sbom.GetMetadata().GetId(), nil)
 	if err != nil {
 		panic(err)
 	}
+
+	// Remove source data URI to allow comparison.
+	retrieved.GetMetadata().GetSourceData().Uri = nil
 
 	output, err := json.MarshalIndent(retrieved, "", "  ")
 	if err != nil {
@@ -58,17 +63,31 @@ func Example() {
 	}
 
 	fmt.Println(string(output))
-
 	//nolint:lll
 	// Output:
 	// {
 	//   "metadata": {
 	//     "id": "urn:uuid:3e671687-395b-41f5-a30f-a58921a69b79",
 	//     "version": "1",
-	//     "date": {}
+	//     "date": {},
+	//     "source_data": {
+	//       "format": "application/vnd.cyclonedx+json;version=1.5",
+	//       "hashes": {
+	//         "3": "71a3948e45c0bcd83a617ed94674079778d10a0578932e6e536533339b1bbea5"
+	//       },
+	//       "size": 5263
+	//     }
 	//   },
 	//   "node_list": {
 	//     "nodes": [
+	//       {
+	//         "id": "protobom-auto--000000001",
+	//         "name": "Acme Application",
+	//         "version": "9.1.1",
+	//         "primary_purpose": [
+	//           1
+	//         ]
+	//       },
 	//       {
 	//         "id": "pkg:npm/acme/component@1.0.0",
 	//         "name": "tomcat-catalina",
@@ -88,14 +107,6 @@ func Example() {
 	//         },
 	//         "primary_purpose": [
 	//           16
-	//         ]
-	//       },
-	//       {
-	//         "id": "protobom-auto--000000001",
-	//         "name": "Acme Application",
-	//         "version": "9.1.1",
-	//         "primary_purpose": [
-	//           1
 	//         ]
 	//       },
 	//       {

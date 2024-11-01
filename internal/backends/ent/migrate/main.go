@@ -12,9 +12,12 @@ package main
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"strings"
 
@@ -29,9 +32,19 @@ import (
 const dsn = "sqlite://:memory:?_pragma=foreign_keys(1)"
 
 func main() {
-	if len(os.Args) != 2 {
-		log.Fatalln("migration name is required. Use: 'go run -mod=mod internal/backends/ent/migrate/main.go <name>'")
+	// Get name of current git branch.
+	output, err := exec.Command("git", "branch", "--show-current").Output()
+	if err != nil {
+		log.Fatal("failed getting current Git branch")
 	}
+
+	migrationName := string(output)
+
+	// Strip leading non-alpha characters, any set of characters ending with a slash, and trailing newline.
+	migrationName = regexp.MustCompile(`^([^A-Za-z]|[^\/]+?\/)+|\n$`).ReplaceAllString(migrationName, "")
+
+	// Replace non-alphanumeric characters with underscore.
+	migrationName = regexp.MustCompile(`[^\w]`).ReplaceAllString(migrationName, "_")
 
 	// Register the SQLite driver as "sqlite3".
 	if !slices.Contains(sql.Drivers(), "sqlite3") {
@@ -52,12 +65,16 @@ func main() {
 
 	// Create a local migration directory able to understand Atlas migration file format for replay.
 	if err := os.MkdirAll(migrationDir, 0755); err != nil {
-		log.Fatalf("creating migration directory: %v", err)
+		log.Fatalf("failed creating migration directory: %v", err)
 	}
 
 	localDir, err := atlas.NewLocalDir(migrationDir)
 	if err != nil {
 		log.Fatalf("failed creating atlas migration directory: %v", err)
+	}
+
+	if err := removeMigrationFiles(migrationName, localDir); err != nil {
+		log.Fatal(err)
 	}
 
 	// Migrate diff options.
@@ -70,8 +87,32 @@ func main() {
 	}
 
 	// Generate migrations using Atlas support for MySQL (note the Ent dialect option passed above).
-	err = migrate.NamedDiff(ctx, dsn, os.Args[1], opts...)
+	err = migrate.NamedDiff(ctx, dsn, string(migrationName), opts...)
 	if err != nil {
 		log.Fatalf("failed generating migration file: %v", err)
 	}
+}
+
+func removeMigrationFiles(migrationName string, localDir *atlas.LocalDir) error {
+	matches, err := filepath.Glob(filepath.Join(localDir.Path(), fmt.Sprintf("*_%s.sql", migrationName)))
+	if err != nil {
+		return fmt.Errorf("malformed glob pattern: %w", err)
+	}
+
+	for _, match := range matches {
+		if err := os.Remove(match); err != nil {
+			return fmt.Errorf("removing outdated migration file: %w", err)
+		}
+	}
+
+	hashFile, err := localDir.Checksum()
+	if err != nil {
+		return fmt.Errorf("hashing atlas migration directory: %w", err)
+	}
+
+	if err := atlas.WriteSumFile(localDir, hashFile); err != nil {
+		return fmt.Errorf("writing atlas migration checksum file: %w", err)
+	}
+
+	return nil
 }

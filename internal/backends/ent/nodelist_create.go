@@ -4,6 +4,7 @@
 // SPDX-FileType: SOURCE
 // SPDX-License-Identifier: Apache-2.0
 // --------------------------------------------------------------
+
 package ent
 
 import (
@@ -11,9 +12,12 @@ import (
 	"errors"
 	"fmt"
 
+	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/google/uuid"
+	"github.com/protobom/protobom/pkg/sbom"
 	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/node"
 	"github.com/protobom/storage/internal/backends/ent/nodelist"
@@ -27,15 +31,21 @@ type NodeListCreate struct {
 	conflict []sql.ConflictOption
 }
 
-// SetDocumentID sets the "document_id" field.
-func (nlc *NodeListCreate) SetDocumentID(s string) *NodeListCreate {
-	nlc.mutation.SetDocumentID(s)
+// SetProtoMessage sets the "proto_message" field.
+func (nlc *NodeListCreate) SetProtoMessage(sl *sbom.NodeList) *NodeListCreate {
+	nlc.mutation.SetProtoMessage(sl)
 	return nlc
 }
 
 // SetRootElements sets the "root_elements" field.
 func (nlc *NodeListCreate) SetRootElements(s []string) *NodeListCreate {
 	nlc.mutation.SetRootElements(s)
+	return nlc
+}
+
+// SetID sets the "id" field.
+func (nlc *NodeListCreate) SetID(u uuid.UUID) *NodeListCreate {
+	nlc.mutation.SetID(u)
 	return nlc
 }
 
@@ -52,6 +62,12 @@ func (nlc *NodeListCreate) AddNodes(n ...*Node) *NodeListCreate {
 		ids[i] = n[i].ID
 	}
 	return nlc.AddNodeIDs(ids...)
+}
+
+// SetDocumentID sets the "document" edge to the Document entity by ID.
+func (nlc *NodeListCreate) SetDocumentID(id uuid.UUID) *NodeListCreate {
+	nlc.mutation.SetDocumentID(id)
+	return nlc
 }
 
 // SetDocument sets the "document" edge to the Document entity.
@@ -93,8 +109,8 @@ func (nlc *NodeListCreate) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (nlc *NodeListCreate) check() error {
-	if _, ok := nlc.mutation.DocumentID(); !ok {
-		return &ValidationError{Name: "document_id", err: errors.New(`ent: missing required field "NodeList.document_id"`)}
+	if _, ok := nlc.mutation.ProtoMessage(); !ok {
+		return &ValidationError{Name: "proto_message", err: errors.New(`ent: missing required field "NodeList.proto_message"`)}
 	}
 	if _, ok := nlc.mutation.RootElements(); !ok {
 		return &ValidationError{Name: "root_elements", err: errors.New(`ent: missing required field "NodeList.root_elements"`)}
@@ -116,8 +132,13 @@ func (nlc *NodeListCreate) sqlSave(ctx context.Context) (*NodeList, error) {
 		}
 		return nil, err
 	}
-	id := _spec.ID.Value.(int64)
-	_node.ID = int(id)
+	if _spec.ID.Value != nil {
+		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
+			_node.ID = *id
+		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
+			return nil, err
+		}
+	}
 	nlc.mutation.id = &_node.ID
 	nlc.mutation.done = true
 	return _node, nil
@@ -126,9 +147,17 @@ func (nlc *NodeListCreate) sqlSave(ctx context.Context) (*NodeList, error) {
 func (nlc *NodeListCreate) createSpec() (*NodeList, *sqlgraph.CreateSpec) {
 	var (
 		_node = &NodeList{config: nlc.config}
-		_spec = sqlgraph.NewCreateSpec(nodelist.Table, sqlgraph.NewFieldSpec(nodelist.FieldID, field.TypeInt))
+		_spec = sqlgraph.NewCreateSpec(nodelist.Table, sqlgraph.NewFieldSpec(nodelist.FieldID, field.TypeUUID))
 	)
 	_spec.OnConflict = nlc.conflict
+	if id, ok := nlc.mutation.ID(); ok {
+		_node.ID = id
+		_spec.ID.Value = &id
+	}
+	if value, ok := nlc.mutation.ProtoMessage(); ok {
+		_spec.SetField(nodelist.FieldProtoMessage, field.TypeBytes, value)
+		_node.ProtoMessage = value
+	}
 	if value, ok := nlc.mutation.RootElements(); ok {
 		_spec.SetField(nodelist.FieldRootElements, field.TypeJSON, value)
 		_node.RootElements = value
@@ -152,18 +181,17 @@ func (nlc *NodeListCreate) createSpec() (*NodeList, *sqlgraph.CreateSpec) {
 	if nodes := nlc.mutation.DocumentIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2O,
-			Inverse: true,
+			Inverse: false,
 			Table:   nodelist.DocumentTable,
 			Columns: []string{nodelist.DocumentColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(document.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(document.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.DocumentID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
@@ -173,7 +201,7 @@ func (nlc *NodeListCreate) createSpec() (*NodeList, *sqlgraph.CreateSpec) {
 // of the `INSERT` statement. For example:
 //
 //	client.NodeList.Create().
-//		SetDocumentID(v).
+//		SetProtoMessage(v).
 //		OnConflict(
 //			// Update the row with the new values
 //			// the was proposed for insertion.
@@ -182,7 +210,7 @@ func (nlc *NodeListCreate) createSpec() (*NodeList, *sqlgraph.CreateSpec) {
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.NodeListUpsert) {
-//			SetDocumentID(v+v).
+//			SetProtoMessage(v+v).
 //		}).
 //		Exec(ctx)
 func (nlc *NodeListCreate) OnConflict(opts ...sql.ConflictOption) *NodeListUpsertOne {
@@ -230,19 +258,25 @@ func (u *NodeListUpsert) UpdateRootElements() *NodeListUpsert {
 	return u
 }
 
-// UpdateNewValues updates the mutable fields using the new values that were set on create.
+// UpdateNewValues updates the mutable fields using the new values that were set on create except the ID field.
 // Using this option is equivalent to using:
 //
 //	client.NodeList.Create().
 //		OnConflict(
 //			sql.ResolveWithNewValues(),
+//			sql.ResolveWith(func(u *sql.UpdateSet) {
+//				u.SetIgnore(nodelist.FieldID)
+//			}),
 //		).
 //		Exec(ctx)
 func (u *NodeListUpsertOne) UpdateNewValues() *NodeListUpsertOne {
 	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
 	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
-		if _, exists := u.create.mutation.DocumentID(); exists {
-			s.SetIgnore(nodelist.FieldDocumentID)
+		if _, exists := u.create.mutation.ID(); exists {
+			s.SetIgnore(nodelist.FieldID)
+		}
+		if _, exists := u.create.mutation.ProtoMessage(); exists {
+			s.SetIgnore(nodelist.FieldProtoMessage)
 		}
 	}))
 	return u
@@ -305,7 +339,12 @@ func (u *NodeListUpsertOne) ExecX(ctx context.Context) {
 }
 
 // Exec executes the UPSERT query and returns the inserted/updated ID.
-func (u *NodeListUpsertOne) ID(ctx context.Context) (id int, err error) {
+func (u *NodeListUpsertOne) ID(ctx context.Context) (id uuid.UUID, err error) {
+	if u.create.driver.Dialect() == dialect.MySQL {
+		// In case of "ON CONFLICT", there is no way to get back non-numeric ID
+		// fields from the database since MySQL does not support the RETURNING clause.
+		return id, errors.New("ent: NodeListUpsertOne.ID is not supported by MySQL driver. Use NodeListUpsertOne.Exec instead")
+	}
 	node, err := u.create.Save(ctx)
 	if err != nil {
 		return id, err
@@ -314,7 +353,7 @@ func (u *NodeListUpsertOne) ID(ctx context.Context) (id int, err error) {
 }
 
 // IDX is like ID, but panics if an error occurs.
-func (u *NodeListUpsertOne) IDX(ctx context.Context) int {
+func (u *NodeListUpsertOne) IDX(ctx context.Context) uuid.UUID {
 	id, err := u.ID(ctx)
 	if err != nil {
 		panic(err)
@@ -368,10 +407,6 @@ func (nlcb *NodeListCreateBulk) Save(ctx context.Context) ([]*NodeList, error) {
 					return nil, err
 				}
 				mutation.id = &nodes[i].ID
-				if specs[i].ID.Value != nil {
-					id := specs[i].ID.Value.(int64)
-					nodes[i].ID = int(id)
-				}
 				mutation.done = true
 				return nodes[i], nil
 			})
@@ -423,7 +458,7 @@ func (nlcb *NodeListCreateBulk) ExecX(ctx context.Context) {
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.NodeListUpsert) {
-//			SetDocumentID(v+v).
+//			SetProtoMessage(v+v).
 //		}).
 //		Exec(ctx)
 func (nlcb *NodeListCreateBulk) OnConflict(opts ...sql.ConflictOption) *NodeListUpsertBulk {
@@ -458,14 +493,20 @@ type NodeListUpsertBulk struct {
 //	client.NodeList.Create().
 //		OnConflict(
 //			sql.ResolveWithNewValues(),
+//			sql.ResolveWith(func(u *sql.UpdateSet) {
+//				u.SetIgnore(nodelist.FieldID)
+//			}),
 //		).
 //		Exec(ctx)
 func (u *NodeListUpsertBulk) UpdateNewValues() *NodeListUpsertBulk {
 	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
 	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
 		for _, b := range u.create.builders {
-			if _, exists := b.mutation.DocumentID(); exists {
-				s.SetIgnore(nodelist.FieldDocumentID)
+			if _, exists := b.mutation.ID(); exists {
+				s.SetIgnore(nodelist.FieldID)
+			}
+			if _, exists := b.mutation.ProtoMessage(); exists {
+				s.SetIgnore(nodelist.FieldProtoMessage)
 			}
 		}
 	}))

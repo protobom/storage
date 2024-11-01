@@ -4,6 +4,7 @@
 // SPDX-FileType: SOURCE
 // SPDX-License-Identifier: Apache-2.0
 // --------------------------------------------------------------
+
 package ent
 
 import (
@@ -12,6 +13,8 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/google/uuid"
+	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/edgetype"
 	"github.com/protobom/storage/internal/backends/ent/node"
 )
@@ -21,6 +24,8 @@ type EdgeType struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID int `json:"id,omitempty"`
+	// DocumentID holds the value of the "document_id" field.
+	DocumentID uuid.UUID `json:"document_id,omitempty"`
 	// Type holds the value of the "type" field.
 	Type edgetype.Type `json:"type,omitempty"`
 	// NodeID holds the value of the "node_id" field.
@@ -35,13 +40,26 @@ type EdgeType struct {
 
 // EdgeTypeEdges holds the relations/edges for other nodes in the graph.
 type EdgeTypeEdges struct {
+	// Document holds the value of the document edge.
+	Document *Document `json:"document,omitempty"`
 	// From holds the value of the from edge.
 	From *Node `json:"from,omitempty"`
 	// To holds the value of the to edge.
 	To *Node `json:"to,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [3]bool
+}
+
+// DocumentOrErr returns the Document value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e EdgeTypeEdges) DocumentOrErr() (*Document, error) {
+	if e.Document != nil {
+		return e.Document, nil
+	} else if e.loadedTypes[0] {
+		return nil, &NotFoundError{label: document.Label}
+	}
+	return nil, &NotLoadedError{edge: "document"}
 }
 
 // FromOrErr returns the From value or an error if the edge
@@ -49,7 +67,7 @@ type EdgeTypeEdges struct {
 func (e EdgeTypeEdges) FromOrErr() (*Node, error) {
 	if e.From != nil {
 		return e.From, nil
-	} else if e.loadedTypes[0] {
+	} else if e.loadedTypes[1] {
 		return nil, &NotFoundError{label: node.Label}
 	}
 	return nil, &NotLoadedError{edge: "from"}
@@ -60,7 +78,7 @@ func (e EdgeTypeEdges) FromOrErr() (*Node, error) {
 func (e EdgeTypeEdges) ToOrErr() (*Node, error) {
 	if e.To != nil {
 		return e.To, nil
-	} else if e.loadedTypes[1] {
+	} else if e.loadedTypes[2] {
 		return nil, &NotFoundError{label: node.Label}
 	}
 	return nil, &NotLoadedError{edge: "to"}
@@ -75,6 +93,8 @@ func (*EdgeType) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullInt64)
 		case edgetype.FieldType, edgetype.FieldNodeID, edgetype.FieldToNodeID:
 			values[i] = new(sql.NullString)
+		case edgetype.FieldDocumentID:
+			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -96,6 +116,12 @@ func (et *EdgeType) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", value)
 			}
 			et.ID = int(value.Int64)
+		case edgetype.FieldDocumentID:
+			if value, ok := values[i].(*uuid.UUID); !ok {
+				return fmt.Errorf("unexpected type %T for field document_id", values[i])
+			} else if value != nil {
+				et.DocumentID = *value
+			}
 		case edgetype.FieldType:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field type", values[i])
@@ -125,6 +151,11 @@ func (et *EdgeType) assignValues(columns []string, values []any) error {
 // This includes values selected through modifiers, order, etc.
 func (et *EdgeType) Value(name string) (ent.Value, error) {
 	return et.selectValues.Get(name)
+}
+
+// QueryDocument queries the "document" edge of the EdgeType entity.
+func (et *EdgeType) QueryDocument() *DocumentQuery {
+	return NewEdgeTypeClient(et.config).QueryDocument(et)
 }
 
 // QueryFrom queries the "from" edge of the EdgeType entity.
@@ -160,6 +191,9 @@ func (et *EdgeType) String() string {
 	var builder strings.Builder
 	builder.WriteString("EdgeType(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", et.ID))
+	builder.WriteString("document_id=")
+	builder.WriteString(fmt.Sprintf("%v", et.DocumentID))
+	builder.WriteString(", ")
 	builder.WriteString("type=")
 	builder.WriteString(fmt.Sprintf("%v", et.Type))
 	builder.WriteString(", ")

@@ -12,6 +12,7 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"github.com/google/uuid"
 )
 
 const (
@@ -19,14 +20,25 @@ const (
 	Label = "purpose"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
+	// FieldDocumentID holds the string denoting the document_id field in the database.
+	FieldDocumentID = "document_id"
 	// FieldNodeID holds the string denoting the node_id field in the database.
 	FieldNodeID = "node_id"
 	// FieldPrimaryPurpose holds the string denoting the primary_purpose field in the database.
 	FieldPrimaryPurpose = "primary_purpose"
+	// EdgeDocument holds the string denoting the document edge name in mutations.
+	EdgeDocument = "document"
 	// EdgeNode holds the string denoting the node edge name in mutations.
 	EdgeNode = "node"
 	// Table holds the table name of the purpose in the database.
 	Table = "purposes"
+	// DocumentTable is the table that holds the document relation/edge.
+	DocumentTable = "purposes"
+	// DocumentInverseTable is the table name for the Document entity.
+	// It exists in this package in order to avoid circular dependency with the "document" package.
+	DocumentInverseTable = "documents"
+	// DocumentColumn is the table column denoting the document relation/edge.
+	DocumentColumn = "document_id"
 	// NodeTable is the table that holds the node relation/edge.
 	NodeTable = "purposes"
 	// NodeInverseTable is the table name for the Node entity.
@@ -39,6 +51,7 @@ const (
 // Columns holds all SQL columns for purpose fields.
 var Columns = []string{
 	FieldID,
+	FieldDocumentID,
 	FieldNodeID,
 	FieldPrimaryPurpose,
 }
@@ -52,6 +65,11 @@ func ValidColumn(column string) bool {
 	}
 	return false
 }
+
+var (
+	// DefaultDocumentID holds the default value on creation for the "document_id" field.
+	DefaultDocumentID func() uuid.UUID
+)
 
 // PrimaryPurpose defines the type for the "primary_purpose" enum field.
 type PrimaryPurpose string
@@ -111,6 +129,11 @@ func ByID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldID, opts...).ToFunc()
 }
 
+// ByDocumentID orders the results by the document_id field.
+func ByDocumentID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDocumentID, opts...).ToFunc()
+}
+
 // ByNodeID orders the results by the node_id field.
 func ByNodeID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldNodeID, opts...).ToFunc()
@@ -121,11 +144,25 @@ func ByPrimaryPurpose(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldPrimaryPurpose, opts...).ToFunc()
 }
 
+// ByDocumentField orders the results by document field.
+func ByDocumentField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newDocumentStep(), sql.OrderByField(field, opts...))
+	}
+}
+
 // ByNodeField orders the results by node field.
 func ByNodeField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
 		sqlgraph.OrderByNeighborTerms(s, newNodeStep(), sql.OrderByField(field, opts...))
 	}
+}
+func newDocumentStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(DocumentInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, false, DocumentTable, DocumentColumn),
+	)
 }
 func newNodeStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(

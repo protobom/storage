@@ -4,6 +4,7 @@
 // SPDX-FileType: SOURCE
 // SPDX-License-Identifier: Apache-2.0
 // --------------------------------------------------------------
+
 package ent
 
 import (
@@ -15,7 +16,6 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/protobom/storage/internal/backends/ent/annotation"
-	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/predicate"
 )
 
@@ -29,20 +29,6 @@ type AnnotationUpdate struct {
 // Where appends a list predicates to the AnnotationUpdate builder.
 func (au *AnnotationUpdate) Where(ps ...predicate.Annotation) *AnnotationUpdate {
 	au.mutation.Where(ps...)
-	return au
-}
-
-// SetDocumentID sets the "document_id" field.
-func (au *AnnotationUpdate) SetDocumentID(s string) *AnnotationUpdate {
-	au.mutation.SetDocumentID(s)
-	return au
-}
-
-// SetNillableDocumentID sets the "document_id" field if the given value is not nil.
-func (au *AnnotationUpdate) SetNillableDocumentID(s *string) *AnnotationUpdate {
-	if s != nil {
-		au.SetDocumentID(*s)
-	}
 	return au
 }
 
@@ -88,20 +74,9 @@ func (au *AnnotationUpdate) SetNillableIsUnique(b *bool) *AnnotationUpdate {
 	return au
 }
 
-// SetDocument sets the "document" edge to the Document entity.
-func (au *AnnotationUpdate) SetDocument(d *Document) *AnnotationUpdate {
-	return au.SetDocumentID(d.ID)
-}
-
 // Mutation returns the AnnotationMutation object of the builder.
 func (au *AnnotationUpdate) Mutation() *AnnotationMutation {
 	return au.mutation
-}
-
-// ClearDocument clears the "document" edge to the Document entity.
-func (au *AnnotationUpdate) ClearDocument() *AnnotationUpdate {
-	au.mutation.ClearDocument()
-	return au
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -131,18 +106,7 @@ func (au *AnnotationUpdate) ExecX(ctx context.Context) {
 	}
 }
 
-// check runs all checks and user-defined validators on the builder.
-func (au *AnnotationUpdate) check() error {
-	if au.mutation.DocumentCleared() && len(au.mutation.DocumentIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "Annotation.document"`)
-	}
-	return nil
-}
-
 func (au *AnnotationUpdate) sqlSave(ctx context.Context) (n int, err error) {
-	if err := au.check(); err != nil {
-		return n, err
-	}
 	_spec := sqlgraph.NewUpdateSpec(annotation.Table, annotation.Columns, sqlgraph.NewFieldSpec(annotation.FieldID, field.TypeInt))
 	if ps := au.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
@@ -159,35 +123,6 @@ func (au *AnnotationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if value, ok := au.mutation.IsUnique(); ok {
 		_spec.SetField(annotation.FieldIsUnique, field.TypeBool, value)
-	}
-	if au.mutation.DocumentCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   annotation.DocumentTable,
-			Columns: []string{annotation.DocumentColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(document.FieldID, field.TypeString),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := au.mutation.DocumentIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   annotation.DocumentTable,
-			Columns: []string{annotation.DocumentColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(document.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if n, err = sqlgraph.UpdateNodes(ctx, au.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -207,20 +142,6 @@ type AnnotationUpdateOne struct {
 	fields   []string
 	hooks    []Hook
 	mutation *AnnotationMutation
-}
-
-// SetDocumentID sets the "document_id" field.
-func (auo *AnnotationUpdateOne) SetDocumentID(s string) *AnnotationUpdateOne {
-	auo.mutation.SetDocumentID(s)
-	return auo
-}
-
-// SetNillableDocumentID sets the "document_id" field if the given value is not nil.
-func (auo *AnnotationUpdateOne) SetNillableDocumentID(s *string) *AnnotationUpdateOne {
-	if s != nil {
-		auo.SetDocumentID(*s)
-	}
-	return auo
 }
 
 // SetName sets the "name" field.
@@ -265,20 +186,9 @@ func (auo *AnnotationUpdateOne) SetNillableIsUnique(b *bool) *AnnotationUpdateOn
 	return auo
 }
 
-// SetDocument sets the "document" edge to the Document entity.
-func (auo *AnnotationUpdateOne) SetDocument(d *Document) *AnnotationUpdateOne {
-	return auo.SetDocumentID(d.ID)
-}
-
 // Mutation returns the AnnotationMutation object of the builder.
 func (auo *AnnotationUpdateOne) Mutation() *AnnotationMutation {
 	return auo.mutation
-}
-
-// ClearDocument clears the "document" edge to the Document entity.
-func (auo *AnnotationUpdateOne) ClearDocument() *AnnotationUpdateOne {
-	auo.mutation.ClearDocument()
-	return auo
 }
 
 // Where appends a list predicates to the AnnotationUpdate builder.
@@ -321,18 +231,7 @@ func (auo *AnnotationUpdateOne) ExecX(ctx context.Context) {
 	}
 }
 
-// check runs all checks and user-defined validators on the builder.
-func (auo *AnnotationUpdateOne) check() error {
-	if auo.mutation.DocumentCleared() && len(auo.mutation.DocumentIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "Annotation.document"`)
-	}
-	return nil
-}
-
 func (auo *AnnotationUpdateOne) sqlSave(ctx context.Context) (_node *Annotation, err error) {
-	if err := auo.check(); err != nil {
-		return _node, err
-	}
 	_spec := sqlgraph.NewUpdateSpec(annotation.Table, annotation.Columns, sqlgraph.NewFieldSpec(annotation.FieldID, field.TypeInt))
 	id, ok := auo.mutation.ID()
 	if !ok {
@@ -366,35 +265,6 @@ func (auo *AnnotationUpdateOne) sqlSave(ctx context.Context) (_node *Annotation,
 	}
 	if value, ok := auo.mutation.IsUnique(); ok {
 		_spec.SetField(annotation.FieldIsUnique, field.TypeBool, value)
-	}
-	if auo.mutation.DocumentCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   annotation.DocumentTable,
-			Columns: []string{annotation.DocumentColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(document.FieldID, field.TypeString),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := auo.mutation.DocumentIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   annotation.DocumentTable,
-			Columns: []string{annotation.DocumentColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(document.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_node = &Annotation{config: auo.config}
 	_spec.Assign = _node.assignValues

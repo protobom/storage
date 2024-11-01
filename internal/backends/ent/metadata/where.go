@@ -12,6 +12,7 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"github.com/protobom/protobom/pkg/sbom"
 	"github.com/protobom/storage/internal/backends/ent/predicate"
 )
 
@@ -70,6 +71,11 @@ func IDContainsFold(id string) predicate.Metadata {
 	return predicate.Metadata(sql.FieldContainsFold(FieldID, id))
 }
 
+// ProtoMessage applies equality check predicate on the "proto_message" field. It's identical to ProtoMessageEQ.
+func ProtoMessage(v *sbom.Metadata) predicate.Metadata {
+	return predicate.Metadata(sql.FieldEQ(FieldProtoMessage, v))
+}
+
 // Version applies equality check predicate on the "version" field. It's identical to VersionEQ.
 func Version(v string) predicate.Metadata {
 	return predicate.Metadata(sql.FieldEQ(FieldVersion, v))
@@ -88,6 +94,46 @@ func Date(v time.Time) predicate.Metadata {
 // Comment applies equality check predicate on the "comment" field. It's identical to CommentEQ.
 func Comment(v string) predicate.Metadata {
 	return predicate.Metadata(sql.FieldEQ(FieldComment, v))
+}
+
+// ProtoMessageEQ applies the EQ predicate on the "proto_message" field.
+func ProtoMessageEQ(v *sbom.Metadata) predicate.Metadata {
+	return predicate.Metadata(sql.FieldEQ(FieldProtoMessage, v))
+}
+
+// ProtoMessageNEQ applies the NEQ predicate on the "proto_message" field.
+func ProtoMessageNEQ(v *sbom.Metadata) predicate.Metadata {
+	return predicate.Metadata(sql.FieldNEQ(FieldProtoMessage, v))
+}
+
+// ProtoMessageIn applies the In predicate on the "proto_message" field.
+func ProtoMessageIn(vs ...*sbom.Metadata) predicate.Metadata {
+	return predicate.Metadata(sql.FieldIn(FieldProtoMessage, vs...))
+}
+
+// ProtoMessageNotIn applies the NotIn predicate on the "proto_message" field.
+func ProtoMessageNotIn(vs ...*sbom.Metadata) predicate.Metadata {
+	return predicate.Metadata(sql.FieldNotIn(FieldProtoMessage, vs...))
+}
+
+// ProtoMessageGT applies the GT predicate on the "proto_message" field.
+func ProtoMessageGT(v *sbom.Metadata) predicate.Metadata {
+	return predicate.Metadata(sql.FieldGT(FieldProtoMessage, v))
+}
+
+// ProtoMessageGTE applies the GTE predicate on the "proto_message" field.
+func ProtoMessageGTE(v *sbom.Metadata) predicate.Metadata {
+	return predicate.Metadata(sql.FieldGTE(FieldProtoMessage, v))
+}
+
+// ProtoMessageLT applies the LT predicate on the "proto_message" field.
+func ProtoMessageLT(v *sbom.Metadata) predicate.Metadata {
+	return predicate.Metadata(sql.FieldLT(FieldProtoMessage, v))
+}
+
+// ProtoMessageLTE applies the LTE predicate on the "proto_message" field.
+func ProtoMessageLTE(v *sbom.Metadata) predicate.Metadata {
+	return predicate.Metadata(sql.FieldLTE(FieldProtoMessage, v))
 }
 
 // VersionEQ applies the EQ predicate on the "version" field.
@@ -394,12 +440,35 @@ func HasDocumentTypesWith(preds ...predicate.DocumentType) predicate.Metadata {
 	})
 }
 
+// HasSourceData applies the HasEdge predicate on the "source_data" edge.
+func HasSourceData() predicate.Metadata {
+	return predicate.Metadata(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, SourceDataTable, SourceDataColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasSourceDataWith applies the HasEdge predicate on the "source_data" edge with a given conditions (other predicates).
+func HasSourceDataWith(preds ...predicate.SourceData) predicate.Metadata {
+	return predicate.Metadata(func(s *sql.Selector) {
+		step := newSourceDataStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // HasDocument applies the HasEdge predicate on the "document" edge.
 func HasDocument() predicate.Metadata {
 	return predicate.Metadata(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, true, DocumentTable, DocumentColumn),
+			sqlgraph.Edge(sqlgraph.O2O, false, DocumentTable, DocumentColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})

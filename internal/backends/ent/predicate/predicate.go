@@ -26,12 +26,6 @@ type EdgeType func(*sql.Selector)
 // ExternalReference is the predicate function for externalreference builders.
 type ExternalReference func(*sql.Selector)
 
-// HashesEntry is the predicate function for hashesentry builders.
-type HashesEntry func(*sql.Selector)
-
-// IdentifiersEntry is the predicate function for identifiersentry builders.
-type IdentifiersEntry func(*sql.Selector)
-
 // Metadata is the predicate function for metadata builders.
 type Metadata func(*sql.Selector)
 
@@ -44,8 +38,14 @@ type NodeList func(*sql.Selector)
 // Person is the predicate function for person builders.
 type Person func(*sql.Selector)
 
+// Property is the predicate function for property builders.
+type Property func(*sql.Selector)
+
 // Purpose is the predicate function for purpose builders.
 type Purpose func(*sql.Selector)
+
+// SourceData is the predicate function for sourcedata builders.
+type SourceData func(*sql.Selector)
 
 // Tool is the predicate function for tool builders.
 type Tool func(*sql.Selector)

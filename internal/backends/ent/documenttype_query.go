@@ -4,6 +4,7 @@
 // SPDX-FileType: SOURCE
 // SPDX-License-Identifier: Apache-2.0
 // --------------------------------------------------------------
+
 package ent
 
 import (
@@ -15,6 +16,8 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/google/uuid"
+	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/documenttype"
 	"github.com/protobom/storage/internal/backends/ent/metadata"
 	"github.com/protobom/storage/internal/backends/ent/predicate"
@@ -27,6 +30,7 @@ type DocumentTypeQuery struct {
 	order        []documenttype.OrderOption
 	inters       []Interceptor
 	predicates   []predicate.DocumentType
+	withDocument *DocumentQuery
 	withMetadata *MetadataQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
@@ -62,6 +66,28 @@ func (dtq *DocumentTypeQuery) Unique(unique bool) *DocumentTypeQuery {
 func (dtq *DocumentTypeQuery) Order(o ...documenttype.OrderOption) *DocumentTypeQuery {
 	dtq.order = append(dtq.order, o...)
 	return dtq
+}
+
+// QueryDocument chains the current query on the "document" edge.
+func (dtq *DocumentTypeQuery) QueryDocument() *DocumentQuery {
+	query := (&DocumentClient{config: dtq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := dtq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := dtq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(documenttype.Table, documenttype.FieldID, selector),
+			sqlgraph.To(document.Table, document.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, documenttype.DocumentTable, documenttype.DocumentColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(dtq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
 }
 
 // QueryMetadata chains the current query on the "metadata" edge.
@@ -110,8 +136,8 @@ func (dtq *DocumentTypeQuery) FirstX(ctx context.Context) *DocumentType {
 
 // FirstID returns the first DocumentType ID from the query.
 // Returns a *NotFoundError when no DocumentType ID was found.
-func (dtq *DocumentTypeQuery) FirstID(ctx context.Context) (id int, err error) {
-	var ids []int
+func (dtq *DocumentTypeQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
+	var ids []uuid.UUID
 	if ids, err = dtq.Limit(1).IDs(setContextOp(ctx, dtq.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
@@ -123,7 +149,7 @@ func (dtq *DocumentTypeQuery) FirstID(ctx context.Context) (id int, err error) {
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (dtq *DocumentTypeQuery) FirstIDX(ctx context.Context) int {
+func (dtq *DocumentTypeQuery) FirstIDX(ctx context.Context) uuid.UUID {
 	id, err := dtq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -161,8 +187,8 @@ func (dtq *DocumentTypeQuery) OnlyX(ctx context.Context) *DocumentType {
 // OnlyID is like Only, but returns the only DocumentType ID in the query.
 // Returns a *NotSingularError when more than one DocumentType ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (dtq *DocumentTypeQuery) OnlyID(ctx context.Context) (id int, err error) {
-	var ids []int
+func (dtq *DocumentTypeQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
+	var ids []uuid.UUID
 	if ids, err = dtq.Limit(2).IDs(setContextOp(ctx, dtq.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
@@ -178,7 +204,7 @@ func (dtq *DocumentTypeQuery) OnlyID(ctx context.Context) (id int, err error) {
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (dtq *DocumentTypeQuery) OnlyIDX(ctx context.Context) int {
+func (dtq *DocumentTypeQuery) OnlyIDX(ctx context.Context) uuid.UUID {
 	id, err := dtq.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -206,7 +232,7 @@ func (dtq *DocumentTypeQuery) AllX(ctx context.Context) []*DocumentType {
 }
 
 // IDs executes the query and returns a list of DocumentType IDs.
-func (dtq *DocumentTypeQuery) IDs(ctx context.Context) (ids []int, err error) {
+func (dtq *DocumentTypeQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
 	if dtq.ctx.Unique == nil && dtq.path != nil {
 		dtq.Unique(true)
 	}
@@ -218,7 +244,7 @@ func (dtq *DocumentTypeQuery) IDs(ctx context.Context) (ids []int, err error) {
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (dtq *DocumentTypeQuery) IDsX(ctx context.Context) []int {
+func (dtq *DocumentTypeQuery) IDsX(ctx context.Context) []uuid.UUID {
 	ids, err := dtq.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -278,11 +304,23 @@ func (dtq *DocumentTypeQuery) Clone() *DocumentTypeQuery {
 		order:        append([]documenttype.OrderOption{}, dtq.order...),
 		inters:       append([]Interceptor{}, dtq.inters...),
 		predicates:   append([]predicate.DocumentType{}, dtq.predicates...),
+		withDocument: dtq.withDocument.Clone(),
 		withMetadata: dtq.withMetadata.Clone(),
 		// clone intermediate query.
 		sql:  dtq.sql.Clone(),
 		path: dtq.path,
 	}
+}
+
+// WithDocument tells the query-builder to eager-load the nodes that are connected to
+// the "document" edge. The optional arguments are used to configure the query builder of the edge.
+func (dtq *DocumentTypeQuery) WithDocument(opts ...func(*DocumentQuery)) *DocumentTypeQuery {
+	query := (&DocumentClient{config: dtq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	dtq.withDocument = query
+	return dtq
 }
 
 // WithMetadata tells the query-builder to eager-load the nodes that are connected to
@@ -302,12 +340,12 @@ func (dtq *DocumentTypeQuery) WithMetadata(opts ...func(*MetadataQuery)) *Docume
 // Example:
 //
 //	var v []struct {
-//		MetadataID string `json:"metadata_id,omitempty"`
+//		DocumentID uuid.UUID `json:"document_id,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.DocumentType.Query().
-//		GroupBy(documenttype.FieldMetadataID).
+//		GroupBy(documenttype.FieldDocumentID).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (dtq *DocumentTypeQuery) GroupBy(field string, fields ...string) *DocumentTypeGroupBy {
@@ -325,11 +363,11 @@ func (dtq *DocumentTypeQuery) GroupBy(field string, fields ...string) *DocumentT
 // Example:
 //
 //	var v []struct {
-//		MetadataID string `json:"metadata_id,omitempty"`
+//		DocumentID uuid.UUID `json:"document_id,omitempty"`
 //	}
 //
 //	client.DocumentType.Query().
-//		Select(documenttype.FieldMetadataID).
+//		Select(documenttype.FieldDocumentID).
 //		Scan(ctx, &v)
 func (dtq *DocumentTypeQuery) Select(fields ...string) *DocumentTypeSelect {
 	dtq.ctx.Fields = append(dtq.ctx.Fields, fields...)
@@ -374,7 +412,8 @@ func (dtq *DocumentTypeQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([
 	var (
 		nodes       = []*DocumentType{}
 		_spec       = dtq.querySpec()
-		loadedTypes = [1]bool{
+		loadedTypes = [2]bool{
+			dtq.withDocument != nil,
 			dtq.withMetadata != nil,
 		}
 	)
@@ -396,6 +435,12 @@ func (dtq *DocumentTypeQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
+	if query := dtq.withDocument; query != nil {
+		if err := dtq.loadDocument(ctx, query, nodes, nil,
+			func(n *DocumentType, e *Document) { n.Edges.Document = e }); err != nil {
+			return nil, err
+		}
+	}
 	if query := dtq.withMetadata; query != nil {
 		if err := dtq.loadMetadata(ctx, query, nodes, nil,
 			func(n *DocumentType, e *Metadata) { n.Edges.Metadata = e }); err != nil {
@@ -405,6 +450,35 @@ func (dtq *DocumentTypeQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([
 	return nodes, nil
 }
 
+func (dtq *DocumentTypeQuery) loadDocument(ctx context.Context, query *DocumentQuery, nodes []*DocumentType, init func(*DocumentType), assign func(*DocumentType, *Document)) error {
+	ids := make([]uuid.UUID, 0, len(nodes))
+	nodeids := make(map[uuid.UUID][]*DocumentType)
+	for i := range nodes {
+		fk := nodes[i].DocumentID
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(document.IDIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "document_id" returned %v`, n.ID)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
+	}
+	return nil
+}
 func (dtq *DocumentTypeQuery) loadMetadata(ctx context.Context, query *MetadataQuery, nodes []*DocumentType, init func(*DocumentType), assign func(*DocumentType, *Metadata)) error {
 	ids := make([]string, 0, len(nodes))
 	nodeids := make(map[string][]*DocumentType)
@@ -445,7 +519,7 @@ func (dtq *DocumentTypeQuery) sqlCount(ctx context.Context) (int, error) {
 }
 
 func (dtq *DocumentTypeQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := sqlgraph.NewQuerySpec(documenttype.Table, documenttype.Columns, sqlgraph.NewFieldSpec(documenttype.FieldID, field.TypeInt))
+	_spec := sqlgraph.NewQuerySpec(documenttype.Table, documenttype.Columns, sqlgraph.NewFieldSpec(documenttype.FieldID, field.TypeUUID))
 	_spec.From = dtq.sql
 	if unique := dtq.ctx.Unique; unique != nil {
 		_spec.Unique = *unique
@@ -459,6 +533,9 @@ func (dtq *DocumentTypeQuery) querySpec() *sqlgraph.QuerySpec {
 			if fields[i] != documenttype.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
+		}
+		if dtq.withDocument != nil {
+			_spec.Node.AddColumnOnce(documenttype.FieldDocumentID)
 		}
 		if dtq.withMetadata != nil {
 			_spec.Node.AddColumnOnce(documenttype.FieldMetadataID)

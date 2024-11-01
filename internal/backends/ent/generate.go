@@ -3,7 +3,9 @@
 // SPDX-FileType: SOURCE
 // SPDX-License-Identifier: Apache-2.0
 // --------------------------------------------------------------
+
 package ent
 
 //go:generate go run -mod=mod entc.go
-//go:generate go run -mod=mod migrate/main.go v0.1.5
+//go:generate go run -mod=mod migrate/main.go initial
+//go:generate go mod tidy

@@ -4,6 +4,7 @@
 // SPDX-FileType: SOURCE
 // SPDX-License-Identifier: Apache-2.0
 // --------------------------------------------------------------
+
 package ent
 
 import (
@@ -13,6 +14,7 @@ import (
 	"log"
 	"reflect"
 
+	"github.com/google/uuid"
 	"github.com/protobom/storage/internal/backends/ent/migrate"
 
 	"entgo.io/ent"
@@ -24,13 +26,13 @@ import (
 	"github.com/protobom/storage/internal/backends/ent/documenttype"
 	"github.com/protobom/storage/internal/backends/ent/edgetype"
 	"github.com/protobom/storage/internal/backends/ent/externalreference"
-	"github.com/protobom/storage/internal/backends/ent/hashesentry"
-	"github.com/protobom/storage/internal/backends/ent/identifiersentry"
 	"github.com/protobom/storage/internal/backends/ent/metadata"
 	"github.com/protobom/storage/internal/backends/ent/node"
 	"github.com/protobom/storage/internal/backends/ent/nodelist"
 	"github.com/protobom/storage/internal/backends/ent/person"
+	"github.com/protobom/storage/internal/backends/ent/property"
 	"github.com/protobom/storage/internal/backends/ent/purpose"
+	"github.com/protobom/storage/internal/backends/ent/sourcedata"
 	"github.com/protobom/storage/internal/backends/ent/tool"
 
 	stdsql "database/sql"
@@ -51,10 +53,6 @@ type Client struct {
 	EdgeType *EdgeTypeClient
 	// ExternalReference is the client for interacting with the ExternalReference builders.
 	ExternalReference *ExternalReferenceClient
-	// HashesEntry is the client for interacting with the HashesEntry builders.
-	HashesEntry *HashesEntryClient
-	// IdentifiersEntry is the client for interacting with the IdentifiersEntry builders.
-	IdentifiersEntry *IdentifiersEntryClient
 	// Metadata is the client for interacting with the Metadata builders.
 	Metadata *MetadataClient
 	// Node is the client for interacting with the Node builders.
@@ -63,8 +61,12 @@ type Client struct {
 	NodeList *NodeListClient
 	// Person is the client for interacting with the Person builders.
 	Person *PersonClient
+	// Property is the client for interacting with the Property builders.
+	Property *PropertyClient
 	// Purpose is the client for interacting with the Purpose builders.
 	Purpose *PurposeClient
+	// SourceData is the client for interacting with the SourceData builders.
+	SourceData *SourceDataClient
 	// Tool is the client for interacting with the Tool builders.
 	Tool *ToolClient
 }
@@ -83,13 +85,13 @@ func (c *Client) init() {
 	c.DocumentType = NewDocumentTypeClient(c.config)
 	c.EdgeType = NewEdgeTypeClient(c.config)
 	c.ExternalReference = NewExternalReferenceClient(c.config)
-	c.HashesEntry = NewHashesEntryClient(c.config)
-	c.IdentifiersEntry = NewIdentifiersEntryClient(c.config)
 	c.Metadata = NewMetadataClient(c.config)
 	c.Node = NewNodeClient(c.config)
 	c.NodeList = NewNodeListClient(c.config)
 	c.Person = NewPersonClient(c.config)
+	c.Property = NewPropertyClient(c.config)
 	c.Purpose = NewPurposeClient(c.config)
+	c.SourceData = NewSourceDataClient(c.config)
 	c.Tool = NewToolClient(c.config)
 }
 
@@ -188,13 +190,13 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		DocumentType:      NewDocumentTypeClient(cfg),
 		EdgeType:          NewEdgeTypeClient(cfg),
 		ExternalReference: NewExternalReferenceClient(cfg),
-		HashesEntry:       NewHashesEntryClient(cfg),
-		IdentifiersEntry:  NewIdentifiersEntryClient(cfg),
 		Metadata:          NewMetadataClient(cfg),
 		Node:              NewNodeClient(cfg),
 		NodeList:          NewNodeListClient(cfg),
 		Person:            NewPersonClient(cfg),
+		Property:          NewPropertyClient(cfg),
 		Purpose:           NewPurposeClient(cfg),
+		SourceData:        NewSourceDataClient(cfg),
 		Tool:              NewToolClient(cfg),
 	}, nil
 }
@@ -220,13 +222,13 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		DocumentType:      NewDocumentTypeClient(cfg),
 		EdgeType:          NewEdgeTypeClient(cfg),
 		ExternalReference: NewExternalReferenceClient(cfg),
-		HashesEntry:       NewHashesEntryClient(cfg),
-		IdentifiersEntry:  NewIdentifiersEntryClient(cfg),
 		Metadata:          NewMetadataClient(cfg),
 		Node:              NewNodeClient(cfg),
 		NodeList:          NewNodeListClient(cfg),
 		Person:            NewPersonClient(cfg),
+		Property:          NewPropertyClient(cfg),
 		Purpose:           NewPurposeClient(cfg),
+		SourceData:        NewSourceDataClient(cfg),
 		Tool:              NewToolClient(cfg),
 	}, nil
 }
@@ -258,8 +260,8 @@ func (c *Client) Close() error {
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
 		c.Annotation, c.Document, c.DocumentType, c.EdgeType, c.ExternalReference,
-		c.HashesEntry, c.IdentifiersEntry, c.Metadata, c.Node, c.NodeList, c.Person,
-		c.Purpose, c.Tool,
+		c.Metadata, c.Node, c.NodeList, c.Person, c.Property, c.Purpose, c.SourceData,
+		c.Tool,
 	} {
 		n.Use(hooks...)
 	}
@@ -270,8 +272,8 @@ func (c *Client) Use(hooks ...Hook) {
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
 		c.Annotation, c.Document, c.DocumentType, c.EdgeType, c.ExternalReference,
-		c.HashesEntry, c.IdentifiersEntry, c.Metadata, c.Node, c.NodeList, c.Person,
-		c.Purpose, c.Tool,
+		c.Metadata, c.Node, c.NodeList, c.Person, c.Property, c.Purpose, c.SourceData,
+		c.Tool,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -290,10 +292,6 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.EdgeType.mutate(ctx, m)
 	case *ExternalReferenceMutation:
 		return c.ExternalReference.mutate(ctx, m)
-	case *HashesEntryMutation:
-		return c.HashesEntry.mutate(ctx, m)
-	case *IdentifiersEntryMutation:
-		return c.IdentifiersEntry.mutate(ctx, m)
 	case *MetadataMutation:
 		return c.Metadata.mutate(ctx, m)
 	case *NodeMutation:
@@ -302,8 +300,12 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.NodeList.mutate(ctx, m)
 	case *PersonMutation:
 		return c.Person.mutate(ctx, m)
+	case *PropertyMutation:
+		return c.Property.mutate(ctx, m)
 	case *PurposeMutation:
 		return c.Purpose.mutate(ctx, m)
+	case *SourceDataMutation:
+		return c.SourceData.mutate(ctx, m)
 	case *ToolMutation:
 		return c.Tool.mutate(ctx, m)
 	default:
@@ -427,7 +429,7 @@ func (c *AnnotationClient) QueryDocument(a *Annotation) *DocumentQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(annotation.Table, annotation.FieldID, id),
 			sqlgraph.To(document.Table, document.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, annotation.DocumentTable, annotation.DocumentColumn),
+			sqlgraph.Edge(sqlgraph.M2O, false, annotation.DocumentTable, annotation.DocumentColumn),
 		)
 		fromV = sqlgraph.Neighbors(a.driver.Dialect(), step)
 		return fromV, nil
@@ -521,7 +523,7 @@ func (c *DocumentClient) UpdateOne(d *Document) *DocumentUpdateOne {
 }
 
 // UpdateOneID returns an update builder for the given id.
-func (c *DocumentClient) UpdateOneID(id string) *DocumentUpdateOne {
+func (c *DocumentClient) UpdateOneID(id uuid.UUID) *DocumentUpdateOne {
 	mutation := newDocumentMutation(c.config, OpUpdateOne, withDocumentID(id))
 	return &DocumentUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
@@ -538,7 +540,7 @@ func (c *DocumentClient) DeleteOne(d *Document) *DocumentDeleteOne {
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
-func (c *DocumentClient) DeleteOneID(id string) *DocumentDeleteOne {
+func (c *DocumentClient) DeleteOneID(id uuid.UUID) *DocumentDeleteOne {
 	builder := c.Delete().Where(document.ID(id))
 	builder.mutation.id = &id
 	builder.mutation.op = OpDeleteOne
@@ -555,17 +557,33 @@ func (c *DocumentClient) Query() *DocumentQuery {
 }
 
 // Get returns a Document entity by its id.
-func (c *DocumentClient) Get(ctx context.Context, id string) (*Document, error) {
+func (c *DocumentClient) Get(ctx context.Context, id uuid.UUID) (*Document, error) {
 	return c.Query().Where(document.ID(id)).Only(ctx)
 }
 
 // GetX is like Get, but panics if an error occurs.
-func (c *DocumentClient) GetX(ctx context.Context, id string) *Document {
+func (c *DocumentClient) GetX(ctx context.Context, id uuid.UUID) *Document {
 	obj, err := c.Get(ctx, id)
 	if err != nil {
 		panic(err)
 	}
 	return obj
+}
+
+// QueryAnnotations queries the annotations edge of a Document.
+func (c *DocumentClient) QueryAnnotations(d *Document) *AnnotationQuery {
+	query := (&AnnotationClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := d.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(document.Table, document.FieldID, id),
+			sqlgraph.To(annotation.Table, annotation.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, document.AnnotationsTable, document.AnnotationsColumn),
+		)
+		fromV = sqlgraph.Neighbors(d.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
 }
 
 // QueryMetadata queries the metadata edge of a Document.
@@ -576,7 +594,7 @@ func (c *DocumentClient) QueryMetadata(d *Document) *MetadataQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(document.Table, document.FieldID, id),
 			sqlgraph.To(metadata.Table, metadata.FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, false, document.MetadataTable, document.MetadataColumn),
+			sqlgraph.Edge(sqlgraph.O2O, true, document.MetadataTable, document.MetadataColumn),
 		)
 		fromV = sqlgraph.Neighbors(d.driver.Dialect(), step)
 		return fromV, nil
@@ -592,23 +610,7 @@ func (c *DocumentClient) QueryNodeList(d *Document) *NodeListQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(document.Table, document.FieldID, id),
 			sqlgraph.To(nodelist.Table, nodelist.FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, false, document.NodeListTable, document.NodeListColumn),
-		)
-		fromV = sqlgraph.Neighbors(d.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QueryAnnotations queries the annotations edge of a Document.
-func (c *DocumentClient) QueryAnnotations(d *Document) *AnnotationQuery {
-	query := (&AnnotationClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := d.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(document.Table, document.FieldID, id),
-			sqlgraph.To(annotation.Table, annotation.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, document.AnnotationsTable, document.AnnotationsColumn),
+			sqlgraph.Edge(sqlgraph.O2O, true, document.NodeListTable, document.NodeListColumn),
 		)
 		fromV = sqlgraph.Neighbors(d.driver.Dialect(), step)
 		return fromV, nil
@@ -702,7 +704,7 @@ func (c *DocumentTypeClient) UpdateOne(dt *DocumentType) *DocumentTypeUpdateOne 
 }
 
 // UpdateOneID returns an update builder for the given id.
-func (c *DocumentTypeClient) UpdateOneID(id int) *DocumentTypeUpdateOne {
+func (c *DocumentTypeClient) UpdateOneID(id uuid.UUID) *DocumentTypeUpdateOne {
 	mutation := newDocumentTypeMutation(c.config, OpUpdateOne, withDocumentTypeID(id))
 	return &DocumentTypeUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
@@ -719,7 +721,7 @@ func (c *DocumentTypeClient) DeleteOne(dt *DocumentType) *DocumentTypeDeleteOne 
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
-func (c *DocumentTypeClient) DeleteOneID(id int) *DocumentTypeDeleteOne {
+func (c *DocumentTypeClient) DeleteOneID(id uuid.UUID) *DocumentTypeDeleteOne {
 	builder := c.Delete().Where(documenttype.ID(id))
 	builder.mutation.id = &id
 	builder.mutation.op = OpDeleteOne
@@ -736,17 +738,33 @@ func (c *DocumentTypeClient) Query() *DocumentTypeQuery {
 }
 
 // Get returns a DocumentType entity by its id.
-func (c *DocumentTypeClient) Get(ctx context.Context, id int) (*DocumentType, error) {
+func (c *DocumentTypeClient) Get(ctx context.Context, id uuid.UUID) (*DocumentType, error) {
 	return c.Query().Where(documenttype.ID(id)).Only(ctx)
 }
 
 // GetX is like Get, but panics if an error occurs.
-func (c *DocumentTypeClient) GetX(ctx context.Context, id int) *DocumentType {
+func (c *DocumentTypeClient) GetX(ctx context.Context, id uuid.UUID) *DocumentType {
 	obj, err := c.Get(ctx, id)
 	if err != nil {
 		panic(err)
 	}
 	return obj
+}
+
+// QueryDocument queries the document edge of a DocumentType.
+func (c *DocumentTypeClient) QueryDocument(dt *DocumentType) *DocumentQuery {
+	query := (&DocumentClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := dt.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(documenttype.Table, documenttype.FieldID, id),
+			sqlgraph.To(document.Table, document.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, documenttype.DocumentTable, documenttype.DocumentColumn),
+		)
+		fromV = sqlgraph.Neighbors(dt.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
 }
 
 // QueryMetadata queries the metadata edge of a DocumentType.
@@ -898,6 +916,22 @@ func (c *EdgeTypeClient) GetX(ctx context.Context, id int) *EdgeType {
 	return obj
 }
 
+// QueryDocument queries the document edge of a EdgeType.
+func (c *EdgeTypeClient) QueryDocument(et *EdgeType) *DocumentQuery {
+	query := (&DocumentClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := et.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(edgetype.Table, edgetype.FieldID, id),
+			sqlgraph.To(document.Table, document.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, edgetype.DocumentTable, edgetype.DocumentColumn),
+		)
+		fromV = sqlgraph.Neighbors(et.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QueryFrom queries the from edge of a EdgeType.
 func (c *EdgeTypeClient) QueryFrom(et *EdgeType) *NodeQuery {
 	query := (&NodeClient{config: c.config}).Query()
@@ -1016,7 +1050,7 @@ func (c *ExternalReferenceClient) UpdateOne(er *ExternalReference) *ExternalRefe
 }
 
 // UpdateOneID returns an update builder for the given id.
-func (c *ExternalReferenceClient) UpdateOneID(id int) *ExternalReferenceUpdateOne {
+func (c *ExternalReferenceClient) UpdateOneID(id uuid.UUID) *ExternalReferenceUpdateOne {
 	mutation := newExternalReferenceMutation(c.config, OpUpdateOne, withExternalReferenceID(id))
 	return &ExternalReferenceUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
@@ -1033,7 +1067,7 @@ func (c *ExternalReferenceClient) DeleteOne(er *ExternalReference) *ExternalRefe
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
-func (c *ExternalReferenceClient) DeleteOneID(id int) *ExternalReferenceDeleteOne {
+func (c *ExternalReferenceClient) DeleteOneID(id uuid.UUID) *ExternalReferenceDeleteOne {
 	builder := c.Delete().Where(externalreference.ID(id))
 	builder.mutation.id = &id
 	builder.mutation.op = OpDeleteOne
@@ -1050,12 +1084,12 @@ func (c *ExternalReferenceClient) Query() *ExternalReferenceQuery {
 }
 
 // Get returns a ExternalReference entity by its id.
-func (c *ExternalReferenceClient) Get(ctx context.Context, id int) (*ExternalReference, error) {
+func (c *ExternalReferenceClient) Get(ctx context.Context, id uuid.UUID) (*ExternalReference, error) {
 	return c.Query().Where(externalreference.ID(id)).Only(ctx)
 }
 
 // GetX is like Get, but panics if an error occurs.
-func (c *ExternalReferenceClient) GetX(ctx context.Context, id int) *ExternalReference {
+func (c *ExternalReferenceClient) GetX(ctx context.Context, id uuid.UUID) *ExternalReference {
 	obj, err := c.Get(ctx, id)
 	if err != nil {
 		panic(err)
@@ -1063,15 +1097,15 @@ func (c *ExternalReferenceClient) GetX(ctx context.Context, id int) *ExternalRef
 	return obj
 }
 
-// QueryHashes queries the hashes edge of a ExternalReference.
-func (c *ExternalReferenceClient) QueryHashes(er *ExternalReference) *HashesEntryQuery {
-	query := (&HashesEntryClient{config: c.config}).Query()
+// QueryDocument queries the document edge of a ExternalReference.
+func (c *ExternalReferenceClient) QueryDocument(er *ExternalReference) *DocumentQuery {
+	query := (&DocumentClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := er.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(externalreference.Table, externalreference.FieldID, id),
-			sqlgraph.To(hashesentry.Table, hashesentry.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, externalreference.HashesTable, externalreference.HashesColumn),
+			sqlgraph.To(document.Table, document.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, externalreference.DocumentTable, externalreference.DocumentColumn),
 		)
 		fromV = sqlgraph.Neighbors(er.driver.Dialect(), step)
 		return fromV, nil
@@ -1117,320 +1151,6 @@ func (c *ExternalReferenceClient) mutate(ctx context.Context, m *ExternalReferen
 		return (&ExternalReferenceDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown ExternalReference mutation op: %q", m.Op())
-	}
-}
-
-// HashesEntryClient is a client for the HashesEntry schema.
-type HashesEntryClient struct {
-	config
-}
-
-// NewHashesEntryClient returns a client for the HashesEntry from the given config.
-func NewHashesEntryClient(c config) *HashesEntryClient {
-	return &HashesEntryClient{config: c}
-}
-
-// Use adds a list of mutation hooks to the hooks stack.
-// A call to `Use(f, g, h)` equals to `hashesentry.Hooks(f(g(h())))`.
-func (c *HashesEntryClient) Use(hooks ...Hook) {
-	c.hooks.HashesEntry = append(c.hooks.HashesEntry, hooks...)
-}
-
-// Intercept adds a list of query interceptors to the interceptors stack.
-// A call to `Intercept(f, g, h)` equals to `hashesentry.Intercept(f(g(h())))`.
-func (c *HashesEntryClient) Intercept(interceptors ...Interceptor) {
-	c.inters.HashesEntry = append(c.inters.HashesEntry, interceptors...)
-}
-
-// Create returns a builder for creating a HashesEntry entity.
-func (c *HashesEntryClient) Create() *HashesEntryCreate {
-	mutation := newHashesEntryMutation(c.config, OpCreate)
-	return &HashesEntryCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// CreateBulk returns a builder for creating a bulk of HashesEntry entities.
-func (c *HashesEntryClient) CreateBulk(builders ...*HashesEntryCreate) *HashesEntryCreateBulk {
-	return &HashesEntryCreateBulk{config: c.config, builders: builders}
-}
-
-// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
-// a builder and applies setFunc on it.
-func (c *HashesEntryClient) MapCreateBulk(slice any, setFunc func(*HashesEntryCreate, int)) *HashesEntryCreateBulk {
-	rv := reflect.ValueOf(slice)
-	if rv.Kind() != reflect.Slice {
-		return &HashesEntryCreateBulk{err: fmt.Errorf("calling to HashesEntryClient.MapCreateBulk with wrong type %T, need slice", slice)}
-	}
-	builders := make([]*HashesEntryCreate, rv.Len())
-	for i := 0; i < rv.Len(); i++ {
-		builders[i] = c.Create()
-		setFunc(builders[i], i)
-	}
-	return &HashesEntryCreateBulk{config: c.config, builders: builders}
-}
-
-// Update returns an update builder for HashesEntry.
-func (c *HashesEntryClient) Update() *HashesEntryUpdate {
-	mutation := newHashesEntryMutation(c.config, OpUpdate)
-	return &HashesEntryUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOne returns an update builder for the given entity.
-func (c *HashesEntryClient) UpdateOne(he *HashesEntry) *HashesEntryUpdateOne {
-	mutation := newHashesEntryMutation(c.config, OpUpdateOne, withHashesEntry(he))
-	return &HashesEntryUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOneID returns an update builder for the given id.
-func (c *HashesEntryClient) UpdateOneID(id int) *HashesEntryUpdateOne {
-	mutation := newHashesEntryMutation(c.config, OpUpdateOne, withHashesEntryID(id))
-	return &HashesEntryUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// Delete returns a delete builder for HashesEntry.
-func (c *HashesEntryClient) Delete() *HashesEntryDelete {
-	mutation := newHashesEntryMutation(c.config, OpDelete)
-	return &HashesEntryDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// DeleteOne returns a builder for deleting the given entity.
-func (c *HashesEntryClient) DeleteOne(he *HashesEntry) *HashesEntryDeleteOne {
-	return c.DeleteOneID(he.ID)
-}
-
-// DeleteOneID returns a builder for deleting the given entity by its id.
-func (c *HashesEntryClient) DeleteOneID(id int) *HashesEntryDeleteOne {
-	builder := c.Delete().Where(hashesentry.ID(id))
-	builder.mutation.id = &id
-	builder.mutation.op = OpDeleteOne
-	return &HashesEntryDeleteOne{builder}
-}
-
-// Query returns a query builder for HashesEntry.
-func (c *HashesEntryClient) Query() *HashesEntryQuery {
-	return &HashesEntryQuery{
-		config: c.config,
-		ctx:    &QueryContext{Type: TypeHashesEntry},
-		inters: c.Interceptors(),
-	}
-}
-
-// Get returns a HashesEntry entity by its id.
-func (c *HashesEntryClient) Get(ctx context.Context, id int) (*HashesEntry, error) {
-	return c.Query().Where(hashesentry.ID(id)).Only(ctx)
-}
-
-// GetX is like Get, but panics if an error occurs.
-func (c *HashesEntryClient) GetX(ctx context.Context, id int) *HashesEntry {
-	obj, err := c.Get(ctx, id)
-	if err != nil {
-		panic(err)
-	}
-	return obj
-}
-
-// QueryExternalReference queries the external_reference edge of a HashesEntry.
-func (c *HashesEntryClient) QueryExternalReference(he *HashesEntry) *ExternalReferenceQuery {
-	query := (&ExternalReferenceClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := he.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(hashesentry.Table, hashesentry.FieldID, id),
-			sqlgraph.To(externalreference.Table, externalreference.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, hashesentry.ExternalReferenceTable, hashesentry.ExternalReferenceColumn),
-		)
-		fromV = sqlgraph.Neighbors(he.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QueryNode queries the node edge of a HashesEntry.
-func (c *HashesEntryClient) QueryNode(he *HashesEntry) *NodeQuery {
-	query := (&NodeClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := he.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(hashesentry.Table, hashesentry.FieldID, id),
-			sqlgraph.To(node.Table, node.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, hashesentry.NodeTable, hashesentry.NodeColumn),
-		)
-		fromV = sqlgraph.Neighbors(he.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// Hooks returns the client hooks.
-func (c *HashesEntryClient) Hooks() []Hook {
-	return c.hooks.HashesEntry
-}
-
-// Interceptors returns the client interceptors.
-func (c *HashesEntryClient) Interceptors() []Interceptor {
-	return c.inters.HashesEntry
-}
-
-func (c *HashesEntryClient) mutate(ctx context.Context, m *HashesEntryMutation) (Value, error) {
-	switch m.Op() {
-	case OpCreate:
-		return (&HashesEntryCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpUpdate:
-		return (&HashesEntryUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpUpdateOne:
-		return (&HashesEntryUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpDelete, OpDeleteOne:
-		return (&HashesEntryDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
-	default:
-		return nil, fmt.Errorf("ent: unknown HashesEntry mutation op: %q", m.Op())
-	}
-}
-
-// IdentifiersEntryClient is a client for the IdentifiersEntry schema.
-type IdentifiersEntryClient struct {
-	config
-}
-
-// NewIdentifiersEntryClient returns a client for the IdentifiersEntry from the given config.
-func NewIdentifiersEntryClient(c config) *IdentifiersEntryClient {
-	return &IdentifiersEntryClient{config: c}
-}
-
-// Use adds a list of mutation hooks to the hooks stack.
-// A call to `Use(f, g, h)` equals to `identifiersentry.Hooks(f(g(h())))`.
-func (c *IdentifiersEntryClient) Use(hooks ...Hook) {
-	c.hooks.IdentifiersEntry = append(c.hooks.IdentifiersEntry, hooks...)
-}
-
-// Intercept adds a list of query interceptors to the interceptors stack.
-// A call to `Intercept(f, g, h)` equals to `identifiersentry.Intercept(f(g(h())))`.
-func (c *IdentifiersEntryClient) Intercept(interceptors ...Interceptor) {
-	c.inters.IdentifiersEntry = append(c.inters.IdentifiersEntry, interceptors...)
-}
-
-// Create returns a builder for creating a IdentifiersEntry entity.
-func (c *IdentifiersEntryClient) Create() *IdentifiersEntryCreate {
-	mutation := newIdentifiersEntryMutation(c.config, OpCreate)
-	return &IdentifiersEntryCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// CreateBulk returns a builder for creating a bulk of IdentifiersEntry entities.
-func (c *IdentifiersEntryClient) CreateBulk(builders ...*IdentifiersEntryCreate) *IdentifiersEntryCreateBulk {
-	return &IdentifiersEntryCreateBulk{config: c.config, builders: builders}
-}
-
-// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
-// a builder and applies setFunc on it.
-func (c *IdentifiersEntryClient) MapCreateBulk(slice any, setFunc func(*IdentifiersEntryCreate, int)) *IdentifiersEntryCreateBulk {
-	rv := reflect.ValueOf(slice)
-	if rv.Kind() != reflect.Slice {
-		return &IdentifiersEntryCreateBulk{err: fmt.Errorf("calling to IdentifiersEntryClient.MapCreateBulk with wrong type %T, need slice", slice)}
-	}
-	builders := make([]*IdentifiersEntryCreate, rv.Len())
-	for i := 0; i < rv.Len(); i++ {
-		builders[i] = c.Create()
-		setFunc(builders[i], i)
-	}
-	return &IdentifiersEntryCreateBulk{config: c.config, builders: builders}
-}
-
-// Update returns an update builder for IdentifiersEntry.
-func (c *IdentifiersEntryClient) Update() *IdentifiersEntryUpdate {
-	mutation := newIdentifiersEntryMutation(c.config, OpUpdate)
-	return &IdentifiersEntryUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOne returns an update builder for the given entity.
-func (c *IdentifiersEntryClient) UpdateOne(ie *IdentifiersEntry) *IdentifiersEntryUpdateOne {
-	mutation := newIdentifiersEntryMutation(c.config, OpUpdateOne, withIdentifiersEntry(ie))
-	return &IdentifiersEntryUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOneID returns an update builder for the given id.
-func (c *IdentifiersEntryClient) UpdateOneID(id int) *IdentifiersEntryUpdateOne {
-	mutation := newIdentifiersEntryMutation(c.config, OpUpdateOne, withIdentifiersEntryID(id))
-	return &IdentifiersEntryUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// Delete returns a delete builder for IdentifiersEntry.
-func (c *IdentifiersEntryClient) Delete() *IdentifiersEntryDelete {
-	mutation := newIdentifiersEntryMutation(c.config, OpDelete)
-	return &IdentifiersEntryDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// DeleteOne returns a builder for deleting the given entity.
-func (c *IdentifiersEntryClient) DeleteOne(ie *IdentifiersEntry) *IdentifiersEntryDeleteOne {
-	return c.DeleteOneID(ie.ID)
-}
-
-// DeleteOneID returns a builder for deleting the given entity by its id.
-func (c *IdentifiersEntryClient) DeleteOneID(id int) *IdentifiersEntryDeleteOne {
-	builder := c.Delete().Where(identifiersentry.ID(id))
-	builder.mutation.id = &id
-	builder.mutation.op = OpDeleteOne
-	return &IdentifiersEntryDeleteOne{builder}
-}
-
-// Query returns a query builder for IdentifiersEntry.
-func (c *IdentifiersEntryClient) Query() *IdentifiersEntryQuery {
-	return &IdentifiersEntryQuery{
-		config: c.config,
-		ctx:    &QueryContext{Type: TypeIdentifiersEntry},
-		inters: c.Interceptors(),
-	}
-}
-
-// Get returns a IdentifiersEntry entity by its id.
-func (c *IdentifiersEntryClient) Get(ctx context.Context, id int) (*IdentifiersEntry, error) {
-	return c.Query().Where(identifiersentry.ID(id)).Only(ctx)
-}
-
-// GetX is like Get, but panics if an error occurs.
-func (c *IdentifiersEntryClient) GetX(ctx context.Context, id int) *IdentifiersEntry {
-	obj, err := c.Get(ctx, id)
-	if err != nil {
-		panic(err)
-	}
-	return obj
-}
-
-// QueryNode queries the node edge of a IdentifiersEntry.
-func (c *IdentifiersEntryClient) QueryNode(ie *IdentifiersEntry) *NodeQuery {
-	query := (&NodeClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := ie.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(identifiersentry.Table, identifiersentry.FieldID, id),
-			sqlgraph.To(node.Table, node.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, identifiersentry.NodeTable, identifiersentry.NodeColumn),
-		)
-		fromV = sqlgraph.Neighbors(ie.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// Hooks returns the client hooks.
-func (c *IdentifiersEntryClient) Hooks() []Hook {
-	return c.hooks.IdentifiersEntry
-}
-
-// Interceptors returns the client interceptors.
-func (c *IdentifiersEntryClient) Interceptors() []Interceptor {
-	return c.inters.IdentifiersEntry
-}
-
-func (c *IdentifiersEntryClient) mutate(ctx context.Context, m *IdentifiersEntryMutation) (Value, error) {
-	switch m.Op() {
-	case OpCreate:
-		return (&IdentifiersEntryCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpUpdate:
-		return (&IdentifiersEntryUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpUpdateOne:
-		return (&IdentifiersEntryUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpDelete, OpDeleteOne:
-		return (&IdentifiersEntryDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
-	default:
-		return nil, fmt.Errorf("ent: unknown IdentifiersEntry mutation op: %q", m.Op())
 	}
 }
 
@@ -1590,6 +1310,22 @@ func (c *MetadataClient) QueryDocumentTypes(m *Metadata) *DocumentTypeQuery {
 	return query
 }
 
+// QuerySourceData queries the source_data edge of a Metadata.
+func (c *MetadataClient) QuerySourceData(m *Metadata) *SourceDataQuery {
+	query := (&SourceDataClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(metadata.Table, metadata.FieldID, id),
+			sqlgraph.To(sourcedata.Table, sourcedata.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, metadata.SourceDataTable, metadata.SourceDataColumn),
+		)
+		fromV = sqlgraph.Neighbors(m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QueryDocument queries the document edge of a Metadata.
 func (c *MetadataClient) QueryDocument(m *Metadata) *DocumentQuery {
 	query := (&DocumentClient{config: c.config}).Query()
@@ -1598,7 +1334,7 @@ func (c *MetadataClient) QueryDocument(m *Metadata) *DocumentQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(metadata.Table, metadata.FieldID, id),
 			sqlgraph.To(document.Table, document.FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, true, metadata.DocumentTable, metadata.DocumentColumn),
+			sqlgraph.Edge(sqlgraph.O2O, false, metadata.DocumentTable, metadata.DocumentColumn),
 		)
 		fromV = sqlgraph.Neighbors(m.driver.Dialect(), step)
 		return fromV, nil
@@ -1739,6 +1475,22 @@ func (c *NodeClient) GetX(ctx context.Context, id string) *Node {
 	return obj
 }
 
+// QueryDocument queries the document edge of a Node.
+func (c *NodeClient) QueryDocument(n *Node) *DocumentQuery {
+	query := (&DocumentClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := n.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(node.Table, node.FieldID, id),
+			sqlgraph.To(document.Table, document.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, node.DocumentTable, node.DocumentColumn),
+		)
+		fromV = sqlgraph.Neighbors(n.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QuerySuppliers queries the suppliers edge of a Node.
 func (c *NodeClient) QuerySuppliers(n *Node) *PersonQuery {
 	query := (&PersonClient{config: c.config}).Query()
@@ -1787,38 +1539,6 @@ func (c *NodeClient) QueryExternalReferences(n *Node) *ExternalReferenceQuery {
 	return query
 }
 
-// QueryIdentifiers queries the identifiers edge of a Node.
-func (c *NodeClient) QueryIdentifiers(n *Node) *IdentifiersEntryQuery {
-	query := (&IdentifiersEntryClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := n.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(node.Table, node.FieldID, id),
-			sqlgraph.To(identifiersentry.Table, identifiersentry.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, node.IdentifiersTable, node.IdentifiersColumn),
-		)
-		fromV = sqlgraph.Neighbors(n.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QueryHashes queries the hashes edge of a Node.
-func (c *NodeClient) QueryHashes(n *Node) *HashesEntryQuery {
-	query := (&HashesEntryClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := n.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(node.Table, node.FieldID, id),
-			sqlgraph.To(hashesentry.Table, hashesentry.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, node.HashesTable, node.HashesColumn),
-		)
-		fromV = sqlgraph.Neighbors(n.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
 // QueryPrimaryPurpose queries the primary_purpose edge of a Node.
 func (c *NodeClient) QueryPrimaryPurpose(n *Node) *PurposeQuery {
 	query := (&PurposeClient{config: c.config}).Query()
@@ -1860,6 +1580,22 @@ func (c *NodeClient) QueryNodes(n *Node) *NodeQuery {
 			sqlgraph.From(node.Table, node.FieldID, id),
 			sqlgraph.To(node.Table, node.FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, false, node.NodesTable, node.NodesPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(n.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryProperties queries the properties edge of a Node.
+func (c *NodeClient) QueryProperties(n *Node) *PropertyQuery {
+	query := (&PropertyClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := n.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(node.Table, node.FieldID, id),
+			sqlgraph.To(property.Table, property.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, node.PropertiesTable, node.PropertiesColumn),
 		)
 		fromV = sqlgraph.Neighbors(n.driver.Dialect(), step)
 		return fromV, nil
@@ -1985,7 +1721,7 @@ func (c *NodeListClient) UpdateOne(nl *NodeList) *NodeListUpdateOne {
 }
 
 // UpdateOneID returns an update builder for the given id.
-func (c *NodeListClient) UpdateOneID(id int) *NodeListUpdateOne {
+func (c *NodeListClient) UpdateOneID(id uuid.UUID) *NodeListUpdateOne {
 	mutation := newNodeListMutation(c.config, OpUpdateOne, withNodeListID(id))
 	return &NodeListUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
@@ -2002,7 +1738,7 @@ func (c *NodeListClient) DeleteOne(nl *NodeList) *NodeListDeleteOne {
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
-func (c *NodeListClient) DeleteOneID(id int) *NodeListDeleteOne {
+func (c *NodeListClient) DeleteOneID(id uuid.UUID) *NodeListDeleteOne {
 	builder := c.Delete().Where(nodelist.ID(id))
 	builder.mutation.id = &id
 	builder.mutation.op = OpDeleteOne
@@ -2019,12 +1755,12 @@ func (c *NodeListClient) Query() *NodeListQuery {
 }
 
 // Get returns a NodeList entity by its id.
-func (c *NodeListClient) Get(ctx context.Context, id int) (*NodeList, error) {
+func (c *NodeListClient) Get(ctx context.Context, id uuid.UUID) (*NodeList, error) {
 	return c.Query().Where(nodelist.ID(id)).Only(ctx)
 }
 
 // GetX is like Get, but panics if an error occurs.
-func (c *NodeListClient) GetX(ctx context.Context, id int) *NodeList {
+func (c *NodeListClient) GetX(ctx context.Context, id uuid.UUID) *NodeList {
 	obj, err := c.Get(ctx, id)
 	if err != nil {
 		panic(err)
@@ -2056,7 +1792,7 @@ func (c *NodeListClient) QueryDocument(nl *NodeList) *DocumentQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(nodelist.Table, nodelist.FieldID, id),
 			sqlgraph.To(document.Table, document.FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, true, nodelist.DocumentTable, nodelist.DocumentColumn),
+			sqlgraph.Edge(sqlgraph.O2O, false, nodelist.DocumentTable, nodelist.DocumentColumn),
 		)
 		fromV = sqlgraph.Neighbors(nl.driver.Dialect(), step)
 		return fromV, nil
@@ -2150,7 +1886,7 @@ func (c *PersonClient) UpdateOne(pe *Person) *PersonUpdateOne {
 }
 
 // UpdateOneID returns an update builder for the given id.
-func (c *PersonClient) UpdateOneID(id int) *PersonUpdateOne {
+func (c *PersonClient) UpdateOneID(id uuid.UUID) *PersonUpdateOne {
 	mutation := newPersonMutation(c.config, OpUpdateOne, withPersonID(id))
 	return &PersonUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
@@ -2167,7 +1903,7 @@ func (c *PersonClient) DeleteOne(pe *Person) *PersonDeleteOne {
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
-func (c *PersonClient) DeleteOneID(id int) *PersonDeleteOne {
+func (c *PersonClient) DeleteOneID(id uuid.UUID) *PersonDeleteOne {
 	builder := c.Delete().Where(person.ID(id))
 	builder.mutation.id = &id
 	builder.mutation.op = OpDeleteOne
@@ -2184,17 +1920,33 @@ func (c *PersonClient) Query() *PersonQuery {
 }
 
 // Get returns a Person entity by its id.
-func (c *PersonClient) Get(ctx context.Context, id int) (*Person, error) {
+func (c *PersonClient) Get(ctx context.Context, id uuid.UUID) (*Person, error) {
 	return c.Query().Where(person.ID(id)).Only(ctx)
 }
 
 // GetX is like Get, but panics if an error occurs.
-func (c *PersonClient) GetX(ctx context.Context, id int) *Person {
+func (c *PersonClient) GetX(ctx context.Context, id uuid.UUID) *Person {
 	obj, err := c.Get(ctx, id)
 	if err != nil {
 		panic(err)
 	}
 	return obj
+}
+
+// QueryDocument queries the document edge of a Person.
+func (c *PersonClient) QueryDocument(pe *Person) *DocumentQuery {
+	query := (&DocumentClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := pe.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(person.Table, person.FieldID, id),
+			sqlgraph.To(document.Table, document.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, person.DocumentTable, person.DocumentColumn),
+		)
+		fromV = sqlgraph.Neighbors(pe.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
 }
 
 // QueryContactOwner queries the contact_owner edge of a Person.
@@ -2283,6 +2035,171 @@ func (c *PersonClient) mutate(ctx context.Context, m *PersonMutation) (Value, er
 		return (&PersonDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown Person mutation op: %q", m.Op())
+	}
+}
+
+// PropertyClient is a client for the Property schema.
+type PropertyClient struct {
+	config
+}
+
+// NewPropertyClient returns a client for the Property from the given config.
+func NewPropertyClient(c config) *PropertyClient {
+	return &PropertyClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `property.Hooks(f(g(h())))`.
+func (c *PropertyClient) Use(hooks ...Hook) {
+	c.hooks.Property = append(c.hooks.Property, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `property.Intercept(f(g(h())))`.
+func (c *PropertyClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Property = append(c.inters.Property, interceptors...)
+}
+
+// Create returns a builder for creating a Property entity.
+func (c *PropertyClient) Create() *PropertyCreate {
+	mutation := newPropertyMutation(c.config, OpCreate)
+	return &PropertyCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Property entities.
+func (c *PropertyClient) CreateBulk(builders ...*PropertyCreate) *PropertyCreateBulk {
+	return &PropertyCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *PropertyClient) MapCreateBulk(slice any, setFunc func(*PropertyCreate, int)) *PropertyCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &PropertyCreateBulk{err: fmt.Errorf("calling to PropertyClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*PropertyCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &PropertyCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Property.
+func (c *PropertyClient) Update() *PropertyUpdate {
+	mutation := newPropertyMutation(c.config, OpUpdate)
+	return &PropertyUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *PropertyClient) UpdateOne(pr *Property) *PropertyUpdateOne {
+	mutation := newPropertyMutation(c.config, OpUpdateOne, withProperty(pr))
+	return &PropertyUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *PropertyClient) UpdateOneID(id uuid.UUID) *PropertyUpdateOne {
+	mutation := newPropertyMutation(c.config, OpUpdateOne, withPropertyID(id))
+	return &PropertyUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Property.
+func (c *PropertyClient) Delete() *PropertyDelete {
+	mutation := newPropertyMutation(c.config, OpDelete)
+	return &PropertyDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *PropertyClient) DeleteOne(pr *Property) *PropertyDeleteOne {
+	return c.DeleteOneID(pr.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *PropertyClient) DeleteOneID(id uuid.UUID) *PropertyDeleteOne {
+	builder := c.Delete().Where(property.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &PropertyDeleteOne{builder}
+}
+
+// Query returns a query builder for Property.
+func (c *PropertyClient) Query() *PropertyQuery {
+	return &PropertyQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeProperty},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a Property entity by its id.
+func (c *PropertyClient) Get(ctx context.Context, id uuid.UUID) (*Property, error) {
+	return c.Query().Where(property.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *PropertyClient) GetX(ctx context.Context, id uuid.UUID) *Property {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryDocument queries the document edge of a Property.
+func (c *PropertyClient) QueryDocument(pr *Property) *DocumentQuery {
+	query := (&DocumentClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := pr.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(property.Table, property.FieldID, id),
+			sqlgraph.To(document.Table, document.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, property.DocumentTable, property.DocumentColumn),
+		)
+		fromV = sqlgraph.Neighbors(pr.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryNode queries the node edge of a Property.
+func (c *PropertyClient) QueryNode(pr *Property) *NodeQuery {
+	query := (&NodeClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := pr.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(property.Table, property.FieldID, id),
+			sqlgraph.To(node.Table, node.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, property.NodeTable, property.NodeColumn),
+		)
+		fromV = sqlgraph.Neighbors(pr.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *PropertyClient) Hooks() []Hook {
+	return c.hooks.Property
+}
+
+// Interceptors returns the client interceptors.
+func (c *PropertyClient) Interceptors() []Interceptor {
+	return c.inters.Property
+}
+
+func (c *PropertyClient) mutate(ctx context.Context, m *PropertyMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&PropertyCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&PropertyUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&PropertyUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&PropertyDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Property mutation op: %q", m.Op())
 	}
 }
 
@@ -2394,6 +2311,22 @@ func (c *PurposeClient) GetX(ctx context.Context, id int) *Purpose {
 	return obj
 }
 
+// QueryDocument queries the document edge of a Purpose.
+func (c *PurposeClient) QueryDocument(pu *Purpose) *DocumentQuery {
+	query := (&DocumentClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := pu.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(purpose.Table, purpose.FieldID, id),
+			sqlgraph.To(document.Table, document.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, purpose.DocumentTable, purpose.DocumentColumn),
+		)
+		fromV = sqlgraph.Neighbors(pu.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QueryNode queries the node edge of a Purpose.
 func (c *PurposeClient) QueryNode(pu *Purpose) *NodeQuery {
 	query := (&NodeClient{config: c.config}).Query()
@@ -2432,6 +2365,171 @@ func (c *PurposeClient) mutate(ctx context.Context, m *PurposeMutation) (Value, 
 		return (&PurposeDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown Purpose mutation op: %q", m.Op())
+	}
+}
+
+// SourceDataClient is a client for the SourceData schema.
+type SourceDataClient struct {
+	config
+}
+
+// NewSourceDataClient returns a client for the SourceData from the given config.
+func NewSourceDataClient(c config) *SourceDataClient {
+	return &SourceDataClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `sourcedata.Hooks(f(g(h())))`.
+func (c *SourceDataClient) Use(hooks ...Hook) {
+	c.hooks.SourceData = append(c.hooks.SourceData, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `sourcedata.Intercept(f(g(h())))`.
+func (c *SourceDataClient) Intercept(interceptors ...Interceptor) {
+	c.inters.SourceData = append(c.inters.SourceData, interceptors...)
+}
+
+// Create returns a builder for creating a SourceData entity.
+func (c *SourceDataClient) Create() *SourceDataCreate {
+	mutation := newSourceDataMutation(c.config, OpCreate)
+	return &SourceDataCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of SourceData entities.
+func (c *SourceDataClient) CreateBulk(builders ...*SourceDataCreate) *SourceDataCreateBulk {
+	return &SourceDataCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *SourceDataClient) MapCreateBulk(slice any, setFunc func(*SourceDataCreate, int)) *SourceDataCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &SourceDataCreateBulk{err: fmt.Errorf("calling to SourceDataClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*SourceDataCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &SourceDataCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for SourceData.
+func (c *SourceDataClient) Update() *SourceDataUpdate {
+	mutation := newSourceDataMutation(c.config, OpUpdate)
+	return &SourceDataUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *SourceDataClient) UpdateOne(sd *SourceData) *SourceDataUpdateOne {
+	mutation := newSourceDataMutation(c.config, OpUpdateOne, withSourceData(sd))
+	return &SourceDataUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *SourceDataClient) UpdateOneID(id uuid.UUID) *SourceDataUpdateOne {
+	mutation := newSourceDataMutation(c.config, OpUpdateOne, withSourceDataID(id))
+	return &SourceDataUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for SourceData.
+func (c *SourceDataClient) Delete() *SourceDataDelete {
+	mutation := newSourceDataMutation(c.config, OpDelete)
+	return &SourceDataDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *SourceDataClient) DeleteOne(sd *SourceData) *SourceDataDeleteOne {
+	return c.DeleteOneID(sd.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *SourceDataClient) DeleteOneID(id uuid.UUID) *SourceDataDeleteOne {
+	builder := c.Delete().Where(sourcedata.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &SourceDataDeleteOne{builder}
+}
+
+// Query returns a query builder for SourceData.
+func (c *SourceDataClient) Query() *SourceDataQuery {
+	return &SourceDataQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeSourceData},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a SourceData entity by its id.
+func (c *SourceDataClient) Get(ctx context.Context, id uuid.UUID) (*SourceData, error) {
+	return c.Query().Where(sourcedata.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *SourceDataClient) GetX(ctx context.Context, id uuid.UUID) *SourceData {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryDocument queries the document edge of a SourceData.
+func (c *SourceDataClient) QueryDocument(sd *SourceData) *DocumentQuery {
+	query := (&DocumentClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := sd.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(sourcedata.Table, sourcedata.FieldID, id),
+			sqlgraph.To(document.Table, document.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, sourcedata.DocumentTable, sourcedata.DocumentColumn),
+		)
+		fromV = sqlgraph.Neighbors(sd.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryMetadata queries the metadata edge of a SourceData.
+func (c *SourceDataClient) QueryMetadata(sd *SourceData) *MetadataQuery {
+	query := (&MetadataClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := sd.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(sourcedata.Table, sourcedata.FieldID, id),
+			sqlgraph.To(metadata.Table, metadata.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, sourcedata.MetadataTable, sourcedata.MetadataColumn),
+		)
+		fromV = sqlgraph.Neighbors(sd.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *SourceDataClient) Hooks() []Hook {
+	return c.hooks.SourceData
+}
+
+// Interceptors returns the client interceptors.
+func (c *SourceDataClient) Interceptors() []Interceptor {
+	return c.inters.SourceData
+}
+
+func (c *SourceDataClient) mutate(ctx context.Context, m *SourceDataMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&SourceDataCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&SourceDataUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&SourceDataUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&SourceDataDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown SourceData mutation op: %q", m.Op())
 	}
 }
 
@@ -2496,7 +2594,7 @@ func (c *ToolClient) UpdateOne(t *Tool) *ToolUpdateOne {
 }
 
 // UpdateOneID returns an update builder for the given id.
-func (c *ToolClient) UpdateOneID(id int) *ToolUpdateOne {
+func (c *ToolClient) UpdateOneID(id uuid.UUID) *ToolUpdateOne {
 	mutation := newToolMutation(c.config, OpUpdateOne, withToolID(id))
 	return &ToolUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
@@ -2513,7 +2611,7 @@ func (c *ToolClient) DeleteOne(t *Tool) *ToolDeleteOne {
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
-func (c *ToolClient) DeleteOneID(id int) *ToolDeleteOne {
+func (c *ToolClient) DeleteOneID(id uuid.UUID) *ToolDeleteOne {
 	builder := c.Delete().Where(tool.ID(id))
 	builder.mutation.id = &id
 	builder.mutation.op = OpDeleteOne
@@ -2530,17 +2628,33 @@ func (c *ToolClient) Query() *ToolQuery {
 }
 
 // Get returns a Tool entity by its id.
-func (c *ToolClient) Get(ctx context.Context, id int) (*Tool, error) {
+func (c *ToolClient) Get(ctx context.Context, id uuid.UUID) (*Tool, error) {
 	return c.Query().Where(tool.ID(id)).Only(ctx)
 }
 
 // GetX is like Get, but panics if an error occurs.
-func (c *ToolClient) GetX(ctx context.Context, id int) *Tool {
+func (c *ToolClient) GetX(ctx context.Context, id uuid.UUID) *Tool {
 	obj, err := c.Get(ctx, id)
 	if err != nil {
 		panic(err)
 	}
 	return obj
+}
+
+// QueryDocument queries the document edge of a Tool.
+func (c *ToolClient) QueryDocument(t *Tool) *DocumentQuery {
+	query := (&DocumentClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := t.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(tool.Table, tool.FieldID, id),
+			sqlgraph.To(document.Table, document.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, tool.DocumentTable, tool.DocumentColumn),
+		)
+		fromV = sqlgraph.Neighbors(t.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
 }
 
 // QueryMetadata queries the metadata edge of a Tool.
@@ -2587,13 +2701,12 @@ func (c *ToolClient) mutate(ctx context.Context, m *ToolMutation) (Value, error)
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		Annotation, Document, DocumentType, EdgeType, ExternalReference, HashesEntry,
-		IdentifiersEntry, Metadata, Node, NodeList, Person, Purpose, Tool []ent.Hook
+		Annotation, Document, DocumentType, EdgeType, ExternalReference, Metadata, Node,
+		NodeList, Person, Property, Purpose, SourceData, Tool []ent.Hook
 	}
 	inters struct {
-		Annotation, Document, DocumentType, EdgeType, ExternalReference, HashesEntry,
-		IdentifiersEntry, Metadata, Node, NodeList, Person, Purpose,
-		Tool []ent.Interceptor
+		Annotation, Document, DocumentType, EdgeType, ExternalReference, Metadata, Node,
+		NodeList, Person, Property, Purpose, SourceData, Tool []ent.Interceptor
 	}
 )
 

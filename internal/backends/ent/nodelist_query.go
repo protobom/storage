@@ -4,6 +4,7 @@
 // SPDX-FileType: SOURCE
 // SPDX-License-Identifier: Apache-2.0
 // --------------------------------------------------------------
+
 package ent
 
 import (
@@ -16,6 +17,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/google/uuid"
 	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/node"
 	"github.com/protobom/storage/internal/backends/ent/nodelist"
@@ -103,7 +105,7 @@ func (nlq *NodeListQuery) QueryDocument() *DocumentQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(nodelist.Table, nodelist.FieldID, selector),
 			sqlgraph.To(document.Table, document.FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, true, nodelist.DocumentTable, nodelist.DocumentColumn),
+			sqlgraph.Edge(sqlgraph.O2O, false, nodelist.DocumentTable, nodelist.DocumentColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(nlq.driver.Dialect(), step)
 		return fromU, nil
@@ -135,8 +137,8 @@ func (nlq *NodeListQuery) FirstX(ctx context.Context) *NodeList {
 
 // FirstID returns the first NodeList ID from the query.
 // Returns a *NotFoundError when no NodeList ID was found.
-func (nlq *NodeListQuery) FirstID(ctx context.Context) (id int, err error) {
-	var ids []int
+func (nlq *NodeListQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
+	var ids []uuid.UUID
 	if ids, err = nlq.Limit(1).IDs(setContextOp(ctx, nlq.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
@@ -148,7 +150,7 @@ func (nlq *NodeListQuery) FirstID(ctx context.Context) (id int, err error) {
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (nlq *NodeListQuery) FirstIDX(ctx context.Context) int {
+func (nlq *NodeListQuery) FirstIDX(ctx context.Context) uuid.UUID {
 	id, err := nlq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -186,8 +188,8 @@ func (nlq *NodeListQuery) OnlyX(ctx context.Context) *NodeList {
 // OnlyID is like Only, but returns the only NodeList ID in the query.
 // Returns a *NotSingularError when more than one NodeList ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (nlq *NodeListQuery) OnlyID(ctx context.Context) (id int, err error) {
-	var ids []int
+func (nlq *NodeListQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
+	var ids []uuid.UUID
 	if ids, err = nlq.Limit(2).IDs(setContextOp(ctx, nlq.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
@@ -203,7 +205,7 @@ func (nlq *NodeListQuery) OnlyID(ctx context.Context) (id int, err error) {
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (nlq *NodeListQuery) OnlyIDX(ctx context.Context) int {
+func (nlq *NodeListQuery) OnlyIDX(ctx context.Context) uuid.UUID {
 	id, err := nlq.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -231,7 +233,7 @@ func (nlq *NodeListQuery) AllX(ctx context.Context) []*NodeList {
 }
 
 // IDs executes the query and returns a list of NodeList IDs.
-func (nlq *NodeListQuery) IDs(ctx context.Context) (ids []int, err error) {
+func (nlq *NodeListQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
 	if nlq.ctx.Unique == nil && nlq.path != nil {
 		nlq.Unique(true)
 	}
@@ -243,7 +245,7 @@ func (nlq *NodeListQuery) IDs(ctx context.Context) (ids []int, err error) {
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (nlq *NodeListQuery) IDsX(ctx context.Context) []int {
+func (nlq *NodeListQuery) IDsX(ctx context.Context) []uuid.UUID {
 	ids, err := nlq.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -339,12 +341,12 @@ func (nlq *NodeListQuery) WithDocument(opts ...func(*DocumentQuery)) *NodeListQu
 // Example:
 //
 //	var v []struct {
-//		DocumentID string `json:"document_id,omitempty"`
+//		ProtoMessage *sbom.NodeList `json:"proto_message,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.NodeList.Query().
-//		GroupBy(nodelist.FieldDocumentID).
+//		GroupBy(nodelist.FieldProtoMessage).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (nlq *NodeListQuery) GroupBy(field string, fields ...string) *NodeListGroupBy {
@@ -362,11 +364,11 @@ func (nlq *NodeListQuery) GroupBy(field string, fields ...string) *NodeListGroup
 // Example:
 //
 //	var v []struct {
-//		DocumentID string `json:"document_id,omitempty"`
+//		ProtoMessage *sbom.NodeList `json:"proto_message,omitempty"`
 //	}
 //
 //	client.NodeList.Query().
-//		Select(nodelist.FieldDocumentID).
+//		Select(nodelist.FieldProtoMessage).
 //		Scan(ctx, &v)
 func (nlq *NodeListQuery) Select(fields ...string) *NodeListSelect {
 	nlq.ctx.Fields = append(nlq.ctx.Fields, fields...)
@@ -452,7 +454,7 @@ func (nlq *NodeListQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*No
 
 func (nlq *NodeListQuery) loadNodes(ctx context.Context, query *NodeQuery, nodes []*NodeList, init func(*NodeList), assign func(*NodeList, *Node)) error {
 	edgeIDs := make([]driver.Value, len(nodes))
-	byID := make(map[int]*NodeList)
+	byID := make(map[uuid.UUID]*NodeList)
 	nids := make(map[string]map[*NodeList]struct{})
 	for i, node := range nodes {
 		edgeIDs[i] = node.ID
@@ -482,10 +484,10 @@ func (nlq *NodeListQuery) loadNodes(ctx context.Context, query *NodeQuery, nodes
 				if err != nil {
 					return nil, err
 				}
-				return append([]any{new(sql.NullInt64)}, values...), nil
+				return append([]any{new(uuid.UUID)}, values...), nil
 			}
 			spec.Assign = func(columns []string, values []any) error {
-				outValue := int(values[0].(*sql.NullInt64).Int64)
+				outValue := *values[0].(*uuid.UUID)
 				inValue := values[1].(*sql.NullString).String
 				if nids[inValue] == nil {
 					nids[inValue] = map[*NodeList]struct{}{byID[outValue]: {}}
@@ -512,31 +514,29 @@ func (nlq *NodeListQuery) loadNodes(ctx context.Context, query *NodeQuery, nodes
 	return nil
 }
 func (nlq *NodeListQuery) loadDocument(ctx context.Context, query *DocumentQuery, nodes []*NodeList, init func(*NodeList), assign func(*NodeList, *Document)) error {
-	ids := make([]string, 0, len(nodes))
-	nodeids := make(map[string][]*NodeList)
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*NodeList)
 	for i := range nodes {
-		fk := nodes[i].DocumentID
-		if _, ok := nodeids[fk]; !ok {
-			ids = append(ids, fk)
-		}
-		nodeids[fk] = append(nodeids[fk], nodes[i])
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
 	}
-	if len(ids) == 0 {
-		return nil
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(document.FieldNodeListID)
 	}
-	query.Where(document.IDIn(ids...))
+	query.Where(predicate.Document(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(nodelist.DocumentColumn), fks...))
+	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {
 		return err
 	}
 	for _, n := range neighbors {
-		nodes, ok := nodeids[n.ID]
+		fk := n.NodeListID
+		node, ok := nodeids[fk]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "document_id" returned %v`, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "node_list_id" returned %v for node %v`, fk, n.ID)
 		}
-		for i := range nodes {
-			assign(nodes[i], n)
-		}
+		assign(node, n)
 	}
 	return nil
 }
@@ -551,7 +551,7 @@ func (nlq *NodeListQuery) sqlCount(ctx context.Context) (int, error) {
 }
 
 func (nlq *NodeListQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := sqlgraph.NewQuerySpec(nodelist.Table, nodelist.Columns, sqlgraph.NewFieldSpec(nodelist.FieldID, field.TypeInt))
+	_spec := sqlgraph.NewQuerySpec(nodelist.Table, nodelist.Columns, sqlgraph.NewFieldSpec(nodelist.FieldID, field.TypeUUID))
 	_spec.From = nlq.sql
 	if unique := nlq.ctx.Unique; unique != nil {
 		_spec.Unique = *unique
@@ -565,9 +565,6 @@ func (nlq *NodeListQuery) querySpec() *sqlgraph.QuerySpec {
 			if fields[i] != nodelist.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
-		}
-		if nlq.withDocument != nil {
-			_spec.Node.AddColumnOnce(nodelist.FieldDocumentID)
 		}
 	}
 	if ps := nlq.predicates; len(ps) > 0 {

@@ -4,6 +4,7 @@
 // SPDX-FileType: SOURCE
 // SPDX-License-Identifier: Apache-2.0
 // --------------------------------------------------------------
+
 package ent
 
 import (
@@ -12,6 +13,7 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/google/uuid"
 	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/metadata"
 	"github.com/protobom/storage/internal/backends/ent/nodelist"
@@ -19,9 +21,13 @@ import (
 
 // Document is the model entity for the Document schema.
 type Document struct {
-	config
+	config `json:"-"`
 	// ID of the ent.
-	ID string `json:"id,omitempty"`
+	ID uuid.UUID `json:"id,omitempty"`
+	// MetadataID holds the value of the "metadata_id" field.
+	MetadataID string `json:"metadata_id,omitempty"`
+	// NodeListID holds the value of the "node_list_id" field.
+	NodeListID uuid.UUID `json:"node_list_id,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the DocumentQuery when eager-loading is set.
 	Edges        DocumentEdges `json:"edges"`
@@ -30,15 +36,24 @@ type Document struct {
 
 // DocumentEdges holds the relations/edges for other nodes in the graph.
 type DocumentEdges struct {
+	// Annotations holds the value of the annotations edge.
+	Annotations []*Annotation `json:"annotations,omitempty"`
 	// Metadata holds the value of the metadata edge.
 	Metadata *Metadata `json:"metadata,omitempty"`
 	// NodeList holds the value of the node_list edge.
 	NodeList *NodeList `json:"node_list,omitempty"`
-	// Annotations holds the value of the annotations edge.
-	Annotations []*Annotation `json:"annotations,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [3]bool
+}
+
+// AnnotationsOrErr returns the Annotations value or an error if the edge
+// was not loaded in eager-loading.
+func (e DocumentEdges) AnnotationsOrErr() ([]*Annotation, error) {
+	if e.loadedTypes[0] {
+		return e.Annotations, nil
+	}
+	return nil, &NotLoadedError{edge: "annotations"}
 }
 
 // MetadataOrErr returns the Metadata value or an error if the edge
@@ -46,7 +61,7 @@ type DocumentEdges struct {
 func (e DocumentEdges) MetadataOrErr() (*Metadata, error) {
 	if e.Metadata != nil {
 		return e.Metadata, nil
-	} else if e.loadedTypes[0] {
+	} else if e.loadedTypes[1] {
 		return nil, &NotFoundError{label: metadata.Label}
 	}
 	return nil, &NotLoadedError{edge: "metadata"}
@@ -57,19 +72,10 @@ func (e DocumentEdges) MetadataOrErr() (*Metadata, error) {
 func (e DocumentEdges) NodeListOrErr() (*NodeList, error) {
 	if e.NodeList != nil {
 		return e.NodeList, nil
-	} else if e.loadedTypes[1] {
+	} else if e.loadedTypes[2] {
 		return nil, &NotFoundError{label: nodelist.Label}
 	}
 	return nil, &NotLoadedError{edge: "node_list"}
-}
-
-// AnnotationsOrErr returns the Annotations value or an error if the edge
-// was not loaded in eager-loading.
-func (e DocumentEdges) AnnotationsOrErr() ([]*Annotation, error) {
-	if e.loadedTypes[2] {
-		return e.Annotations, nil
-	}
-	return nil, &NotLoadedError{edge: "annotations"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -77,8 +83,10 @@ func (*Document) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case document.FieldID:
+		case document.FieldMetadataID:
 			values[i] = new(sql.NullString)
+		case document.FieldID, document.FieldNodeListID:
+			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -95,10 +103,22 @@ func (d *Document) assignValues(columns []string, values []any) error {
 	for i := range columns {
 		switch columns[i] {
 		case document.FieldID:
-			if value, ok := values[i].(*sql.NullString); !ok {
+			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
+			} else if value != nil {
+				d.ID = *value
+			}
+		case document.FieldMetadataID:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field metadata_id", values[i])
 			} else if value.Valid {
-				d.ID = value.String
+				d.MetadataID = value.String
+			}
+		case document.FieldNodeListID:
+			if value, ok := values[i].(*uuid.UUID); !ok {
+				return fmt.Errorf("unexpected type %T for field node_list_id", values[i])
+			} else if value != nil {
+				d.NodeListID = *value
 			}
 		default:
 			d.selectValues.Set(columns[i], values[i])
@@ -113,6 +133,11 @@ func (d *Document) Value(name string) (ent.Value, error) {
 	return d.selectValues.Get(name)
 }
 
+// QueryAnnotations queries the "annotations" edge of the Document entity.
+func (d *Document) QueryAnnotations() *AnnotationQuery {
+	return NewDocumentClient(d.config).QueryAnnotations(d)
+}
+
 // QueryMetadata queries the "metadata" edge of the Document entity.
 func (d *Document) QueryMetadata() *MetadataQuery {
 	return NewDocumentClient(d.config).QueryMetadata(d)
@@ -121,11 +146,6 @@ func (d *Document) QueryMetadata() *MetadataQuery {
 // QueryNodeList queries the "node_list" edge of the Document entity.
 func (d *Document) QueryNodeList() *NodeListQuery {
 	return NewDocumentClient(d.config).QueryNodeList(d)
-}
-
-// QueryAnnotations queries the "annotations" edge of the Document entity.
-func (d *Document) QueryAnnotations() *AnnotationQuery {
-	return NewDocumentClient(d.config).QueryAnnotations(d)
 }
 
 // Update returns a builder for updating this Document.
@@ -150,7 +170,12 @@ func (d *Document) Unwrap() *Document {
 func (d *Document) String() string {
 	var builder strings.Builder
 	builder.WriteString("Document(")
-	builder.WriteString(fmt.Sprintf("id=%v", d.ID))
+	builder.WriteString(fmt.Sprintf("id=%v, ", d.ID))
+	builder.WriteString("metadata_id=")
+	builder.WriteString(d.MetadataID)
+	builder.WriteString(", ")
+	builder.WriteString("node_list_id=")
+	builder.WriteString(fmt.Sprintf("%v", d.NodeListID))
 	builder.WriteByte(')')
 	return builder.String()
 }

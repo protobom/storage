@@ -4,6 +4,7 @@
 // SPDX-FileType: SOURCE
 // SPDX-License-Identifier: Apache-2.0
 // --------------------------------------------------------------
+
 package ent
 
 import (
@@ -12,6 +13,9 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/google/uuid"
+	"github.com/protobom/protobom/pkg/sbom"
+	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/metadata"
 	"github.com/protobom/storage/internal/backends/ent/tool"
 )
@@ -20,7 +24,11 @@ import (
 type Tool struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID int `json:"id,omitempty"`
+	ID uuid.UUID `json:"id,omitempty"`
+	// DocumentID holds the value of the "document_id" field.
+	DocumentID uuid.UUID `json:"document_id,omitempty"`
+	// ProtoMessage holds the value of the "proto_message" field.
+	ProtoMessage *sbom.Tool `json:"proto_message,omitempty"`
 	// MetadataID holds the value of the "metadata_id" field.
 	MetadataID string `json:"metadata_id,omitempty"`
 	// Name holds the value of the "name" field.
@@ -37,11 +45,24 @@ type Tool struct {
 
 // ToolEdges holds the relations/edges for other nodes in the graph.
 type ToolEdges struct {
+	// Document holds the value of the document edge.
+	Document *Document `json:"document,omitempty"`
 	// Metadata holds the value of the metadata edge.
 	Metadata *Metadata `json:"metadata,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [1]bool
+	loadedTypes [2]bool
+}
+
+// DocumentOrErr returns the Document value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e ToolEdges) DocumentOrErr() (*Document, error) {
+	if e.Document != nil {
+		return e.Document, nil
+	} else if e.loadedTypes[0] {
+		return nil, &NotFoundError{label: document.Label}
+	}
+	return nil, &NotLoadedError{edge: "document"}
 }
 
 // MetadataOrErr returns the Metadata value or an error if the edge
@@ -49,7 +70,7 @@ type ToolEdges struct {
 func (e ToolEdges) MetadataOrErr() (*Metadata, error) {
 	if e.Metadata != nil {
 		return e.Metadata, nil
-	} else if e.loadedTypes[0] {
+	} else if e.loadedTypes[1] {
 		return nil, &NotFoundError{label: metadata.Label}
 	}
 	return nil, &NotLoadedError{edge: "metadata"}
@@ -60,10 +81,12 @@ func (*Tool) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case tool.FieldID:
-			values[i] = new(sql.NullInt64)
+		case tool.FieldProtoMessage:
+			values[i] = &sql.NullScanner{S: new(sbom.Tool)}
 		case tool.FieldMetadataID, tool.FieldName, tool.FieldVersion, tool.FieldVendor:
 			values[i] = new(sql.NullString)
+		case tool.FieldID, tool.FieldDocumentID:
+			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -80,11 +103,23 @@ func (t *Tool) assignValues(columns []string, values []any) error {
 	for i := range columns {
 		switch columns[i] {
 		case tool.FieldID:
-			value, ok := values[i].(*sql.NullInt64)
-			if !ok {
-				return fmt.Errorf("unexpected type %T for field id", value)
+			if value, ok := values[i].(*uuid.UUID); !ok {
+				return fmt.Errorf("unexpected type %T for field id", values[i])
+			} else if value != nil {
+				t.ID = *value
 			}
-			t.ID = int(value.Int64)
+		case tool.FieldDocumentID:
+			if value, ok := values[i].(*uuid.UUID); !ok {
+				return fmt.Errorf("unexpected type %T for field document_id", values[i])
+			} else if value != nil {
+				t.DocumentID = *value
+			}
+		case tool.FieldProtoMessage:
+			if value, ok := values[i].(*sql.NullScanner); !ok {
+				return fmt.Errorf("unexpected type %T for field proto_message", values[i])
+			} else if value.Valid {
+				t.ProtoMessage = value.S.(*sbom.Tool)
+			}
 		case tool.FieldMetadataID:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field metadata_id", values[i])
@@ -122,6 +157,11 @@ func (t *Tool) Value(name string) (ent.Value, error) {
 	return t.selectValues.Get(name)
 }
 
+// QueryDocument queries the "document" edge of the Tool entity.
+func (t *Tool) QueryDocument() *DocumentQuery {
+	return NewToolClient(t.config).QueryDocument(t)
+}
+
 // QueryMetadata queries the "metadata" edge of the Tool entity.
 func (t *Tool) QueryMetadata() *MetadataQuery {
 	return NewToolClient(t.config).QueryMetadata(t)
@@ -150,6 +190,14 @@ func (t *Tool) String() string {
 	var builder strings.Builder
 	builder.WriteString("Tool(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", t.ID))
+	builder.WriteString("document_id=")
+	builder.WriteString(fmt.Sprintf("%v", t.DocumentID))
+	builder.WriteString(", ")
+	if v := t.ProtoMessage; v != nil {
+		builder.WriteString("proto_message=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
 	builder.WriteString("metadata_id=")
 	builder.WriteString(t.MetadataID)
 	builder.WriteString(", ")

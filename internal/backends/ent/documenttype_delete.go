@@ -4,6 +4,7 @@
 // SPDX-FileType: SOURCE
 // SPDX-License-Identifier: Apache-2.0
 // --------------------------------------------------------------
+
 package ent
 
 import (
@@ -44,7 +45,7 @@ func (dtd *DocumentTypeDelete) ExecX(ctx context.Context) int {
 }
 
 func (dtd *DocumentTypeDelete) sqlExec(ctx context.Context) (int, error) {
-	_spec := sqlgraph.NewDeleteSpec(documenttype.Table, sqlgraph.NewFieldSpec(documenttype.FieldID, field.TypeInt))
+	_spec := sqlgraph.NewDeleteSpec(documenttype.Table, sqlgraph.NewFieldSpec(documenttype.FieldID, field.TypeUUID))
 	if ps := dtd.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {

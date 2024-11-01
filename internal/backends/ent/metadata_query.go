@@ -4,6 +4,7 @@
 // SPDX-FileType: SOURCE
 // SPDX-License-Identifier: Apache-2.0
 // --------------------------------------------------------------
+
 package ent
 
 import (
@@ -21,6 +22,7 @@ import (
 	"github.com/protobom/storage/internal/backends/ent/metadata"
 	"github.com/protobom/storage/internal/backends/ent/person"
 	"github.com/protobom/storage/internal/backends/ent/predicate"
+	"github.com/protobom/storage/internal/backends/ent/sourcedata"
 	"github.com/protobom/storage/internal/backends/ent/tool"
 )
 
@@ -34,6 +36,7 @@ type MetadataQuery struct {
 	withTools         *ToolQuery
 	withAuthors       *PersonQuery
 	withDocumentTypes *DocumentTypeQuery
+	withSourceData    *SourceDataQuery
 	withDocument      *DocumentQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
@@ -137,6 +140,28 @@ func (mq *MetadataQuery) QueryDocumentTypes() *DocumentTypeQuery {
 	return query
 }
 
+// QuerySourceData chains the current query on the "source_data" edge.
+func (mq *MetadataQuery) QuerySourceData() *SourceDataQuery {
+	query := (&SourceDataClient{config: mq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := mq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := mq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(metadata.Table, metadata.FieldID, selector),
+			sqlgraph.To(sourcedata.Table, sourcedata.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, metadata.SourceDataTable, metadata.SourceDataColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(mq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
 // QueryDocument chains the current query on the "document" edge.
 func (mq *MetadataQuery) QueryDocument() *DocumentQuery {
 	query := (&DocumentClient{config: mq.config}).Query()
@@ -151,7 +176,7 @@ func (mq *MetadataQuery) QueryDocument() *DocumentQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(metadata.Table, metadata.FieldID, selector),
 			sqlgraph.To(document.Table, document.FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, true, metadata.DocumentTable, metadata.DocumentColumn),
+			sqlgraph.Edge(sqlgraph.O2O, false, metadata.DocumentTable, metadata.DocumentColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(mq.driver.Dialect(), step)
 		return fromU, nil
@@ -354,6 +379,7 @@ func (mq *MetadataQuery) Clone() *MetadataQuery {
 		withTools:         mq.withTools.Clone(),
 		withAuthors:       mq.withAuthors.Clone(),
 		withDocumentTypes: mq.withDocumentTypes.Clone(),
+		withSourceData:    mq.withSourceData.Clone(),
 		withDocument:      mq.withDocument.Clone(),
 		// clone intermediate query.
 		sql:  mq.sql.Clone(),
@@ -394,6 +420,17 @@ func (mq *MetadataQuery) WithDocumentTypes(opts ...func(*DocumentTypeQuery)) *Me
 	return mq
 }
 
+// WithSourceData tells the query-builder to eager-load the nodes that are connected to
+// the "source_data" edge. The optional arguments are used to configure the query builder of the edge.
+func (mq *MetadataQuery) WithSourceData(opts ...func(*SourceDataQuery)) *MetadataQuery {
+	query := (&SourceDataClient{config: mq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	mq.withSourceData = query
+	return mq
+}
+
 // WithDocument tells the query-builder to eager-load the nodes that are connected to
 // the "document" edge. The optional arguments are used to configure the query builder of the edge.
 func (mq *MetadataQuery) WithDocument(opts ...func(*DocumentQuery)) *MetadataQuery {
@@ -411,12 +448,12 @@ func (mq *MetadataQuery) WithDocument(opts ...func(*DocumentQuery)) *MetadataQue
 // Example:
 //
 //	var v []struct {
-//		Version string `json:"version,omitempty"`
+//		ProtoMessage *sbom.Metadata `json:"proto_message,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.Metadata.Query().
-//		GroupBy(metadata.FieldVersion).
+//		GroupBy(metadata.FieldProtoMessage).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (mq *MetadataQuery) GroupBy(field string, fields ...string) *MetadataGroupBy {
@@ -434,11 +471,11 @@ func (mq *MetadataQuery) GroupBy(field string, fields ...string) *MetadataGroupB
 // Example:
 //
 //	var v []struct {
-//		Version string `json:"version,omitempty"`
+//		ProtoMessage *sbom.Metadata `json:"proto_message,omitempty"`
 //	}
 //
 //	client.Metadata.Query().
-//		Select(metadata.FieldVersion).
+//		Select(metadata.FieldProtoMessage).
 //		Scan(ctx, &v)
 func (mq *MetadataQuery) Select(fields ...string) *MetadataSelect {
 	mq.ctx.Fields = append(mq.ctx.Fields, fields...)
@@ -483,10 +520,11 @@ func (mq *MetadataQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Met
 	var (
 		nodes       = []*Metadata{}
 		_spec       = mq.querySpec()
-		loadedTypes = [4]bool{
+		loadedTypes = [5]bool{
 			mq.withTools != nil,
 			mq.withAuthors != nil,
 			mq.withDocumentTypes != nil,
+			mq.withSourceData != nil,
 			mq.withDocument != nil,
 		}
 	)
@@ -526,6 +564,13 @@ func (mq *MetadataQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Met
 		if err := mq.loadDocumentTypes(ctx, query, nodes,
 			func(n *Metadata) { n.Edges.DocumentTypes = []*DocumentType{} },
 			func(n *Metadata, e *DocumentType) { n.Edges.DocumentTypes = append(n.Edges.DocumentTypes, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := mq.withSourceData; query != nil {
+		if err := mq.loadSourceData(ctx, query, nodes,
+			func(n *Metadata) { n.Edges.SourceData = []*SourceData{} },
+			func(n *Metadata, e *SourceData) { n.Edges.SourceData = append(n.Edges.SourceData, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -629,32 +674,60 @@ func (mq *MetadataQuery) loadDocumentTypes(ctx context.Context, query *DocumentT
 	}
 	return nil
 }
-func (mq *MetadataQuery) loadDocument(ctx context.Context, query *DocumentQuery, nodes []*Metadata, init func(*Metadata), assign func(*Metadata, *Document)) error {
-	ids := make([]string, 0, len(nodes))
-	nodeids := make(map[string][]*Metadata)
+func (mq *MetadataQuery) loadSourceData(ctx context.Context, query *SourceDataQuery, nodes []*Metadata, init func(*Metadata), assign func(*Metadata, *SourceData)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[string]*Metadata)
 	for i := range nodes {
-		fk := nodes[i].ID
-		if _, ok := nodeids[fk]; !ok {
-			ids = append(ids, fk)
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
 		}
-		nodeids[fk] = append(nodeids[fk], nodes[i])
 	}
-	if len(ids) == 0 {
-		return nil
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(sourcedata.FieldMetadataID)
 	}
-	query.Where(document.IDIn(ids...))
+	query.Where(predicate.SourceData(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(metadata.SourceDataColumn), fks...))
+	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {
 		return err
 	}
 	for _, n := range neighbors {
-		nodes, ok := nodeids[n.ID]
+		fk := n.MetadataID
+		node, ok := nodeids[fk]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "id" returned %v`, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "metadata_id" returned %v for node %v`, fk, n.ID)
 		}
-		for i := range nodes {
-			assign(nodes[i], n)
+		assign(node, n)
+	}
+	return nil
+}
+func (mq *MetadataQuery) loadDocument(ctx context.Context, query *DocumentQuery, nodes []*Metadata, init func(*Metadata), assign func(*Metadata, *Document)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[string]*Metadata)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(document.FieldMetadataID)
+	}
+	query.Where(predicate.Document(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(metadata.DocumentColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.MetadataID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "metadata_id" returned %v for node %v`, fk, n.ID)
 		}
+		assign(node, n)
 	}
 	return nil
 }

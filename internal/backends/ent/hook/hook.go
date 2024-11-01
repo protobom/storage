@@ -74,30 +74,6 @@ func (f ExternalReferenceFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ExternalReferenceMutation", m)
 }
 
-// The HashesEntryFunc type is an adapter to allow the use of ordinary
-// function as HashesEntry mutator.
-type HashesEntryFunc func(context.Context, *ent.HashesEntryMutation) (ent.Value, error)
-
-// Mutate calls f(ctx, m).
-func (f HashesEntryFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	if mv, ok := m.(*ent.HashesEntryMutation); ok {
-		return f(ctx, mv)
-	}
-	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.HashesEntryMutation", m)
-}
-
-// The IdentifiersEntryFunc type is an adapter to allow the use of ordinary
-// function as IdentifiersEntry mutator.
-type IdentifiersEntryFunc func(context.Context, *ent.IdentifiersEntryMutation) (ent.Value, error)
-
-// Mutate calls f(ctx, m).
-func (f IdentifiersEntryFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	if mv, ok := m.(*ent.IdentifiersEntryMutation); ok {
-		return f(ctx, mv)
-	}
-	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.IdentifiersEntryMutation", m)
-}
-
 // The MetadataFunc type is an adapter to allow the use of ordinary
 // function as Metadata mutator.
 type MetadataFunc func(context.Context, *ent.MetadataMutation) (ent.Value, error)
@@ -146,6 +122,18 @@ func (f PersonFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, erro
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.PersonMutation", m)
 }
 
+// The PropertyFunc type is an adapter to allow the use of ordinary
+// function as Property mutator.
+type PropertyFunc func(context.Context, *ent.PropertyMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f PropertyFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.PropertyMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.PropertyMutation", m)
+}
+
 // The PurposeFunc type is an adapter to allow the use of ordinary
 // function as Purpose mutator.
 type PurposeFunc func(context.Context, *ent.PurposeMutation) (ent.Value, error)
@@ -156,6 +144,18 @@ func (f PurposeFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, err
 		return f(ctx, mv)
 	}
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.PurposeMutation", m)
+}
+
+// The SourceDataFunc type is an adapter to allow the use of ordinary
+// function as SourceData mutator.
+type SourceDataFunc func(context.Context, *ent.SourceDataMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f SourceDataFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.SourceDataMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.SourceDataMutation", m)
 }
 
 // The ToolFunc type is an adapter to allow the use of ordinary

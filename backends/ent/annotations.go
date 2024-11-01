@@ -3,6 +3,7 @@
 // SPDX-FileType: SOURCE
 // SPDX-License-Identifier: Apache-2.0
 // --------------------------------------------------------------
+
 package ent
 
 import (
@@ -19,9 +20,17 @@ import (
 // AddAnnotations applies multiple named annotation values to a single document.
 func (backend *Backend) AddAnnotations(documentID, name string, values ...string) error {
 	data := ent.Annotations{}
+
+	documentUUID, err := backend.client.Document.Query().
+		Where(document.MetadataIDEQ(documentID)).
+		OnlyID(backend.ctx)
+	if err != nil {
+		return fmt.Errorf("querying documents: %w", err)
+	}
+
 	for _, value := range values {
 		data = append(data, &ent.Annotation{
-			DocumentID: documentID,
+			DocumentID: documentUUID,
 			Name:       name,
 			Value:      value,
 		})
@@ -33,9 +42,17 @@ func (backend *Backend) AddAnnotations(documentID, name string, values ...string
 // AddAnnotationToDocuments applies a single named annotation value to multiple documents.
 func (backend *Backend) AddAnnotationToDocuments(name, value string, documentIDs ...string) error {
 	data := ent.Annotations{}
+
 	for _, documentID := range documentIDs {
+		documentUUID, err := backend.client.Document.Query().
+			Where(document.MetadataIDEQ(documentID)).
+			OnlyID(backend.ctx)
+		if err != nil {
+			return fmt.Errorf("querying documents: %w", err)
+		}
+
 		data = append(data, &ent.Annotation{
-			DocumentID: documentID,
+			DocumentID: documentUUID,
 			Name:       name,
 			Value:      value,
 		})
@@ -51,8 +68,9 @@ func (backend *Backend) ClearAnnotations(documentIDs ...string) error {
 	}
 
 	return backend.withTx(func(tx *ent.Tx) error {
-		_, err := tx.Annotation.Delete().Where(annotation.DocumentIDIn(documentIDs...)).Exec(backend.ctx)
-		if err != nil {
+		if _, err := tx.Annotation.Delete().
+			Where(annotation.HasDocumentWith(document.MetadataIDIn(documentIDs...))).
+			Exec(backend.ctx); err != nil {
 			return fmt.Errorf("clearing annotations: %w", err)
 		}
 
@@ -68,7 +86,7 @@ func (backend *Backend) GetDocumentAnnotations(documentID string, names ...strin
 	}
 
 	predicates := []predicate.Annotation{
-		annotation.HasDocumentWith(document.IDEQ(documentID)),
+		annotation.HasDocumentWith(document.MetadataIDEQ(documentID)),
 	}
 
 	if len(names) > 0 {
@@ -98,7 +116,7 @@ func (backend *Backend) GetDocumentsByAnnotation(name string, values ...string) 
 		predicates = append(predicates, document.HasAnnotationsWith(annotation.ValueIn(values...)))
 	}
 
-	ids, err := backend.client.Document.Query().Where(predicates...).IDs(backend.ctx)
+	ids, err := backend.client.Document.Query().Where(predicates...).QueryMetadata().IDs(backend.ctx)
 	if err != nil {
 		return nil, fmt.Errorf("querying documents table: %w", err)
 	}
@@ -118,7 +136,7 @@ func (backend *Backend) GetDocumentUniqueAnnotation(documentID, name string) (st
 
 	result, err := backend.client.Annotation.Query().
 		Where(
-			annotation.HasDocumentWith(document.IDEQ(documentID)),
+			annotation.HasDocumentWith(document.MetadataIDEQ(documentID)),
 			annotation.NameEQ(name),
 			annotation.IsUniqueEQ(true),
 		).
@@ -140,7 +158,7 @@ func (backend *Backend) RemoveAnnotations(documentID, name string, values ...str
 	return backend.withTx(
 		func(tx *ent.Tx) error {
 			predicates := []predicate.Annotation{
-				annotation.DocumentIDEQ(documentID),
+				annotation.HasDocumentWith(document.MetadataIDEQ(documentID)),
 				annotation.NameEQ(name),
 			}
 
@@ -167,9 +185,16 @@ func (backend *Backend) SetAnnotations(documentID, name string, values ...string
 
 // SetUniqueAnnotation sets a named annotation value that is unique to the specified document.
 func (backend *Backend) SetUniqueAnnotation(documentID, name, value string) error {
+	documentUUID, err := backend.client.Document.Query().
+		Where(document.MetadataIDEQ(documentID)).
+		OnlyID(backend.ctx)
+	if err != nil {
+		return fmt.Errorf("%w", err)
+	}
+
 	return backend.withTx(
 		backend.saveAnnotations(&ent.Annotation{
-			DocumentID: documentID,
+			DocumentID: documentUUID,
 			Name:       name,
 			Value:      value,
 			IsUnique:   true,

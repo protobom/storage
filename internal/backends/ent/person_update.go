@@ -4,6 +4,7 @@
 // SPDX-FileType: SOURCE
 // SPDX-License-Identifier: Apache-2.0
 // --------------------------------------------------------------
+
 package ent
 
 import (
@@ -14,6 +15,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/google/uuid"
 	"github.com/protobom/storage/internal/backends/ent/metadata"
 	"github.com/protobom/storage/internal/backends/ent/node"
 	"github.com/protobom/storage/internal/backends/ent/person"
@@ -144,13 +146,13 @@ func (pu *PersonUpdate) SetNillablePhone(s *string) *PersonUpdate {
 }
 
 // SetContactOwnerID sets the "contact_owner" edge to the Person entity by ID.
-func (pu *PersonUpdate) SetContactOwnerID(id int) *PersonUpdate {
+func (pu *PersonUpdate) SetContactOwnerID(id uuid.UUID) *PersonUpdate {
 	pu.mutation.SetContactOwnerID(id)
 	return pu
 }
 
 // SetNillableContactOwnerID sets the "contact_owner" edge to the Person entity by ID if the given value is not nil.
-func (pu *PersonUpdate) SetNillableContactOwnerID(id *int) *PersonUpdate {
+func (pu *PersonUpdate) SetNillableContactOwnerID(id *uuid.UUID) *PersonUpdate {
 	if id != nil {
 		pu = pu.SetContactOwnerID(*id)
 	}
@@ -163,14 +165,14 @@ func (pu *PersonUpdate) SetContactOwner(p *Person) *PersonUpdate {
 }
 
 // AddContactIDs adds the "contacts" edge to the Person entity by IDs.
-func (pu *PersonUpdate) AddContactIDs(ids ...int) *PersonUpdate {
+func (pu *PersonUpdate) AddContactIDs(ids ...uuid.UUID) *PersonUpdate {
 	pu.mutation.AddContactIDs(ids...)
 	return pu
 }
 
 // AddContacts adds the "contacts" edges to the Person entity.
 func (pu *PersonUpdate) AddContacts(p ...*Person) *PersonUpdate {
-	ids := make([]int, len(p))
+	ids := make([]uuid.UUID, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -205,14 +207,14 @@ func (pu *PersonUpdate) ClearContacts() *PersonUpdate {
 }
 
 // RemoveContactIDs removes the "contacts" edge to Person entities by IDs.
-func (pu *PersonUpdate) RemoveContactIDs(ids ...int) *PersonUpdate {
+func (pu *PersonUpdate) RemoveContactIDs(ids ...uuid.UUID) *PersonUpdate {
 	pu.mutation.RemoveContactIDs(ids...)
 	return pu
 }
 
 // RemoveContacts removes "contacts" edges to Person entities.
 func (pu *PersonUpdate) RemoveContacts(p ...*Person) *PersonUpdate {
-	ids := make([]int, len(p))
+	ids := make([]uuid.UUID, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -259,7 +261,7 @@ func (pu *PersonUpdate) ExecX(ctx context.Context) {
 }
 
 func (pu *PersonUpdate) sqlSave(ctx context.Context) (n int, err error) {
-	_spec := sqlgraph.NewUpdateSpec(person.Table, person.Columns, sqlgraph.NewFieldSpec(person.FieldID, field.TypeInt))
+	_spec := sqlgraph.NewUpdateSpec(person.Table, person.Columns, sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID))
 	if ps := pu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -290,7 +292,7 @@ func (pu *PersonUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{person.ContactOwnerColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -303,7 +305,7 @@ func (pu *PersonUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{person.ContactOwnerColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -319,7 +321,7 @@ func (pu *PersonUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{person.ContactsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -332,7 +334,7 @@ func (pu *PersonUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{person.ContactsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -348,7 +350,7 @@ func (pu *PersonUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{person.ContactsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -545,13 +547,13 @@ func (puo *PersonUpdateOne) SetNillablePhone(s *string) *PersonUpdateOne {
 }
 
 // SetContactOwnerID sets the "contact_owner" edge to the Person entity by ID.
-func (puo *PersonUpdateOne) SetContactOwnerID(id int) *PersonUpdateOne {
+func (puo *PersonUpdateOne) SetContactOwnerID(id uuid.UUID) *PersonUpdateOne {
 	puo.mutation.SetContactOwnerID(id)
 	return puo
 }
 
 // SetNillableContactOwnerID sets the "contact_owner" edge to the Person entity by ID if the given value is not nil.
-func (puo *PersonUpdateOne) SetNillableContactOwnerID(id *int) *PersonUpdateOne {
+func (puo *PersonUpdateOne) SetNillableContactOwnerID(id *uuid.UUID) *PersonUpdateOne {
 	if id != nil {
 		puo = puo.SetContactOwnerID(*id)
 	}
@@ -564,14 +566,14 @@ func (puo *PersonUpdateOne) SetContactOwner(p *Person) *PersonUpdateOne {
 }
 
 // AddContactIDs adds the "contacts" edge to the Person entity by IDs.
-func (puo *PersonUpdateOne) AddContactIDs(ids ...int) *PersonUpdateOne {
+func (puo *PersonUpdateOne) AddContactIDs(ids ...uuid.UUID) *PersonUpdateOne {
 	puo.mutation.AddContactIDs(ids...)
 	return puo
 }
 
 // AddContacts adds the "contacts" edges to the Person entity.
 func (puo *PersonUpdateOne) AddContacts(p ...*Person) *PersonUpdateOne {
-	ids := make([]int, len(p))
+	ids := make([]uuid.UUID, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -606,14 +608,14 @@ func (puo *PersonUpdateOne) ClearContacts() *PersonUpdateOne {
 }
 
 // RemoveContactIDs removes the "contacts" edge to Person entities by IDs.
-func (puo *PersonUpdateOne) RemoveContactIDs(ids ...int) *PersonUpdateOne {
+func (puo *PersonUpdateOne) RemoveContactIDs(ids ...uuid.UUID) *PersonUpdateOne {
 	puo.mutation.RemoveContactIDs(ids...)
 	return puo
 }
 
 // RemoveContacts removes "contacts" edges to Person entities.
 func (puo *PersonUpdateOne) RemoveContacts(p ...*Person) *PersonUpdateOne {
-	ids := make([]int, len(p))
+	ids := make([]uuid.UUID, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -673,7 +675,7 @@ func (puo *PersonUpdateOne) ExecX(ctx context.Context) {
 }
 
 func (puo *PersonUpdateOne) sqlSave(ctx context.Context) (_node *Person, err error) {
-	_spec := sqlgraph.NewUpdateSpec(person.Table, person.Columns, sqlgraph.NewFieldSpec(person.FieldID, field.TypeInt))
+	_spec := sqlgraph.NewUpdateSpec(person.Table, person.Columns, sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID))
 	id, ok := puo.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "Person.id" for update`)}
@@ -721,7 +723,7 @@ func (puo *PersonUpdateOne) sqlSave(ctx context.Context) (_node *Person, err err
 			Columns: []string{person.ContactOwnerColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -734,7 +736,7 @@ func (puo *PersonUpdateOne) sqlSave(ctx context.Context) (_node *Person, err err
 			Columns: []string{person.ContactOwnerColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -750,7 +752,7 @@ func (puo *PersonUpdateOne) sqlSave(ctx context.Context) (_node *Person, err err
 			Columns: []string{person.ContactsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -763,7 +765,7 @@ func (puo *PersonUpdateOne) sqlSave(ctx context.Context) (_node *Person, err err
 			Columns: []string{person.ContactsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -779,7 +781,7 @@ func (puo *PersonUpdateOne) sqlSave(ctx context.Context) (_node *Person, err err
 			Columns: []string{person.ContactsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

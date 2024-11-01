@@ -4,6 +4,7 @@
 // SPDX-FileType: SOURCE
 // SPDX-License-Identifier: Apache-2.0
 // --------------------------------------------------------------
+
 package ent
 
 import (
@@ -12,6 +13,7 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/google/uuid"
 	"github.com/protobom/storage/internal/backends/ent/annotation"
 	"github.com/protobom/storage/internal/backends/ent/document"
 )
@@ -22,7 +24,7 @@ type Annotation struct {
 	// ID of the ent.
 	ID int `json:"id,omitempty"`
 	// DocumentID holds the value of the "document_id" field.
-	DocumentID string `json:"document_id,omitempty"`
+	DocumentID uuid.UUID `json:"document_id,omitempty"`
 	// Name holds the value of the "name" field.
 	Name string `json:"name,omitempty"`
 	// Value holds the value of the "value" field.
@@ -31,8 +33,9 @@ type Annotation struct {
 	IsUnique bool `json:"is_unique,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the AnnotationQuery when eager-loading is set.
-	Edges        AnnotationEdges `json:"edges"`
-	selectValues sql.SelectValues
+	Edges                AnnotationEdges `json:"edges"`
+	document_annotations *uuid.UUID
+	selectValues         sql.SelectValues
 }
 
 // AnnotationEdges holds the relations/edges for other nodes in the graph.
@@ -64,8 +67,12 @@ func (*Annotation) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullBool)
 		case annotation.FieldID:
 			values[i] = new(sql.NullInt64)
-		case annotation.FieldDocumentID, annotation.FieldName, annotation.FieldValue:
+		case annotation.FieldName, annotation.FieldValue:
 			values[i] = new(sql.NullString)
+		case annotation.FieldDocumentID:
+			values[i] = new(uuid.UUID)
+		case annotation.ForeignKeys[0]: // document_annotations
+			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -88,10 +95,10 @@ func (a *Annotation) assignValues(columns []string, values []any) error {
 			}
 			a.ID = int(value.Int64)
 		case annotation.FieldDocumentID:
-			if value, ok := values[i].(*sql.NullString); !ok {
+			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field document_id", values[i])
-			} else if value.Valid {
-				a.DocumentID = value.String
+			} else if value != nil {
+				a.DocumentID = *value
 			}
 		case annotation.FieldName:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -110,6 +117,13 @@ func (a *Annotation) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field is_unique", values[i])
 			} else if value.Valid {
 				a.IsUnique = value.Bool
+			}
+		case annotation.ForeignKeys[0]:
+			if value, ok := values[i].(*sql.NullScanner); !ok {
+				return fmt.Errorf("unexpected type %T for field document_annotations", values[i])
+			} else if value.Valid {
+				a.document_annotations = new(uuid.UUID)
+				*a.document_annotations = *value.S.(*uuid.UUID)
 			}
 		default:
 			a.selectValues.Set(columns[i], values[i])
@@ -153,7 +167,7 @@ func (a *Annotation) String() string {
 	builder.WriteString("Annotation(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", a.ID))
 	builder.WriteString("document_id=")
-	builder.WriteString(a.DocumentID)
+	builder.WriteString(fmt.Sprintf("%v", a.DocumentID))
 	builder.WriteString(", ")
 	builder.WriteString("name=")
 	builder.WriteString(a.Name)

@@ -4,6 +4,7 @@
 // SPDX-FileType: SOURCE
 // SPDX-License-Identifier: Apache-2.0
 // --------------------------------------------------------------
+
 package ent
 
 import (
@@ -21,13 +22,13 @@ import (
 	"github.com/protobom/storage/internal/backends/ent/documenttype"
 	"github.com/protobom/storage/internal/backends/ent/edgetype"
 	"github.com/protobom/storage/internal/backends/ent/externalreference"
-	"github.com/protobom/storage/internal/backends/ent/hashesentry"
-	"github.com/protobom/storage/internal/backends/ent/identifiersentry"
 	"github.com/protobom/storage/internal/backends/ent/metadata"
 	"github.com/protobom/storage/internal/backends/ent/node"
 	"github.com/protobom/storage/internal/backends/ent/nodelist"
 	"github.com/protobom/storage/internal/backends/ent/person"
+	"github.com/protobom/storage/internal/backends/ent/property"
 	"github.com/protobom/storage/internal/backends/ent/purpose"
+	"github.com/protobom/storage/internal/backends/ent/sourcedata"
 	"github.com/protobom/storage/internal/backends/ent/tool"
 )
 
@@ -94,13 +95,13 @@ func checkColumn(table, column string) error {
 			documenttype.Table:      documenttype.ValidColumn,
 			edgetype.Table:          edgetype.ValidColumn,
 			externalreference.Table: externalreference.ValidColumn,
-			hashesentry.Table:       hashesentry.ValidColumn,
-			identifiersentry.Table:  identifiersentry.ValidColumn,
 			metadata.Table:          metadata.ValidColumn,
 			node.Table:              node.ValidColumn,
 			nodelist.Table:          nodelist.ValidColumn,
 			person.Table:            person.ValidColumn,
+			property.Table:          property.ValidColumn,
 			purpose.Table:           purpose.ValidColumn,
+			sourcedata.Table:        sourcedata.ValidColumn,
 			tool.Table:              tool.ValidColumn,
 		})
 	})

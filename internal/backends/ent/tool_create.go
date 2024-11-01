@@ -4,6 +4,7 @@
 // SPDX-FileType: SOURCE
 // SPDX-License-Identifier: Apache-2.0
 // --------------------------------------------------------------
+
 package ent
 
 import (
@@ -11,9 +12,13 @@ import (
 	"errors"
 	"fmt"
 
+	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/google/uuid"
+	"github.com/protobom/protobom/pkg/sbom"
+	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/metadata"
 	"github.com/protobom/storage/internal/backends/ent/tool"
 )
@@ -24,6 +29,26 @@ type ToolCreate struct {
 	mutation *ToolMutation
 	hooks    []Hook
 	conflict []sql.ConflictOption
+}
+
+// SetDocumentID sets the "document_id" field.
+func (tc *ToolCreate) SetDocumentID(u uuid.UUID) *ToolCreate {
+	tc.mutation.SetDocumentID(u)
+	return tc
+}
+
+// SetNillableDocumentID sets the "document_id" field if the given value is not nil.
+func (tc *ToolCreate) SetNillableDocumentID(u *uuid.UUID) *ToolCreate {
+	if u != nil {
+		tc.SetDocumentID(*u)
+	}
+	return tc
+}
+
+// SetProtoMessage sets the "proto_message" field.
+func (tc *ToolCreate) SetProtoMessage(s *sbom.Tool) *ToolCreate {
+	tc.mutation.SetProtoMessage(s)
+	return tc
 }
 
 // SetMetadataID sets the "metadata_id" field.
@@ -58,6 +83,17 @@ func (tc *ToolCreate) SetVendor(s string) *ToolCreate {
 	return tc
 }
 
+// SetID sets the "id" field.
+func (tc *ToolCreate) SetID(u uuid.UUID) *ToolCreate {
+	tc.mutation.SetID(u)
+	return tc
+}
+
+// SetDocument sets the "document" edge to the Document entity.
+func (tc *ToolCreate) SetDocument(d *Document) *ToolCreate {
+	return tc.SetDocumentID(d.ID)
+}
+
 // SetMetadata sets the "metadata" edge to the Metadata entity.
 func (tc *ToolCreate) SetMetadata(m *Metadata) *ToolCreate {
 	return tc.SetMetadataID(m.ID)
@@ -70,6 +106,7 @@ func (tc *ToolCreate) Mutation() *ToolMutation {
 
 // Save creates the Tool in the database.
 func (tc *ToolCreate) Save(ctx context.Context) (*Tool, error) {
+	tc.defaults()
 	return withHooks(ctx, tc.sqlSave, tc.mutation, tc.hooks)
 }
 
@@ -95,8 +132,19 @@ func (tc *ToolCreate) ExecX(ctx context.Context) {
 	}
 }
 
+// defaults sets the default values of the builder before save.
+func (tc *ToolCreate) defaults() {
+	if _, ok := tc.mutation.DocumentID(); !ok {
+		v := tool.DefaultDocumentID()
+		tc.mutation.SetDocumentID(v)
+	}
+}
+
 // check runs all checks and user-defined validators on the builder.
 func (tc *ToolCreate) check() error {
+	if _, ok := tc.mutation.ProtoMessage(); !ok {
+		return &ValidationError{Name: "proto_message", err: errors.New(`ent: missing required field "Tool.proto_message"`)}
+	}
 	if _, ok := tc.mutation.Name(); !ok {
 		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "Tool.name"`)}
 	}
@@ -120,8 +168,13 @@ func (tc *ToolCreate) sqlSave(ctx context.Context) (*Tool, error) {
 		}
 		return nil, err
 	}
-	id := _spec.ID.Value.(int64)
-	_node.ID = int(id)
+	if _spec.ID.Value != nil {
+		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
+			_node.ID = *id
+		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
+			return nil, err
+		}
+	}
 	tc.mutation.id = &_node.ID
 	tc.mutation.done = true
 	return _node, nil
@@ -130,9 +183,17 @@ func (tc *ToolCreate) sqlSave(ctx context.Context) (*Tool, error) {
 func (tc *ToolCreate) createSpec() (*Tool, *sqlgraph.CreateSpec) {
 	var (
 		_node = &Tool{config: tc.config}
-		_spec = sqlgraph.NewCreateSpec(tool.Table, sqlgraph.NewFieldSpec(tool.FieldID, field.TypeInt))
+		_spec = sqlgraph.NewCreateSpec(tool.Table, sqlgraph.NewFieldSpec(tool.FieldID, field.TypeUUID))
 	)
 	_spec.OnConflict = tc.conflict
+	if id, ok := tc.mutation.ID(); ok {
+		_node.ID = id
+		_spec.ID.Value = &id
+	}
+	if value, ok := tc.mutation.ProtoMessage(); ok {
+		_spec.SetField(tool.FieldProtoMessage, field.TypeBytes, value)
+		_node.ProtoMessage = value
+	}
 	if value, ok := tc.mutation.Name(); ok {
 		_spec.SetField(tool.FieldName, field.TypeString, value)
 		_node.Name = value
@@ -144,6 +205,23 @@ func (tc *ToolCreate) createSpec() (*Tool, *sqlgraph.CreateSpec) {
 	if value, ok := tc.mutation.Vendor(); ok {
 		_spec.SetField(tool.FieldVendor, field.TypeString, value)
 		_node.Vendor = value
+	}
+	if nodes := tc.mutation.DocumentIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   tool.DocumentTable,
+			Columns: []string{tool.DocumentColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(document.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.DocumentID = nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := tc.mutation.MetadataIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -169,7 +247,7 @@ func (tc *ToolCreate) createSpec() (*Tool, *sqlgraph.CreateSpec) {
 // of the `INSERT` statement. For example:
 //
 //	client.Tool.Create().
-//		SetMetadataID(v).
+//		SetDocumentID(v).
 //		OnConflict(
 //			// Update the row with the new values
 //			// the was proposed for insertion.
@@ -178,7 +256,7 @@ func (tc *ToolCreate) createSpec() (*Tool, *sqlgraph.CreateSpec) {
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.ToolUpsert) {
-//			SetMetadataID(v+v).
+//			SetDocumentID(v+v).
 //		}).
 //		Exec(ctx)
 func (tc *ToolCreate) OnConflict(opts ...sql.ConflictOption) *ToolUpsertOne {
@@ -268,16 +346,30 @@ func (u *ToolUpsert) UpdateVendor() *ToolUpsert {
 	return u
 }
 
-// UpdateNewValues updates the mutable fields using the new values that were set on create.
+// UpdateNewValues updates the mutable fields using the new values that were set on create except the ID field.
 // Using this option is equivalent to using:
 //
 //	client.Tool.Create().
 //		OnConflict(
 //			sql.ResolveWithNewValues(),
+//			sql.ResolveWith(func(u *sql.UpdateSet) {
+//				u.SetIgnore(tool.FieldID)
+//			}),
 //		).
 //		Exec(ctx)
 func (u *ToolUpsertOne) UpdateNewValues() *ToolUpsertOne {
 	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
+		if _, exists := u.create.mutation.ID(); exists {
+			s.SetIgnore(tool.FieldID)
+		}
+		if _, exists := u.create.mutation.DocumentID(); exists {
+			s.SetIgnore(tool.FieldDocumentID)
+		}
+		if _, exists := u.create.mutation.ProtoMessage(); exists {
+			s.SetIgnore(tool.FieldProtoMessage)
+		}
+	}))
 	return u
 }
 
@@ -387,7 +479,12 @@ func (u *ToolUpsertOne) ExecX(ctx context.Context) {
 }
 
 // Exec executes the UPSERT query and returns the inserted/updated ID.
-func (u *ToolUpsertOne) ID(ctx context.Context) (id int, err error) {
+func (u *ToolUpsertOne) ID(ctx context.Context) (id uuid.UUID, err error) {
+	if u.create.driver.Dialect() == dialect.MySQL {
+		// In case of "ON CONFLICT", there is no way to get back non-numeric ID
+		// fields from the database since MySQL does not support the RETURNING clause.
+		return id, errors.New("ent: ToolUpsertOne.ID is not supported by MySQL driver. Use ToolUpsertOne.Exec instead")
+	}
 	node, err := u.create.Save(ctx)
 	if err != nil {
 		return id, err
@@ -396,7 +493,7 @@ func (u *ToolUpsertOne) ID(ctx context.Context) (id int, err error) {
 }
 
 // IDX is like ID, but panics if an error occurs.
-func (u *ToolUpsertOne) IDX(ctx context.Context) int {
+func (u *ToolUpsertOne) IDX(ctx context.Context) uuid.UUID {
 	id, err := u.ID(ctx)
 	if err != nil {
 		panic(err)
@@ -423,6 +520,7 @@ func (tcb *ToolCreateBulk) Save(ctx context.Context) ([]*Tool, error) {
 	for i := range tcb.builders {
 		func(i int, root context.Context) {
 			builder := tcb.builders[i]
+			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*ToolMutation)
 				if !ok {
@@ -450,10 +548,6 @@ func (tcb *ToolCreateBulk) Save(ctx context.Context) ([]*Tool, error) {
 					return nil, err
 				}
 				mutation.id = &nodes[i].ID
-				if specs[i].ID.Value != nil {
-					id := specs[i].ID.Value.(int64)
-					nodes[i].ID = int(id)
-				}
 				mutation.done = true
 				return nodes[i], nil
 			})
@@ -505,7 +599,7 @@ func (tcb *ToolCreateBulk) ExecX(ctx context.Context) {
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.ToolUpsert) {
-//			SetMetadataID(v+v).
+//			SetDocumentID(v+v).
 //		}).
 //		Exec(ctx)
 func (tcb *ToolCreateBulk) OnConflict(opts ...sql.ConflictOption) *ToolUpsertBulk {
@@ -540,10 +634,26 @@ type ToolUpsertBulk struct {
 //	client.Tool.Create().
 //		OnConflict(
 //			sql.ResolveWithNewValues(),
+//			sql.ResolveWith(func(u *sql.UpdateSet) {
+//				u.SetIgnore(tool.FieldID)
+//			}),
 //		).
 //		Exec(ctx)
 func (u *ToolUpsertBulk) UpdateNewValues() *ToolUpsertBulk {
 	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
+		for _, b := range u.create.builders {
+			if _, exists := b.mutation.ID(); exists {
+				s.SetIgnore(tool.FieldID)
+			}
+			if _, exists := b.mutation.DocumentID(); exists {
+				s.SetIgnore(tool.FieldDocumentID)
+			}
+			if _, exists := b.mutation.ProtoMessage(); exists {
+				s.SetIgnore(tool.FieldProtoMessage)
+			}
+		}
+	}))
 	return u
 }
 

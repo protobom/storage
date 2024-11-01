@@ -4,6 +4,7 @@
 // SPDX-FileType: SOURCE
 // SPDX-License-Identifier: Apache-2.0
 // --------------------------------------------------------------
+
 package ent
 
 import (
@@ -16,10 +17,13 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/google/uuid"
+	"github.com/protobom/protobom/pkg/sbom"
 	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/documenttype"
 	"github.com/protobom/storage/internal/backends/ent/metadata"
 	"github.com/protobom/storage/internal/backends/ent/person"
+	"github.com/protobom/storage/internal/backends/ent/sourcedata"
 	"github.com/protobom/storage/internal/backends/ent/tool"
 )
 
@@ -29,6 +33,12 @@ type MetadataCreate struct {
 	mutation *MetadataMutation
 	hooks    []Hook
 	conflict []sql.ConflictOption
+}
+
+// SetProtoMessage sets the "proto_message" field.
+func (mc *MetadataCreate) SetProtoMessage(s *sbom.Metadata) *MetadataCreate {
+	mc.mutation.SetProtoMessage(s)
+	return mc
 }
 
 // SetVersion sets the "version" field.
@@ -62,14 +72,14 @@ func (mc *MetadataCreate) SetID(s string) *MetadataCreate {
 }
 
 // AddToolIDs adds the "tools" edge to the Tool entity by IDs.
-func (mc *MetadataCreate) AddToolIDs(ids ...int) *MetadataCreate {
+func (mc *MetadataCreate) AddToolIDs(ids ...uuid.UUID) *MetadataCreate {
 	mc.mutation.AddToolIDs(ids...)
 	return mc
 }
 
 // AddTools adds the "tools" edges to the Tool entity.
 func (mc *MetadataCreate) AddTools(t ...*Tool) *MetadataCreate {
-	ids := make([]int, len(t))
+	ids := make([]uuid.UUID, len(t))
 	for i := range t {
 		ids[i] = t[i].ID
 	}
@@ -77,14 +87,14 @@ func (mc *MetadataCreate) AddTools(t ...*Tool) *MetadataCreate {
 }
 
 // AddAuthorIDs adds the "authors" edge to the Person entity by IDs.
-func (mc *MetadataCreate) AddAuthorIDs(ids ...int) *MetadataCreate {
+func (mc *MetadataCreate) AddAuthorIDs(ids ...uuid.UUID) *MetadataCreate {
 	mc.mutation.AddAuthorIDs(ids...)
 	return mc
 }
 
 // AddAuthors adds the "authors" edges to the Person entity.
 func (mc *MetadataCreate) AddAuthors(p ...*Person) *MetadataCreate {
-	ids := make([]int, len(p))
+	ids := make([]uuid.UUID, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -92,22 +102,37 @@ func (mc *MetadataCreate) AddAuthors(p ...*Person) *MetadataCreate {
 }
 
 // AddDocumentTypeIDs adds the "document_types" edge to the DocumentType entity by IDs.
-func (mc *MetadataCreate) AddDocumentTypeIDs(ids ...int) *MetadataCreate {
+func (mc *MetadataCreate) AddDocumentTypeIDs(ids ...uuid.UUID) *MetadataCreate {
 	mc.mutation.AddDocumentTypeIDs(ids...)
 	return mc
 }
 
 // AddDocumentTypes adds the "document_types" edges to the DocumentType entity.
 func (mc *MetadataCreate) AddDocumentTypes(d ...*DocumentType) *MetadataCreate {
-	ids := make([]int, len(d))
+	ids := make([]uuid.UUID, len(d))
 	for i := range d {
 		ids[i] = d[i].ID
 	}
 	return mc.AddDocumentTypeIDs(ids...)
 }
 
+// AddSourceDatumIDs adds the "source_data" edge to the SourceData entity by IDs.
+func (mc *MetadataCreate) AddSourceDatumIDs(ids ...uuid.UUID) *MetadataCreate {
+	mc.mutation.AddSourceDatumIDs(ids...)
+	return mc
+}
+
+// AddSourceData adds the "source_data" edges to the SourceData entity.
+func (mc *MetadataCreate) AddSourceData(s ...*SourceData) *MetadataCreate {
+	ids := make([]uuid.UUID, len(s))
+	for i := range s {
+		ids[i] = s[i].ID
+	}
+	return mc.AddSourceDatumIDs(ids...)
+}
+
 // SetDocumentID sets the "document" edge to the Document entity by ID.
-func (mc *MetadataCreate) SetDocumentID(id string) *MetadataCreate {
+func (mc *MetadataCreate) SetDocumentID(id uuid.UUID) *MetadataCreate {
 	mc.mutation.SetDocumentID(id)
 	return mc
 }
@@ -151,6 +176,9 @@ func (mc *MetadataCreate) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (mc *MetadataCreate) check() error {
+	if _, ok := mc.mutation.ProtoMessage(); !ok {
+		return &ValidationError{Name: "proto_message", err: errors.New(`ent: missing required field "Metadata.proto_message"`)}
+	}
 	if _, ok := mc.mutation.Version(); !ok {
 		return &ValidationError{Name: "version", err: errors.New(`ent: missing required field "Metadata.version"`)}
 	}
@@ -207,6 +235,10 @@ func (mc *MetadataCreate) createSpec() (*Metadata, *sqlgraph.CreateSpec) {
 		_node.ID = id
 		_spec.ID.Value = id
 	}
+	if value, ok := mc.mutation.ProtoMessage(); ok {
+		_spec.SetField(metadata.FieldProtoMessage, field.TypeBytes, value)
+		_node.ProtoMessage = value
+	}
 	if value, ok := mc.mutation.Version(); ok {
 		_spec.SetField(metadata.FieldVersion, field.TypeString, value)
 		_node.Version = value
@@ -231,7 +263,7 @@ func (mc *MetadataCreate) createSpec() (*Metadata, *sqlgraph.CreateSpec) {
 			Columns: []string{metadata.ToolsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(tool.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(tool.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -247,7 +279,7 @@ func (mc *MetadataCreate) createSpec() (*Metadata, *sqlgraph.CreateSpec) {
 			Columns: []string{metadata.AuthorsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -263,7 +295,23 @@ func (mc *MetadataCreate) createSpec() (*Metadata, *sqlgraph.CreateSpec) {
 			Columns: []string{metadata.DocumentTypesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(documenttype.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(documenttype.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := mc.mutation.SourceDataIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   metadata.SourceDataTable,
+			Columns: []string{metadata.SourceDataColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(sourcedata.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -274,18 +322,17 @@ func (mc *MetadataCreate) createSpec() (*Metadata, *sqlgraph.CreateSpec) {
 	if nodes := mc.mutation.DocumentIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2O,
-			Inverse: true,
+			Inverse: false,
 			Table:   metadata.DocumentTable,
 			Columns: []string{metadata.DocumentColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(document.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(document.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.ID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
@@ -295,7 +342,7 @@ func (mc *MetadataCreate) createSpec() (*Metadata, *sqlgraph.CreateSpec) {
 // of the `INSERT` statement. For example:
 //
 //	client.Metadata.Create().
-//		SetVersion(v).
+//		SetProtoMessage(v).
 //		OnConflict(
 //			// Update the row with the new values
 //			// the was proposed for insertion.
@@ -304,7 +351,7 @@ func (mc *MetadataCreate) createSpec() (*Metadata, *sqlgraph.CreateSpec) {
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.MetadataUpsert) {
-//			SetVersion(v+v).
+//			SetProtoMessage(v+v).
 //		}).
 //		Exec(ctx)
 func (mc *MetadataCreate) OnConflict(opts ...sql.ConflictOption) *MetadataUpsertOne {
@@ -404,6 +451,9 @@ func (u *MetadataUpsertOne) UpdateNewValues() *MetadataUpsertOne {
 	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
 		if _, exists := u.create.mutation.ID(); exists {
 			s.SetIgnore(metadata.FieldID)
+		}
+		if _, exists := u.create.mutation.ProtoMessage(); exists {
+			s.SetIgnore(metadata.FieldProtoMessage)
 		}
 	}))
 	return u
@@ -627,7 +677,7 @@ func (mcb *MetadataCreateBulk) ExecX(ctx context.Context) {
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.MetadataUpsert) {
-//			SetVersion(v+v).
+//			SetProtoMessage(v+v).
 //		}).
 //		Exec(ctx)
 func (mcb *MetadataCreateBulk) OnConflict(opts ...sql.ConflictOption) *MetadataUpsertBulk {
@@ -673,6 +723,9 @@ func (u *MetadataUpsertBulk) UpdateNewValues() *MetadataUpsertBulk {
 		for _, b := range u.create.builders {
 			if _, exists := b.mutation.ID(); exists {
 				s.SetIgnore(metadata.FieldID)
+			}
+			if _, exists := b.mutation.ProtoMessage(); exists {
+				s.SetIgnore(metadata.FieldProtoMessage)
 			}
 		}
 	}))

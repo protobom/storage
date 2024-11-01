@@ -10,52 +10,64 @@ package documenttype
 import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"github.com/google/uuid"
+	"github.com/protobom/protobom/pkg/sbom"
 	"github.com/protobom/storage/internal/backends/ent/predicate"
 )
 
 // ID filters vertices based on their ID field.
-func ID(id int) predicate.DocumentType {
+func ID(id uuid.UUID) predicate.DocumentType {
 	return predicate.DocumentType(sql.FieldEQ(FieldID, id))
 }
 
 // IDEQ applies the EQ predicate on the ID field.
-func IDEQ(id int) predicate.DocumentType {
+func IDEQ(id uuid.UUID) predicate.DocumentType {
 	return predicate.DocumentType(sql.FieldEQ(FieldID, id))
 }
 
 // IDNEQ applies the NEQ predicate on the ID field.
-func IDNEQ(id int) predicate.DocumentType {
+func IDNEQ(id uuid.UUID) predicate.DocumentType {
 	return predicate.DocumentType(sql.FieldNEQ(FieldID, id))
 }
 
 // IDIn applies the In predicate on the ID field.
-func IDIn(ids ...int) predicate.DocumentType {
+func IDIn(ids ...uuid.UUID) predicate.DocumentType {
 	return predicate.DocumentType(sql.FieldIn(FieldID, ids...))
 }
 
 // IDNotIn applies the NotIn predicate on the ID field.
-func IDNotIn(ids ...int) predicate.DocumentType {
+func IDNotIn(ids ...uuid.UUID) predicate.DocumentType {
 	return predicate.DocumentType(sql.FieldNotIn(FieldID, ids...))
 }
 
 // IDGT applies the GT predicate on the ID field.
-func IDGT(id int) predicate.DocumentType {
+func IDGT(id uuid.UUID) predicate.DocumentType {
 	return predicate.DocumentType(sql.FieldGT(FieldID, id))
 }
 
 // IDGTE applies the GTE predicate on the ID field.
-func IDGTE(id int) predicate.DocumentType {
+func IDGTE(id uuid.UUID) predicate.DocumentType {
 	return predicate.DocumentType(sql.FieldGTE(FieldID, id))
 }
 
 // IDLT applies the LT predicate on the ID field.
-func IDLT(id int) predicate.DocumentType {
+func IDLT(id uuid.UUID) predicate.DocumentType {
 	return predicate.DocumentType(sql.FieldLT(FieldID, id))
 }
 
 // IDLTE applies the LTE predicate on the ID field.
-func IDLTE(id int) predicate.DocumentType {
+func IDLTE(id uuid.UUID) predicate.DocumentType {
 	return predicate.DocumentType(sql.FieldLTE(FieldID, id))
+}
+
+// DocumentID applies equality check predicate on the "document_id" field. It's identical to DocumentIDEQ.
+func DocumentID(v uuid.UUID) predicate.DocumentType {
+	return predicate.DocumentType(sql.FieldEQ(FieldDocumentID, v))
+}
+
+// ProtoMessage applies equality check predicate on the "proto_message" field. It's identical to ProtoMessageEQ.
+func ProtoMessage(v *sbom.DocumentType) predicate.DocumentType {
+	return predicate.DocumentType(sql.FieldEQ(FieldProtoMessage, v))
 }
 
 // MetadataID applies equality check predicate on the "metadata_id" field. It's identical to MetadataIDEQ.
@@ -71,6 +83,76 @@ func Name(v string) predicate.DocumentType {
 // Description applies equality check predicate on the "description" field. It's identical to DescriptionEQ.
 func Description(v string) predicate.DocumentType {
 	return predicate.DocumentType(sql.FieldEQ(FieldDescription, v))
+}
+
+// DocumentIDEQ applies the EQ predicate on the "document_id" field.
+func DocumentIDEQ(v uuid.UUID) predicate.DocumentType {
+	return predicate.DocumentType(sql.FieldEQ(FieldDocumentID, v))
+}
+
+// DocumentIDNEQ applies the NEQ predicate on the "document_id" field.
+func DocumentIDNEQ(v uuid.UUID) predicate.DocumentType {
+	return predicate.DocumentType(sql.FieldNEQ(FieldDocumentID, v))
+}
+
+// DocumentIDIn applies the In predicate on the "document_id" field.
+func DocumentIDIn(vs ...uuid.UUID) predicate.DocumentType {
+	return predicate.DocumentType(sql.FieldIn(FieldDocumentID, vs...))
+}
+
+// DocumentIDNotIn applies the NotIn predicate on the "document_id" field.
+func DocumentIDNotIn(vs ...uuid.UUID) predicate.DocumentType {
+	return predicate.DocumentType(sql.FieldNotIn(FieldDocumentID, vs...))
+}
+
+// DocumentIDIsNil applies the IsNil predicate on the "document_id" field.
+func DocumentIDIsNil() predicate.DocumentType {
+	return predicate.DocumentType(sql.FieldIsNull(FieldDocumentID))
+}
+
+// DocumentIDNotNil applies the NotNil predicate on the "document_id" field.
+func DocumentIDNotNil() predicate.DocumentType {
+	return predicate.DocumentType(sql.FieldNotNull(FieldDocumentID))
+}
+
+// ProtoMessageEQ applies the EQ predicate on the "proto_message" field.
+func ProtoMessageEQ(v *sbom.DocumentType) predicate.DocumentType {
+	return predicate.DocumentType(sql.FieldEQ(FieldProtoMessage, v))
+}
+
+// ProtoMessageNEQ applies the NEQ predicate on the "proto_message" field.
+func ProtoMessageNEQ(v *sbom.DocumentType) predicate.DocumentType {
+	return predicate.DocumentType(sql.FieldNEQ(FieldProtoMessage, v))
+}
+
+// ProtoMessageIn applies the In predicate on the "proto_message" field.
+func ProtoMessageIn(vs ...*sbom.DocumentType) predicate.DocumentType {
+	return predicate.DocumentType(sql.FieldIn(FieldProtoMessage, vs...))
+}
+
+// ProtoMessageNotIn applies the NotIn predicate on the "proto_message" field.
+func ProtoMessageNotIn(vs ...*sbom.DocumentType) predicate.DocumentType {
+	return predicate.DocumentType(sql.FieldNotIn(FieldProtoMessage, vs...))
+}
+
+// ProtoMessageGT applies the GT predicate on the "proto_message" field.
+func ProtoMessageGT(v *sbom.DocumentType) predicate.DocumentType {
+	return predicate.DocumentType(sql.FieldGT(FieldProtoMessage, v))
+}
+
+// ProtoMessageGTE applies the GTE predicate on the "proto_message" field.
+func ProtoMessageGTE(v *sbom.DocumentType) predicate.DocumentType {
+	return predicate.DocumentType(sql.FieldGTE(FieldProtoMessage, v))
+}
+
+// ProtoMessageLT applies the LT predicate on the "proto_message" field.
+func ProtoMessageLT(v *sbom.DocumentType) predicate.DocumentType {
+	return predicate.DocumentType(sql.FieldLT(FieldProtoMessage, v))
+}
+
+// ProtoMessageLTE applies the LTE predicate on the "proto_message" field.
+func ProtoMessageLTE(v *sbom.DocumentType) predicate.DocumentType {
+	return predicate.DocumentType(sql.FieldLTE(FieldProtoMessage, v))
 }
 
 // MetadataIDEQ applies the EQ predicate on the "metadata_id" field.
@@ -326,6 +408,29 @@ func DescriptionEqualFold(v string) predicate.DocumentType {
 // DescriptionContainsFold applies the ContainsFold predicate on the "description" field.
 func DescriptionContainsFold(v string) predicate.DocumentType {
 	return predicate.DocumentType(sql.FieldContainsFold(FieldDescription, v))
+}
+
+// HasDocument applies the HasEdge predicate on the "document" edge.
+func HasDocument() predicate.DocumentType {
+	return predicate.DocumentType(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, DocumentTable, DocumentColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasDocumentWith applies the HasEdge predicate on the "document" edge with a given conditions (other predicates).
+func HasDocumentWith(preds ...predicate.Document) predicate.DocumentType {
+	return predicate.DocumentType(func(s *sql.Selector) {
+		step := newDocumentStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
 }
 
 // HasMetadata applies the HasEdge predicate on the "metadata" edge.

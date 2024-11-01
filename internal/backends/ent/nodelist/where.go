@@ -10,122 +10,99 @@ package nodelist
 import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"github.com/google/uuid"
+	"github.com/protobom/protobom/pkg/sbom"
 	"github.com/protobom/storage/internal/backends/ent/predicate"
 )
 
 // ID filters vertices based on their ID field.
-func ID(id int) predicate.NodeList {
+func ID(id uuid.UUID) predicate.NodeList {
 	return predicate.NodeList(sql.FieldEQ(FieldID, id))
 }
 
 // IDEQ applies the EQ predicate on the ID field.
-func IDEQ(id int) predicate.NodeList {
+func IDEQ(id uuid.UUID) predicate.NodeList {
 	return predicate.NodeList(sql.FieldEQ(FieldID, id))
 }
 
 // IDNEQ applies the NEQ predicate on the ID field.
-func IDNEQ(id int) predicate.NodeList {
+func IDNEQ(id uuid.UUID) predicate.NodeList {
 	return predicate.NodeList(sql.FieldNEQ(FieldID, id))
 }
 
 // IDIn applies the In predicate on the ID field.
-func IDIn(ids ...int) predicate.NodeList {
+func IDIn(ids ...uuid.UUID) predicate.NodeList {
 	return predicate.NodeList(sql.FieldIn(FieldID, ids...))
 }
 
 // IDNotIn applies the NotIn predicate on the ID field.
-func IDNotIn(ids ...int) predicate.NodeList {
+func IDNotIn(ids ...uuid.UUID) predicate.NodeList {
 	return predicate.NodeList(sql.FieldNotIn(FieldID, ids...))
 }
 
 // IDGT applies the GT predicate on the ID field.
-func IDGT(id int) predicate.NodeList {
+func IDGT(id uuid.UUID) predicate.NodeList {
 	return predicate.NodeList(sql.FieldGT(FieldID, id))
 }
 
 // IDGTE applies the GTE predicate on the ID field.
-func IDGTE(id int) predicate.NodeList {
+func IDGTE(id uuid.UUID) predicate.NodeList {
 	return predicate.NodeList(sql.FieldGTE(FieldID, id))
 }
 
 // IDLT applies the LT predicate on the ID field.
-func IDLT(id int) predicate.NodeList {
+func IDLT(id uuid.UUID) predicate.NodeList {
 	return predicate.NodeList(sql.FieldLT(FieldID, id))
 }
 
 // IDLTE applies the LTE predicate on the ID field.
-func IDLTE(id int) predicate.NodeList {
+func IDLTE(id uuid.UUID) predicate.NodeList {
 	return predicate.NodeList(sql.FieldLTE(FieldID, id))
 }
 
-// DocumentID applies equality check predicate on the "document_id" field. It's identical to DocumentIDEQ.
-func DocumentID(v string) predicate.NodeList {
-	return predicate.NodeList(sql.FieldEQ(FieldDocumentID, v))
+// ProtoMessage applies equality check predicate on the "proto_message" field. It's identical to ProtoMessageEQ.
+func ProtoMessage(v *sbom.NodeList) predicate.NodeList {
+	return predicate.NodeList(sql.FieldEQ(FieldProtoMessage, v))
 }
 
-// DocumentIDEQ applies the EQ predicate on the "document_id" field.
-func DocumentIDEQ(v string) predicate.NodeList {
-	return predicate.NodeList(sql.FieldEQ(FieldDocumentID, v))
+// ProtoMessageEQ applies the EQ predicate on the "proto_message" field.
+func ProtoMessageEQ(v *sbom.NodeList) predicate.NodeList {
+	return predicate.NodeList(sql.FieldEQ(FieldProtoMessage, v))
 }
 
-// DocumentIDNEQ applies the NEQ predicate on the "document_id" field.
-func DocumentIDNEQ(v string) predicate.NodeList {
-	return predicate.NodeList(sql.FieldNEQ(FieldDocumentID, v))
+// ProtoMessageNEQ applies the NEQ predicate on the "proto_message" field.
+func ProtoMessageNEQ(v *sbom.NodeList) predicate.NodeList {
+	return predicate.NodeList(sql.FieldNEQ(FieldProtoMessage, v))
 }
 
-// DocumentIDIn applies the In predicate on the "document_id" field.
-func DocumentIDIn(vs ...string) predicate.NodeList {
-	return predicate.NodeList(sql.FieldIn(FieldDocumentID, vs...))
+// ProtoMessageIn applies the In predicate on the "proto_message" field.
+func ProtoMessageIn(vs ...*sbom.NodeList) predicate.NodeList {
+	return predicate.NodeList(sql.FieldIn(FieldProtoMessage, vs...))
 }
 
-// DocumentIDNotIn applies the NotIn predicate on the "document_id" field.
-func DocumentIDNotIn(vs ...string) predicate.NodeList {
-	return predicate.NodeList(sql.FieldNotIn(FieldDocumentID, vs...))
+// ProtoMessageNotIn applies the NotIn predicate on the "proto_message" field.
+func ProtoMessageNotIn(vs ...*sbom.NodeList) predicate.NodeList {
+	return predicate.NodeList(sql.FieldNotIn(FieldProtoMessage, vs...))
 }
 
-// DocumentIDGT applies the GT predicate on the "document_id" field.
-func DocumentIDGT(v string) predicate.NodeList {
-	return predicate.NodeList(sql.FieldGT(FieldDocumentID, v))
+// ProtoMessageGT applies the GT predicate on the "proto_message" field.
+func ProtoMessageGT(v *sbom.NodeList) predicate.NodeList {
+	return predicate.NodeList(sql.FieldGT(FieldProtoMessage, v))
 }
 
-// DocumentIDGTE applies the GTE predicate on the "document_id" field.
-func DocumentIDGTE(v string) predicate.NodeList {
-	return predicate.NodeList(sql.FieldGTE(FieldDocumentID, v))
+// ProtoMessageGTE applies the GTE predicate on the "proto_message" field.
+func ProtoMessageGTE(v *sbom.NodeList) predicate.NodeList {
+	return predicate.NodeList(sql.FieldGTE(FieldProtoMessage, v))
 }
 
-// DocumentIDLT applies the LT predicate on the "document_id" field.
-func DocumentIDLT(v string) predicate.NodeList {
-	return predicate.NodeList(sql.FieldLT(FieldDocumentID, v))
+// ProtoMessageLT applies the LT predicate on the "proto_message" field.
+func ProtoMessageLT(v *sbom.NodeList) predicate.NodeList {
+	return predicate.NodeList(sql.FieldLT(FieldProtoMessage, v))
 }
 
-// DocumentIDLTE applies the LTE predicate on the "document_id" field.
-func DocumentIDLTE(v string) predicate.NodeList {
-	return predicate.NodeList(sql.FieldLTE(FieldDocumentID, v))
-}
-
-// DocumentIDContains applies the Contains predicate on the "document_id" field.
-func DocumentIDContains(v string) predicate.NodeList {
-	return predicate.NodeList(sql.FieldContains(FieldDocumentID, v))
-}
-
-// DocumentIDHasPrefix applies the HasPrefix predicate on the "document_id" field.
-func DocumentIDHasPrefix(v string) predicate.NodeList {
-	return predicate.NodeList(sql.FieldHasPrefix(FieldDocumentID, v))
-}
-
-// DocumentIDHasSuffix applies the HasSuffix predicate on the "document_id" field.
-func DocumentIDHasSuffix(v string) predicate.NodeList {
-	return predicate.NodeList(sql.FieldHasSuffix(FieldDocumentID, v))
-}
-
-// DocumentIDEqualFold applies the EqualFold predicate on the "document_id" field.
-func DocumentIDEqualFold(v string) predicate.NodeList {
-	return predicate.NodeList(sql.FieldEqualFold(FieldDocumentID, v))
-}
-
-// DocumentIDContainsFold applies the ContainsFold predicate on the "document_id" field.
-func DocumentIDContainsFold(v string) predicate.NodeList {
-	return predicate.NodeList(sql.FieldContainsFold(FieldDocumentID, v))
+// ProtoMessageLTE applies the LTE predicate on the "proto_message" field.
+func ProtoMessageLTE(v *sbom.NodeList) predicate.NodeList {
+	return predicate.NodeList(sql.FieldLTE(FieldProtoMessage, v))
 }
 
 // HasNodes applies the HasEdge predicate on the "nodes" edge.
@@ -156,7 +133,7 @@ func HasDocument() predicate.NodeList {
 	return predicate.NodeList(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, true, DocumentTable, DocumentColumn),
+			sqlgraph.Edge(sqlgraph.O2O, false, DocumentTable, DocumentColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})

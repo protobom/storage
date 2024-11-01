@@ -3,6 +3,7 @@
 // SPDX-FileType: SOURCE
 // SPDX-License-Identifier: Apache-2.0
 // --------------------------------------------------------------
+
 package schema
 
 import (
@@ -10,10 +11,19 @@ import (
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
+	"github.com/protobom/protobom/pkg/sbom"
 )
 
 type Tool struct {
 	ent.Schema
+}
+
+func (Tool) Mixin() []ent.Mixin {
+	return []ent.Mixin{
+		DocumentMixin{},
+		ProtoMessageMixin[*sbom.Tool]{},
+		UUIDMixin{},
+	}
 }
 
 func (Tool) Fields() []ent.Field {
@@ -27,7 +37,10 @@ func (Tool) Fields() []ent.Field {
 
 func (Tool) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("metadata", Metadata.Type).Ref("tools").Unique().Field("metadata_id"),
+		edge.From("metadata", Metadata.Type).
+			Ref("tools").
+			Unique().
+			Field("metadata_id"),
 	}
 }
 

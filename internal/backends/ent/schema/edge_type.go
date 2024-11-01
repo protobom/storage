@@ -3,6 +3,7 @@
 // SPDX-FileType: SOURCE
 // SPDX-License-Identifier: Apache-2.0
 // --------------------------------------------------------------
+
 package schema
 
 import (
@@ -10,61 +11,22 @@ import (
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
+	"github.com/protobom/protobom/pkg/sbom"
 )
 
 type EdgeType struct {
 	ent.Schema
 }
 
+func (EdgeType) Mixin() []ent.Mixin {
+	return []ent.Mixin{
+		DocumentMixin{},
+	}
+}
+
 func (EdgeType) Fields() []ent.Field {
 	return []ent.Field{
-		field.Enum("type").Values(
-			"UNKNOWN",
-			"amends",
-			"ancestor",
-			"buildDependency",
-			"buildTool",
-			"contains",
-			"contained_by",
-			"copy",
-			"dataFile",
-			"dependencyManifest",
-			"dependsOn",
-			"dependencyOf",
-			"descendant",
-			"describes",
-			"describedBy",
-			"devDependency",
-			"devTool",
-			"distributionArtifact",
-			"documentation",
-			"dynamicLink",
-			"example",
-			"expandedFromArchive",
-			"fileAdded",
-			"fileDeleted",
-			"fileModified",
-			"generates",
-			"generatedFrom",
-			"metafile",
-			"optionalComponent",
-			"optionalDependency",
-			"other",
-			"packages",
-			"patch",
-			"prerequisite",
-			"prerequisiteFor",
-			"providedDependency",
-			"requirementFor",
-			"runtimeDependency",
-			"specificationFor",
-			"staticLink",
-			"test",
-			"testCase",
-			"testDependency",
-			"testTool",
-			"variant",
-		),
+		field.Enum("type").Values(enumValues(new(sbom.Edge_Type))...),
 		field.String("node_id"),
 		field.String("to_node_id"),
 	}
