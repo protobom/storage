@@ -10,8 +10,6 @@ import (
 	"errors"
 	"fmt"
 
-	"entgo.io/ent/dialect/sql"
-	"entgo.io/ent/dialect/sql/sqljson"
 	"github.com/protobom/protobom/pkg/sbom"
 	"github.com/protobom/protobom/pkg/storage"
 
@@ -83,15 +81,19 @@ func (backend *Backend) GetExternalReferencesByDocumentID(
 		externalreference.HasDocumentWith(document.MetadataIDEQ(id)),
 	}
 
-	typeValues := []any{}
+	extRefTypes := []externalreference.Type{}
+
 	for idx := range types {
-		typeValues = append(typeValues, sbom.ExternalReference_ExternalReferenceType_value[types[idx]])
+		extRefType := externalreference.Type(types[idx])
+		if err := externalreference.TypeValidator(extRefType); err != nil {
+			return nil, fmt.Errorf("%w", err)
+		}
+
+		extRefTypes = append(extRefTypes, extRefType)
 	}
 
-	if len(typeValues) > 0 {
-		predicates = append(predicates, func(s *sql.Selector) {
-			s.Where(sqljson.ValueIn("proto_message", typeValues, sqljson.Path("type")))
-		})
+	if len(extRefTypes) > 0 {
+		predicates = append(predicates, externalreference.TypeIn(extRefTypes...))
 	}
 
 	results, err := backend.client.ExternalReference.Query().
