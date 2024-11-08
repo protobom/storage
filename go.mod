@@ -6,7 +6,7 @@ require (
 	entgo.io/ent v0.14.1
 	github.com/glebarez/go-sqlite v1.22.0
 	github.com/google/uuid v1.6.0
-	github.com/protobom/protobom v0.4.5-0.20241031170812-4c8262ccbd8a
+	github.com/protobom/protobom v0.5.0
 	github.com/stretchr/testify v1.9.0
 	google.golang.org/protobuf v1.35.1
 )
