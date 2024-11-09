@@ -73,7 +73,9 @@ func Example() {
 	//     "source_data": {
 	//       "format": "application/vnd.cyclonedx+json;version=1.5",
 	//       "hashes": {
-	//         "3": "71a3948e45c0bcd83a617ed94674079778d10a0578932e6e536533339b1bbea5"
+	//         "2": "1ecc17c081f9a0b452b1d8a0d846901bcc40508f",
+	//         "3": "71a3948e45c0bcd83a617ed94674079778d10a0578932e6e536533339b1bbea5",
+	//         "5": "2cc9ac5ab13a8074463e85996e91aa96916a08d33fc3aff9129dd44b24b850884f6176898a21d48dabd9f3824a2dd6bcc1f350e8f13d4be1c564211d1108e43c"
 	//       },
 	//       "size": 5263
 	//     }
