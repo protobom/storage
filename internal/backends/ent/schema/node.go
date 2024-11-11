@@ -22,6 +22,7 @@ type Node struct {
 func (Node) Mixin() []ent.Mixin {
 	return []ent.Mixin{
 		DocumentMixin{},
+		OnDeleteCascadeMixin{},
 		ProtoMessageMixin[*sbom.Node]{},
 	}
 }

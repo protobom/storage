@@ -22,6 +22,7 @@ type Person struct {
 func (Person) Mixin() []ent.Mixin {
 	return []ent.Mixin{
 		DocumentMixin{},
+		OnDeleteCascadeMixin{},
 		ProtoMessageMixin[*sbom.Person]{},
 		UUIDMixin{},
 	}

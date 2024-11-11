@@ -9,7 +9,6 @@ package ent
 
 import (
 	"context"
-	"database/sql/driver"
 	"fmt"
 	"math"
 
@@ -18,7 +17,6 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
-	"github.com/protobom/storage/internal/backends/ent/annotation"
 	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/metadata"
 	"github.com/protobom/storage/internal/backends/ent/nodelist"
@@ -28,13 +26,12 @@ import (
 // DocumentQuery is the builder for querying Document entities.
 type DocumentQuery struct {
 	config
-	ctx             *QueryContext
-	order           []document.OrderOption
-	inters          []Interceptor
-	predicates      []predicate.Document
-	withAnnotations *AnnotationQuery
-	withMetadata    *MetadataQuery
-	withNodeList    *NodeListQuery
+	ctx          *QueryContext
+	order        []document.OrderOption
+	inters       []Interceptor
+	predicates   []predicate.Document
+	withMetadata *MetadataQuery
+	withNodeList *NodeListQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -69,28 +66,6 @@ func (dq *DocumentQuery) Unique(unique bool) *DocumentQuery {
 func (dq *DocumentQuery) Order(o ...document.OrderOption) *DocumentQuery {
 	dq.order = append(dq.order, o...)
 	return dq
-}
-
-// QueryAnnotations chains the current query on the "annotations" edge.
-func (dq *DocumentQuery) QueryAnnotations() *AnnotationQuery {
-	query := (&AnnotationClient{config: dq.config}).Query()
-	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := dq.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		selector := dq.sqlQuery(ctx)
-		if err := selector.Err(); err != nil {
-			return nil, err
-		}
-		step := sqlgraph.NewStep(
-			sqlgraph.From(document.Table, document.FieldID, selector),
-			sqlgraph.To(annotation.Table, annotation.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, document.AnnotationsTable, document.AnnotationsColumn),
-		)
-		fromU = sqlgraph.SetNeighbors(dq.driver.Dialect(), step)
-		return fromU, nil
-	}
-	return query
 }
 
 // QueryMetadata chains the current query on the "metadata" edge.
@@ -324,29 +299,17 @@ func (dq *DocumentQuery) Clone() *DocumentQuery {
 		return nil
 	}
 	return &DocumentQuery{
-		config:          dq.config,
-		ctx:             dq.ctx.Clone(),
-		order:           append([]document.OrderOption{}, dq.order...),
-		inters:          append([]Interceptor{}, dq.inters...),
-		predicates:      append([]predicate.Document{}, dq.predicates...),
-		withAnnotations: dq.withAnnotations.Clone(),
-		withMetadata:    dq.withMetadata.Clone(),
-		withNodeList:    dq.withNodeList.Clone(),
+		config:       dq.config,
+		ctx:          dq.ctx.Clone(),
+		order:        append([]document.OrderOption{}, dq.order...),
+		inters:       append([]Interceptor{}, dq.inters...),
+		predicates:   append([]predicate.Document{}, dq.predicates...),
+		withMetadata: dq.withMetadata.Clone(),
+		withNodeList: dq.withNodeList.Clone(),
 		// clone intermediate query.
 		sql:  dq.sql.Clone(),
 		path: dq.path,
 	}
-}
-
-// WithAnnotations tells the query-builder to eager-load the nodes that are connected to
-// the "annotations" edge. The optional arguments are used to configure the query builder of the edge.
-func (dq *DocumentQuery) WithAnnotations(opts ...func(*AnnotationQuery)) *DocumentQuery {
-	query := (&AnnotationClient{config: dq.config}).Query()
-	for _, opt := range opts {
-		opt(query)
-	}
-	dq.withAnnotations = query
-	return dq
 }
 
 // WithMetadata tells the query-builder to eager-load the nodes that are connected to
@@ -449,8 +412,7 @@ func (dq *DocumentQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Doc
 	var (
 		nodes       = []*Document{}
 		_spec       = dq.querySpec()
-		loadedTypes = [3]bool{
-			dq.withAnnotations != nil,
+		loadedTypes = [2]bool{
 			dq.withMetadata != nil,
 			dq.withNodeList != nil,
 		}
@@ -473,13 +435,6 @@ func (dq *DocumentQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Doc
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
-	if query := dq.withAnnotations; query != nil {
-		if err := dq.loadAnnotations(ctx, query, nodes,
-			func(n *Document) { n.Edges.Annotations = []*Annotation{} },
-			func(n *Document, e *Annotation) { n.Edges.Annotations = append(n.Edges.Annotations, e) }); err != nil {
-			return nil, err
-		}
-	}
 	if query := dq.withMetadata; query != nil {
 		if err := dq.loadMetadata(ctx, query, nodes, nil,
 			func(n *Document, e *Metadata) { n.Edges.Metadata = e }); err != nil {
@@ -495,37 +450,6 @@ func (dq *DocumentQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Doc
 	return nodes, nil
 }
 
-func (dq *DocumentQuery) loadAnnotations(ctx context.Context, query *AnnotationQuery, nodes []*Document, init func(*Document), assign func(*Document, *Annotation)) error {
-	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[uuid.UUID]*Document)
-	for i := range nodes {
-		fks = append(fks, nodes[i].ID)
-		nodeids[nodes[i].ID] = nodes[i]
-		if init != nil {
-			init(nodes[i])
-		}
-	}
-	query.withFKs = true
-	query.Where(predicate.Annotation(func(s *sql.Selector) {
-		s.Where(sql.InValues(s.C(document.AnnotationsColumn), fks...))
-	}))
-	neighbors, err := query.All(ctx)
-	if err != nil {
-		return err
-	}
-	for _, n := range neighbors {
-		fk := n.document_annotations
-		if fk == nil {
-			return fmt.Errorf(`foreign-key "document_annotations" is nil for node %v`, n.ID)
-		}
-		node, ok := nodeids[*fk]
-		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "document_annotations" returned %v for node %v`, *fk, n.ID)
-		}
-		assign(node, n)
-	}
-	return nil
-}
 func (dq *DocumentQuery) loadMetadata(ctx context.Context, query *MetadataQuery, nodes []*Document, init func(*Document), assign func(*Document, *Metadata)) error {
 	ids := make([]string, 0, len(nodes))
 	nodeids := make(map[string][]*Document)

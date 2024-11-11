@@ -20,6 +20,7 @@ type Document struct {
 
 func (Document) Mixin() []ent.Mixin {
 	return []ent.Mixin{
+		OnDeleteCascadeMixin{},
 		UUIDMixin{},
 	}
 }
@@ -39,7 +40,6 @@ func (Document) Fields() []ent.Field {
 
 func (Document) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.To("annotations", Annotation.Type),
 		edge.From("metadata", Metadata.Type).
 			Ref("document").
 			Unique().

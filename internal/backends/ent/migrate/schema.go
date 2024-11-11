@@ -21,7 +21,6 @@ var (
 		{Name: "value", Type: field.TypeString},
 		{Name: "is_unique", Type: field.TypeBool, Default: false},
 		{Name: "document_id", Type: field.TypeUUID, Nullable: true},
-		{Name: "document_annotations", Type: field.TypeUUID, Nullable: true},
 	}
 	// AnnotationsTable holds the schema information for the "annotations" table.
 	AnnotationsTable = &schema.Table{
@@ -32,12 +31,6 @@ var (
 			{
 				Symbol:     "annotations_documents_document",
 				Columns:    []*schema.Column{AnnotationsColumns[4]},
-				RefColumns: []*schema.Column{DocumentsColumns[0]},
-				OnDelete:   schema.SetNull,
-			},
-			{
-				Symbol:     "annotations_documents_annotations",
-				Columns:    []*schema.Column{AnnotationsColumns[5]},
 				RefColumns: []*schema.Column{DocumentsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -53,7 +46,7 @@ var (
 				Unique:  true,
 				Columns: []*schema.Column{AnnotationsColumns[4], AnnotationsColumns[1]},
 				Annotation: &entsql.IndexAnnotation{
-					Where: "is_unique = true",
+					Where: "is_unique",
 				},
 			},
 		},
@@ -558,22 +551,28 @@ var (
 
 func init() {
 	AnnotationsTable.ForeignKeys[0].RefTable = DocumentsTable
-	AnnotationsTable.ForeignKeys[1].RefTable = DocumentsTable
+	AnnotationsTable.Annotation = &entsql.Annotation{}
 	DocumentsTable.ForeignKeys[0].RefTable = MetadataTable
 	DocumentsTable.ForeignKeys[1].RefTable = NodeListsTable
+	DocumentsTable.Annotation = &entsql.Annotation{}
 	DocumentTypesTable.ForeignKeys[0].RefTable = DocumentsTable
 	DocumentTypesTable.ForeignKeys[1].RefTable = MetadataTable
 	EdgeTypesTable.ForeignKeys[0].RefTable = DocumentsTable
 	EdgeTypesTable.ForeignKeys[1].RefTable = NodesTable
 	EdgeTypesTable.ForeignKeys[2].RefTable = NodesTable
+	EdgeTypesTable.Annotation = &entsql.Annotation{}
 	ExternalReferencesTable.ForeignKeys[0].RefTable = DocumentsTable
 	ExternalReferencesTable.ForeignKeys[1].RefTable = NodesTable
+	MetadataTable.Annotation = &entsql.Annotation{}
 	NodesTable.ForeignKeys[0].RefTable = DocumentsTable
+	NodesTable.Annotation = &entsql.Annotation{}
+	NodeListsTable.Annotation = &entsql.Annotation{}
 	PersonsTable.ForeignKeys[0].RefTable = MetadataTable
 	PersonsTable.ForeignKeys[1].RefTable = NodesTable
 	PersonsTable.ForeignKeys[2].RefTable = NodesTable
 	PersonsTable.ForeignKeys[3].RefTable = DocumentsTable
 	PersonsTable.ForeignKeys[4].RefTable = PersonsTable
+	PersonsTable.Annotation = &entsql.Annotation{}
 	PropertiesTable.ForeignKeys[0].RefTable = NodesTable
 	PropertiesTable.ForeignKeys[1].RefTable = DocumentsTable
 	PurposesTable.ForeignKeys[0].RefTable = NodesTable

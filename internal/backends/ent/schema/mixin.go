@@ -8,6 +8,7 @@ package schema
 
 import (
 	"entgo.io/ent"
+	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/schema"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
@@ -23,6 +24,11 @@ type (
 		mixin.Schema
 	}
 
+	// OnDeleteCascadeMixin adds the "ON DELETE CASCADE" clause.
+	OnDeleteCascadeMixin struct {
+		mixin.Schema
+	}
+
 	// ProtoMessageMixin adds the `proto_message` field containing the wire format bytes.
 	ProtoMessageMixin[T proto.Message] struct {
 		mixin.Schema
@@ -33,6 +39,12 @@ type (
 		mixin.Schema
 	}
 )
+
+func (OnDeleteCascadeMixin) Annotations() []schema.Annotation {
+	return []schema.Annotation{
+		entsql.OnDelete(entsql.Cascade),
+	}
+}
 
 func (DocumentMixin) Fields() []ent.Field {
 	return []ent.Field{

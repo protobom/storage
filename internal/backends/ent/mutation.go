@@ -625,20 +625,17 @@ func (m *AnnotationMutation) ResetEdge(name string) error {
 // DocumentMutation represents an operation that mutates the Document nodes in the graph.
 type DocumentMutation struct {
 	config
-	op                 Op
-	typ                string
-	id                 *uuid.UUID
-	clearedFields      map[string]struct{}
-	annotations        map[int]struct{}
-	removedannotations map[int]struct{}
-	clearedannotations bool
-	metadata           *string
-	clearedmetadata    bool
-	node_list          *uuid.UUID
-	clearednode_list   bool
-	done               bool
-	oldValue           func(context.Context) (*Document, error)
-	predicates         []predicate.Document
+	op               Op
+	typ              string
+	id               *uuid.UUID
+	clearedFields    map[string]struct{}
+	metadata         *string
+	clearedmetadata  bool
+	node_list        *uuid.UUID
+	clearednode_list bool
+	done             bool
+	oldValue         func(context.Context) (*Document, error)
+	predicates       []predicate.Document
 }
 
 var _ ent.Mutation = (*DocumentMutation)(nil)
@@ -841,60 +838,6 @@ func (m *DocumentMutation) NodeListIDCleared() bool {
 func (m *DocumentMutation) ResetNodeListID() {
 	m.node_list = nil
 	delete(m.clearedFields, document.FieldNodeListID)
-}
-
-// AddAnnotationIDs adds the "annotations" edge to the Annotation entity by ids.
-func (m *DocumentMutation) AddAnnotationIDs(ids ...int) {
-	if m.annotations == nil {
-		m.annotations = make(map[int]struct{})
-	}
-	for i := range ids {
-		m.annotations[ids[i]] = struct{}{}
-	}
-}
-
-// ClearAnnotations clears the "annotations" edge to the Annotation entity.
-func (m *DocumentMutation) ClearAnnotations() {
-	m.clearedannotations = true
-}
-
-// AnnotationsCleared reports if the "annotations" edge to the Annotation entity was cleared.
-func (m *DocumentMutation) AnnotationsCleared() bool {
-	return m.clearedannotations
-}
-
-// RemoveAnnotationIDs removes the "annotations" edge to the Annotation entity by IDs.
-func (m *DocumentMutation) RemoveAnnotationIDs(ids ...int) {
-	if m.removedannotations == nil {
-		m.removedannotations = make(map[int]struct{})
-	}
-	for i := range ids {
-		delete(m.annotations, ids[i])
-		m.removedannotations[ids[i]] = struct{}{}
-	}
-}
-
-// RemovedAnnotations returns the removed IDs of the "annotations" edge to the Annotation entity.
-func (m *DocumentMutation) RemovedAnnotationsIDs() (ids []int) {
-	for id := range m.removedannotations {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// AnnotationsIDs returns the "annotations" edge IDs in the mutation.
-func (m *DocumentMutation) AnnotationsIDs() (ids []int) {
-	for id := range m.annotations {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// ResetAnnotations resets all changes to the "annotations" edge.
-func (m *DocumentMutation) ResetAnnotations() {
-	m.annotations = nil
-	m.clearedannotations = false
-	m.removedannotations = nil
 }
 
 // ClearMetadata clears the "metadata" edge to the Metadata entity.
@@ -1116,10 +1059,7 @@ func (m *DocumentMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *DocumentMutation) AddedEdges() []string {
-	edges := make([]string, 0, 3)
-	if m.annotations != nil {
-		edges = append(edges, document.EdgeAnnotations)
-	}
+	edges := make([]string, 0, 2)
 	if m.metadata != nil {
 		edges = append(edges, document.EdgeMetadata)
 	}
@@ -1133,12 +1073,6 @@ func (m *DocumentMutation) AddedEdges() []string {
 // name in this mutation.
 func (m *DocumentMutation) AddedIDs(name string) []ent.Value {
 	switch name {
-	case document.EdgeAnnotations:
-		ids := make([]ent.Value, 0, len(m.annotations))
-		for id := range m.annotations {
-			ids = append(ids, id)
-		}
-		return ids
 	case document.EdgeMetadata:
 		if id := m.metadata; id != nil {
 			return []ent.Value{*id}
@@ -1153,33 +1087,19 @@ func (m *DocumentMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *DocumentMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 3)
-	if m.removedannotations != nil {
-		edges = append(edges, document.EdgeAnnotations)
-	}
+	edges := make([]string, 0, 2)
 	return edges
 }
 
 // RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
 // the given name in this mutation.
 func (m *DocumentMutation) RemovedIDs(name string) []ent.Value {
-	switch name {
-	case document.EdgeAnnotations:
-		ids := make([]ent.Value, 0, len(m.removedannotations))
-		for id := range m.removedannotations {
-			ids = append(ids, id)
-		}
-		return ids
-	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *DocumentMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 3)
-	if m.clearedannotations {
-		edges = append(edges, document.EdgeAnnotations)
-	}
+	edges := make([]string, 0, 2)
 	if m.clearedmetadata {
 		edges = append(edges, document.EdgeMetadata)
 	}
@@ -1193,8 +1113,6 @@ func (m *DocumentMutation) ClearedEdges() []string {
 // was cleared in this mutation.
 func (m *DocumentMutation) EdgeCleared(name string) bool {
 	switch name {
-	case document.EdgeAnnotations:
-		return m.clearedannotations
 	case document.EdgeMetadata:
 		return m.clearedmetadata
 	case document.EdgeNodeList:
@@ -1221,9 +1139,6 @@ func (m *DocumentMutation) ClearEdge(name string) error {
 // It returns an error if the edge is not defined in the schema.
 func (m *DocumentMutation) ResetEdge(name string) error {
 	switch name {
-	case document.EdgeAnnotations:
-		m.ResetAnnotations()
-		return nil
 	case document.EdgeMetadata:
 		m.ResetMetadata()
 		return nil

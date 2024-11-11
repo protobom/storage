@@ -20,6 +20,7 @@ type Annotation struct {
 func (Annotation) Mixin() []ent.Mixin {
 	return []ent.Mixin{
 		DocumentMixin{},
+		OnDeleteCascadeMixin{},
 	}
 }
 
@@ -27,8 +28,7 @@ func (Annotation) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("name"),
 		field.String("value"),
-		field.Bool("is_unique").
-			Default(false),
+		field.Bool("is_unique").Default(false),
 	}
 }
 
@@ -39,7 +39,7 @@ func (Annotation) Indexes() []ent.Index {
 			StorageKey("idx_annotations"),
 		index.Fields("document_id", "name").
 			Unique().
-			Annotations(entsql.IndexWhere("is_unique = true")).
+			Annotations(entsql.IndexWhere("is_unique")).
 			StorageKey("idx_document_unique_annotations"),
 	}
 }
