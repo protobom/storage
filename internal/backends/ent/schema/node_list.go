@@ -20,7 +20,6 @@ type NodeList struct {
 
 func (NodeList) Mixin() []ent.Mixin {
 	return []ent.Mixin{
-		OnDeleteCascadeMixin{},
 		ProtoMessageMixin[*sbom.NodeList]{},
 		UUIDMixin{},
 	}

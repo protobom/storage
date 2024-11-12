@@ -20,7 +20,6 @@ type Annotation struct {
 func (Annotation) Mixin() []ent.Mixin {
 	return []ent.Mixin{
 		DocumentMixin{},
-		OnDeleteCascadeMixin{},
 	}
 }
 

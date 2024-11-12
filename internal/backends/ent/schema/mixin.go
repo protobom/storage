@@ -24,11 +24,6 @@ type (
 		mixin.Schema
 	}
 
-	// OnDeleteCascadeMixin adds the "ON DELETE CASCADE" clause.
-	OnDeleteCascadeMixin struct {
-		mixin.Schema
-	}
-
 	// ProtoMessageMixin adds the `proto_message` field containing the wire format bytes.
 	ProtoMessageMixin[T proto.Message] struct {
 		mixin.Schema
@@ -40,7 +35,7 @@ type (
 	}
 )
 
-func (OnDeleteCascadeMixin) Annotations() []schema.Annotation {
+func (DocumentMixin) Annotations() []schema.Annotation {
 	return []schema.Annotation{
 		entsql.OnDelete(entsql.Cascade),
 	}

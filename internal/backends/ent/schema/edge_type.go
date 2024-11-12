@@ -22,7 +22,6 @@ type EdgeType struct {
 func (EdgeType) Mixin() []ent.Mixin {
 	return []ent.Mixin{
 		DocumentMixin{},
-		OnDeleteCascadeMixin{},
 	}
 }
 

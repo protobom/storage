@@ -20,7 +20,6 @@ type Document struct {
 
 func (Document) Mixin() []ent.Mixin {
 	return []ent.Mixin{
-		OnDeleteCascadeMixin{},
 		UUIDMixin{},
 	}
 }
