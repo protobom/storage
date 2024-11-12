@@ -35,11 +35,9 @@ test-unit: # Run unit tests
 	go test -failfast -coverprofile=coverage.out -covermode=atomic ./backends/ent 1> /dev/null
 	printf "${GREEN}DONE${RESET}\n\n"
 
-	printf "${CYAN}"
-	echo "+--------------------------------+"
-	echo "|         COVERAGE REPORT        |"
-	echo "+--------------------------------+"
-	printf "${RESET}\n"
+	printf "${CYAN}+--------------------------------+${RESET}\n"
+	printf "${CYAN}|         COVERAGE REPORT        |${RESET}\n"
+	printf "${CYAN}+--------------------------------+${RESET}\n\n"
 
 	go tool cover -func=coverage.out | \
 	  awk '{ gsub(/^github.com\/protobom\/storage\/backends\/ent\//, "", $$1) } \
