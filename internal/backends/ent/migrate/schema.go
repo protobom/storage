@@ -32,7 +32,7 @@ var (
 				Symbol:     "annotations_documents_document",
 				Columns:    []*schema.Column{AnnotationsColumns[4]},
 				RefColumns: []*schema.Column{DocumentsColumns[0]},
-				OnDelete:   schema.SetNull,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -67,13 +67,13 @@ var (
 				Symbol:     "documents_metadata_document",
 				Columns:    []*schema.Column{DocumentsColumns[1]},
 				RefColumns: []*schema.Column{MetadataColumns[0]},
-				OnDelete:   schema.SetNull,
+				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "documents_node_lists_document",
 				Columns:    []*schema.Column{DocumentsColumns[2]},
 				RefColumns: []*schema.Column{NodeListsColumns[0]},
-				OnDelete:   schema.SetNull,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -104,13 +104,13 @@ var (
 				Symbol:     "document_types_documents_document",
 				Columns:    []*schema.Column{DocumentTypesColumns[5]},
 				RefColumns: []*schema.Column{DocumentsColumns[0]},
-				OnDelete:   schema.SetNull,
+				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "document_types_metadata_document_types",
 				Columns:    []*schema.Column{DocumentTypesColumns[6]},
 				RefColumns: []*schema.Column{MetadataColumns[0]},
-				OnDelete:   schema.SetNull,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -139,19 +139,19 @@ var (
 				Symbol:     "edge_types_documents_document",
 				Columns:    []*schema.Column{EdgeTypesColumns[2]},
 				RefColumns: []*schema.Column{DocumentsColumns[0]},
-				OnDelete:   schema.SetNull,
+				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "edge_types_nodes_from",
 				Columns:    []*schema.Column{EdgeTypesColumns[3]},
 				RefColumns: []*schema.Column{NodesColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "edge_types_nodes_to",
 				Columns:    []*schema.Column{EdgeTypesColumns[4]},
 				RefColumns: []*schema.Column{NodesColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -189,13 +189,13 @@ var (
 				Symbol:     "external_references_documents_document",
 				Columns:    []*schema.Column{ExternalReferencesColumns[7]},
 				RefColumns: []*schema.Column{DocumentsColumns[0]},
-				OnDelete:   schema.SetNull,
+				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "external_references_nodes_external_references",
 				Columns:    []*schema.Column{ExternalReferencesColumns[8]},
 				RefColumns: []*schema.Column{NodesColumns[0]},
-				OnDelete:   schema.SetNull,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -266,7 +266,7 @@ var (
 				Symbol:     "nodes_documents_document",
 				Columns:    []*schema.Column{NodesColumns[24]},
 				RefColumns: []*schema.Column{DocumentsColumns[0]},
-				OnDelete:   schema.SetNull,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -314,31 +314,31 @@ var (
 				Symbol:     "persons_metadata_authors",
 				Columns:    []*schema.Column{PersonsColumns[7]},
 				RefColumns: []*schema.Column{MetadataColumns[0]},
-				OnDelete:   schema.SetNull,
+				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "persons_nodes_suppliers",
 				Columns:    []*schema.Column{PersonsColumns[8]},
 				RefColumns: []*schema.Column{NodesColumns[0]},
-				OnDelete:   schema.SetNull,
+				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "persons_nodes_originators",
 				Columns:    []*schema.Column{PersonsColumns[9]},
 				RefColumns: []*schema.Column{NodesColumns[0]},
-				OnDelete:   schema.SetNull,
+				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "persons_documents_document",
 				Columns:    []*schema.Column{PersonsColumns[10]},
 				RefColumns: []*schema.Column{DocumentsColumns[0]},
-				OnDelete:   schema.SetNull,
+				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "persons_persons_contacts",
 				Columns:    []*schema.Column{PersonsColumns[11]},
 				RefColumns: []*schema.Column{PersonsColumns[0]},
-				OnDelete:   schema.SetNull,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -379,13 +379,13 @@ var (
 				Symbol:     "properties_nodes_properties",
 				Columns:    []*schema.Column{PropertiesColumns[4]},
 				RefColumns: []*schema.Column{NodesColumns[0]},
-				OnDelete:   schema.SetNull,
+				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "properties_documents_document",
 				Columns:    []*schema.Column{PropertiesColumns[5]},
 				RefColumns: []*schema.Column{DocumentsColumns[0]},
-				OnDelete:   schema.SetNull,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -413,13 +413,13 @@ var (
 				Symbol:     "purposes_nodes_primary_purpose",
 				Columns:    []*schema.Column{PurposesColumns[2]},
 				RefColumns: []*schema.Column{NodesColumns[0]},
-				OnDelete:   schema.SetNull,
+				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "purposes_documents_document",
 				Columns:    []*schema.Column{PurposesColumns[3]},
 				RefColumns: []*schema.Column{DocumentsColumns[0]},
-				OnDelete:   schema.SetNull,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -451,13 +451,13 @@ var (
 				Symbol:     "source_data_metadata_source_data",
 				Columns:    []*schema.Column{SourceDataColumns[6]},
 				RefColumns: []*schema.Column{MetadataColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "source_data_documents_document",
 				Columns:    []*schema.Column{SourceDataColumns[7]},
 				RefColumns: []*schema.Column{DocumentsColumns[0]},
-				OnDelete:   schema.SetNull,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -488,13 +488,13 @@ var (
 				Symbol:     "tools_metadata_tools",
 				Columns:    []*schema.Column{ToolsColumns[5]},
 				RefColumns: []*schema.Column{MetadataColumns[0]},
-				OnDelete:   schema.SetNull,
+				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "tools_documents_document",
 				Columns:    []*schema.Column{ToolsColumns[6]},
 				RefColumns: []*schema.Column{DocumentsColumns[0]},
-				OnDelete:   schema.SetNull,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -583,4 +583,5 @@ func init() {
 	ToolsTable.ForeignKeys[1].RefTable = DocumentsTable
 	NodeListNodesTable.ForeignKeys[0].RefTable = NodeListsTable
 	NodeListNodesTable.ForeignKeys[1].RefTable = NodesTable
+	NodeListNodesTable.Annotation = &entsql.Annotation{}
 }

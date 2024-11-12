@@ -63,8 +63,7 @@ func (as *annotationsSuite) TearDownTest() {
 }
 
 func (as *annotationsSuite) TestBackend_AddAnnotations() {
-	// juice-shop-11.1.2.cdx.json serial number
-	id := "urn:uuid:1f860713-54b9-4253-ba5a-9554851904af"
+	id := as.documents[0].GetMetadata().GetId()
 	annotationName := "add_annotation_test"
 
 	as.Require().NoError(as.Backend.AddAnnotations(id, annotationName, "test-value-1", "test-value-2", "test-value-3"))
@@ -112,8 +111,7 @@ func (as *annotationsSuite) TestBackend_ClearAnnotations() {
 }
 
 func (as *annotationsSuite) TestBackend_GetDocumentAnnotations() {
-	// juice-shop-11.1.2.cdx.json serial number
-	id := "urn:uuid:1f860713-54b9-4253-ba5a-9554851904af"
+	id := as.documents[0].GetMetadata().GetId()
 	annotationName := "get_document_annotations_test"
 
 	as.Require().NoError(as.Backend.AddAnnotations(id, annotationName, "test-value-1", "test-value-2", "test-value-3"))

@@ -40,7 +40,10 @@ func (ExternalReference) Fields() []ent.Field {
 
 func (ExternalReference) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("node", Node.Type).Ref("external_references").Unique().Field("node_id"),
+		edge.From("node", Node.Type).
+			Ref("external_references").
+			Unique().
+			Field("node_id"),
 	}
 }
 

@@ -60,6 +60,7 @@ func (DocumentMixin) Edges() []ent.Edge {
 		edge.To("document", Document.Type).
 			Unique().
 			Immutable().
+			Annotations(entsql.OnDelete(entsql.Cascade)).
 			Field("document_id"),
 	}
 }

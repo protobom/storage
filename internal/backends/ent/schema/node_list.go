@@ -8,6 +8,7 @@ package schema
 
 import (
 	"entgo.io/ent"
+	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"github.com/protobom/protobom/pkg/sbom"
@@ -33,10 +34,12 @@ func (NodeList) Fields() []ent.Field {
 
 func (NodeList) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.To("nodes", Node.Type),
+		edge.To("nodes", Node.Type).
+			Annotations(entsql.OnDelete(entsql.Cascade)),
 		edge.To("document", Document.Type).
 			Required().
 			Unique().
-			Immutable(),
+			Immutable().
+			Annotations(entsql.OnDelete(entsql.Cascade)),
 	}
 }
