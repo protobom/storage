@@ -5,11 +5,11 @@
 # --------------------------------------------------------------
 
 # ANSI color escape codes
-BOLD   := \x1b[1m
-CYAN   := \x1b[36m
-GREEN  := \x1b[32m
-YELLOW := \x1b[33m
-RESET  := \x1b[0m
+BOLD   := \033[1m
+CYAN   := \033[36m
+GREEN  := \033[32m
+YELLOW := \033[33m
+RESET  := \033[0m
 
 .PHONY: help
 help: # Display this help
