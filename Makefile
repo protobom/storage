@@ -28,17 +28,28 @@ lint: # Lint Golang code files
 lint-fix: # Fix linter findings
 	golangci-lint run --fix --verbose
 
+define coverage-report
+	@printf "${CYAN}+%s+${RESET}\n" $$(printf -- '-%.0s' {1..70})
+	@printf "${CYAN}|%-70s|${RESET}\n" "    COVERAGE REPORT"
+	@printf "${CYAN}+%s+${RESET}\n\n" $$(printf -- '-%.0s' {1..70})
+
+	@go tool cover -func=coverage.out | \
+	  awk -- '{ \
+	    sub("github.com/protobom/storage/backends/ent/", "", $$1); \
+	    percent = +$$3; sub("%", "", percent); \
+	    if (percent < 50.00) color = "${RED}"; \
+	    else if (percent < 80.00) color = "${YELLOW}"; \
+	    else if (percent < 100.00) color = "${RESET}"; \
+	    else color = "${GREEN}"; \
+	    fmtstr = $$1 == "total:" ? "\n%s%s\t%s\t%s%s\n" : "%s%-24s %-36s %.1f%%%s\n"; \
+	    printf fmtstr, color, $$1, $$2, $$3, "${RESET}" \
+	  }'
+endef
+
 .PHONY: test-unit
-.SILENT: test-unit
 test-unit: # Run unit tests
-	printf "Running tests for ${CYAN}backends/ent${RESET}..."
-	go test -failfast -coverprofile=coverage.out -covermode=atomic ./backends/ent 1> /dev/null
-	printf "${GREEN}DONE${RESET}\n\n"
+	@printf "Running tests for ${CYAN}backends/ent${RESET}..."
+	@go test -failfast -v -coverprofile=coverage.out -covermode=atomic ./backends/ent/...
+	@printf "${GREEN}DONE${RESET}\n\n"
 
-	printf "${CYAN}+--------------------------------+${RESET}\n"
-	printf "${CYAN}|         COVERAGE REPORT        |${RESET}\n"
-	printf "${CYAN}+--------------------------------+${RESET}\n\n"
-
-	go tool cover -func=coverage.out | \
-	  awk '{ gsub(/^github.com\/protobom\/storage\/backends\/ent\//, "", $$1) } \
-	    { printf ($$1 == "total:") ? "\n\t%s\t%s\t%s\n" : "%-24s %-36s %s\n", $$1, $$2, $$3 }'
+	${call coverage-report}
