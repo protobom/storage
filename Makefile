@@ -5,11 +5,11 @@
 # --------------------------------------------------------------
 
 # ANSI color escape codes
-BOLD   := \033[1m
-CYAN   := \033[36m
-GREEN  := \033[32m
-YELLOW := \033[33m
-RESET  := \033[0m
+BOLD   := \x1b[1m
+CYAN   := \x1b[36m
+GREEN  := \x1b[32m
+YELLOW := \x1b[33m
+RESET  := \x1b[0m
 
 .PHONY: help
 help: # Display this help
@@ -29,18 +29,20 @@ lint-fix: # Fix linter findings
 	golangci-lint run --fix --verbose
 
 define coverage-report
-	@printf "${CYAN}+%s+${RESET}\n" $$(printf -- '-%.0s' {1..70})
-	@printf "${CYAN}|%-70s|${RESET}\n" "    COVERAGE REPORT"
-	@printf "${CYAN}+%s+${RESET}\n\n" $$(printf -- '-%.0s' {1..70})
+	@printf "${BOLD}${CYAN}"
+	@printf "+----------------------------------------------------------------------+\n"
+	@printf "|    COVERAGE REPORT                                                   |\n"
+	@printf "+----------------------------------------------------------------------+\n"
+	@printf "${RESET}\n"
 
 	@go tool cover -func=coverage.out | \
 	  awk -- '{ \
 	    sub("github.com/protobom/storage/backends/ent/", "", $$1); \
 	    percent = +$$3; sub("%", "", percent); \
-	    if (percent < 50.00) color = "${RED}"; \
-	    else if (percent < 80.00) color = "${YELLOW}"; \
-	    else if (percent < 100.00) color = "${RESET}"; \
-	    else color = "${GREEN}"; \
+	    if (percent < 50.00) color = "${BOLD}${RED}"; \
+	    else if (percent < 80.00) color = "${BOLD}${YELLOW}"; \
+	    else if (percent < 100.00) color = "${BOLD}${RESET}"; \
+	    else color = "${BOLD}${GREEN}"; \
 	    fmtstr = $$1 == "total:" ? "\n%s%s\t%s\t%s%s\n" : "%s%-24s %-36s %.1f%%%s\n"; \
 	    printf fmtstr, color, $$1, $$2, $$3, "${RESET}" \
 	  }'
@@ -48,8 +50,8 @@ endef
 
 .PHONY: test-unit
 test-unit: # Run unit tests
-	@printf "Running tests for ${CYAN}backends/ent${RESET}..."
+	@printf "Running tests for ${BOLD}${CYAN}backends/ent${RESET}...\n"
 	@go test -failfast -v -coverprofile=coverage.out -covermode=atomic ./backends/ent/...
-	@printf "${GREEN}DONE${RESET}\n\n"
+	@printf "${BOLD}${GREEN}DONE${RESET}\n\n"
 
 	${call coverage-report}
