@@ -29,11 +29,9 @@ lint-fix: # Fix linter findings
 	golangci-lint run --fix --verbose
 
 define coverage-report
-	@printf "${BOLD}${CYAN}"
-	@printf "+----------------------------------------------------------------------+\n"
-	@printf "|    COVERAGE REPORT                                                   |\n"
-	@printf "+----------------------------------------------------------------------+\n"
-	@printf "${RESET}\n"
+	@printf "${BOLD}${CYAN}+----------------------------------------------------------------------+${RESET}\n"
+	@printf "${BOLD}${CYAN}|    COVERAGE REPORT                                                   |${RESET}\n"
+	@printf "${BOLD}${CYAN}+----------------------------------------------------------------------+${RESET}\n\n"
 
 	@go tool cover -func=coverage.out | \
 	  awk -- '{ \
