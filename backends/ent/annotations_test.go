@@ -62,11 +62,13 @@ func (as *annotationsSuite) TearDownTest() {
 	as.Backend = nil
 }
 
-func (as *annotationsSuite) TestBackend_AddAnnotations() {
+func (as *annotationsSuite) TestBackend_AddDocumentAnnotations() {
 	id := as.documents[0].GetMetadata().GetId()
 	annotationName := "add_annotation_test"
 
-	as.Require().NoError(as.Backend.AddDocumentAnnotations(id, annotationName, "test-value-1", "test-value-2", "test-value-3"))
+	as.Require().NoError(
+		as.Backend.AddDocumentAnnotations(id, annotationName, "test-value-1", "test-value-2", "test-value-3"),
+	)
 
 	annotations := as.getTestResult(annotationName)
 
@@ -114,7 +116,9 @@ func (as *annotationsSuite) TestBackend_GetDocumentAnnotations() {
 	id := as.documents[0].GetMetadata().GetId()
 	annotationName := "get_document_annotations_test"
 
-	as.Require().NoError(as.Backend.AddDocumentAnnotations(id, annotationName, "test-value-1", "test-value-2", "test-value-3"))
+	as.Require().NoError(as.Backend.AddDocumentAnnotations(
+		id, annotationName, "test-value-1", "test-value-2", "test-value-3"),
+	)
 
 	annotations, err := as.Backend.GetDocumentAnnotations(id, annotationName)
 	as.Require().NoError(err)
@@ -253,7 +257,7 @@ func (as *annotationsSuite) TestBackend_RemoveAnnotations() {
 	}
 }
 
-func (as *annotationsSuite) TestBackend_SetAnnotations() {
+func (as *annotationsSuite) TestBackend_SetDocumentAnnotations() {
 	documentID := as.documents[0].GetMetadata().GetId()
 
 	annotationName := "set_annotations_test"
