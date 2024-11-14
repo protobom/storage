@@ -41,9 +41,20 @@ func (Person) Fields() []ent.Field {
 
 func (Person) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.To("contacts", Person.Type).From("contact_owner").Unique(),
-		edge.From("metadata", Metadata.Type).Ref("authors").Unique().Field("metadata_id"),
-		edge.From("node", Node.Type).Ref("suppliers").Unique().Ref("originators").Unique().Field("node_id"),
+		edge.To("contacts", Person.Type).
+			Annotations(entsql.OnDelete(entsql.Cascade)).
+			From("contact_owner").
+			Unique(),
+		edge.From("metadata", Metadata.Type).
+			Ref("authors").
+			Unique().
+			Field("metadata_id"),
+		edge.From("node", Node.Type).
+			Ref("suppliers").
+			Unique().
+			Ref("originators").
+			Unique().
+			Field("node_id"),
 	}
 }
 

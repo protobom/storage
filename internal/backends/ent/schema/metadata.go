@@ -8,6 +8,7 @@ package schema
 
 import (
 	"entgo.io/ent"
+	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
@@ -36,14 +37,19 @@ func (Metadata) Fields() []ent.Field {
 
 func (Metadata) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.To("tools", Tool.Type),
-		edge.To("authors", Person.Type),
-		edge.To("document_types", DocumentType.Type),
-		edge.To("source_data", SourceData.Type),
+		edge.To("tools", Tool.Type).
+			Annotations(entsql.OnDelete(entsql.Cascade)),
+		edge.To("authors", Person.Type).
+			Annotations(entsql.OnDelete(entsql.Cascade)),
+		edge.To("document_types", DocumentType.Type).
+			Annotations(entsql.OnDelete(entsql.Cascade)),
+		edge.To("source_data", SourceData.Type).
+			Annotations(entsql.OnDelete(entsql.Cascade)),
 		edge.To("document", Document.Type).
 			Required().
 			Unique().
-			Immutable(),
+			Immutable().
+			Annotations(entsql.OnDelete(entsql.Cascade)),
 	}
 }
 

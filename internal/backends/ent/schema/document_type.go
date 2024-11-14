@@ -40,7 +40,10 @@ func (DocumentType) Fields() []ent.Field {
 
 func (DocumentType) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("metadata", Metadata.Type).Ref("document_types").Unique().Field("metadata_id"),
+		edge.From("metadata", Metadata.Type).
+			Ref("document_types").
+			Unique().
+			Field("metadata_id"),
 	}
 }
 

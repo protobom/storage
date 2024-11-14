@@ -570,22 +570,6 @@ func (c *DocumentClient) GetX(ctx context.Context, id uuid.UUID) *Document {
 	return obj
 }
 
-// QueryAnnotations queries the annotations edge of a Document.
-func (c *DocumentClient) QueryAnnotations(d *Document) *AnnotationQuery {
-	query := (&AnnotationClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := d.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(document.Table, document.FieldID, id),
-			sqlgraph.To(annotation.Table, annotation.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, document.AnnotationsTable, document.AnnotationsColumn),
-		)
-		fromV = sqlgraph.Neighbors(d.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
 // QueryMetadata queries the metadata edge of a Document.
 func (c *DocumentClient) QueryMetadata(d *Document) *MetadataQuery {
 	query := (&MetadataClient{config: c.config}).Query()

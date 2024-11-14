@@ -108,15 +108,17 @@ func (backend *Backend) GetDocumentsByAnnotation(name string, values ...string) 
 		return nil, errUninitializedClient
 	}
 
-	predicates := []predicate.Document{
-		document.HasAnnotationsWith(annotation.NameEQ(name)),
-	}
+	predicates := []predicate.Annotation{annotation.NameEQ(name)}
 
 	if len(values) > 0 {
-		predicates = append(predicates, document.HasAnnotationsWith(annotation.ValueIn(values...)))
+		predicates = append(predicates, annotation.ValueIn(values...))
 	}
 
-	ids, err := backend.client.Document.Query().Where(predicates...).QueryMetadata().IDs(backend.ctx)
+	ids, err := backend.client.Annotation.Query().
+		Where(predicates...).
+		QueryDocument().
+		QueryMetadata().
+		IDs(backend.ctx)
 	if err != nil {
 		return nil, fmt.Errorf("querying documents table: %w", err)
 	}

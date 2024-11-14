@@ -33,9 +33,8 @@ type Annotation struct {
 	IsUnique bool `json:"is_unique,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the AnnotationQuery when eager-loading is set.
-	Edges                AnnotationEdges `json:"edges"`
-	document_annotations *uuid.UUID
-	selectValues         sql.SelectValues
+	Edges        AnnotationEdges `json:"edges"`
+	selectValues sql.SelectValues
 }
 
 // AnnotationEdges holds the relations/edges for other nodes in the graph.
@@ -71,8 +70,6 @@ func (*Annotation) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullString)
 		case annotation.FieldDocumentID:
 			values[i] = new(uuid.UUID)
-		case annotation.ForeignKeys[0]: // document_annotations
-			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -117,13 +114,6 @@ func (a *Annotation) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field is_unique", values[i])
 			} else if value.Valid {
 				a.IsUnique = value.Bool
-			}
-		case annotation.ForeignKeys[0]:
-			if value, ok := values[i].(*sql.NullScanner); !ok {
-				return fmt.Errorf("unexpected type %T for field document_annotations", values[i])
-			} else if value.Valid {
-				a.document_annotations = new(uuid.UUID)
-				*a.document_annotations = *value.S.(*uuid.UUID)
 			}
 		default:
 			a.selectValues.Set(columns[i], values[i])

@@ -39,7 +39,6 @@ func (Document) Fields() []ent.Field {
 
 func (Document) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.To("annotations", Annotation.Type),
 		edge.From("metadata", Metadata.Type).
 			Ref("document").
 			Unique().

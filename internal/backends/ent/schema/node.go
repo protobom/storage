@@ -8,6 +8,7 @@ package schema
 
 import (
 	"entgo.io/ent"
+	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
@@ -56,13 +57,22 @@ func (Node) Fields() []ent.Field {
 
 func (Node) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.To("suppliers", Person.Type),
-		edge.To("originators", Person.Type),
-		edge.To("external_references", ExternalReference.Type),
-		edge.To("primary_purpose", Purpose.Type),
-		edge.To("nodes", Node.Type).From("to_nodes").Through("edge_types", EdgeType.Type),
-		edge.To("properties", Property.Type),
-		edge.From("node_lists", NodeList.Type).Ref("nodes"),
+		edge.To("suppliers", Person.Type).
+			Annotations(entsql.OnDelete(entsql.Cascade)),
+		edge.To("originators", Person.Type).
+			Annotations(entsql.OnDelete(entsql.Cascade)),
+		edge.To("external_references", ExternalReference.Type).
+			Annotations(entsql.OnDelete(entsql.Cascade)),
+		edge.To("primary_purpose", Purpose.Type).
+			Annotations(entsql.OnDelete(entsql.Cascade)),
+		edge.To("nodes", Node.Type).
+			From("to_nodes").
+			Through("edge_types", EdgeType.Type).
+			Annotations(entsql.OnDelete(entsql.Cascade)),
+		edge.To("properties", Property.Type).
+			Annotations(entsql.OnDelete(entsql.Cascade)),
+		edge.From("node_lists", NodeList.Type).
+			Ref("nodes"),
 	}
 }
 

@@ -21,7 +21,6 @@ var (
 		{Name: "value", Type: field.TypeString},
 		{Name: "is_unique", Type: field.TypeBool, Default: false},
 		{Name: "document_id", Type: field.TypeUUID, Nullable: true},
-		{Name: "document_annotations", Type: field.TypeUUID, Nullable: true},
 	}
 	// AnnotationsTable holds the schema information for the "annotations" table.
 	AnnotationsTable = &schema.Table{
@@ -33,13 +32,7 @@ var (
 				Symbol:     "annotations_documents_document",
 				Columns:    []*schema.Column{AnnotationsColumns[4]},
 				RefColumns: []*schema.Column{DocumentsColumns[0]},
-				OnDelete:   schema.SetNull,
-			},
-			{
-				Symbol:     "annotations_documents_annotations",
-				Columns:    []*schema.Column{AnnotationsColumns[5]},
-				RefColumns: []*schema.Column{DocumentsColumns[0]},
-				OnDelete:   schema.SetNull,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -53,7 +46,7 @@ var (
 				Unique:  true,
 				Columns: []*schema.Column{AnnotationsColumns[4], AnnotationsColumns[1]},
 				Annotation: &entsql.IndexAnnotation{
-					Where: "is_unique = true",
+					Where: "is_unique",
 				},
 			},
 		},
@@ -74,13 +67,13 @@ var (
 				Symbol:     "documents_metadata_document",
 				Columns:    []*schema.Column{DocumentsColumns[1]},
 				RefColumns: []*schema.Column{MetadataColumns[0]},
-				OnDelete:   schema.SetNull,
+				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "documents_node_lists_document",
 				Columns:    []*schema.Column{DocumentsColumns[2]},
 				RefColumns: []*schema.Column{NodeListsColumns[0]},
-				OnDelete:   schema.SetNull,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -111,13 +104,13 @@ var (
 				Symbol:     "document_types_documents_document",
 				Columns:    []*schema.Column{DocumentTypesColumns[5]},
 				RefColumns: []*schema.Column{DocumentsColumns[0]},
-				OnDelete:   schema.SetNull,
+				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "document_types_metadata_document_types",
 				Columns:    []*schema.Column{DocumentTypesColumns[6]},
 				RefColumns: []*schema.Column{MetadataColumns[0]},
-				OnDelete:   schema.SetNull,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -146,19 +139,19 @@ var (
 				Symbol:     "edge_types_documents_document",
 				Columns:    []*schema.Column{EdgeTypesColumns[2]},
 				RefColumns: []*schema.Column{DocumentsColumns[0]},
-				OnDelete:   schema.SetNull,
+				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "edge_types_nodes_from",
 				Columns:    []*schema.Column{EdgeTypesColumns[3]},
 				RefColumns: []*schema.Column{NodesColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "edge_types_nodes_to",
 				Columns:    []*schema.Column{EdgeTypesColumns[4]},
 				RefColumns: []*schema.Column{NodesColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -196,13 +189,13 @@ var (
 				Symbol:     "external_references_documents_document",
 				Columns:    []*schema.Column{ExternalReferencesColumns[7]},
 				RefColumns: []*schema.Column{DocumentsColumns[0]},
-				OnDelete:   schema.SetNull,
+				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "external_references_nodes_external_references",
 				Columns:    []*schema.Column{ExternalReferencesColumns[8]},
 				RefColumns: []*schema.Column{NodesColumns[0]},
-				OnDelete:   schema.SetNull,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -273,7 +266,7 @@ var (
 				Symbol:     "nodes_documents_document",
 				Columns:    []*schema.Column{NodesColumns[24]},
 				RefColumns: []*schema.Column{DocumentsColumns[0]},
-				OnDelete:   schema.SetNull,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -321,31 +314,31 @@ var (
 				Symbol:     "persons_metadata_authors",
 				Columns:    []*schema.Column{PersonsColumns[7]},
 				RefColumns: []*schema.Column{MetadataColumns[0]},
-				OnDelete:   schema.SetNull,
+				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "persons_nodes_suppliers",
 				Columns:    []*schema.Column{PersonsColumns[8]},
 				RefColumns: []*schema.Column{NodesColumns[0]},
-				OnDelete:   schema.SetNull,
+				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "persons_nodes_originators",
 				Columns:    []*schema.Column{PersonsColumns[9]},
 				RefColumns: []*schema.Column{NodesColumns[0]},
-				OnDelete:   schema.SetNull,
+				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "persons_documents_document",
 				Columns:    []*schema.Column{PersonsColumns[10]},
 				RefColumns: []*schema.Column{DocumentsColumns[0]},
-				OnDelete:   schema.SetNull,
+				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "persons_persons_contacts",
 				Columns:    []*schema.Column{PersonsColumns[11]},
 				RefColumns: []*schema.Column{PersonsColumns[0]},
-				OnDelete:   schema.SetNull,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -386,13 +379,13 @@ var (
 				Symbol:     "properties_nodes_properties",
 				Columns:    []*schema.Column{PropertiesColumns[4]},
 				RefColumns: []*schema.Column{NodesColumns[0]},
-				OnDelete:   schema.SetNull,
+				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "properties_documents_document",
 				Columns:    []*schema.Column{PropertiesColumns[5]},
 				RefColumns: []*schema.Column{DocumentsColumns[0]},
-				OnDelete:   schema.SetNull,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -420,13 +413,13 @@ var (
 				Symbol:     "purposes_nodes_primary_purpose",
 				Columns:    []*schema.Column{PurposesColumns[2]},
 				RefColumns: []*schema.Column{NodesColumns[0]},
-				OnDelete:   schema.SetNull,
+				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "purposes_documents_document",
 				Columns:    []*schema.Column{PurposesColumns[3]},
 				RefColumns: []*schema.Column{DocumentsColumns[0]},
-				OnDelete:   schema.SetNull,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -458,13 +451,13 @@ var (
 				Symbol:     "source_data_metadata_source_data",
 				Columns:    []*schema.Column{SourceDataColumns[6]},
 				RefColumns: []*schema.Column{MetadataColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "source_data_documents_document",
 				Columns:    []*schema.Column{SourceDataColumns[7]},
 				RefColumns: []*schema.Column{DocumentsColumns[0]},
-				OnDelete:   schema.SetNull,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -495,13 +488,13 @@ var (
 				Symbol:     "tools_metadata_tools",
 				Columns:    []*schema.Column{ToolsColumns[5]},
 				RefColumns: []*schema.Column{MetadataColumns[0]},
-				OnDelete:   schema.SetNull,
+				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "tools_documents_document",
 				Columns:    []*schema.Column{ToolsColumns[6]},
 				RefColumns: []*schema.Column{DocumentsColumns[0]},
-				OnDelete:   schema.SetNull,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -558,30 +551,40 @@ var (
 
 func init() {
 	AnnotationsTable.ForeignKeys[0].RefTable = DocumentsTable
-	AnnotationsTable.ForeignKeys[1].RefTable = DocumentsTable
+	AnnotationsTable.Annotation = &entsql.Annotation{}
 	DocumentsTable.ForeignKeys[0].RefTable = MetadataTable
 	DocumentsTable.ForeignKeys[1].RefTable = NodeListsTable
 	DocumentTypesTable.ForeignKeys[0].RefTable = DocumentsTable
 	DocumentTypesTable.ForeignKeys[1].RefTable = MetadataTable
+	DocumentTypesTable.Annotation = &entsql.Annotation{}
 	EdgeTypesTable.ForeignKeys[0].RefTable = DocumentsTable
 	EdgeTypesTable.ForeignKeys[1].RefTable = NodesTable
 	EdgeTypesTable.ForeignKeys[2].RefTable = NodesTable
+	EdgeTypesTable.Annotation = &entsql.Annotation{}
 	ExternalReferencesTable.ForeignKeys[0].RefTable = DocumentsTable
 	ExternalReferencesTable.ForeignKeys[1].RefTable = NodesTable
+	ExternalReferencesTable.Annotation = &entsql.Annotation{}
 	NodesTable.ForeignKeys[0].RefTable = DocumentsTable
+	NodesTable.Annotation = &entsql.Annotation{}
 	PersonsTable.ForeignKeys[0].RefTable = MetadataTable
 	PersonsTable.ForeignKeys[1].RefTable = NodesTable
 	PersonsTable.ForeignKeys[2].RefTable = NodesTable
 	PersonsTable.ForeignKeys[3].RefTable = DocumentsTable
 	PersonsTable.ForeignKeys[4].RefTable = PersonsTable
+	PersonsTable.Annotation = &entsql.Annotation{}
 	PropertiesTable.ForeignKeys[0].RefTable = NodesTable
 	PropertiesTable.ForeignKeys[1].RefTable = DocumentsTable
+	PropertiesTable.Annotation = &entsql.Annotation{}
 	PurposesTable.ForeignKeys[0].RefTable = NodesTable
 	PurposesTable.ForeignKeys[1].RefTable = DocumentsTable
+	PurposesTable.Annotation = &entsql.Annotation{}
 	SourceDataTable.ForeignKeys[0].RefTable = MetadataTable
 	SourceDataTable.ForeignKeys[1].RefTable = DocumentsTable
+	SourceDataTable.Annotation = &entsql.Annotation{}
 	ToolsTable.ForeignKeys[0].RefTable = MetadataTable
 	ToolsTable.ForeignKeys[1].RefTable = DocumentsTable
+	ToolsTable.Annotation = &entsql.Annotation{}
 	NodeListNodesTable.ForeignKeys[0].RefTable = NodeListsTable
 	NodeListNodesTable.ForeignKeys[1].RefTable = NodesTable
+	NodeListNodesTable.Annotation = &entsql.Annotation{}
 }

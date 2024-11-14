@@ -8,6 +8,7 @@ package schema
 
 import (
 	"entgo.io/ent"
+	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
@@ -34,8 +35,16 @@ func (EdgeType) Fields() []ent.Field {
 
 func (EdgeType) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.To("from", Node.Type).Required().Unique().Field("node_id"),
-		edge.To("to", Node.Type).Required().Unique().Field("to_node_id"),
+		edge.To("from", Node.Type).
+			Required().
+			Unique().
+			Annotations(entsql.OnDelete(entsql.Cascade)).
+			Field("node_id"),
+		edge.To("to", Node.Type).
+			Required().
+			Unique().
+			Annotations(entsql.OnDelete(entsql.Cascade)).
+			Field("to_node_id"),
 	}
 }
 

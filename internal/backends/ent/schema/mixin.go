@@ -8,6 +8,7 @@ package schema
 
 import (
 	"entgo.io/ent"
+	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/schema"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
@@ -34,6 +35,12 @@ type (
 	}
 )
 
+func (DocumentMixin) Annotations() []schema.Annotation {
+	return []schema.Annotation{
+		entsql.OnDelete(entsql.Cascade),
+	}
+}
+
 func (DocumentMixin) Fields() []ent.Field {
 	return []ent.Field{
 		field.UUID("document_id", uuid.UUID{}).
@@ -48,6 +55,7 @@ func (DocumentMixin) Edges() []ent.Edge {
 		edge.To("document", Document.Type).
 			Unique().
 			Immutable().
+			Annotations(entsql.OnDelete(entsql.Cascade)).
 			Field("document_id"),
 	}
 }
