@@ -437,6 +437,22 @@ func (c *AnnotationClient) QueryDocument(a *Annotation) *DocumentQuery {
 	return query
 }
 
+// QueryNode queries the node edge of a Annotation.
+func (c *AnnotationClient) QueryNode(a *Annotation) *NodeQuery {
+	query := (&NodeClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := a.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(annotation.Table, annotation.FieldID, id),
+			sqlgraph.To(node.Table, node.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, annotation.NodeTable, annotation.NodeColumn),
+		)
+		fromV = sqlgraph.Neighbors(a.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *AnnotationClient) Hooks() []Hook {
 	return c.hooks.Annotation
@@ -1596,6 +1612,22 @@ func (c *NodeClient) QueryNodeLists(n *Node) *NodeListQuery {
 			sqlgraph.From(node.Table, node.FieldID, id),
 			sqlgraph.To(nodelist.Table, nodelist.FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, true, node.NodeListsTable, node.NodeListsPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(n.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryAnnotations queries the annotations edge of a Node.
+func (c *NodeClient) QueryAnnotations(n *Node) *AnnotationQuery {
+	query := (&AnnotationClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := n.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(node.Table, node.FieldID, id),
+			sqlgraph.To(annotation.Table, annotation.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, node.AnnotationsTable, node.AnnotationsColumn),
 		)
 		fromV = sqlgraph.Neighbors(n.driver.Dialect(), step)
 		return fromV, nil

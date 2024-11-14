@@ -18,6 +18,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/protobom/storage/internal/backends/ent/annotation"
 	"github.com/protobom/storage/internal/backends/ent/document"
+	"github.com/protobom/storage/internal/backends/ent/node"
 )
 
 // AnnotationCreate is the builder for creating a Annotation entity.
@@ -38,6 +39,20 @@ func (ac *AnnotationCreate) SetDocumentID(u uuid.UUID) *AnnotationCreate {
 func (ac *AnnotationCreate) SetNillableDocumentID(u *uuid.UUID) *AnnotationCreate {
 	if u != nil {
 		ac.SetDocumentID(*u)
+	}
+	return ac
+}
+
+// SetNodeID sets the "node_id" field.
+func (ac *AnnotationCreate) SetNodeID(s string) *AnnotationCreate {
+	ac.mutation.SetNodeID(s)
+	return ac
+}
+
+// SetNillableNodeID sets the "node_id" field if the given value is not nil.
+func (ac *AnnotationCreate) SetNillableNodeID(s *string) *AnnotationCreate {
+	if s != nil {
+		ac.SetNodeID(*s)
 	}
 	return ac
 }
@@ -71,6 +86,11 @@ func (ac *AnnotationCreate) SetNillableIsUnique(b *bool) *AnnotationCreate {
 // SetDocument sets the "document" edge to the Document entity.
 func (ac *AnnotationCreate) SetDocument(d *Document) *AnnotationCreate {
 	return ac.SetDocumentID(d.ID)
+}
+
+// SetNode sets the "node" edge to the Node entity.
+func (ac *AnnotationCreate) SetNode(n *Node) *AnnotationCreate {
+	return ac.SetNodeID(n.ID)
 }
 
 // Mutation returns the AnnotationMutation object of the builder.
@@ -120,6 +140,11 @@ func (ac *AnnotationCreate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (ac *AnnotationCreate) check() error {
+	if v, ok := ac.mutation.NodeID(); ok {
+		if err := annotation.NodeIDValidator(v); err != nil {
+			return &ValidationError{Name: "node_id", err: fmt.Errorf(`ent: validator failed for field "Annotation.node_id": %w`, err)}
+		}
+	}
 	if _, ok := ac.mutation.Name(); !ok {
 		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "Annotation.name"`)}
 	}
@@ -185,6 +210,23 @@ func (ac *AnnotationCreate) createSpec() (*Annotation, *sqlgraph.CreateSpec) {
 		_node.DocumentID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
+	if nodes := ac.mutation.NodeIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   annotation.NodeTable,
+			Columns: []string{annotation.NodeColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.NodeID = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
 	return _node, _spec
 }
 
@@ -236,6 +278,24 @@ type (
 		*sql.UpdateSet
 	}
 )
+
+// SetNodeID sets the "node_id" field.
+func (u *AnnotationUpsert) SetNodeID(v string) *AnnotationUpsert {
+	u.Set(annotation.FieldNodeID, v)
+	return u
+}
+
+// UpdateNodeID sets the "node_id" field to the value that was provided on create.
+func (u *AnnotationUpsert) UpdateNodeID() *AnnotationUpsert {
+	u.SetExcluded(annotation.FieldNodeID)
+	return u
+}
+
+// ClearNodeID clears the value of the "node_id" field.
+func (u *AnnotationUpsert) ClearNodeID() *AnnotationUpsert {
+	u.SetNull(annotation.FieldNodeID)
+	return u
+}
 
 // SetName sets the "name" field.
 func (u *AnnotationUpsert) SetName(v string) *AnnotationUpsert {
@@ -316,6 +376,27 @@ func (u *AnnotationUpsertOne) Update(set func(*AnnotationUpsert)) *AnnotationUps
 		set(&AnnotationUpsert{UpdateSet: update})
 	}))
 	return u
+}
+
+// SetNodeID sets the "node_id" field.
+func (u *AnnotationUpsertOne) SetNodeID(v string) *AnnotationUpsertOne {
+	return u.Update(func(s *AnnotationUpsert) {
+		s.SetNodeID(v)
+	})
+}
+
+// UpdateNodeID sets the "node_id" field to the value that was provided on create.
+func (u *AnnotationUpsertOne) UpdateNodeID() *AnnotationUpsertOne {
+	return u.Update(func(s *AnnotationUpsert) {
+		s.UpdateNodeID()
+	})
+}
+
+// ClearNodeID clears the value of the "node_id" field.
+func (u *AnnotationUpsertOne) ClearNodeID() *AnnotationUpsertOne {
+	return u.Update(func(s *AnnotationUpsert) {
+		s.ClearNodeID()
+	})
 }
 
 // SetName sets the "name" field.
@@ -569,6 +650,27 @@ func (u *AnnotationUpsertBulk) Update(set func(*AnnotationUpsert)) *AnnotationUp
 		set(&AnnotationUpsert{UpdateSet: update})
 	}))
 	return u
+}
+
+// SetNodeID sets the "node_id" field.
+func (u *AnnotationUpsertBulk) SetNodeID(v string) *AnnotationUpsertBulk {
+	return u.Update(func(s *AnnotationUpsert) {
+		s.SetNodeID(v)
+	})
+}
+
+// UpdateNodeID sets the "node_id" field to the value that was provided on create.
+func (u *AnnotationUpsertBulk) UpdateNodeID() *AnnotationUpsertBulk {
+	return u.Update(func(s *AnnotationUpsert) {
+		s.UpdateNodeID()
+	})
+}
+
+// ClearNodeID clears the value of the "node_id" field.
+func (u *AnnotationUpsertBulk) ClearNodeID() *AnnotationUpsertBulk {
+	return u.Update(func(s *AnnotationUpsert) {
+		s.ClearNodeID()
+	})
 }
 
 // SetName sets the "name" field.

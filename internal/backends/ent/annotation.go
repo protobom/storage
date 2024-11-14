@@ -16,6 +16,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/protobom/storage/internal/backends/ent/annotation"
 	"github.com/protobom/storage/internal/backends/ent/document"
+	"github.com/protobom/storage/internal/backends/ent/node"
 )
 
 // Annotation is the model entity for the Annotation schema.
@@ -25,6 +26,8 @@ type Annotation struct {
 	ID int `json:"id,omitempty"`
 	// DocumentID holds the value of the "document_id" field.
 	DocumentID uuid.UUID `json:"document_id,omitempty"`
+	// NodeID holds the value of the "node_id" field.
+	NodeID *string `json:"node_id,omitempty"`
 	// Name holds the value of the "name" field.
 	Name string `json:"name,omitempty"`
 	// Value holds the value of the "value" field.
@@ -41,9 +44,11 @@ type Annotation struct {
 type AnnotationEdges struct {
 	// Document holds the value of the document edge.
 	Document *Document `json:"document,omitempty"`
+	// Node holds the value of the node edge.
+	Node *Node `json:"node,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [1]bool
+	loadedTypes [2]bool
 }
 
 // DocumentOrErr returns the Document value or an error if the edge
@@ -57,6 +62,17 @@ func (e AnnotationEdges) DocumentOrErr() (*Document, error) {
 	return nil, &NotLoadedError{edge: "document"}
 }
 
+// NodeOrErr returns the Node value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e AnnotationEdges) NodeOrErr() (*Node, error) {
+	if e.Node != nil {
+		return e.Node, nil
+	} else if e.loadedTypes[1] {
+		return nil, &NotFoundError{label: node.Label}
+	}
+	return nil, &NotLoadedError{edge: "node"}
+}
+
 // scanValues returns the types for scanning values from sql.Rows.
 func (*Annotation) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
@@ -66,7 +82,7 @@ func (*Annotation) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullBool)
 		case annotation.FieldID:
 			values[i] = new(sql.NullInt64)
-		case annotation.FieldName, annotation.FieldValue:
+		case annotation.FieldNodeID, annotation.FieldName, annotation.FieldValue:
 			values[i] = new(sql.NullString)
 		case annotation.FieldDocumentID:
 			values[i] = new(uuid.UUID)
@@ -96,6 +112,13 @@ func (a *Annotation) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field document_id", values[i])
 			} else if value != nil {
 				a.DocumentID = *value
+			}
+		case annotation.FieldNodeID:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field node_id", values[i])
+			} else if value.Valid {
+				a.NodeID = new(string)
+				*a.NodeID = value.String
 			}
 		case annotation.FieldName:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -133,6 +156,11 @@ func (a *Annotation) QueryDocument() *DocumentQuery {
 	return NewAnnotationClient(a.config).QueryDocument(a)
 }
 
+// QueryNode queries the "node" edge of the Annotation entity.
+func (a *Annotation) QueryNode() *NodeQuery {
+	return NewAnnotationClient(a.config).QueryNode(a)
+}
+
 // Update returns a builder for updating this Annotation.
 // Note that you need to call Annotation.Unwrap() before calling this method if this Annotation
 // was returned from a transaction, and the transaction was committed or rolled back.
@@ -158,6 +186,11 @@ func (a *Annotation) String() string {
 	builder.WriteString(fmt.Sprintf("id=%v, ", a.ID))
 	builder.WriteString("document_id=")
 	builder.WriteString(fmt.Sprintf("%v", a.DocumentID))
+	builder.WriteString(", ")
+	if v := a.NodeID; v != nil {
+		builder.WriteString("node_id=")
+		builder.WriteString(*v)
+	}
 	builder.WriteString(", ")
 	builder.WriteString("name=")
 	builder.WriteString(a.Name)

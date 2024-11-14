@@ -18,6 +18,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
+	"github.com/protobom/storage/internal/backends/ent/annotation"
 	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/edgetype"
 	"github.com/protobom/storage/internal/backends/ent/externalreference"
@@ -45,6 +46,7 @@ type NodeQuery struct {
 	withNodes              *NodeQuery
 	withProperties         *PropertyQuery
 	withNodeLists          *NodeListQuery
+	withAnnotations        *AnnotationQuery
 	withEdgeTypes          *EdgeTypeQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
@@ -280,6 +282,28 @@ func (nq *NodeQuery) QueryNodeLists() *NodeListQuery {
 	return query
 }
 
+// QueryAnnotations chains the current query on the "annotations" edge.
+func (nq *NodeQuery) QueryAnnotations() *AnnotationQuery {
+	query := (&AnnotationClient{config: nq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := nq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := nq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(node.Table, node.FieldID, selector),
+			sqlgraph.To(annotation.Table, annotation.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, node.AnnotationsTable, node.AnnotationsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(nq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
 // QueryEdgeTypes chains the current query on the "edge_types" edge.
 func (nq *NodeQuery) QueryEdgeTypes() *EdgeTypeQuery {
 	query := (&EdgeTypeClient{config: nq.config}).Query()
@@ -503,6 +527,7 @@ func (nq *NodeQuery) Clone() *NodeQuery {
 		withNodes:              nq.withNodes.Clone(),
 		withProperties:         nq.withProperties.Clone(),
 		withNodeLists:          nq.withNodeLists.Clone(),
+		withAnnotations:        nq.withAnnotations.Clone(),
 		withEdgeTypes:          nq.withEdgeTypes.Clone(),
 		// clone intermediate query.
 		sql:  nq.sql.Clone(),
@@ -609,6 +634,17 @@ func (nq *NodeQuery) WithNodeLists(opts ...func(*NodeListQuery)) *NodeQuery {
 	return nq
 }
 
+// WithAnnotations tells the query-builder to eager-load the nodes that are connected to
+// the "annotations" edge. The optional arguments are used to configure the query builder of the edge.
+func (nq *NodeQuery) WithAnnotations(opts ...func(*AnnotationQuery)) *NodeQuery {
+	query := (&AnnotationClient{config: nq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	nq.withAnnotations = query
+	return nq
+}
+
 // WithEdgeTypes tells the query-builder to eager-load the nodes that are connected to
 // the "edge_types" edge. The optional arguments are used to configure the query builder of the edge.
 func (nq *NodeQuery) WithEdgeTypes(opts ...func(*EdgeTypeQuery)) *NodeQuery {
@@ -698,7 +734,7 @@ func (nq *NodeQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Node, e
 	var (
 		nodes       = []*Node{}
 		_spec       = nq.querySpec()
-		loadedTypes = [10]bool{
+		loadedTypes = [11]bool{
 			nq.withDocument != nil,
 			nq.withSuppliers != nil,
 			nq.withOriginators != nil,
@@ -708,6 +744,7 @@ func (nq *NodeQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Node, e
 			nq.withNodes != nil,
 			nq.withProperties != nil,
 			nq.withNodeLists != nil,
+			nq.withAnnotations != nil,
 			nq.withEdgeTypes != nil,
 		}
 	)
@@ -790,6 +827,13 @@ func (nq *NodeQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Node, e
 		if err := nq.loadNodeLists(ctx, query, nodes,
 			func(n *Node) { n.Edges.NodeLists = []*NodeList{} },
 			func(n *Node, e *NodeList) { n.Edges.NodeLists = append(n.Edges.NodeLists, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := nq.withAnnotations; query != nil {
+		if err := nq.loadAnnotations(ctx, query, nodes,
+			func(n *Node) { n.Edges.Annotations = []*Annotation{} },
+			func(n *Node, e *Annotation) { n.Edges.Annotations = append(n.Edges.Annotations, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -1164,6 +1208,39 @@ func (nq *NodeQuery) loadNodeLists(ctx context.Context, query *NodeListQuery, no
 		for kn := range nodes {
 			assign(kn, n)
 		}
+	}
+	return nil
+}
+func (nq *NodeQuery) loadAnnotations(ctx context.Context, query *AnnotationQuery, nodes []*Node, init func(*Node), assign func(*Node, *Annotation)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[string]*Node)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(annotation.FieldNodeID)
+	}
+	query.Where(predicate.Annotation(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(node.AnnotationsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.NodeID
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "node_id" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "node_id" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
 	}
 	return nil
 }

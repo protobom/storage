@@ -66,7 +66,7 @@ func (as *annotationsSuite) TestBackend_AddAnnotations() {
 	id := as.documents[0].GetMetadata().GetId()
 	annotationName := "add_annotation_test"
 
-	as.Require().NoError(as.Backend.AddAnnotations(id, annotationName, "test-value-1", "test-value-2", "test-value-3"))
+	as.Require().NoError(as.Backend.AddDocumentAnnotations(id, annotationName, "test-value-1", "test-value-2", "test-value-3"))
 
 	annotations := as.getTestResult(annotationName)
 
@@ -103,7 +103,7 @@ func (as *annotationsSuite) TestBackend_ClearAnnotations() {
 	documentIDs := []string{}
 
 	as.Require().NoError(as.Backend.AddAnnotationToDocuments(annotationName, "test-value", documentIDs...))
-	as.Require().NoError(as.Backend.ClearAnnotations(documentIDs...))
+	as.Require().NoError(as.Backend.ClearDocumentAnnotations(documentIDs...))
 
 	annotations := as.getTestResult(annotationName)
 
@@ -114,7 +114,7 @@ func (as *annotationsSuite) TestBackend_GetDocumentAnnotations() {
 	id := as.documents[0].GetMetadata().GetId()
 	annotationName := "get_document_annotations_test"
 
-	as.Require().NoError(as.Backend.AddAnnotations(id, annotationName, "test-value-1", "test-value-2", "test-value-3"))
+	as.Require().NoError(as.Backend.AddDocumentAnnotations(id, annotationName, "test-value-1", "test-value-2", "test-value-3"))
 
 	annotations, err := as.Backend.GetDocumentAnnotations(id, annotationName)
 	as.Require().NoError(err)
@@ -240,7 +240,7 @@ func (as *annotationsSuite) TestBackend_RemoveAnnotations() {
 				as.Require().NoError(err)
 			}
 
-			as.Require().NoError(as.Backend.RemoveAnnotations(documentID, annotationName, subtest.values...))
+			as.Require().NoError(as.Backend.RemoveDocumentAnnotations(documentID, annotationName, subtest.values...))
 
 			values := []string{}
 
@@ -270,18 +270,18 @@ func (as *annotationsSuite) TestBackend_SetAnnotations() {
 		as.ElementsMatch(values, expected)
 	}
 
-	as.Require().NoError(as.Backend.SetAnnotations(documentID, annotationName, "test-value-1", "test-value-2"))
+	as.Require().NoError(as.Backend.SetDocumentAnnotations(documentID, annotationName, "test-value-1", "test-value-2"))
 	validateResults(annotationName, []string{"test-value-1", "test-value-2"})
 
 	// Replace annotation with different name, same values.
 	// Verify previous annotation name is absent.
-	as.Require().NoError(as.Backend.SetAnnotations(documentID, updatedName, "test-value-1", "test-value-2"))
+	as.Require().NoError(as.Backend.SetDocumentAnnotations(documentID, updatedName, "test-value-1", "test-value-2"))
 	validateResults(updatedName, []string{"test-value-1", "test-value-2"})
 	validateResults(annotationName, []string{})
 
 	// Replace annotation with original name, different values.
 	// Verify previous annotation name and previous values are absent.
-	as.Require().NoError(as.Backend.SetAnnotations(documentID, annotationName, "test-value-3"))
+	as.Require().NoError(as.Backend.SetDocumentAnnotations(documentID, annotationName, "test-value-3"))
 	validateResults(annotationName, []string{"test-value-3"})
 	validateResults(updatedName, []string{})
 }
@@ -309,7 +309,7 @@ func (as *annotationsSuite) TestBackend_SetUniqueAnnotation() {
 			uniqueID, err := ent.GenerateUUID(as.documents[subtest.documentIdx])
 			as.Require().NoError(err)
 
-			as.Require().NoError(as.Backend.SetUniqueAnnotation(documentID, annotationName, subtest.value))
+			as.Require().NoError(as.Backend.SetDocumentUniqueAnnotation(documentID, annotationName, subtest.value))
 
 			annotations := as.getTestResult(annotationName)
 
@@ -344,6 +344,7 @@ func (as *annotationsSuite) getTestResult(annotationName string) ent.Annotations
 			&annotation.Value,
 			&annotation.IsUnique,
 			&annotation.DocumentID,
+			&annotation.NodeID,
 		))
 
 		annotations = append(annotations, annotation)

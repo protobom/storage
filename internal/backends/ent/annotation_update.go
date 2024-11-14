@@ -16,6 +16,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/protobom/storage/internal/backends/ent/annotation"
+	"github.com/protobom/storage/internal/backends/ent/node"
 	"github.com/protobom/storage/internal/backends/ent/predicate"
 )
 
@@ -29,6 +30,26 @@ type AnnotationUpdate struct {
 // Where appends a list predicates to the AnnotationUpdate builder.
 func (au *AnnotationUpdate) Where(ps ...predicate.Annotation) *AnnotationUpdate {
 	au.mutation.Where(ps...)
+	return au
+}
+
+// SetNodeID sets the "node_id" field.
+func (au *AnnotationUpdate) SetNodeID(s string) *AnnotationUpdate {
+	au.mutation.SetNodeID(s)
+	return au
+}
+
+// SetNillableNodeID sets the "node_id" field if the given value is not nil.
+func (au *AnnotationUpdate) SetNillableNodeID(s *string) *AnnotationUpdate {
+	if s != nil {
+		au.SetNodeID(*s)
+	}
+	return au
+}
+
+// ClearNodeID clears the value of the "node_id" field.
+func (au *AnnotationUpdate) ClearNodeID() *AnnotationUpdate {
+	au.mutation.ClearNodeID()
 	return au
 }
 
@@ -74,9 +95,20 @@ func (au *AnnotationUpdate) SetNillableIsUnique(b *bool) *AnnotationUpdate {
 	return au
 }
 
+// SetNode sets the "node" edge to the Node entity.
+func (au *AnnotationUpdate) SetNode(n *Node) *AnnotationUpdate {
+	return au.SetNodeID(n.ID)
+}
+
 // Mutation returns the AnnotationMutation object of the builder.
 func (au *AnnotationUpdate) Mutation() *AnnotationMutation {
 	return au.mutation
+}
+
+// ClearNode clears the "node" edge to the Node entity.
+func (au *AnnotationUpdate) ClearNode() *AnnotationUpdate {
+	au.mutation.ClearNode()
+	return au
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -106,7 +138,20 @@ func (au *AnnotationUpdate) ExecX(ctx context.Context) {
 	}
 }
 
+// check runs all checks and user-defined validators on the builder.
+func (au *AnnotationUpdate) check() error {
+	if v, ok := au.mutation.NodeID(); ok {
+		if err := annotation.NodeIDValidator(v); err != nil {
+			return &ValidationError{Name: "node_id", err: fmt.Errorf(`ent: validator failed for field "Annotation.node_id": %w`, err)}
+		}
+	}
+	return nil
+}
+
 func (au *AnnotationUpdate) sqlSave(ctx context.Context) (n int, err error) {
+	if err := au.check(); err != nil {
+		return n, err
+	}
 	_spec := sqlgraph.NewUpdateSpec(annotation.Table, annotation.Columns, sqlgraph.NewFieldSpec(annotation.FieldID, field.TypeInt))
 	if ps := au.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
@@ -123,6 +168,35 @@ func (au *AnnotationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if value, ok := au.mutation.IsUnique(); ok {
 		_spec.SetField(annotation.FieldIsUnique, field.TypeBool, value)
+	}
+	if au.mutation.NodeCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   annotation.NodeTable,
+			Columns: []string{annotation.NodeColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeString),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := au.mutation.NodeIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   annotation.NodeTable,
+			Columns: []string{annotation.NodeColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if n, err = sqlgraph.UpdateNodes(ctx, au.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -142,6 +216,26 @@ type AnnotationUpdateOne struct {
 	fields   []string
 	hooks    []Hook
 	mutation *AnnotationMutation
+}
+
+// SetNodeID sets the "node_id" field.
+func (auo *AnnotationUpdateOne) SetNodeID(s string) *AnnotationUpdateOne {
+	auo.mutation.SetNodeID(s)
+	return auo
+}
+
+// SetNillableNodeID sets the "node_id" field if the given value is not nil.
+func (auo *AnnotationUpdateOne) SetNillableNodeID(s *string) *AnnotationUpdateOne {
+	if s != nil {
+		auo.SetNodeID(*s)
+	}
+	return auo
+}
+
+// ClearNodeID clears the value of the "node_id" field.
+func (auo *AnnotationUpdateOne) ClearNodeID() *AnnotationUpdateOne {
+	auo.mutation.ClearNodeID()
+	return auo
 }
 
 // SetName sets the "name" field.
@@ -186,9 +280,20 @@ func (auo *AnnotationUpdateOne) SetNillableIsUnique(b *bool) *AnnotationUpdateOn
 	return auo
 }
 
+// SetNode sets the "node" edge to the Node entity.
+func (auo *AnnotationUpdateOne) SetNode(n *Node) *AnnotationUpdateOne {
+	return auo.SetNodeID(n.ID)
+}
+
 // Mutation returns the AnnotationMutation object of the builder.
 func (auo *AnnotationUpdateOne) Mutation() *AnnotationMutation {
 	return auo.mutation
+}
+
+// ClearNode clears the "node" edge to the Node entity.
+func (auo *AnnotationUpdateOne) ClearNode() *AnnotationUpdateOne {
+	auo.mutation.ClearNode()
+	return auo
 }
 
 // Where appends a list predicates to the AnnotationUpdate builder.
@@ -231,7 +336,20 @@ func (auo *AnnotationUpdateOne) ExecX(ctx context.Context) {
 	}
 }
 
+// check runs all checks and user-defined validators on the builder.
+func (auo *AnnotationUpdateOne) check() error {
+	if v, ok := auo.mutation.NodeID(); ok {
+		if err := annotation.NodeIDValidator(v); err != nil {
+			return &ValidationError{Name: "node_id", err: fmt.Errorf(`ent: validator failed for field "Annotation.node_id": %w`, err)}
+		}
+	}
+	return nil
+}
+
 func (auo *AnnotationUpdateOne) sqlSave(ctx context.Context) (_node *Annotation, err error) {
+	if err := auo.check(); err != nil {
+		return _node, err
+	}
 	_spec := sqlgraph.NewUpdateSpec(annotation.Table, annotation.Columns, sqlgraph.NewFieldSpec(annotation.FieldID, field.TypeInt))
 	id, ok := auo.mutation.ID()
 	if !ok {
@@ -265,6 +383,35 @@ func (auo *AnnotationUpdateOne) sqlSave(ctx context.Context) (_node *Annotation,
 	}
 	if value, ok := auo.mutation.IsUnique(); ok {
 		_spec.SetField(annotation.FieldIsUnique, field.TypeBool, value)
+	}
+	if auo.mutation.NodeCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   annotation.NodeTable,
+			Columns: []string{annotation.NodeColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeString),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := auo.mutation.NodeIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   annotation.NodeTable,
+			Columns: []string{annotation.NodeColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_node = &Annotation{config: auo.config}
 	_spec.Assign = _node.assignValues

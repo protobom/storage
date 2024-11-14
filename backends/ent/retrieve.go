@@ -15,6 +15,7 @@ import (
 
 	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/externalreference"
+	"github.com/protobom/storage/internal/backends/ent/node"
 	"github.com/protobom/storage/internal/backends/ent/predicate"
 )
 
@@ -72,6 +73,28 @@ func (backend *Backend) GetDocumentsByID(ids ...string) ([]*sbom.Document, error
 	}
 
 	return documents, nil
+}
+
+func (backend *Backend) GetNodesByID(ids ...string) ([]*sbom.Node, error) {
+	nodes := []*sbom.Node{}
+
+	predicates := []predicate.Node{}
+	if len(ids) > 0 {
+		predicates = append(predicates, node.IDIn(ids...))
+	}
+
+	results, err := backend.client.Node.Query().
+		Where(predicates...).
+		All(backend.ctx)
+	if err != nil {
+		return nil, fmt.Errorf("querying nodes table: %w", err)
+	}
+
+	for idx := range results {
+		nodes = append(nodes, results[idx].ProtoMessage)
+	}
+
+	return nodes, nil
 }
 
 func (backend *Backend) GetExternalReferencesByDocumentID(

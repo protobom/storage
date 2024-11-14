@@ -70,6 +70,8 @@ type AnnotationMutation struct {
 	clearedFields   map[string]struct{}
 	document        *uuid.UUID
 	cleareddocument bool
+	node            *string
+	clearednode     bool
 	done            bool
 	oldValue        func(context.Context) (*Annotation, error)
 	predicates      []predicate.Annotation
@@ -222,6 +224,55 @@ func (m *AnnotationMutation) ResetDocumentID() {
 	delete(m.clearedFields, annotation.FieldDocumentID)
 }
 
+// SetNodeID sets the "node_id" field.
+func (m *AnnotationMutation) SetNodeID(s string) {
+	m.node = &s
+}
+
+// NodeID returns the value of the "node_id" field in the mutation.
+func (m *AnnotationMutation) NodeID() (r string, exists bool) {
+	v := m.node
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldNodeID returns the old "node_id" field's value of the Annotation entity.
+// If the Annotation object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AnnotationMutation) OldNodeID(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldNodeID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldNodeID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldNodeID: %w", err)
+	}
+	return oldValue.NodeID, nil
+}
+
+// ClearNodeID clears the value of the "node_id" field.
+func (m *AnnotationMutation) ClearNodeID() {
+	m.node = nil
+	m.clearedFields[annotation.FieldNodeID] = struct{}{}
+}
+
+// NodeIDCleared returns if the "node_id" field was cleared in this mutation.
+func (m *AnnotationMutation) NodeIDCleared() bool {
+	_, ok := m.clearedFields[annotation.FieldNodeID]
+	return ok
+}
+
+// ResetNodeID resets all changes to the "node_id" field.
+func (m *AnnotationMutation) ResetNodeID() {
+	m.node = nil
+	delete(m.clearedFields, annotation.FieldNodeID)
+}
+
 // SetName sets the "name" field.
 func (m *AnnotationMutation) SetName(s string) {
 	m.name = &s
@@ -357,6 +408,33 @@ func (m *AnnotationMutation) ResetDocument() {
 	m.cleareddocument = false
 }
 
+// ClearNode clears the "node" edge to the Node entity.
+func (m *AnnotationMutation) ClearNode() {
+	m.clearednode = true
+	m.clearedFields[annotation.FieldNodeID] = struct{}{}
+}
+
+// NodeCleared reports if the "node" edge to the Node entity was cleared.
+func (m *AnnotationMutation) NodeCleared() bool {
+	return m.NodeIDCleared() || m.clearednode
+}
+
+// NodeIDs returns the "node" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// NodeID instead. It exists only for internal usage by the builders.
+func (m *AnnotationMutation) NodeIDs() (ids []string) {
+	if id := m.node; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetNode resets all changes to the "node" edge.
+func (m *AnnotationMutation) ResetNode() {
+	m.node = nil
+	m.clearednode = false
+}
+
 // Where appends a list predicates to the AnnotationMutation builder.
 func (m *AnnotationMutation) Where(ps ...predicate.Annotation) {
 	m.predicates = append(m.predicates, ps...)
@@ -391,9 +469,12 @@ func (m *AnnotationMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *AnnotationMutation) Fields() []string {
-	fields := make([]string, 0, 4)
+	fields := make([]string, 0, 5)
 	if m.document != nil {
 		fields = append(fields, annotation.FieldDocumentID)
+	}
+	if m.node != nil {
+		fields = append(fields, annotation.FieldNodeID)
 	}
 	if m.name != nil {
 		fields = append(fields, annotation.FieldName)
@@ -414,6 +495,8 @@ func (m *AnnotationMutation) Field(name string) (ent.Value, bool) {
 	switch name {
 	case annotation.FieldDocumentID:
 		return m.DocumentID()
+	case annotation.FieldNodeID:
+		return m.NodeID()
 	case annotation.FieldName:
 		return m.Name()
 	case annotation.FieldValue:
@@ -431,6 +514,8 @@ func (m *AnnotationMutation) OldField(ctx context.Context, name string) (ent.Val
 	switch name {
 	case annotation.FieldDocumentID:
 		return m.OldDocumentID(ctx)
+	case annotation.FieldNodeID:
+		return m.OldNodeID(ctx)
 	case annotation.FieldName:
 		return m.OldName(ctx)
 	case annotation.FieldValue:
@@ -452,6 +537,13 @@ func (m *AnnotationMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetDocumentID(v)
+		return nil
+	case annotation.FieldNodeID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetNodeID(v)
 		return nil
 	case annotation.FieldName:
 		v, ok := value.(string)
@@ -507,6 +599,9 @@ func (m *AnnotationMutation) ClearedFields() []string {
 	if m.FieldCleared(annotation.FieldDocumentID) {
 		fields = append(fields, annotation.FieldDocumentID)
 	}
+	if m.FieldCleared(annotation.FieldNodeID) {
+		fields = append(fields, annotation.FieldNodeID)
+	}
 	return fields
 }
 
@@ -524,6 +619,9 @@ func (m *AnnotationMutation) ClearField(name string) error {
 	case annotation.FieldDocumentID:
 		m.ClearDocumentID()
 		return nil
+	case annotation.FieldNodeID:
+		m.ClearNodeID()
+		return nil
 	}
 	return fmt.Errorf("unknown Annotation nullable field %s", name)
 }
@@ -534,6 +632,9 @@ func (m *AnnotationMutation) ResetField(name string) error {
 	switch name {
 	case annotation.FieldDocumentID:
 		m.ResetDocumentID()
+		return nil
+	case annotation.FieldNodeID:
+		m.ResetNodeID()
 		return nil
 	case annotation.FieldName:
 		m.ResetName()
@@ -550,9 +651,12 @@ func (m *AnnotationMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *AnnotationMutation) AddedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.document != nil {
 		edges = append(edges, annotation.EdgeDocument)
+	}
+	if m.node != nil {
+		edges = append(edges, annotation.EdgeNode)
 	}
 	return edges
 }
@@ -565,13 +669,17 @@ func (m *AnnotationMutation) AddedIDs(name string) []ent.Value {
 		if id := m.document; id != nil {
 			return []ent.Value{*id}
 		}
+	case annotation.EdgeNode:
+		if id := m.node; id != nil {
+			return []ent.Value{*id}
+		}
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *AnnotationMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	return edges
 }
 
@@ -583,9 +691,12 @@ func (m *AnnotationMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *AnnotationMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.cleareddocument {
 		edges = append(edges, annotation.EdgeDocument)
+	}
+	if m.clearednode {
+		edges = append(edges, annotation.EdgeNode)
 	}
 	return edges
 }
@@ -596,6 +707,8 @@ func (m *AnnotationMutation) EdgeCleared(name string) bool {
 	switch name {
 	case annotation.EdgeDocument:
 		return m.cleareddocument
+	case annotation.EdgeNode:
+		return m.clearednode
 	}
 	return false
 }
@@ -607,6 +720,9 @@ func (m *AnnotationMutation) ClearEdge(name string) error {
 	case annotation.EdgeDocument:
 		m.ClearDocument()
 		return nil
+	case annotation.EdgeNode:
+		m.ClearNode()
+		return nil
 	}
 	return fmt.Errorf("unknown Annotation unique edge %s", name)
 }
@@ -617,6 +733,9 @@ func (m *AnnotationMutation) ResetEdge(name string) error {
 	switch name {
 	case annotation.EdgeDocument:
 		m.ResetDocument()
+		return nil
+	case annotation.EdgeNode:
+		m.ResetNode()
 		return nil
 	}
 	return fmt.Errorf("unknown Annotation edge %s", name)
@@ -4528,6 +4647,9 @@ type NodeMutation struct {
 	node_lists                 map[uuid.UUID]struct{}
 	removednode_lists          map[uuid.UUID]struct{}
 	clearednode_lists          bool
+	annotations                map[int]struct{}
+	removedannotations         map[int]struct{}
+	clearedannotations         bool
 	edge_types                 map[int]struct{}
 	removededge_types          map[int]struct{}
 	clearededge_types          bool
@@ -6060,6 +6182,60 @@ func (m *NodeMutation) ResetNodeLists() {
 	m.removednode_lists = nil
 }
 
+// AddAnnotationIDs adds the "annotations" edge to the Annotation entity by ids.
+func (m *NodeMutation) AddAnnotationIDs(ids ...int) {
+	if m.annotations == nil {
+		m.annotations = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.annotations[ids[i]] = struct{}{}
+	}
+}
+
+// ClearAnnotations clears the "annotations" edge to the Annotation entity.
+func (m *NodeMutation) ClearAnnotations() {
+	m.clearedannotations = true
+}
+
+// AnnotationsCleared reports if the "annotations" edge to the Annotation entity was cleared.
+func (m *NodeMutation) AnnotationsCleared() bool {
+	return m.clearedannotations
+}
+
+// RemoveAnnotationIDs removes the "annotations" edge to the Annotation entity by IDs.
+func (m *NodeMutation) RemoveAnnotationIDs(ids ...int) {
+	if m.removedannotations == nil {
+		m.removedannotations = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.annotations, ids[i])
+		m.removedannotations[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedAnnotations returns the removed IDs of the "annotations" edge to the Annotation entity.
+func (m *NodeMutation) RemovedAnnotationsIDs() (ids []int) {
+	for id := range m.removedannotations {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// AnnotationsIDs returns the "annotations" edge IDs in the mutation.
+func (m *NodeMutation) AnnotationsIDs() (ids []int) {
+	for id := range m.annotations {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetAnnotations resets all changes to the "annotations" edge.
+func (m *NodeMutation) ResetAnnotations() {
+	m.annotations = nil
+	m.clearedannotations = false
+	m.removedannotations = nil
+}
+
 // AddEdgeTypeIDs adds the "edge_types" edge to the EdgeType entity by ids.
 func (m *NodeMutation) AddEdgeTypeIDs(ids ...int) {
 	if m.edge_types == nil {
@@ -6665,7 +6841,7 @@ func (m *NodeMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *NodeMutation) AddedEdges() []string {
-	edges := make([]string, 0, 10)
+	edges := make([]string, 0, 11)
 	if m.document != nil {
 		edges = append(edges, node.EdgeDocument)
 	}
@@ -6692,6 +6868,9 @@ func (m *NodeMutation) AddedEdges() []string {
 	}
 	if m.node_lists != nil {
 		edges = append(edges, node.EdgeNodeLists)
+	}
+	if m.annotations != nil {
+		edges = append(edges, node.EdgeAnnotations)
 	}
 	if m.edge_types != nil {
 		edges = append(edges, node.EdgeEdgeTypes)
@@ -6755,6 +6934,12 @@ func (m *NodeMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case node.EdgeAnnotations:
+		ids := make([]ent.Value, 0, len(m.annotations))
+		for id := range m.annotations {
+			ids = append(ids, id)
+		}
+		return ids
 	case node.EdgeEdgeTypes:
 		ids := make([]ent.Value, 0, len(m.edge_types))
 		for id := range m.edge_types {
@@ -6767,7 +6952,7 @@ func (m *NodeMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *NodeMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 10)
+	edges := make([]string, 0, 11)
 	if m.removedsuppliers != nil {
 		edges = append(edges, node.EdgeSuppliers)
 	}
@@ -6791,6 +6976,9 @@ func (m *NodeMutation) RemovedEdges() []string {
 	}
 	if m.removednode_lists != nil {
 		edges = append(edges, node.EdgeNodeLists)
+	}
+	if m.removedannotations != nil {
+		edges = append(edges, node.EdgeAnnotations)
 	}
 	if m.removededge_types != nil {
 		edges = append(edges, node.EdgeEdgeTypes)
@@ -6850,6 +7038,12 @@ func (m *NodeMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case node.EdgeAnnotations:
+		ids := make([]ent.Value, 0, len(m.removedannotations))
+		for id := range m.removedannotations {
+			ids = append(ids, id)
+		}
+		return ids
 	case node.EdgeEdgeTypes:
 		ids := make([]ent.Value, 0, len(m.removededge_types))
 		for id := range m.removededge_types {
@@ -6862,7 +7056,7 @@ func (m *NodeMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *NodeMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 10)
+	edges := make([]string, 0, 11)
 	if m.cleareddocument {
 		edges = append(edges, node.EdgeDocument)
 	}
@@ -6889,6 +7083,9 @@ func (m *NodeMutation) ClearedEdges() []string {
 	}
 	if m.clearednode_lists {
 		edges = append(edges, node.EdgeNodeLists)
+	}
+	if m.clearedannotations {
+		edges = append(edges, node.EdgeAnnotations)
 	}
 	if m.clearededge_types {
 		edges = append(edges, node.EdgeEdgeTypes)
@@ -6918,6 +7115,8 @@ func (m *NodeMutation) EdgeCleared(name string) bool {
 		return m.clearedproperties
 	case node.EdgeNodeLists:
 		return m.clearednode_lists
+	case node.EdgeAnnotations:
+		return m.clearedannotations
 	case node.EdgeEdgeTypes:
 		return m.clearededge_types
 	}
@@ -6965,6 +7164,9 @@ func (m *NodeMutation) ResetEdge(name string) error {
 		return nil
 	case node.EdgeNodeLists:
 		m.ResetNodeLists()
+		return nil
+	case node.EdgeAnnotations:
+		m.ResetAnnotations()
 		return nil
 	case node.EdgeEdgeTypes:
 		m.ResetEdgeTypes()
