@@ -75,28 +75,6 @@ func (backend *Backend) GetDocumentsByID(ids ...string) ([]*sbom.Document, error
 	return documents, nil
 }
 
-func (backend *Backend) GetNodesByID(ids ...string) ([]*sbom.Node, error) {
-	nodes := []*sbom.Node{}
-
-	predicates := []predicate.Node{}
-	if len(ids) > 0 {
-		predicates = append(predicates, node.IDIn(ids...))
-	}
-
-	results, err := backend.client.Node.Query().
-		Where(predicates...).
-		All(backend.ctx)
-	if err != nil {
-		return nil, fmt.Errorf("querying nodes table: %w", err)
-	}
-
-	for idx := range results {
-		nodes = append(nodes, results[idx].ProtoMessage)
-	}
-
-	return nodes, nil
-}
-
 func (backend *Backend) GetExternalReferencesByDocumentID(
 	id string, types ...string,
 ) ([]*sbom.ExternalReference, error) {
@@ -133,4 +111,26 @@ func (backend *Backend) GetExternalReferencesByDocumentID(
 	}
 
 	return extRefs, nil
+}
+
+func (backend *Backend) GetNodesByID(ids ...string) ([]*sbom.Node, error) {
+	nodes := []*sbom.Node{}
+
+	predicates := []predicate.Node{}
+	if len(ids) > 0 {
+		predicates = append(predicates, node.IDIn(ids...))
+	}
+
+	results, err := backend.client.Node.Query().
+		Where(predicates...).
+		All(backend.ctx)
+	if err != nil {
+		return nil, fmt.Errorf("querying nodes table: %w", err)
+	}
+
+	for idx := range results {
+		nodes = append(nodes, results[idx].ProtoMessage)
+	}
+
+	return nodes, nil
 }
