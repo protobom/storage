@@ -117,6 +117,7 @@ func (backend *Backend) GetNodesByID(ids ...string) ([]*sbom.Node, error) {
 	nodes := []*sbom.Node{}
 
 	predicates := []predicate.Node{}
+
 	if len(ids) > 0 {
 		predicates = append(predicates, node.IDIn(ids...))
 	}

@@ -45,10 +45,18 @@ func (backend *Backend) AddAnnotationToNodes(name, value string, nodeIDs ...stri
 	data := ent.Annotations{}
 
 	for _, nodeID := range nodeIDs {
+		result, err := backend.client.Node.Query().
+			Where(node.IDEQ(nodeID)).
+			Only(backend.ctx)
+		if err != nil {
+			return fmt.Errorf("querying nodes: %w", err)
+		}
+
 		data = append(data, &ent.Annotation{
-			NodeID: &nodeID,
-			Name:   name,
-			Value:  value,
+			DocumentID: result.DocumentID,
+			NodeID:     &result.ID,
+			Name:       name,
+			Value:      value,
 		})
 	}
 
@@ -81,11 +89,19 @@ func (backend *Backend) AddDocumentAnnotations(documentID, name string, values .
 func (backend *Backend) AddNodeAnnotations(nodeID, name string, values ...string) error {
 	data := ent.Annotations{}
 
+	result, err := backend.client.Node.Query().
+		Where(node.IDEQ(nodeID)).
+		Only(backend.ctx)
+	if err != nil {
+		return fmt.Errorf("querying documents: %w", err)
+	}
+
 	for _, value := range values {
 		data = append(data, &ent.Annotation{
-			NodeID: &nodeID,
-			Name:   name,
-			Value:  value,
+			DocumentID: result.DocumentID,
+			NodeID:     &nodeID,
+			Name:       name,
+			Value:      value,
 		})
 	}
 
@@ -233,15 +249,17 @@ func (backend *Backend) GetNodesByAnnotation(name string, values ...string) ([]*
 		return nil, errUninitializedClient
 	}
 
-	predicates := []predicate.Node{
-		node.HasAnnotationsWith(annotation.NameEQ(name)),
-	}
+	predicates := []predicate.Annotation{annotation.NameEQ(name)}
 
 	if len(values) > 0 {
-		predicates = append(predicates, node.HasAnnotationsWith(annotation.ValueIn(values...)))
+		predicates = append(predicates, annotation.ValueIn(values...))
 	}
 
-	ids, err := backend.client.Node.Query().Where(predicates...).QueryNodes().IDs(backend.ctx)
+	ids, err := backend.client.Annotation.Query().
+		Where(predicates...).
+		QueryNode().
+		IDs(backend.ctx)
+
 	if err != nil {
 		return nil, fmt.Errorf("querying nodes table: %w", err)
 	}
@@ -360,12 +378,20 @@ func (backend *Backend) SetNodeAnnotations(nodeID, name string, values ...string
 
 // SetNodeUniqueAnnotation sets a named annotation value that is unique to the specified node.
 func (backend *Backend) SetNodeUniqueAnnotation(nodeID, name, value string) error {
+	result, err := backend.client.Node.Query().
+		Where(node.IDEQ(nodeID)).
+		Only(backend.ctx)
+	if err != nil {
+		return fmt.Errorf("querying nodes: %w", err)
+	}
+
 	return backend.withTx(
 		backend.saveAnnotations(&ent.Annotation{
-			NodeID:   &nodeID,
-			Name:     name,
-			Value:    value,
-			IsUnique: true,
+			DocumentID: result.DocumentID,
+			NodeID:     &result.ID,
+			Name:       name,
+			Value:      value,
+			IsUnique:   true,
 		}),
 	)
 }
