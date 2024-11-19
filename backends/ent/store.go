@@ -92,6 +92,7 @@ func (backend *Backend) saveAnnotations(annotations ...*ent.Annotation) TxFunc {
 		for idx := range annotations {
 			builder := tx.Annotation.Create().
 				SetDocumentID(annotations[idx].DocumentID).
+				SetNillableNodeID(annotations[idx].NodeID).
 				SetName(annotations[idx].Name).
 				SetValue(annotations[idx].Value).
 				SetIsUnique(annotations[idx].IsUnique)

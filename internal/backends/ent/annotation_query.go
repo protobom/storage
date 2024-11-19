@@ -19,6 +19,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/protobom/storage/internal/backends/ent/annotation"
 	"github.com/protobom/storage/internal/backends/ent/document"
+	"github.com/protobom/storage/internal/backends/ent/node"
 	"github.com/protobom/storage/internal/backends/ent/predicate"
 )
 
@@ -30,6 +31,7 @@ type AnnotationQuery struct {
 	inters       []Interceptor
 	predicates   []predicate.Annotation
 	withDocument *DocumentQuery
+	withNode     *NodeQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -81,6 +83,28 @@ func (aq *AnnotationQuery) QueryDocument() *DocumentQuery {
 			sqlgraph.From(annotation.Table, annotation.FieldID, selector),
 			sqlgraph.To(document.Table, document.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, false, annotation.DocumentTable, annotation.DocumentColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(aq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryNode chains the current query on the "node" edge.
+func (aq *AnnotationQuery) QueryNode() *NodeQuery {
+	query := (&NodeClient{config: aq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := aq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := aq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(annotation.Table, annotation.FieldID, selector),
+			sqlgraph.To(node.Table, node.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, annotation.NodeTable, annotation.NodeColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(aq.driver.Dialect(), step)
 		return fromU, nil
@@ -281,6 +305,7 @@ func (aq *AnnotationQuery) Clone() *AnnotationQuery {
 		inters:       append([]Interceptor{}, aq.inters...),
 		predicates:   append([]predicate.Annotation{}, aq.predicates...),
 		withDocument: aq.withDocument.Clone(),
+		withNode:     aq.withNode.Clone(),
 		// clone intermediate query.
 		sql:  aq.sql.Clone(),
 		path: aq.path,
@@ -295,6 +320,17 @@ func (aq *AnnotationQuery) WithDocument(opts ...func(*DocumentQuery)) *Annotatio
 		opt(query)
 	}
 	aq.withDocument = query
+	return aq
+}
+
+// WithNode tells the query-builder to eager-load the nodes that are connected to
+// the "node" edge. The optional arguments are used to configure the query builder of the edge.
+func (aq *AnnotationQuery) WithNode(opts ...func(*NodeQuery)) *AnnotationQuery {
+	query := (&NodeClient{config: aq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	aq.withNode = query
 	return aq
 }
 
@@ -376,8 +412,9 @@ func (aq *AnnotationQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*A
 	var (
 		nodes       = []*Annotation{}
 		_spec       = aq.querySpec()
-		loadedTypes = [1]bool{
+		loadedTypes = [2]bool{
 			aq.withDocument != nil,
+			aq.withNode != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -401,6 +438,12 @@ func (aq *AnnotationQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*A
 	if query := aq.withDocument; query != nil {
 		if err := aq.loadDocument(ctx, query, nodes, nil,
 			func(n *Annotation, e *Document) { n.Edges.Document = e }); err != nil {
+			return nil, err
+		}
+	}
+	if query := aq.withNode; query != nil {
+		if err := aq.loadNode(ctx, query, nodes, nil,
+			func(n *Annotation, e *Node) { n.Edges.Node = e }); err != nil {
 			return nil, err
 		}
 	}
@@ -436,6 +479,38 @@ func (aq *AnnotationQuery) loadDocument(ctx context.Context, query *DocumentQuer
 	}
 	return nil
 }
+func (aq *AnnotationQuery) loadNode(ctx context.Context, query *NodeQuery, nodes []*Annotation, init func(*Annotation), assign func(*Annotation, *Node)) error {
+	ids := make([]string, 0, len(nodes))
+	nodeids := make(map[string][]*Annotation)
+	for i := range nodes {
+		if nodes[i].NodeID == nil {
+			continue
+		}
+		fk := *nodes[i].NodeID
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(node.IDIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "node_id" returned %v`, n.ID)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
+	}
+	return nil
+}
 
 func (aq *AnnotationQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := aq.querySpec()
@@ -464,6 +539,9 @@ func (aq *AnnotationQuery) querySpec() *sqlgraph.QuerySpec {
 		}
 		if aq.withDocument != nil {
 			_spec.Node.AddColumnOnce(annotation.FieldDocumentID)
+		}
+		if aq.withNode != nil {
+			_spec.Node.AddColumnOnce(annotation.FieldNodeID)
 		}
 	}
 	if ps := aq.predicates; len(ps) > 0 {

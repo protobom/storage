@@ -64,6 +64,11 @@ func DocumentID(v uuid.UUID) predicate.Annotation {
 	return predicate.Annotation(sql.FieldEQ(FieldDocumentID, v))
 }
 
+// NodeID applies equality check predicate on the "node_id" field. It's identical to NodeIDEQ.
+func NodeID(v string) predicate.Annotation {
+	return predicate.Annotation(sql.FieldEQ(FieldNodeID, v))
+}
+
 // Name applies equality check predicate on the "name" field. It's identical to NameEQ.
 func Name(v string) predicate.Annotation {
 	return predicate.Annotation(sql.FieldEQ(FieldName, v))
@@ -107,6 +112,81 @@ func DocumentIDIsNil() predicate.Annotation {
 // DocumentIDNotNil applies the NotNil predicate on the "document_id" field.
 func DocumentIDNotNil() predicate.Annotation {
 	return predicate.Annotation(sql.FieldNotNull(FieldDocumentID))
+}
+
+// NodeIDEQ applies the EQ predicate on the "node_id" field.
+func NodeIDEQ(v string) predicate.Annotation {
+	return predicate.Annotation(sql.FieldEQ(FieldNodeID, v))
+}
+
+// NodeIDNEQ applies the NEQ predicate on the "node_id" field.
+func NodeIDNEQ(v string) predicate.Annotation {
+	return predicate.Annotation(sql.FieldNEQ(FieldNodeID, v))
+}
+
+// NodeIDIn applies the In predicate on the "node_id" field.
+func NodeIDIn(vs ...string) predicate.Annotation {
+	return predicate.Annotation(sql.FieldIn(FieldNodeID, vs...))
+}
+
+// NodeIDNotIn applies the NotIn predicate on the "node_id" field.
+func NodeIDNotIn(vs ...string) predicate.Annotation {
+	return predicate.Annotation(sql.FieldNotIn(FieldNodeID, vs...))
+}
+
+// NodeIDGT applies the GT predicate on the "node_id" field.
+func NodeIDGT(v string) predicate.Annotation {
+	return predicate.Annotation(sql.FieldGT(FieldNodeID, v))
+}
+
+// NodeIDGTE applies the GTE predicate on the "node_id" field.
+func NodeIDGTE(v string) predicate.Annotation {
+	return predicate.Annotation(sql.FieldGTE(FieldNodeID, v))
+}
+
+// NodeIDLT applies the LT predicate on the "node_id" field.
+func NodeIDLT(v string) predicate.Annotation {
+	return predicate.Annotation(sql.FieldLT(FieldNodeID, v))
+}
+
+// NodeIDLTE applies the LTE predicate on the "node_id" field.
+func NodeIDLTE(v string) predicate.Annotation {
+	return predicate.Annotation(sql.FieldLTE(FieldNodeID, v))
+}
+
+// NodeIDContains applies the Contains predicate on the "node_id" field.
+func NodeIDContains(v string) predicate.Annotation {
+	return predicate.Annotation(sql.FieldContains(FieldNodeID, v))
+}
+
+// NodeIDHasPrefix applies the HasPrefix predicate on the "node_id" field.
+func NodeIDHasPrefix(v string) predicate.Annotation {
+	return predicate.Annotation(sql.FieldHasPrefix(FieldNodeID, v))
+}
+
+// NodeIDHasSuffix applies the HasSuffix predicate on the "node_id" field.
+func NodeIDHasSuffix(v string) predicate.Annotation {
+	return predicate.Annotation(sql.FieldHasSuffix(FieldNodeID, v))
+}
+
+// NodeIDIsNil applies the IsNil predicate on the "node_id" field.
+func NodeIDIsNil() predicate.Annotation {
+	return predicate.Annotation(sql.FieldIsNull(FieldNodeID))
+}
+
+// NodeIDNotNil applies the NotNil predicate on the "node_id" field.
+func NodeIDNotNil() predicate.Annotation {
+	return predicate.Annotation(sql.FieldNotNull(FieldNodeID))
+}
+
+// NodeIDEqualFold applies the EqualFold predicate on the "node_id" field.
+func NodeIDEqualFold(v string) predicate.Annotation {
+	return predicate.Annotation(sql.FieldEqualFold(FieldNodeID, v))
+}
+
+// NodeIDContainsFold applies the ContainsFold predicate on the "node_id" field.
+func NodeIDContainsFold(v string) predicate.Annotation {
+	return predicate.Annotation(sql.FieldContainsFold(FieldNodeID, v))
 }
 
 // NameEQ applies the EQ predicate on the "name" field.
@@ -264,6 +344,29 @@ func HasDocument() predicate.Annotation {
 func HasDocumentWith(preds ...predicate.Document) predicate.Annotation {
 	return predicate.Annotation(func(s *sql.Selector) {
 		step := newDocumentStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasNode applies the HasEdge predicate on the "node" edge.
+func HasNode() predicate.Annotation {
+	return predicate.Annotation(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, NodeTable, NodeColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasNodeWith applies the HasEdge predicate on the "node" edge with a given conditions (other predicates).
+func HasNodeWith(preds ...predicate.Node) predicate.Annotation {
+	return predicate.Annotation(func(s *sql.Selector) {
+		step := newNodeStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

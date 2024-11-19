@@ -20,6 +20,8 @@ const (
 	FieldID = "id"
 	// FieldDocumentID holds the string denoting the document_id field in the database.
 	FieldDocumentID = "document_id"
+	// FieldNodeID holds the string denoting the node_id field in the database.
+	FieldNodeID = "node_id"
 	// FieldName holds the string denoting the name field in the database.
 	FieldName = "name"
 	// FieldValue holds the string denoting the value field in the database.
@@ -28,6 +30,8 @@ const (
 	FieldIsUnique = "is_unique"
 	// EdgeDocument holds the string denoting the document edge name in mutations.
 	EdgeDocument = "document"
+	// EdgeNode holds the string denoting the node edge name in mutations.
+	EdgeNode = "node"
 	// Table holds the table name of the annotation in the database.
 	Table = "annotations"
 	// DocumentTable is the table that holds the document relation/edge.
@@ -37,12 +41,20 @@ const (
 	DocumentInverseTable = "documents"
 	// DocumentColumn is the table column denoting the document relation/edge.
 	DocumentColumn = "document_id"
+	// NodeTable is the table that holds the node relation/edge.
+	NodeTable = "annotations"
+	// NodeInverseTable is the table name for the Node entity.
+	// It exists in this package in order to avoid circular dependency with the "node" package.
+	NodeInverseTable = "nodes"
+	// NodeColumn is the table column denoting the node relation/edge.
+	NodeColumn = "node_id"
 )
 
 // Columns holds all SQL columns for annotation fields.
 var Columns = []string{
 	FieldID,
 	FieldDocumentID,
+	FieldNodeID,
 	FieldName,
 	FieldValue,
 	FieldIsUnique,
@@ -61,6 +73,8 @@ func ValidColumn(column string) bool {
 var (
 	// DefaultDocumentID holds the default value on creation for the "document_id" field.
 	DefaultDocumentID func() uuid.UUID
+	// NodeIDValidator is a validator for the "node_id" field. It is called by the builders before save.
+	NodeIDValidator func(string) error
 	// DefaultIsUnique holds the default value on creation for the "is_unique" field.
 	DefaultIsUnique bool
 )
@@ -76,6 +90,11 @@ func ByID(opts ...sql.OrderTermOption) OrderOption {
 // ByDocumentID orders the results by the document_id field.
 func ByDocumentID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDocumentID, opts...).ToFunc()
+}
+
+// ByNodeID orders the results by the node_id field.
+func ByNodeID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldNodeID, opts...).ToFunc()
 }
 
 // ByName orders the results by the name field.
@@ -99,10 +118,24 @@ func ByDocumentField(field string, opts ...sql.OrderTermOption) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newDocumentStep(), sql.OrderByField(field, opts...))
 	}
 }
+
+// ByNodeField orders the results by node field.
+func ByNodeField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newNodeStep(), sql.OrderByField(field, opts...))
+	}
+}
 func newDocumentStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(DocumentInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.M2O, false, DocumentTable, DocumentColumn),
+	)
+}
+func newNodeStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(NodeInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, true, NodeTable, NodeColumn),
 	)
 }

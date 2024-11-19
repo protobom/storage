@@ -100,11 +100,13 @@ type NodeEdges struct {
 	Properties []*Property `json:"properties,omitempty"`
 	// NodeLists holds the value of the node_lists edge.
 	NodeLists []*NodeList `json:"node_lists,omitempty"`
+	// Annotations holds the value of the annotations edge.
+	Annotations []*Annotation `json:"annotations,omitempty"`
 	// EdgeTypes holds the value of the edge_types edge.
 	EdgeTypes []*EdgeType `json:"edge_types,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [10]bool
+	loadedTypes [11]bool
 }
 
 // DocumentOrErr returns the Document value or an error if the edge
@@ -190,10 +192,19 @@ func (e NodeEdges) NodeListsOrErr() ([]*NodeList, error) {
 	return nil, &NotLoadedError{edge: "node_lists"}
 }
 
+// AnnotationsOrErr returns the Annotations value or an error if the edge
+// was not loaded in eager-loading.
+func (e NodeEdges) AnnotationsOrErr() ([]*Annotation, error) {
+	if e.loadedTypes[9] {
+		return e.Annotations, nil
+	}
+	return nil, &NotLoadedError{edge: "annotations"}
+}
+
 // EdgeTypesOrErr returns the EdgeTypes value or an error if the edge
 // was not loaded in eager-loading.
 func (e NodeEdges) EdgeTypesOrErr() ([]*EdgeType, error) {
-	if e.loadedTypes[9] {
+	if e.loadedTypes[10] {
 		return e.EdgeTypes, nil
 	}
 	return nil, &NotLoadedError{edge: "edge_types"}
@@ -445,6 +456,11 @@ func (n *Node) QueryProperties() *PropertyQuery {
 // QueryNodeLists queries the "node_lists" edge of the Node entity.
 func (n *Node) QueryNodeLists() *NodeListQuery {
 	return NewNodeClient(n.config).QueryNodeLists(n)
+}
+
+// QueryAnnotations queries the "annotations" edge of the Node entity.
+func (n *Node) QueryAnnotations() *AnnotationQuery {
+	return NewNodeClient(n.config).QueryAnnotations(n)
 }
 
 // QueryEdgeTypes queries the "edge_types" edge of the Node entity.

@@ -1429,6 +1429,29 @@ func HasNodeListsWith(preds ...predicate.NodeList) predicate.Node {
 	})
 }
 
+// HasAnnotations applies the HasEdge predicate on the "annotations" edge.
+func HasAnnotations() predicate.Node {
+	return predicate.Node(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, AnnotationsTable, AnnotationsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasAnnotationsWith applies the HasEdge predicate on the "annotations" edge with a given conditions (other predicates).
+func HasAnnotationsWith(preds ...predicate.Annotation) predicate.Node {
+	return predicate.Node(func(s *sql.Selector) {
+		step := newAnnotationsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // HasEdgeTypes applies the HasEdge predicate on the "edge_types" edge.
 func HasEdgeTypes() predicate.Node {
 	return predicate.Node(func(s *sql.Selector) {
