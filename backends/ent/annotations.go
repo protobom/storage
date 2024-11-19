@@ -183,7 +183,6 @@ func (backend *Backend) GetDocumentsByAnnotation(name string, values ...string) 
 		QueryDocument().
 		QueryMetadata().
 		IDs(backend.ctx)
-
 	if err != nil {
 		return nil, fmt.Errorf("querying documents table: %w", err)
 	}
@@ -259,7 +258,6 @@ func (backend *Backend) GetNodesByAnnotation(name string, values ...string) ([]*
 		Where(predicates...).
 		QueryNode().
 		IDs(backend.ctx)
-
 	if err != nil {
 		return nil, fmt.Errorf("querying nodes table: %w", err)
 	}
