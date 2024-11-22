@@ -31,7 +31,7 @@ type SourceData struct {
 	// ProtoMessage holds the value of the "proto_message" field.
 	ProtoMessage *sbom.SourceData `json:"proto_message,omitempty"`
 	// MetadataID holds the value of the "metadata_id" field.
-	MetadataID string `json:"metadata_id,omitempty"`
+	MetadataID uuid.UUID `json:"metadata_id,omitempty"`
 	// Format holds the value of the "format" field.
 	Format string `json:"format,omitempty"`
 	// Size holds the value of the "size" field.
@@ -90,9 +90,9 @@ func (*SourceData) scanValues(columns []string) ([]any, error) {
 			values[i] = new([]byte)
 		case sourcedata.FieldSize:
 			values[i] = new(sql.NullInt64)
-		case sourcedata.FieldMetadataID, sourcedata.FieldFormat, sourcedata.FieldURI:
+		case sourcedata.FieldFormat, sourcedata.FieldURI:
 			values[i] = new(sql.NullString)
-		case sourcedata.FieldID, sourcedata.FieldDocumentID:
+		case sourcedata.FieldID, sourcedata.FieldDocumentID, sourcedata.FieldMetadataID:
 			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -128,10 +128,10 @@ func (sd *SourceData) assignValues(columns []string, values []any) error {
 				sd.ProtoMessage = value.S.(*sbom.SourceData)
 			}
 		case sourcedata.FieldMetadataID:
-			if value, ok := values[i].(*sql.NullString); !ok {
+			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field metadata_id", values[i])
-			} else if value.Valid {
-				sd.MetadataID = value.String
+			} else if value != nil {
+				sd.MetadataID = *value
 			}
 		case sourcedata.FieldFormat:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -215,7 +215,7 @@ func (sd *SourceData) String() string {
 	}
 	builder.WriteString(", ")
 	builder.WriteString("metadata_id=")
-	builder.WriteString(sd.MetadataID)
+	builder.WriteString(fmt.Sprintf("%v", sd.MetadataID))
 	builder.WriteString(", ")
 	builder.WriteString("format=")
 	builder.WriteString(sd.Format)

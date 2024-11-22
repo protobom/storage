@@ -15,6 +15,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/google/uuid"
 	"github.com/protobom/storage/internal/backends/ent/annotation"
 	"github.com/protobom/storage/internal/backends/ent/node"
 	"github.com/protobom/storage/internal/backends/ent/predicate"
@@ -34,15 +35,15 @@ func (au *AnnotationUpdate) Where(ps ...predicate.Annotation) *AnnotationUpdate 
 }
 
 // SetNodeID sets the "node_id" field.
-func (au *AnnotationUpdate) SetNodeID(s string) *AnnotationUpdate {
-	au.mutation.SetNodeID(s)
+func (au *AnnotationUpdate) SetNodeID(u uuid.UUID) *AnnotationUpdate {
+	au.mutation.SetNodeID(u)
 	return au
 }
 
 // SetNillableNodeID sets the "node_id" field if the given value is not nil.
-func (au *AnnotationUpdate) SetNillableNodeID(s *string) *AnnotationUpdate {
-	if s != nil {
-		au.SetNodeID(*s)
+func (au *AnnotationUpdate) SetNillableNodeID(u *uuid.UUID) *AnnotationUpdate {
+	if u != nil {
+		au.SetNodeID(*u)
 	}
 	return au
 }
@@ -138,20 +139,7 @@ func (au *AnnotationUpdate) ExecX(ctx context.Context) {
 	}
 }
 
-// check runs all checks and user-defined validators on the builder.
-func (au *AnnotationUpdate) check() error {
-	if v, ok := au.mutation.NodeID(); ok {
-		if err := annotation.NodeIDValidator(v); err != nil {
-			return &ValidationError{Name: "node_id", err: fmt.Errorf(`ent: validator failed for field "Annotation.node_id": %w`, err)}
-		}
-	}
-	return nil
-}
-
 func (au *AnnotationUpdate) sqlSave(ctx context.Context) (n int, err error) {
-	if err := au.check(); err != nil {
-		return n, err
-	}
 	_spec := sqlgraph.NewUpdateSpec(annotation.Table, annotation.Columns, sqlgraph.NewFieldSpec(annotation.FieldID, field.TypeInt))
 	if ps := au.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
@@ -177,7 +165,7 @@ func (au *AnnotationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{annotation.NodeColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -190,7 +178,7 @@ func (au *AnnotationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{annotation.NodeColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -219,15 +207,15 @@ type AnnotationUpdateOne struct {
 }
 
 // SetNodeID sets the "node_id" field.
-func (auo *AnnotationUpdateOne) SetNodeID(s string) *AnnotationUpdateOne {
-	auo.mutation.SetNodeID(s)
+func (auo *AnnotationUpdateOne) SetNodeID(u uuid.UUID) *AnnotationUpdateOne {
+	auo.mutation.SetNodeID(u)
 	return auo
 }
 
 // SetNillableNodeID sets the "node_id" field if the given value is not nil.
-func (auo *AnnotationUpdateOne) SetNillableNodeID(s *string) *AnnotationUpdateOne {
-	if s != nil {
-		auo.SetNodeID(*s)
+func (auo *AnnotationUpdateOne) SetNillableNodeID(u *uuid.UUID) *AnnotationUpdateOne {
+	if u != nil {
+		auo.SetNodeID(*u)
 	}
 	return auo
 }
@@ -336,20 +324,7 @@ func (auo *AnnotationUpdateOne) ExecX(ctx context.Context) {
 	}
 }
 
-// check runs all checks and user-defined validators on the builder.
-func (auo *AnnotationUpdateOne) check() error {
-	if v, ok := auo.mutation.NodeID(); ok {
-		if err := annotation.NodeIDValidator(v); err != nil {
-			return &ValidationError{Name: "node_id", err: fmt.Errorf(`ent: validator failed for field "Annotation.node_id": %w`, err)}
-		}
-	}
-	return nil
-}
-
 func (auo *AnnotationUpdateOne) sqlSave(ctx context.Context) (_node *Annotation, err error) {
-	if err := auo.check(); err != nil {
-		return _node, err
-	}
 	_spec := sqlgraph.NewUpdateSpec(annotation.Table, annotation.Columns, sqlgraph.NewFieldSpec(annotation.FieldID, field.TypeInt))
 	id, ok := auo.mutation.ID()
 	if !ok {
@@ -392,7 +367,7 @@ func (auo *AnnotationUpdateOne) sqlSave(ctx context.Context) (_node *Annotation,
 			Columns: []string{annotation.NodeColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -405,7 +380,7 @@ func (auo *AnnotationUpdateOne) sqlSave(ctx context.Context) (_node *Annotation,
 			Columns: []string{annotation.NodeColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

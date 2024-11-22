@@ -52,15 +52,15 @@ func (pc *PropertyCreate) SetProtoMessage(s *sbom.Property) *PropertyCreate {
 }
 
 // SetNodeID sets the "node_id" field.
-func (pc *PropertyCreate) SetNodeID(s string) *PropertyCreate {
-	pc.mutation.SetNodeID(s)
+func (pc *PropertyCreate) SetNodeID(u uuid.UUID) *PropertyCreate {
+	pc.mutation.SetNodeID(u)
 	return pc
 }
 
 // SetNillableNodeID sets the "node_id" field if the given value is not nil.
-func (pc *PropertyCreate) SetNillableNodeID(s *string) *PropertyCreate {
-	if s != nil {
-		pc.SetNodeID(*s)
+func (pc *PropertyCreate) SetNillableNodeID(u *uuid.UUID) *PropertyCreate {
+	if u != nil {
+		pc.SetNodeID(*u)
 	}
 	return pc
 }
@@ -218,7 +218,7 @@ func (pc *PropertyCreate) createSpec() (*Property, *sqlgraph.CreateSpec) {
 			Columns: []string{property.NodeColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -280,7 +280,7 @@ type (
 )
 
 // SetNodeID sets the "node_id" field.
-func (u *PropertyUpsert) SetNodeID(v string) *PropertyUpsert {
+func (u *PropertyUpsert) SetNodeID(v uuid.UUID) *PropertyUpsert {
 	u.Set(property.FieldNodeID, v)
 	return u
 }
@@ -376,7 +376,7 @@ func (u *PropertyUpsertOne) Update(set func(*PropertyUpsert)) *PropertyUpsertOne
 }
 
 // SetNodeID sets the "node_id" field.
-func (u *PropertyUpsertOne) SetNodeID(v string) *PropertyUpsertOne {
+func (u *PropertyUpsertOne) SetNodeID(v uuid.UUID) *PropertyUpsertOne {
 	return u.Update(func(s *PropertyUpsert) {
 		s.SetNodeID(v)
 	})
@@ -646,7 +646,7 @@ func (u *PropertyUpsertBulk) Update(set func(*PropertyUpsert)) *PropertyUpsertBu
 }
 
 // SetNodeID sets the "node_id" field.
-func (u *PropertyUpsertBulk) SetNodeID(v string) *PropertyUpsertBulk {
+func (u *PropertyUpsertBulk) SetNodeID(v uuid.UUID) *PropertyUpsertBulk {
 	return u.Update(func(s *PropertyUpsert) {
 		s.SetNodeID(v)
 	})

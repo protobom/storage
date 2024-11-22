@@ -15,6 +15,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/google/uuid"
 	"github.com/protobom/storage/internal/backends/ent/metadata"
 	"github.com/protobom/storage/internal/backends/ent/predicate"
 	"github.com/protobom/storage/internal/backends/ent/tool"
@@ -34,15 +35,15 @@ func (tu *ToolUpdate) Where(ps ...predicate.Tool) *ToolUpdate {
 }
 
 // SetMetadataID sets the "metadata_id" field.
-func (tu *ToolUpdate) SetMetadataID(s string) *ToolUpdate {
-	tu.mutation.SetMetadataID(s)
+func (tu *ToolUpdate) SetMetadataID(u uuid.UUID) *ToolUpdate {
+	tu.mutation.SetMetadataID(u)
 	return tu
 }
 
 // SetNillableMetadataID sets the "metadata_id" field if the given value is not nil.
-func (tu *ToolUpdate) SetNillableMetadataID(s *string) *ToolUpdate {
-	if s != nil {
-		tu.SetMetadataID(*s)
+func (tu *ToolUpdate) SetNillableMetadataID(u *uuid.UUID) *ToolUpdate {
+	if u != nil {
+		tu.SetMetadataID(*u)
 	}
 	return tu
 }
@@ -164,7 +165,7 @@ func (tu *ToolUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{tool.MetadataColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(metadata.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(metadata.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -177,7 +178,7 @@ func (tu *ToolUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{tool.MetadataColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(metadata.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(metadata.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -206,15 +207,15 @@ type ToolUpdateOne struct {
 }
 
 // SetMetadataID sets the "metadata_id" field.
-func (tuo *ToolUpdateOne) SetMetadataID(s string) *ToolUpdateOne {
-	tuo.mutation.SetMetadataID(s)
+func (tuo *ToolUpdateOne) SetMetadataID(u uuid.UUID) *ToolUpdateOne {
+	tuo.mutation.SetMetadataID(u)
 	return tuo
 }
 
 // SetNillableMetadataID sets the "metadata_id" field if the given value is not nil.
-func (tuo *ToolUpdateOne) SetNillableMetadataID(s *string) *ToolUpdateOne {
-	if s != nil {
-		tuo.SetMetadataID(*s)
+func (tuo *ToolUpdateOne) SetNillableMetadataID(u *uuid.UUID) *ToolUpdateOne {
+	if u != nil {
+		tuo.SetMetadataID(*u)
 	}
 	return tuo
 }
@@ -366,7 +367,7 @@ func (tuo *ToolUpdateOne) sqlSave(ctx context.Context) (_node *Tool, err error) 
 			Columns: []string{tool.MetadataColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(metadata.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(metadata.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -379,7 +380,7 @@ func (tuo *ToolUpdateOne) sqlSave(ctx context.Context) (_node *Tool, err error) 
 			Columns: []string{tool.MetadataColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(metadata.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(metadata.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

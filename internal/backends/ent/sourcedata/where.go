@@ -71,7 +71,7 @@ func ProtoMessage(v *sbom.SourceData) predicate.SourceData {
 }
 
 // MetadataID applies equality check predicate on the "metadata_id" field. It's identical to MetadataIDEQ.
-func MetadataID(v string) predicate.SourceData {
+func MetadataID(v uuid.UUID) predicate.SourceData {
 	return predicate.SourceData(sql.FieldEQ(FieldMetadataID, v))
 }
 
@@ -161,68 +161,23 @@ func ProtoMessageLTE(v *sbom.SourceData) predicate.SourceData {
 }
 
 // MetadataIDEQ applies the EQ predicate on the "metadata_id" field.
-func MetadataIDEQ(v string) predicate.SourceData {
+func MetadataIDEQ(v uuid.UUID) predicate.SourceData {
 	return predicate.SourceData(sql.FieldEQ(FieldMetadataID, v))
 }
 
 // MetadataIDNEQ applies the NEQ predicate on the "metadata_id" field.
-func MetadataIDNEQ(v string) predicate.SourceData {
+func MetadataIDNEQ(v uuid.UUID) predicate.SourceData {
 	return predicate.SourceData(sql.FieldNEQ(FieldMetadataID, v))
 }
 
 // MetadataIDIn applies the In predicate on the "metadata_id" field.
-func MetadataIDIn(vs ...string) predicate.SourceData {
+func MetadataIDIn(vs ...uuid.UUID) predicate.SourceData {
 	return predicate.SourceData(sql.FieldIn(FieldMetadataID, vs...))
 }
 
 // MetadataIDNotIn applies the NotIn predicate on the "metadata_id" field.
-func MetadataIDNotIn(vs ...string) predicate.SourceData {
+func MetadataIDNotIn(vs ...uuid.UUID) predicate.SourceData {
 	return predicate.SourceData(sql.FieldNotIn(FieldMetadataID, vs...))
-}
-
-// MetadataIDGT applies the GT predicate on the "metadata_id" field.
-func MetadataIDGT(v string) predicate.SourceData {
-	return predicate.SourceData(sql.FieldGT(FieldMetadataID, v))
-}
-
-// MetadataIDGTE applies the GTE predicate on the "metadata_id" field.
-func MetadataIDGTE(v string) predicate.SourceData {
-	return predicate.SourceData(sql.FieldGTE(FieldMetadataID, v))
-}
-
-// MetadataIDLT applies the LT predicate on the "metadata_id" field.
-func MetadataIDLT(v string) predicate.SourceData {
-	return predicate.SourceData(sql.FieldLT(FieldMetadataID, v))
-}
-
-// MetadataIDLTE applies the LTE predicate on the "metadata_id" field.
-func MetadataIDLTE(v string) predicate.SourceData {
-	return predicate.SourceData(sql.FieldLTE(FieldMetadataID, v))
-}
-
-// MetadataIDContains applies the Contains predicate on the "metadata_id" field.
-func MetadataIDContains(v string) predicate.SourceData {
-	return predicate.SourceData(sql.FieldContains(FieldMetadataID, v))
-}
-
-// MetadataIDHasPrefix applies the HasPrefix predicate on the "metadata_id" field.
-func MetadataIDHasPrefix(v string) predicate.SourceData {
-	return predicate.SourceData(sql.FieldHasPrefix(FieldMetadataID, v))
-}
-
-// MetadataIDHasSuffix applies the HasSuffix predicate on the "metadata_id" field.
-func MetadataIDHasSuffix(v string) predicate.SourceData {
-	return predicate.SourceData(sql.FieldHasSuffix(FieldMetadataID, v))
-}
-
-// MetadataIDEqualFold applies the EqualFold predicate on the "metadata_id" field.
-func MetadataIDEqualFold(v string) predicate.SourceData {
-	return predicate.SourceData(sql.FieldEqualFold(FieldMetadataID, v))
-}
-
-// MetadataIDContainsFold applies the ContainsFold predicate on the "metadata_id" field.
-func MetadataIDContainsFold(v string) predicate.SourceData {
-	return predicate.SourceData(sql.FieldContainsFold(FieldMetadataID, v))
 }
 
 // FormatEQ applies the EQ predicate on the "format" field.

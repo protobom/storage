@@ -480,8 +480,8 @@ func (dtq *DocumentTypeQuery) loadDocument(ctx context.Context, query *DocumentQ
 	return nil
 }
 func (dtq *DocumentTypeQuery) loadMetadata(ctx context.Context, query *MetadataQuery, nodes []*DocumentType, init func(*DocumentType), assign func(*DocumentType, *Metadata)) error {
-	ids := make([]string, 0, len(nodes))
-	nodeids := make(map[string][]*DocumentType)
+	ids := make([]uuid.UUID, 0, len(nodes))
+	nodeids := make(map[uuid.UUID][]*DocumentType)
 	for i := range nodes {
 		fk := nodes[i].MetadataID
 		if _, ok := nodeids[fk]; !ok {

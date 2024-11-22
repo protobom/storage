@@ -25,7 +25,7 @@ type Document struct {
 	// ID of the ent.
 	ID uuid.UUID `json:"id,omitempty"`
 	// MetadataID holds the value of the "metadata_id" field.
-	MetadataID string `json:"metadata_id,omitempty"`
+	MetadataID uuid.UUID `json:"metadata_id,omitempty"`
 	// NodeListID holds the value of the "node_list_id" field.
 	NodeListID uuid.UUID `json:"node_list_id,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -72,9 +72,7 @@ func (*Document) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case document.FieldMetadataID:
-			values[i] = new(sql.NullString)
-		case document.FieldID, document.FieldNodeListID:
+		case document.FieldID, document.FieldMetadataID, document.FieldNodeListID:
 			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -98,10 +96,10 @@ func (d *Document) assignValues(columns []string, values []any) error {
 				d.ID = *value
 			}
 		case document.FieldMetadataID:
-			if value, ok := values[i].(*sql.NullString); !ok {
+			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field metadata_id", values[i])
-			} else if value.Valid {
-				d.MetadataID = value.String
+			} else if value != nil {
+				d.MetadataID = *value
 			}
 		case document.FieldNodeListID:
 			if value, ok := values[i].(*uuid.UUID); !ok {
@@ -156,7 +154,7 @@ func (d *Document) String() string {
 	builder.WriteString("Document(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", d.ID))
 	builder.WriteString("metadata_id=")
-	builder.WriteString(d.MetadataID)
+	builder.WriteString(fmt.Sprintf("%v", d.MetadataID))
 	builder.WriteString(", ")
 	builder.WriteString("node_list_id=")
 	builder.WriteString(fmt.Sprintf("%v", d.NodeListID))

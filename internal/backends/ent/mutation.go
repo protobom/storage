@@ -70,7 +70,7 @@ type AnnotationMutation struct {
 	clearedFields   map[string]struct{}
 	document        *uuid.UUID
 	cleareddocument bool
-	node            *string
+	node            *uuid.UUID
 	clearednode     bool
 	done            bool
 	oldValue        func(context.Context) (*Annotation, error)
@@ -225,12 +225,12 @@ func (m *AnnotationMutation) ResetDocumentID() {
 }
 
 // SetNodeID sets the "node_id" field.
-func (m *AnnotationMutation) SetNodeID(s string) {
-	m.node = &s
+func (m *AnnotationMutation) SetNodeID(u uuid.UUID) {
+	m.node = &u
 }
 
 // NodeID returns the value of the "node_id" field in the mutation.
-func (m *AnnotationMutation) NodeID() (r string, exists bool) {
+func (m *AnnotationMutation) NodeID() (r uuid.UUID, exists bool) {
 	v := m.node
 	if v == nil {
 		return
@@ -241,7 +241,7 @@ func (m *AnnotationMutation) NodeID() (r string, exists bool) {
 // OldNodeID returns the old "node_id" field's value of the Annotation entity.
 // If the Annotation object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *AnnotationMutation) OldNodeID(ctx context.Context) (v *string, err error) {
+func (m *AnnotationMutation) OldNodeID(ctx context.Context) (v *uuid.UUID, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldNodeID is only allowed on UpdateOne operations")
 	}
@@ -422,7 +422,7 @@ func (m *AnnotationMutation) NodeCleared() bool {
 // NodeIDs returns the "node" edge IDs in the mutation.
 // Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
 // NodeID instead. It exists only for internal usage by the builders.
-func (m *AnnotationMutation) NodeIDs() (ids []string) {
+func (m *AnnotationMutation) NodeIDs() (ids []uuid.UUID) {
 	if id := m.node; id != nil {
 		ids = append(ids, *id)
 	}
@@ -539,7 +539,7 @@ func (m *AnnotationMutation) SetField(name string, value ent.Value) error {
 		m.SetDocumentID(v)
 		return nil
 	case annotation.FieldNodeID:
-		v, ok := value.(string)
+		v, ok := value.(uuid.UUID)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
@@ -748,7 +748,7 @@ type DocumentMutation struct {
 	typ              string
 	id               *uuid.UUID
 	clearedFields    map[string]struct{}
-	metadata         *string
+	metadata         *uuid.UUID
 	clearedmetadata  bool
 	node_list        *uuid.UUID
 	clearednode_list bool
@@ -862,12 +862,12 @@ func (m *DocumentMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
 }
 
 // SetMetadataID sets the "metadata_id" field.
-func (m *DocumentMutation) SetMetadataID(s string) {
-	m.metadata = &s
+func (m *DocumentMutation) SetMetadataID(u uuid.UUID) {
+	m.metadata = &u
 }
 
 // MetadataID returns the value of the "metadata_id" field in the mutation.
-func (m *DocumentMutation) MetadataID() (r string, exists bool) {
+func (m *DocumentMutation) MetadataID() (r uuid.UUID, exists bool) {
 	v := m.metadata
 	if v == nil {
 		return
@@ -878,7 +878,7 @@ func (m *DocumentMutation) MetadataID() (r string, exists bool) {
 // OldMetadataID returns the old "metadata_id" field's value of the Document entity.
 // If the Document object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *DocumentMutation) OldMetadataID(ctx context.Context) (v string, err error) {
+func (m *DocumentMutation) OldMetadataID(ctx context.Context) (v uuid.UUID, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldMetadataID is only allowed on UpdateOne operations")
 	}
@@ -973,7 +973,7 @@ func (m *DocumentMutation) MetadataCleared() bool {
 // MetadataIDs returns the "metadata" edge IDs in the mutation.
 // Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
 // MetadataID instead. It exists only for internal usage by the builders.
-func (m *DocumentMutation) MetadataIDs() (ids []string) {
+func (m *DocumentMutation) MetadataIDs() (ids []uuid.UUID) {
 	if id := m.metadata; id != nil {
 		ids = append(ids, *id)
 	}
@@ -1089,7 +1089,7 @@ func (m *DocumentMutation) OldField(ctx context.Context, name string) (ent.Value
 func (m *DocumentMutation) SetField(name string, value ent.Value) error {
 	switch name {
 	case document.FieldMetadataID:
-		v, ok := value.(string)
+		v, ok := value.(uuid.UUID)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
@@ -1281,7 +1281,7 @@ type DocumentTypeMutation struct {
 	clearedFields   map[string]struct{}
 	document        *uuid.UUID
 	cleareddocument bool
-	metadata        *string
+	metadata        *uuid.UUID
 	clearedmetadata bool
 	done            bool
 	oldValue        func(context.Context) (*DocumentType, error)
@@ -1478,12 +1478,12 @@ func (m *DocumentTypeMutation) ResetProtoMessage() {
 }
 
 // SetMetadataID sets the "metadata_id" field.
-func (m *DocumentTypeMutation) SetMetadataID(s string) {
-	m.metadata = &s
+func (m *DocumentTypeMutation) SetMetadataID(u uuid.UUID) {
+	m.metadata = &u
 }
 
 // MetadataID returns the value of the "metadata_id" field in the mutation.
-func (m *DocumentTypeMutation) MetadataID() (r string, exists bool) {
+func (m *DocumentTypeMutation) MetadataID() (r uuid.UUID, exists bool) {
 	v := m.metadata
 	if v == nil {
 		return
@@ -1494,7 +1494,7 @@ func (m *DocumentTypeMutation) MetadataID() (r string, exists bool) {
 // OldMetadataID returns the old "metadata_id" field's value of the DocumentType entity.
 // If the DocumentType object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *DocumentTypeMutation) OldMetadataID(ctx context.Context) (v string, err error) {
+func (m *DocumentTypeMutation) OldMetadataID(ctx context.Context) (v uuid.UUID, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldMetadataID is only allowed on UpdateOne operations")
 	}
@@ -1714,7 +1714,7 @@ func (m *DocumentTypeMutation) MetadataCleared() bool {
 // MetadataIDs returns the "metadata" edge IDs in the mutation.
 // Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
 // MetadataID instead. It exists only for internal usage by the builders.
-func (m *DocumentTypeMutation) MetadataIDs() (ids []string) {
+func (m *DocumentTypeMutation) MetadataIDs() (ids []uuid.UUID) {
 	if id := m.metadata; id != nil {
 		ids = append(ids, *id)
 	}
@@ -1845,7 +1845,7 @@ func (m *DocumentTypeMutation) SetField(name string, value ent.Value) error {
 		m.SetProtoMessage(v)
 		return nil
 	case documenttype.FieldMetadataID:
-		v, ok := value.(string)
+		v, ok := value.(uuid.UUID)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
@@ -2078,9 +2078,9 @@ type EdgeTypeMutation struct {
 	clearedFields   map[string]struct{}
 	document        *uuid.UUID
 	cleareddocument bool
-	from            *string
+	from            *uuid.UUID
 	clearedfrom     bool
-	to              *string
+	to              *uuid.UUID
 	clearedto       bool
 	done            bool
 	oldValue        func(context.Context) (*EdgeType, error)
@@ -2271,12 +2271,12 @@ func (m *EdgeTypeMutation) ResetType() {
 }
 
 // SetNodeID sets the "node_id" field.
-func (m *EdgeTypeMutation) SetNodeID(s string) {
-	m.from = &s
+func (m *EdgeTypeMutation) SetNodeID(u uuid.UUID) {
+	m.from = &u
 }
 
 // NodeID returns the value of the "node_id" field in the mutation.
-func (m *EdgeTypeMutation) NodeID() (r string, exists bool) {
+func (m *EdgeTypeMutation) NodeID() (r uuid.UUID, exists bool) {
 	v := m.from
 	if v == nil {
 		return
@@ -2287,7 +2287,7 @@ func (m *EdgeTypeMutation) NodeID() (r string, exists bool) {
 // OldNodeID returns the old "node_id" field's value of the EdgeType entity.
 // If the EdgeType object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *EdgeTypeMutation) OldNodeID(ctx context.Context) (v string, err error) {
+func (m *EdgeTypeMutation) OldNodeID(ctx context.Context) (v uuid.UUID, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldNodeID is only allowed on UpdateOne operations")
 	}
@@ -2307,12 +2307,12 @@ func (m *EdgeTypeMutation) ResetNodeID() {
 }
 
 // SetToNodeID sets the "to_node_id" field.
-func (m *EdgeTypeMutation) SetToNodeID(s string) {
-	m.to = &s
+func (m *EdgeTypeMutation) SetToNodeID(u uuid.UUID) {
+	m.to = &u
 }
 
 // ToNodeID returns the value of the "to_node_id" field in the mutation.
-func (m *EdgeTypeMutation) ToNodeID() (r string, exists bool) {
+func (m *EdgeTypeMutation) ToNodeID() (r uuid.UUID, exists bool) {
 	v := m.to
 	if v == nil {
 		return
@@ -2323,7 +2323,7 @@ func (m *EdgeTypeMutation) ToNodeID() (r string, exists bool) {
 // OldToNodeID returns the old "to_node_id" field's value of the EdgeType entity.
 // If the EdgeType object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *EdgeTypeMutation) OldToNodeID(ctx context.Context) (v string, err error) {
+func (m *EdgeTypeMutation) OldToNodeID(ctx context.Context) (v uuid.UUID, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldToNodeID is only allowed on UpdateOne operations")
 	}
@@ -2370,7 +2370,7 @@ func (m *EdgeTypeMutation) ResetDocument() {
 }
 
 // SetFromID sets the "from" edge to the Node entity by id.
-func (m *EdgeTypeMutation) SetFromID(id string) {
+func (m *EdgeTypeMutation) SetFromID(id uuid.UUID) {
 	m.from = &id
 }
 
@@ -2386,7 +2386,7 @@ func (m *EdgeTypeMutation) FromCleared() bool {
 }
 
 // FromID returns the "from" edge ID in the mutation.
-func (m *EdgeTypeMutation) FromID() (id string, exists bool) {
+func (m *EdgeTypeMutation) FromID() (id uuid.UUID, exists bool) {
 	if m.from != nil {
 		return *m.from, true
 	}
@@ -2396,7 +2396,7 @@ func (m *EdgeTypeMutation) FromID() (id string, exists bool) {
 // FromIDs returns the "from" edge IDs in the mutation.
 // Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
 // FromID instead. It exists only for internal usage by the builders.
-func (m *EdgeTypeMutation) FromIDs() (ids []string) {
+func (m *EdgeTypeMutation) FromIDs() (ids []uuid.UUID) {
 	if id := m.from; id != nil {
 		ids = append(ids, *id)
 	}
@@ -2410,7 +2410,7 @@ func (m *EdgeTypeMutation) ResetFrom() {
 }
 
 // SetToID sets the "to" edge to the Node entity by id.
-func (m *EdgeTypeMutation) SetToID(id string) {
+func (m *EdgeTypeMutation) SetToID(id uuid.UUID) {
 	m.to = &id
 }
 
@@ -2426,7 +2426,7 @@ func (m *EdgeTypeMutation) ToCleared() bool {
 }
 
 // ToID returns the "to" edge ID in the mutation.
-func (m *EdgeTypeMutation) ToID() (id string, exists bool) {
+func (m *EdgeTypeMutation) ToID() (id uuid.UUID, exists bool) {
 	if m.to != nil {
 		return *m.to, true
 	}
@@ -2436,7 +2436,7 @@ func (m *EdgeTypeMutation) ToID() (id string, exists bool) {
 // ToIDs returns the "to" edge IDs in the mutation.
 // Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
 // ToID instead. It exists only for internal usage by the builders.
-func (m *EdgeTypeMutation) ToIDs() (ids []string) {
+func (m *EdgeTypeMutation) ToIDs() (ids []uuid.UUID) {
 	if id := m.to; id != nil {
 		ids = append(ids, *id)
 	}
@@ -2553,14 +2553,14 @@ func (m *EdgeTypeMutation) SetField(name string, value ent.Value) error {
 		m.SetType(v)
 		return nil
 	case edgetype.FieldNodeID:
-		v, ok := value.(string)
+		v, ok := value.(uuid.UUID)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetNodeID(v)
 		return nil
 	case edgetype.FieldToNodeID:
-		v, ok := value.(string)
+		v, ok := value.(uuid.UUID)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
@@ -2765,7 +2765,7 @@ type ExternalReferenceMutation struct {
 	clearedFields   map[string]struct{}
 	document        *uuid.UUID
 	cleareddocument bool
-	node            *string
+	node            *uuid.UUID
 	clearednode     bool
 	done            bool
 	oldValue        func(context.Context) (*ExternalReference, error)
@@ -2962,12 +2962,12 @@ func (m *ExternalReferenceMutation) ResetProtoMessage() {
 }
 
 // SetNodeID sets the "node_id" field.
-func (m *ExternalReferenceMutation) SetNodeID(s string) {
-	m.node = &s
+func (m *ExternalReferenceMutation) SetNodeID(u uuid.UUID) {
+	m.node = &u
 }
 
 // NodeID returns the value of the "node_id" field in the mutation.
-func (m *ExternalReferenceMutation) NodeID() (r string, exists bool) {
+func (m *ExternalReferenceMutation) NodeID() (r uuid.UUID, exists bool) {
 	v := m.node
 	if v == nil {
 		return
@@ -2978,7 +2978,7 @@ func (m *ExternalReferenceMutation) NodeID() (r string, exists bool) {
 // OldNodeID returns the old "node_id" field's value of the ExternalReference entity.
 // If the ExternalReference object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ExternalReferenceMutation) OldNodeID(ctx context.Context) (v string, err error) {
+func (m *ExternalReferenceMutation) OldNodeID(ctx context.Context) (v uuid.UUID, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldNodeID is only allowed on UpdateOne operations")
 	}
@@ -3257,7 +3257,7 @@ func (m *ExternalReferenceMutation) NodeCleared() bool {
 // NodeIDs returns the "node" edge IDs in the mutation.
 // Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
 // NodeID instead. It exists only for internal usage by the builders.
-func (m *ExternalReferenceMutation) NodeIDs() (ids []string) {
+func (m *ExternalReferenceMutation) NodeIDs() (ids []uuid.UUID) {
 	if id := m.node; id != nil {
 		ids = append(ids, *id)
 	}
@@ -3402,7 +3402,7 @@ func (m *ExternalReferenceMutation) SetField(name string, value ent.Value) error
 		m.SetProtoMessage(v)
 		return nil
 	case externalreference.FieldNodeID:
-		v, ok := value.(string)
+		v, ok := value.(uuid.UUID)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
@@ -3644,8 +3644,9 @@ type MetadataMutation struct {
 	config
 	op                    Op
 	typ                   string
-	id                    *string
+	id                    *uuid.UUID
 	proto_message         **sbom.Metadata
+	native_id             *string
 	version               *string
 	name                  *string
 	date                  *time.Time
@@ -3690,7 +3691,7 @@ func newMetadataMutation(c config, op Op, opts ...metadataOption) *MetadataMutat
 }
 
 // withMetadataID sets the ID field of the mutation.
-func withMetadataID(id string) metadataOption {
+func withMetadataID(id uuid.UUID) metadataOption {
 	return func(m *MetadataMutation) {
 		var (
 			err   error
@@ -3742,13 +3743,13 @@ func (m MetadataMutation) Tx() (*Tx, error) {
 
 // SetID sets the value of the id field. Note that this
 // operation is only accepted on creation of Metadata entities.
-func (m *MetadataMutation) SetID(id string) {
+func (m *MetadataMutation) SetID(id uuid.UUID) {
 	m.id = &id
 }
 
 // ID returns the ID value in the mutation. Note that the ID is only available
 // if it was provided to the builder or after it was returned from the database.
-func (m *MetadataMutation) ID() (id string, exists bool) {
+func (m *MetadataMutation) ID() (id uuid.UUID, exists bool) {
 	if m.id == nil {
 		return
 	}
@@ -3759,12 +3760,12 @@ func (m *MetadataMutation) ID() (id string, exists bool) {
 // That means, if the mutation is applied within a transaction with an isolation level such
 // as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
 // or updated by the mutation.
-func (m *MetadataMutation) IDs(ctx context.Context) ([]string, error) {
+func (m *MetadataMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
 	switch {
 	case m.op.Is(OpUpdateOne | OpDeleteOne):
 		id, exists := m.ID()
 		if exists {
-			return []string{id}, nil
+			return []uuid.UUID{id}, nil
 		}
 		fallthrough
 	case m.op.Is(OpUpdate | OpDelete):
@@ -3808,6 +3809,42 @@ func (m *MetadataMutation) OldProtoMessage(ctx context.Context) (v *sbom.Metadat
 // ResetProtoMessage resets all changes to the "proto_message" field.
 func (m *MetadataMutation) ResetProtoMessage() {
 	m.proto_message = nil
+}
+
+// SetNativeID sets the "native_id" field.
+func (m *MetadataMutation) SetNativeID(s string) {
+	m.native_id = &s
+}
+
+// NativeID returns the value of the "native_id" field in the mutation.
+func (m *MetadataMutation) NativeID() (r string, exists bool) {
+	v := m.native_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldNativeID returns the old "native_id" field's value of the Metadata entity.
+// If the Metadata object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MetadataMutation) OldNativeID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldNativeID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldNativeID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldNativeID: %w", err)
+	}
+	return oldValue.NativeID, nil
+}
+
+// ResetNativeID resets all changes to the "native_id" field.
+func (m *MetadataMutation) ResetNativeID() {
+	m.native_id = nil
 }
 
 // SetVersion sets the "version" field.
@@ -4243,9 +4280,12 @@ func (m *MetadataMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *MetadataMutation) Fields() []string {
-	fields := make([]string, 0, 5)
+	fields := make([]string, 0, 6)
 	if m.proto_message != nil {
 		fields = append(fields, metadata.FieldProtoMessage)
+	}
+	if m.native_id != nil {
+		fields = append(fields, metadata.FieldNativeID)
 	}
 	if m.version != nil {
 		fields = append(fields, metadata.FieldVersion)
@@ -4269,6 +4309,8 @@ func (m *MetadataMutation) Field(name string) (ent.Value, bool) {
 	switch name {
 	case metadata.FieldProtoMessage:
 		return m.ProtoMessage()
+	case metadata.FieldNativeID:
+		return m.NativeID()
 	case metadata.FieldVersion:
 		return m.Version()
 	case metadata.FieldName:
@@ -4288,6 +4330,8 @@ func (m *MetadataMutation) OldField(ctx context.Context, name string) (ent.Value
 	switch name {
 	case metadata.FieldProtoMessage:
 		return m.OldProtoMessage(ctx)
+	case metadata.FieldNativeID:
+		return m.OldNativeID(ctx)
 	case metadata.FieldVersion:
 		return m.OldVersion(ctx)
 	case metadata.FieldName:
@@ -4311,6 +4355,13 @@ func (m *MetadataMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetProtoMessage(v)
+		return nil
+	case metadata.FieldNativeID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetNativeID(v)
 		return nil
 	case metadata.FieldVersion:
 		v, ok := value.(string)
@@ -4391,6 +4442,9 @@ func (m *MetadataMutation) ResetField(name string) error {
 	switch name {
 	case metadata.FieldProtoMessage:
 		m.ResetProtoMessage()
+		return nil
+	case metadata.FieldNativeID:
+		m.ResetNativeID()
 		return nil
 	case metadata.FieldVersion:
 		m.ResetVersion()
@@ -4593,8 +4647,9 @@ type NodeMutation struct {
 	config
 	op                         Op
 	typ                        string
-	id                         *string
+	id                         *uuid.UUID
 	proto_message              **sbom.Node
+	native_id                  *string
 	node_list_id               *uuid.UUID
 	_type                      *node.Type
 	name                       *string
@@ -4635,11 +4690,11 @@ type NodeMutation struct {
 	primary_purpose            map[int]struct{}
 	removedprimary_purpose     map[int]struct{}
 	clearedprimary_purpose     bool
-	to_nodes                   map[string]struct{}
-	removedto_nodes            map[string]struct{}
+	to_nodes                   map[uuid.UUID]struct{}
+	removedto_nodes            map[uuid.UUID]struct{}
 	clearedto_nodes            bool
-	nodes                      map[string]struct{}
-	removednodes               map[string]struct{}
+	nodes                      map[uuid.UUID]struct{}
+	removednodes               map[uuid.UUID]struct{}
 	clearednodes               bool
 	properties                 map[uuid.UUID]struct{}
 	removedproperties          map[uuid.UUID]struct{}
@@ -4678,7 +4733,7 @@ func newNodeMutation(c config, op Op, opts ...nodeOption) *NodeMutation {
 }
 
 // withNodeID sets the ID field of the mutation.
-func withNodeID(id string) nodeOption {
+func withNodeID(id uuid.UUID) nodeOption {
 	return func(m *NodeMutation) {
 		var (
 			err   error
@@ -4730,13 +4785,13 @@ func (m NodeMutation) Tx() (*Tx, error) {
 
 // SetID sets the value of the id field. Note that this
 // operation is only accepted on creation of Node entities.
-func (m *NodeMutation) SetID(id string) {
+func (m *NodeMutation) SetID(id uuid.UUID) {
 	m.id = &id
 }
 
 // ID returns the ID value in the mutation. Note that the ID is only available
 // if it was provided to the builder or after it was returned from the database.
-func (m *NodeMutation) ID() (id string, exists bool) {
+func (m *NodeMutation) ID() (id uuid.UUID, exists bool) {
 	if m.id == nil {
 		return
 	}
@@ -4747,12 +4802,12 @@ func (m *NodeMutation) ID() (id string, exists bool) {
 // That means, if the mutation is applied within a transaction with an isolation level such
 // as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
 // or updated by the mutation.
-func (m *NodeMutation) IDs(ctx context.Context) ([]string, error) {
+func (m *NodeMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
 	switch {
 	case m.op.Is(OpUpdateOne | OpDeleteOne):
 		id, exists := m.ID()
 		if exists {
-			return []string{id}, nil
+			return []uuid.UUID{id}, nil
 		}
 		fallthrough
 	case m.op.Is(OpUpdate | OpDelete):
@@ -4845,6 +4900,42 @@ func (m *NodeMutation) OldProtoMessage(ctx context.Context) (v *sbom.Node, err e
 // ResetProtoMessage resets all changes to the "proto_message" field.
 func (m *NodeMutation) ResetProtoMessage() {
 	m.proto_message = nil
+}
+
+// SetNativeID sets the "native_id" field.
+func (m *NodeMutation) SetNativeID(s string) {
+	m.native_id = &s
+}
+
+// NativeID returns the value of the "native_id" field in the mutation.
+func (m *NodeMutation) NativeID() (r string, exists bool) {
+	v := m.native_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldNativeID returns the old "native_id" field's value of the Node entity.
+// If the Node object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *NodeMutation) OldNativeID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldNativeID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldNativeID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldNativeID: %w", err)
+	}
+	return oldValue.NativeID, nil
+}
+
+// ResetNativeID resets all changes to the "native_id" field.
+func (m *NodeMutation) ResetNativeID() {
+	m.native_id = nil
 }
 
 // SetNodeListID sets the "node_list_id" field.
@@ -5967,9 +6058,9 @@ func (m *NodeMutation) ResetPrimaryPurpose() {
 }
 
 // AddToNodeIDs adds the "to_nodes" edge to the Node entity by ids.
-func (m *NodeMutation) AddToNodeIDs(ids ...string) {
+func (m *NodeMutation) AddToNodeIDs(ids ...uuid.UUID) {
 	if m.to_nodes == nil {
-		m.to_nodes = make(map[string]struct{})
+		m.to_nodes = make(map[uuid.UUID]struct{})
 	}
 	for i := range ids {
 		m.to_nodes[ids[i]] = struct{}{}
@@ -5987,9 +6078,9 @@ func (m *NodeMutation) ToNodesCleared() bool {
 }
 
 // RemoveToNodeIDs removes the "to_nodes" edge to the Node entity by IDs.
-func (m *NodeMutation) RemoveToNodeIDs(ids ...string) {
+func (m *NodeMutation) RemoveToNodeIDs(ids ...uuid.UUID) {
 	if m.removedto_nodes == nil {
-		m.removedto_nodes = make(map[string]struct{})
+		m.removedto_nodes = make(map[uuid.UUID]struct{})
 	}
 	for i := range ids {
 		delete(m.to_nodes, ids[i])
@@ -5998,7 +6089,7 @@ func (m *NodeMutation) RemoveToNodeIDs(ids ...string) {
 }
 
 // RemovedToNodes returns the removed IDs of the "to_nodes" edge to the Node entity.
-func (m *NodeMutation) RemovedToNodesIDs() (ids []string) {
+func (m *NodeMutation) RemovedToNodesIDs() (ids []uuid.UUID) {
 	for id := range m.removedto_nodes {
 		ids = append(ids, id)
 	}
@@ -6006,7 +6097,7 @@ func (m *NodeMutation) RemovedToNodesIDs() (ids []string) {
 }
 
 // ToNodesIDs returns the "to_nodes" edge IDs in the mutation.
-func (m *NodeMutation) ToNodesIDs() (ids []string) {
+func (m *NodeMutation) ToNodesIDs() (ids []uuid.UUID) {
 	for id := range m.to_nodes {
 		ids = append(ids, id)
 	}
@@ -6021,9 +6112,9 @@ func (m *NodeMutation) ResetToNodes() {
 }
 
 // AddNodeIDs adds the "nodes" edge to the Node entity by ids.
-func (m *NodeMutation) AddNodeIDs(ids ...string) {
+func (m *NodeMutation) AddNodeIDs(ids ...uuid.UUID) {
 	if m.nodes == nil {
-		m.nodes = make(map[string]struct{})
+		m.nodes = make(map[uuid.UUID]struct{})
 	}
 	for i := range ids {
 		m.nodes[ids[i]] = struct{}{}
@@ -6041,9 +6132,9 @@ func (m *NodeMutation) NodesCleared() bool {
 }
 
 // RemoveNodeIDs removes the "nodes" edge to the Node entity by IDs.
-func (m *NodeMutation) RemoveNodeIDs(ids ...string) {
+func (m *NodeMutation) RemoveNodeIDs(ids ...uuid.UUID) {
 	if m.removednodes == nil {
-		m.removednodes = make(map[string]struct{})
+		m.removednodes = make(map[uuid.UUID]struct{})
 	}
 	for i := range ids {
 		delete(m.nodes, ids[i])
@@ -6052,7 +6143,7 @@ func (m *NodeMutation) RemoveNodeIDs(ids ...string) {
 }
 
 // RemovedNodes returns the removed IDs of the "nodes" edge to the Node entity.
-func (m *NodeMutation) RemovedNodesIDs() (ids []string) {
+func (m *NodeMutation) RemovedNodesIDs() (ids []uuid.UUID) {
 	for id := range m.removednodes {
 		ids = append(ids, id)
 	}
@@ -6060,7 +6151,7 @@ func (m *NodeMutation) RemovedNodesIDs() (ids []string) {
 }
 
 // NodesIDs returns the "nodes" edge IDs in the mutation.
-func (m *NodeMutation) NodesIDs() (ids []string) {
+func (m *NodeMutation) NodesIDs() (ids []uuid.UUID) {
 	for id := range m.nodes {
 		ids = append(ids, id)
 	}
@@ -6324,12 +6415,15 @@ func (m *NodeMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *NodeMutation) Fields() []string {
-	fields := make([]string, 0, 24)
+	fields := make([]string, 0, 25)
 	if m.document != nil {
 		fields = append(fields, node.FieldDocumentID)
 	}
 	if m.proto_message != nil {
 		fields = append(fields, node.FieldProtoMessage)
+	}
+	if m.native_id != nil {
+		fields = append(fields, node.FieldNativeID)
 	}
 	if m.node_list_id != nil {
 		fields = append(fields, node.FieldNodeListID)
@@ -6409,6 +6503,8 @@ func (m *NodeMutation) Field(name string) (ent.Value, bool) {
 		return m.DocumentID()
 	case node.FieldProtoMessage:
 		return m.ProtoMessage()
+	case node.FieldNativeID:
+		return m.NativeID()
 	case node.FieldNodeListID:
 		return m.NodeListID()
 	case node.FieldType:
@@ -6466,6 +6562,8 @@ func (m *NodeMutation) OldField(ctx context.Context, name string) (ent.Value, er
 		return m.OldDocumentID(ctx)
 	case node.FieldProtoMessage:
 		return m.OldProtoMessage(ctx)
+	case node.FieldNativeID:
+		return m.OldNativeID(ctx)
 	case node.FieldNodeListID:
 		return m.OldNodeListID(ctx)
 	case node.FieldType:
@@ -6532,6 +6630,13 @@ func (m *NodeMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetProtoMessage(v)
+		return nil
+	case node.FieldNativeID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetNativeID(v)
 		return nil
 	case node.FieldNodeListID:
 		v, ok := value.(uuid.UUID)
@@ -6768,6 +6873,9 @@ func (m *NodeMutation) ResetField(name string) error {
 		return nil
 	case node.FieldProtoMessage:
 		m.ResetProtoMessage()
+		return nil
+	case node.FieldNativeID:
+		m.ResetNativeID()
 		return nil
 	case node.FieldNodeListID:
 		m.ResetNodeListID()
@@ -7185,8 +7293,8 @@ type NodeListMutation struct {
 	root_elements       *[]string
 	appendroot_elements []string
 	clearedFields       map[string]struct{}
-	nodes               map[string]struct{}
-	removednodes        map[string]struct{}
+	nodes               map[uuid.UUID]struct{}
+	removednodes        map[uuid.UUID]struct{}
 	clearednodes        bool
 	document            *uuid.UUID
 	cleareddocument     bool
@@ -7387,9 +7495,9 @@ func (m *NodeListMutation) ResetRootElements() {
 }
 
 // AddNodeIDs adds the "nodes" edge to the Node entity by ids.
-func (m *NodeListMutation) AddNodeIDs(ids ...string) {
+func (m *NodeListMutation) AddNodeIDs(ids ...uuid.UUID) {
 	if m.nodes == nil {
-		m.nodes = make(map[string]struct{})
+		m.nodes = make(map[uuid.UUID]struct{})
 	}
 	for i := range ids {
 		m.nodes[ids[i]] = struct{}{}
@@ -7407,9 +7515,9 @@ func (m *NodeListMutation) NodesCleared() bool {
 }
 
 // RemoveNodeIDs removes the "nodes" edge to the Node entity by IDs.
-func (m *NodeListMutation) RemoveNodeIDs(ids ...string) {
+func (m *NodeListMutation) RemoveNodeIDs(ids ...uuid.UUID) {
 	if m.removednodes == nil {
-		m.removednodes = make(map[string]struct{})
+		m.removednodes = make(map[uuid.UUID]struct{})
 	}
 	for i := range ids {
 		delete(m.nodes, ids[i])
@@ -7418,7 +7526,7 @@ func (m *NodeListMutation) RemoveNodeIDs(ids ...string) {
 }
 
 // RemovedNodes returns the removed IDs of the "nodes" edge to the Node entity.
-func (m *NodeListMutation) RemovedNodesIDs() (ids []string) {
+func (m *NodeListMutation) RemovedNodesIDs() (ids []uuid.UUID) {
 	for id := range m.removednodes {
 		ids = append(ids, id)
 	}
@@ -7426,7 +7534,7 @@ func (m *NodeListMutation) RemovedNodesIDs() (ids []string) {
 }
 
 // NodesIDs returns the "nodes" edge IDs in the mutation.
-func (m *NodeListMutation) NodesIDs() (ids []string) {
+func (m *NodeListMutation) NodesIDs() (ids []uuid.UUID) {
 	for id := range m.nodes {
 		ids = append(ids, id)
 	}
@@ -7749,9 +7857,9 @@ type PersonMutation struct {
 	contacts             map[uuid.UUID]struct{}
 	removedcontacts      map[uuid.UUID]struct{}
 	clearedcontacts      bool
-	metadata             *string
+	metadata             *uuid.UUID
 	clearedmetadata      bool
-	node                 *string
+	node                 *uuid.UUID
 	clearednode          bool
 	done                 bool
 	oldValue             func(context.Context) (*Person, error)
@@ -7948,12 +8056,12 @@ func (m *PersonMutation) ResetProtoMessage() {
 }
 
 // SetMetadataID sets the "metadata_id" field.
-func (m *PersonMutation) SetMetadataID(s string) {
-	m.metadata = &s
+func (m *PersonMutation) SetMetadataID(u uuid.UUID) {
+	m.metadata = &u
 }
 
 // MetadataID returns the value of the "metadata_id" field in the mutation.
-func (m *PersonMutation) MetadataID() (r string, exists bool) {
+func (m *PersonMutation) MetadataID() (r uuid.UUID, exists bool) {
 	v := m.metadata
 	if v == nil {
 		return
@@ -7964,7 +8072,7 @@ func (m *PersonMutation) MetadataID() (r string, exists bool) {
 // OldMetadataID returns the old "metadata_id" field's value of the Person entity.
 // If the Person object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *PersonMutation) OldMetadataID(ctx context.Context) (v string, err error) {
+func (m *PersonMutation) OldMetadataID(ctx context.Context) (v uuid.UUID, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldMetadataID is only allowed on UpdateOne operations")
 	}
@@ -7997,12 +8105,12 @@ func (m *PersonMutation) ResetMetadataID() {
 }
 
 // SetNodeID sets the "node_id" field.
-func (m *PersonMutation) SetNodeID(s string) {
-	m.node = &s
+func (m *PersonMutation) SetNodeID(u uuid.UUID) {
+	m.node = &u
 }
 
 // NodeID returns the value of the "node_id" field in the mutation.
-func (m *PersonMutation) NodeID() (r string, exists bool) {
+func (m *PersonMutation) NodeID() (r uuid.UUID, exists bool) {
 	v := m.node
 	if v == nil {
 		return
@@ -8013,7 +8121,7 @@ func (m *PersonMutation) NodeID() (r string, exists bool) {
 // OldNodeID returns the old "node_id" field's value of the Person entity.
 // If the Person object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *PersonMutation) OldNodeID(ctx context.Context) (v string, err error) {
+func (m *PersonMutation) OldNodeID(ctx context.Context) (v uuid.UUID, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldNodeID is only allowed on UpdateOne operations")
 	}
@@ -8359,7 +8467,7 @@ func (m *PersonMutation) MetadataCleared() bool {
 // MetadataIDs returns the "metadata" edge IDs in the mutation.
 // Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
 // MetadataID instead. It exists only for internal usage by the builders.
-func (m *PersonMutation) MetadataIDs() (ids []string) {
+func (m *PersonMutation) MetadataIDs() (ids []uuid.UUID) {
 	if id := m.metadata; id != nil {
 		ids = append(ids, *id)
 	}
@@ -8386,7 +8494,7 @@ func (m *PersonMutation) NodeCleared() bool {
 // NodeIDs returns the "node" edge IDs in the mutation.
 // Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
 // NodeID instead. It exists only for internal usage by the builders.
-func (m *PersonMutation) NodeIDs() (ids []string) {
+func (m *PersonMutation) NodeIDs() (ids []uuid.UUID) {
 	if id := m.node; id != nil {
 		ids = append(ids, *id)
 	}
@@ -8538,14 +8646,14 @@ func (m *PersonMutation) SetField(name string, value ent.Value) error {
 		m.SetProtoMessage(v)
 		return nil
 	case person.FieldMetadataID:
-		v, ok := value.(string)
+		v, ok := value.(uuid.UUID)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetMetadataID(v)
 		return nil
 	case person.FieldNodeID:
-		v, ok := value.(string)
+		v, ok := value.(uuid.UUID)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
@@ -8855,7 +8963,7 @@ type PropertyMutation struct {
 	clearedFields   map[string]struct{}
 	document        *uuid.UUID
 	cleareddocument bool
-	node            *string
+	node            *uuid.UUID
 	clearednode     bool
 	done            bool
 	oldValue        func(context.Context) (*Property, error)
@@ -9052,12 +9160,12 @@ func (m *PropertyMutation) ResetProtoMessage() {
 }
 
 // SetNodeID sets the "node_id" field.
-func (m *PropertyMutation) SetNodeID(s string) {
-	m.node = &s
+func (m *PropertyMutation) SetNodeID(u uuid.UUID) {
+	m.node = &u
 }
 
 // NodeID returns the value of the "node_id" field in the mutation.
-func (m *PropertyMutation) NodeID() (r string, exists bool) {
+func (m *PropertyMutation) NodeID() (r uuid.UUID, exists bool) {
 	v := m.node
 	if v == nil {
 		return
@@ -9068,7 +9176,7 @@ func (m *PropertyMutation) NodeID() (r string, exists bool) {
 // OldNodeID returns the old "node_id" field's value of the Property entity.
 // If the Property object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *PropertyMutation) OldNodeID(ctx context.Context) (v string, err error) {
+func (m *PropertyMutation) OldNodeID(ctx context.Context) (v uuid.UUID, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldNodeID is only allowed on UpdateOne operations")
 	}
@@ -9213,7 +9321,7 @@ func (m *PropertyMutation) NodeCleared() bool {
 // NodeIDs returns the "node" edge IDs in the mutation.
 // Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
 // NodeID instead. It exists only for internal usage by the builders.
-func (m *PropertyMutation) NodeIDs() (ids []string) {
+func (m *PropertyMutation) NodeIDs() (ids []uuid.UUID) {
 	if id := m.node; id != nil {
 		ids = append(ids, *id)
 	}
@@ -9337,7 +9445,7 @@ func (m *PropertyMutation) SetField(name string, value ent.Value) error {
 		m.SetProtoMessage(v)
 		return nil
 	case property.FieldNodeID:
-		v, ok := value.(string)
+		v, ok := value.(uuid.UUID)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
@@ -9542,7 +9650,7 @@ type PurposeMutation struct {
 	clearedFields   map[string]struct{}
 	document        *uuid.UUID
 	cleareddocument bool
-	node            *string
+	node            *uuid.UUID
 	clearednode     bool
 	done            bool
 	oldValue        func(context.Context) (*Purpose, error)
@@ -9697,12 +9805,12 @@ func (m *PurposeMutation) ResetDocumentID() {
 }
 
 // SetNodeID sets the "node_id" field.
-func (m *PurposeMutation) SetNodeID(s string) {
-	m.node = &s
+func (m *PurposeMutation) SetNodeID(u uuid.UUID) {
+	m.node = &u
 }
 
 // NodeID returns the value of the "node_id" field in the mutation.
-func (m *PurposeMutation) NodeID() (r string, exists bool) {
+func (m *PurposeMutation) NodeID() (r uuid.UUID, exists bool) {
 	v := m.node
 	if v == nil {
 		return
@@ -9713,7 +9821,7 @@ func (m *PurposeMutation) NodeID() (r string, exists bool) {
 // OldNodeID returns the old "node_id" field's value of the Purpose entity.
 // If the Purpose object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *PurposeMutation) OldNodeID(ctx context.Context) (v string, err error) {
+func (m *PurposeMutation) OldNodeID(ctx context.Context) (v uuid.UUID, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldNodeID is only allowed on UpdateOne operations")
 	}
@@ -9822,7 +9930,7 @@ func (m *PurposeMutation) NodeCleared() bool {
 // NodeIDs returns the "node" edge IDs in the mutation.
 // Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
 // NodeID instead. It exists only for internal usage by the builders.
-func (m *PurposeMutation) NodeIDs() (ids []string) {
+func (m *PurposeMutation) NodeIDs() (ids []uuid.UUID) {
 	if id := m.node; id != nil {
 		ids = append(ids, *id)
 	}
@@ -9925,7 +10033,7 @@ func (m *PurposeMutation) SetField(name string, value ent.Value) error {
 		m.SetDocumentID(v)
 		return nil
 	case purpose.FieldNodeID:
-		v, ok := value.(string)
+		v, ok := value.(uuid.UUID)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
@@ -10122,7 +10230,7 @@ type SourceDataMutation struct {
 	clearedFields   map[string]struct{}
 	document        *uuid.UUID
 	cleareddocument bool
-	metadata        *string
+	metadata        *uuid.UUID
 	clearedmetadata bool
 	done            bool
 	oldValue        func(context.Context) (*SourceData, error)
@@ -10319,12 +10427,12 @@ func (m *SourceDataMutation) ResetProtoMessage() {
 }
 
 // SetMetadataID sets the "metadata_id" field.
-func (m *SourceDataMutation) SetMetadataID(s string) {
-	m.metadata = &s
+func (m *SourceDataMutation) SetMetadataID(u uuid.UUID) {
+	m.metadata = &u
 }
 
 // MetadataID returns the value of the "metadata_id" field in the mutation.
-func (m *SourceDataMutation) MetadataID() (r string, exists bool) {
+func (m *SourceDataMutation) MetadataID() (r uuid.UUID, exists bool) {
 	v := m.metadata
 	if v == nil {
 		return
@@ -10335,7 +10443,7 @@ func (m *SourceDataMutation) MetadataID() (r string, exists bool) {
 // OldMetadataID returns the old "metadata_id" field's value of the SourceData entity.
 // If the SourceData object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *SourceDataMutation) OldMetadataID(ctx context.Context) (v string, err error) {
+func (m *SourceDataMutation) OldMetadataID(ctx context.Context) (v uuid.UUID, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldMetadataID is only allowed on UpdateOne operations")
 	}
@@ -10585,7 +10693,7 @@ func (m *SourceDataMutation) MetadataCleared() bool {
 // MetadataIDs returns the "metadata" edge IDs in the mutation.
 // Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
 // MetadataID instead. It exists only for internal usage by the builders.
-func (m *SourceDataMutation) MetadataIDs() (ids []string) {
+func (m *SourceDataMutation) MetadataIDs() (ids []uuid.UUID) {
 	if id := m.metadata; id != nil {
 		ids = append(ids, *id)
 	}
@@ -10723,7 +10831,7 @@ func (m *SourceDataMutation) SetField(name string, value ent.Value) error {
 		m.SetProtoMessage(v)
 		return nil
 	case sourcedata.FieldMetadataID:
-		v, ok := value.(string)
+		v, ok := value.(uuid.UUID)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
@@ -10972,7 +11080,7 @@ type ToolMutation struct {
 	clearedFields   map[string]struct{}
 	document        *uuid.UUID
 	cleareddocument bool
-	metadata        *string
+	metadata        *uuid.UUID
 	clearedmetadata bool
 	done            bool
 	oldValue        func(context.Context) (*Tool, error)
@@ -11169,12 +11277,12 @@ func (m *ToolMutation) ResetProtoMessage() {
 }
 
 // SetMetadataID sets the "metadata_id" field.
-func (m *ToolMutation) SetMetadataID(s string) {
-	m.metadata = &s
+func (m *ToolMutation) SetMetadataID(u uuid.UUID) {
+	m.metadata = &u
 }
 
 // MetadataID returns the value of the "metadata_id" field in the mutation.
-func (m *ToolMutation) MetadataID() (r string, exists bool) {
+func (m *ToolMutation) MetadataID() (r uuid.UUID, exists bool) {
 	v := m.metadata
 	if v == nil {
 		return
@@ -11185,7 +11293,7 @@ func (m *ToolMutation) MetadataID() (r string, exists bool) {
 // OldMetadataID returns the old "metadata_id" field's value of the Tool entity.
 // If the Tool object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ToolMutation) OldMetadataID(ctx context.Context) (v string, err error) {
+func (m *ToolMutation) OldMetadataID(ctx context.Context) (v uuid.UUID, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldMetadataID is only allowed on UpdateOne operations")
 	}
@@ -11366,7 +11474,7 @@ func (m *ToolMutation) MetadataCleared() bool {
 // MetadataIDs returns the "metadata" edge IDs in the mutation.
 // Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
 // MetadataID instead. It exists only for internal usage by the builders.
-func (m *ToolMutation) MetadataIDs() (ids []string) {
+func (m *ToolMutation) MetadataIDs() (ids []uuid.UUID) {
 	if id := m.metadata; id != nil {
 		ids = append(ids, *id)
 	}
@@ -11497,7 +11605,7 @@ func (m *ToolMutation) SetField(name string, value ent.Value) error {
 		m.SetProtoMessage(v)
 		return nil
 	case tool.FieldMetadataID:
-		v, ok := value.(string)
+		v, ok := value.(uuid.UUID)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}

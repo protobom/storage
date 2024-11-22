@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
+	"github.com/google/uuid"
 )
 
 type Annotation struct {
@@ -26,7 +27,7 @@ func (Annotation) Mixin() []ent.Mixin {
 
 func (Annotation) Fields() []ent.Field {
 	return []ent.Field{
-		field.String("node_id").Optional().Nillable().NotEmpty(),
+		field.UUID("node_id", uuid.UUID{}).Optional().Nillable(),
 		field.String("name"),
 		field.String("value"),
 		field.Bool("is_unique").Default(false),

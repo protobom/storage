@@ -21,7 +21,7 @@ var (
 		{Name: "value", Type: field.TypeString},
 		{Name: "is_unique", Type: field.TypeBool, Default: false},
 		{Name: "document_id", Type: field.TypeUUID, Nullable: true},
-		{Name: "node_id", Type: field.TypeString, Nullable: true},
+		{Name: "node_id", Type: field.TypeUUID, Nullable: true},
 	}
 	// AnnotationsTable holds the schema information for the "annotations" table.
 	AnnotationsTable = &schema.Table{
@@ -80,7 +80,7 @@ var (
 	// DocumentsColumns holds the columns for the "documents" table.
 	DocumentsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID, Unique: true},
-		{Name: "metadata_id", Type: field.TypeString, Unique: true, Nullable: true},
+		{Name: "metadata_id", Type: field.TypeUUID, Unique: true, Nullable: true},
 		{Name: "node_list_id", Type: field.TypeUUID, Unique: true, Nullable: true},
 	}
 	// DocumentsTable holds the schema information for the "documents" table.
@@ -118,7 +118,7 @@ var (
 		{Name: "name", Type: field.TypeString, Nullable: true},
 		{Name: "description", Type: field.TypeString, Nullable: true},
 		{Name: "document_id", Type: field.TypeUUID, Nullable: true},
-		{Name: "metadata_id", Type: field.TypeString, Nullable: true},
+		{Name: "metadata_id", Type: field.TypeUUID, Nullable: true},
 	}
 	// DocumentTypesTable holds the schema information for the "document_types" table.
 	DocumentTypesTable = &schema.Table{
@@ -152,8 +152,8 @@ var (
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "type", Type: field.TypeEnum, Enums: []string{"UNKNOWN", "amends", "ancestor", "buildDependency", "buildTool", "contains", "contained_by", "copy", "dataFile", "dependencyManifest", "dependsOn", "dependencyOf", "descendant", "describes", "describedBy", "devDependency", "devTool", "distributionArtifact", "documentation", "dynamicLink", "example", "expandedFromArchive", "fileAdded", "fileDeleted", "fileModified", "generates", "generatedFrom", "metafile", "optionalComponent", "optionalDependency", "other", "packages", "patch", "prerequisite", "prerequisiteFor", "providedDependency", "requirementFor", "runtimeDependency", "specificationFor", "staticLink", "test", "testCase", "testDependency", "testTool", "variant"}},
 		{Name: "document_id", Type: field.TypeUUID, Nullable: true},
-		{Name: "node_id", Type: field.TypeString},
-		{Name: "to_node_id", Type: field.TypeString},
+		{Name: "node_id", Type: field.TypeUUID},
+		{Name: "to_node_id", Type: field.TypeUUID},
 	}
 	// EdgeTypesTable holds the schema information for the "edge_types" table.
 	EdgeTypesTable = &schema.Table{
@@ -203,7 +203,7 @@ var (
 		{Name: "type", Type: field.TypeEnum, Enums: []string{"UNKNOWN", "ATTESTATION", "BINARY", "BOM", "BOWER", "BUILD_META", "BUILD_SYSTEM", "CERTIFICATION_REPORT", "CHAT", "CODIFIED_INFRASTRUCTURE", "COMPONENT_ANALYSIS_REPORT", "CONFIGURATION", "DISTRIBUTION_INTAKE", "DOCUMENTATION", "DOWNLOAD", "DYNAMIC_ANALYSIS_REPORT", "EOL_NOTICE", "EVIDENCE", "EXPORT_CONTROL_ASSESSMENT", "FORMULATION", "FUNDING", "ISSUE_TRACKER", "LICENSE", "LOG", "MAILING_LIST", "MATURITY_REPORT", "MAVEN_CENTRAL", "METRICS", "MODEL_CARD", "NPM", "NUGET", "OTHER", "POAM", "PRIVACY_ASSESSMENT", "PRODUCT_METADATA", "PURCHASE_ORDER", "QUALITY_ASSESSMENT_REPORT", "QUALITY_METRICS", "RELEASE_HISTORY", "RELEASE_NOTES", "RISK_ASSESSMENT", "RUNTIME_ANALYSIS_REPORT", "SECURE_SOFTWARE_ATTESTATION", "SECURITY_ADVERSARY_MODEL", "SECURITY_ADVISORY", "SECURITY_CONTACT", "SECURITY_FIX", "SECURITY_OTHER", "SECURITY_PENTEST_REPORT", "SECURITY_POLICY", "SECURITY_SWID", "SECURITY_THREAT_MODEL", "SOCIAL", "SOURCE_ARTIFACT", "STATIC_ANALYSIS_REPORT", "SUPPORT", "VCS", "VULNERABILITY_ASSERTION", "VULNERABILITY_DISCLOSURE_REPORT", "VULNERABILITY_EXPLOITABILITY_ASSESSMENT", "WEBSITE"}},
 		{Name: "hashes", Type: field.TypeJSON, Nullable: true},
 		{Name: "document_id", Type: field.TypeUUID, Nullable: true},
-		{Name: "node_id", Type: field.TypeString, Nullable: true},
+		{Name: "node_id", Type: field.TypeUUID, Nullable: true},
 	}
 	// ExternalReferencesTable holds the schema information for the "external_references" table.
 	ExternalReferencesTable = &schema.Table{
@@ -234,8 +234,9 @@ var (
 	}
 	// MetadataColumns holds the columns for the "metadata" table.
 	MetadataColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeString},
+		{Name: "id", Type: field.TypeUUID, Unique: true},
 		{Name: "proto_message", Type: field.TypeBytes},
+		{Name: "native_id", Type: field.TypeString},
 		{Name: "version", Type: field.TypeString},
 		{Name: "name", Type: field.TypeString},
 		{Name: "date", Type: field.TypeTime},
@@ -250,14 +251,15 @@ var (
 			{
 				Name:    "idx_metadata",
 				Unique:  true,
-				Columns: []*schema.Column{MetadataColumns[0], MetadataColumns[2], MetadataColumns[3]},
+				Columns: []*schema.Column{MetadataColumns[2], MetadataColumns[3], MetadataColumns[4]},
 			},
 		},
 	}
 	// NodesColumns holds the columns for the "nodes" table.
 	NodesColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeString},
+		{Name: "id", Type: field.TypeUUID, Unique: true},
 		{Name: "proto_message", Type: field.TypeBytes},
+		{Name: "native_id", Type: field.TypeString},
 		{Name: "node_list_id", Type: field.TypeUUID, Nullable: true},
 		{Name: "type", Type: field.TypeEnum, Enums: []string{"PACKAGE", "FILE"}},
 		{Name: "name", Type: field.TypeString},
@@ -290,7 +292,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "nodes_documents_document",
-				Columns:    []*schema.Column{NodesColumns[24]},
+				Columns:    []*schema.Column{NodesColumns[25]},
 				RefColumns: []*schema.Column{DocumentsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
@@ -299,7 +301,7 @@ var (
 			{
 				Name:    "idx_nodes",
 				Unique:  true,
-				Columns: []*schema.Column{NodesColumns[0], NodesColumns[2]},
+				Columns: []*schema.Column{NodesColumns[2], NodesColumns[3]},
 			},
 		},
 	}
@@ -324,9 +326,9 @@ var (
 		{Name: "email", Type: field.TypeString},
 		{Name: "url", Type: field.TypeString},
 		{Name: "phone", Type: field.TypeString},
-		{Name: "metadata_id", Type: field.TypeString, Nullable: true},
-		{Name: "node_suppliers", Type: field.TypeString, Nullable: true},
-		{Name: "node_id", Type: field.TypeString, Nullable: true},
+		{Name: "metadata_id", Type: field.TypeUUID, Nullable: true},
+		{Name: "node_suppliers", Type: field.TypeUUID, Nullable: true},
+		{Name: "node_id", Type: field.TypeUUID, Nullable: true},
 		{Name: "document_id", Type: field.TypeUUID, Nullable: true},
 		{Name: "person_contacts", Type: field.TypeUUID, Nullable: true},
 	}
@@ -392,7 +394,7 @@ var (
 		{Name: "proto_message", Type: field.TypeBytes},
 		{Name: "name", Type: field.TypeString},
 		{Name: "data", Type: field.TypeString},
-		{Name: "node_id", Type: field.TypeString, Nullable: true},
+		{Name: "node_id", Type: field.TypeUUID, Nullable: true},
 		{Name: "document_id", Type: field.TypeUUID, Nullable: true},
 	}
 	// PropertiesTable holds the schema information for the "properties" table.
@@ -426,7 +428,7 @@ var (
 	PurposesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "primary_purpose", Type: field.TypeEnum, Enums: []string{"UNKNOWN_PURPOSE", "APPLICATION", "ARCHIVE", "BOM", "CONFIGURATION", "CONTAINER", "DATA", "DEVICE", "DEVICE_DRIVER", "DOCUMENTATION", "EVIDENCE", "EXECUTABLE", "FILE", "FIRMWARE", "FRAMEWORK", "INSTALL", "LIBRARY", "MACHINE_LEARNING_MODEL", "MANIFEST", "MODEL", "MODULE", "OPERATING_SYSTEM", "OTHER", "PATCH", "PLATFORM", "REQUIREMENT", "SOURCE", "SPECIFICATION", "TEST"}},
-		{Name: "node_id", Type: field.TypeString, Nullable: true},
+		{Name: "node_id", Type: field.TypeUUID, Nullable: true},
 		{Name: "document_id", Type: field.TypeUUID, Nullable: true},
 	}
 	// PurposesTable holds the schema information for the "purposes" table.
@@ -464,7 +466,7 @@ var (
 		{Name: "size", Type: field.TypeInt64},
 		{Name: "uri", Type: field.TypeString, Nullable: true},
 		{Name: "hashes", Type: field.TypeJSON, Nullable: true},
-		{Name: "metadata_id", Type: field.TypeString},
+		{Name: "metadata_id", Type: field.TypeUUID},
 		{Name: "document_id", Type: field.TypeUUID, Nullable: true},
 	}
 	// SourceDataTable holds the schema information for the "source_data" table.
@@ -501,7 +503,7 @@ var (
 		{Name: "name", Type: field.TypeString},
 		{Name: "version", Type: field.TypeString},
 		{Name: "vendor", Type: field.TypeString},
-		{Name: "metadata_id", Type: field.TypeString, Nullable: true},
+		{Name: "metadata_id", Type: field.TypeUUID, Nullable: true},
 		{Name: "document_id", Type: field.TypeUUID, Nullable: true},
 	}
 	// ToolsTable holds the schema information for the "tools" table.
@@ -534,7 +536,7 @@ var (
 	// NodeListNodesColumns holds the columns for the "node_list_nodes" table.
 	NodeListNodesColumns = []*schema.Column{
 		{Name: "node_list_id", Type: field.TypeUUID},
-		{Name: "node_id", Type: field.TypeString},
+		{Name: "node_id", Type: field.TypeUUID},
 	}
 	// NodeListNodesTable holds the schema information for the "node_list_nodes" table.
 	NodeListNodesTable = &schema.Table{

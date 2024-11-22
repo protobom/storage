@@ -480,8 +480,8 @@ func (erq *ExternalReferenceQuery) loadDocument(ctx context.Context, query *Docu
 	return nil
 }
 func (erq *ExternalReferenceQuery) loadNode(ctx context.Context, query *NodeQuery, nodes []*ExternalReference, init func(*ExternalReference), assign func(*ExternalReference, *Node)) error {
-	ids := make([]string, 0, len(nodes))
-	nodeids := make(map[string][]*ExternalReference)
+	ids := make([]uuid.UUID, 0, len(nodes))
+	nodeids := make(map[uuid.UUID][]*ExternalReference)
 	for i := range nodes {
 		fk := nodes[i].NodeID
 		if _, ok := nodeids[fk]; !ok {

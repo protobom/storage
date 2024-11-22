@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
+	"github.com/google/uuid"
 	"github.com/protobom/protobom/pkg/sbom"
 )
 
@@ -29,8 +30,8 @@ func (Person) Mixin() []ent.Mixin {
 
 func (Person) Fields() []ent.Field {
 	return []ent.Field{
-		field.String("metadata_id").Optional(),
-		field.String("node_id").Optional(),
+		field.UUID("metadata_id", uuid.UUID{}).Optional(),
+		field.UUID("node_id", uuid.UUID{}).Optional(),
 		field.String("name"),
 		field.Bool("is_org"),
 		field.String("email"),

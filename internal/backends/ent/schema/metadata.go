@@ -22,12 +22,13 @@ type Metadata struct {
 func (Metadata) Mixin() []ent.Mixin {
 	return []ent.Mixin{
 		ProtoMessageMixin[*sbom.Metadata]{},
+		UUIDMixin{},
 	}
 }
 
 func (Metadata) Fields() []ent.Field {
 	return []ent.Field{
-		field.String("id").NotEmpty().Immutable(),
+		field.String("native_id").NotEmpty().Immutable(),
 		field.String("version"),
 		field.String("name"),
 		field.Time("date"),
@@ -55,7 +56,7 @@ func (Metadata) Edges() []ent.Edge {
 
 func (Metadata) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("id", "version", "name").
+		index.Fields("native_id", "version", "name").
 			Unique().
 			StorageKey("idx_metadata"),
 	}

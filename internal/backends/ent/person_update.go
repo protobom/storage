@@ -36,15 +36,15 @@ func (pu *PersonUpdate) Where(ps ...predicate.Person) *PersonUpdate {
 }
 
 // SetMetadataID sets the "metadata_id" field.
-func (pu *PersonUpdate) SetMetadataID(s string) *PersonUpdate {
-	pu.mutation.SetMetadataID(s)
+func (pu *PersonUpdate) SetMetadataID(u uuid.UUID) *PersonUpdate {
+	pu.mutation.SetMetadataID(u)
 	return pu
 }
 
 // SetNillableMetadataID sets the "metadata_id" field if the given value is not nil.
-func (pu *PersonUpdate) SetNillableMetadataID(s *string) *PersonUpdate {
-	if s != nil {
-		pu.SetMetadataID(*s)
+func (pu *PersonUpdate) SetNillableMetadataID(u *uuid.UUID) *PersonUpdate {
+	if u != nil {
+		pu.SetMetadataID(*u)
 	}
 	return pu
 }
@@ -56,15 +56,15 @@ func (pu *PersonUpdate) ClearMetadataID() *PersonUpdate {
 }
 
 // SetNodeID sets the "node_id" field.
-func (pu *PersonUpdate) SetNodeID(s string) *PersonUpdate {
-	pu.mutation.SetNodeID(s)
+func (pu *PersonUpdate) SetNodeID(u uuid.UUID) *PersonUpdate {
+	pu.mutation.SetNodeID(u)
 	return pu
 }
 
 // SetNillableNodeID sets the "node_id" field if the given value is not nil.
-func (pu *PersonUpdate) SetNillableNodeID(s *string) *PersonUpdate {
-	if s != nil {
-		pu.SetNodeID(*s)
+func (pu *PersonUpdate) SetNillableNodeID(u *uuid.UUID) *PersonUpdate {
+	if u != nil {
+		pu.SetNodeID(*u)
 	}
 	return pu
 }
@@ -366,7 +366,7 @@ func (pu *PersonUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{person.MetadataColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(metadata.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(metadata.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -379,7 +379,7 @@ func (pu *PersonUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{person.MetadataColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(metadata.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(metadata.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -395,7 +395,7 @@ func (pu *PersonUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{person.NodeColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -408,7 +408,7 @@ func (pu *PersonUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{person.NodeColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -437,15 +437,15 @@ type PersonUpdateOne struct {
 }
 
 // SetMetadataID sets the "metadata_id" field.
-func (puo *PersonUpdateOne) SetMetadataID(s string) *PersonUpdateOne {
-	puo.mutation.SetMetadataID(s)
+func (puo *PersonUpdateOne) SetMetadataID(u uuid.UUID) *PersonUpdateOne {
+	puo.mutation.SetMetadataID(u)
 	return puo
 }
 
 // SetNillableMetadataID sets the "metadata_id" field if the given value is not nil.
-func (puo *PersonUpdateOne) SetNillableMetadataID(s *string) *PersonUpdateOne {
-	if s != nil {
-		puo.SetMetadataID(*s)
+func (puo *PersonUpdateOne) SetNillableMetadataID(u *uuid.UUID) *PersonUpdateOne {
+	if u != nil {
+		puo.SetMetadataID(*u)
 	}
 	return puo
 }
@@ -457,15 +457,15 @@ func (puo *PersonUpdateOne) ClearMetadataID() *PersonUpdateOne {
 }
 
 // SetNodeID sets the "node_id" field.
-func (puo *PersonUpdateOne) SetNodeID(s string) *PersonUpdateOne {
-	puo.mutation.SetNodeID(s)
+func (puo *PersonUpdateOne) SetNodeID(u uuid.UUID) *PersonUpdateOne {
+	puo.mutation.SetNodeID(u)
 	return puo
 }
 
 // SetNillableNodeID sets the "node_id" field if the given value is not nil.
-func (puo *PersonUpdateOne) SetNillableNodeID(s *string) *PersonUpdateOne {
-	if s != nil {
-		puo.SetNodeID(*s)
+func (puo *PersonUpdateOne) SetNillableNodeID(u *uuid.UUID) *PersonUpdateOne {
+	if u != nil {
+		puo.SetNodeID(*u)
 	}
 	return puo
 }
@@ -797,7 +797,7 @@ func (puo *PersonUpdateOne) sqlSave(ctx context.Context) (_node *Person, err err
 			Columns: []string{person.MetadataColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(metadata.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(metadata.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -810,7 +810,7 @@ func (puo *PersonUpdateOne) sqlSave(ctx context.Context) (_node *Person, err err
 			Columns: []string{person.MetadataColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(metadata.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(metadata.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -826,7 +826,7 @@ func (puo *PersonUpdateOne) sqlSave(ctx context.Context) (_node *Person, err err
 			Columns: []string{person.NodeColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -839,7 +839,7 @@ func (puo *PersonUpdateOne) sqlSave(ctx context.Context) (_node *Person, err err
 			Columns: []string{person.NodeColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

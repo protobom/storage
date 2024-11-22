@@ -73,8 +73,6 @@ func ValidColumn(column string) bool {
 var (
 	// DefaultDocumentID holds the default value on creation for the "document_id" field.
 	DefaultDocumentID func() uuid.UUID
-	// NodeIDValidator is a validator for the "node_id" field. It is called by the builders before save.
-	NodeIDValidator func(string) error
 	// DefaultIsUnique holds the default value on creation for the "is_unique" field.
 	DefaultIsUnique bool
 )

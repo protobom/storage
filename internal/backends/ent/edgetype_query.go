@@ -522,8 +522,8 @@ func (etq *EdgeTypeQuery) loadDocument(ctx context.Context, query *DocumentQuery
 	return nil
 }
 func (etq *EdgeTypeQuery) loadFrom(ctx context.Context, query *NodeQuery, nodes []*EdgeType, init func(*EdgeType), assign func(*EdgeType, *Node)) error {
-	ids := make([]string, 0, len(nodes))
-	nodeids := make(map[string][]*EdgeType)
+	ids := make([]uuid.UUID, 0, len(nodes))
+	nodeids := make(map[uuid.UUID][]*EdgeType)
 	for i := range nodes {
 		fk := nodes[i].NodeID
 		if _, ok := nodeids[fk]; !ok {
@@ -551,8 +551,8 @@ func (etq *EdgeTypeQuery) loadFrom(ctx context.Context, query *NodeQuery, nodes 
 	return nil
 }
 func (etq *EdgeTypeQuery) loadTo(ctx context.Context, query *NodeQuery, nodes []*EdgeType, init func(*EdgeType), assign func(*EdgeType, *Node)) error {
-	ids := make([]string, 0, len(nodes))
-	nodeids := make(map[string][]*EdgeType)
+	ids := make([]uuid.UUID, 0, len(nodes))
+	nodeids := make(map[uuid.UUID][]*EdgeType)
 	for i := range nodes {
 		fk := nodes[i].ToNodeID
 		if _, ok := nodeids[fk]; !ok {

@@ -14,6 +14,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/protobom/protobom/pkg/reader"
 	"github.com/protobom/protobom/pkg/sbom"
 	"github.com/stretchr/testify/suite"
@@ -86,6 +87,9 @@ func (as *annotationsSuite) TestBackend_AddNodeAnnotations() {
 	id := as.nodes[0].GetId()
 	annotationName := "add_node_annotation_test"
 
+	uniqueID, err := ent.GenerateUUID(as.nodes[0])
+	as.Require().NoError(err)
+
 	as.Require().NoError(
 		as.Backend.AddNodeAnnotations(id, annotationName, "test-node-value-1", "test-node-value-2", "test-node-value-3"),
 	)
@@ -96,7 +100,7 @@ func (as *annotationsSuite) TestBackend_AddNodeAnnotations() {
 
 	for idx, annotation := range annotations {
 		as.Equal(annotationName, annotation.Name)
-		as.Equal(*annotation.NodeID, as.nodes[0].GetId())
+		as.Equal(*annotation.NodeID, uniqueID)
 		as.Equal("test-node-value-"+strconv.Itoa(idx+1), annotation.Value)
 	}
 }
@@ -124,21 +128,25 @@ func (as *annotationsSuite) TestBackend_AddAnnotationToDocuments() {
 func (as *annotationsSuite) TestBackend_AddAnnotationToNodes() {
 	annotationName := "add_annotation_to_documents_test"
 	nodeIDs := []string{}
+	nodeUUIDs := []uuid.UUID{}
 
 	for _, document := range as.documents {
+		uniqueID, err := ent.GenerateUUID(document.GetNodeList().GetNodes()[0])
+		as.Require().NoError(err)
+
+		nodeUUIDs = append(nodeUUIDs, uniqueID)
 		nodeIDs = append(nodeIDs, document.GetNodeList().GetNodes()[0].GetId())
 	}
 
 	as.Require().NoError(as.Backend.AddAnnotationToNodes(annotationName, "test-node-value", nodeIDs...))
 
 	annotations := as.getTestResult(annotationName)
-
 	as.Len(annotations, 3)
 
-	for idx, annotation := range annotations {
+	for _, annotation := range annotations {
 		as.Equal(annotationName, annotation.Name)
 		as.Equal("test-node-value", annotation.Value)
-		as.Equal(*annotation.NodeID, nodeIDs[idx])
+		as.Contains(nodeUUIDs, *annotation.NodeID)
 	}
 }
 
@@ -189,6 +197,9 @@ func (as *annotationsSuite) TestBackend_GetNodeAnnotations() {
 	id := as.nodes[0].GetId()
 	annotationName := "get_node_annotations_test"
 
+	uniqueID, err := ent.GenerateUUID(as.nodes[0])
+	as.Require().NoError(err)
+
 	as.Require().NoError(as.Backend.AddNodeAnnotations(
 		id, annotationName, "test-node-value-1", "test-node-value-2", "test-node-value-3"),
 	)
@@ -200,7 +211,7 @@ func (as *annotationsSuite) TestBackend_GetNodeAnnotations() {
 
 	for idx, annotation := range annotations {
 		as.Equal(annotationName, annotation.Name)
-		as.Equal(*annotation.NodeID, as.nodes[0].GetId())
+		as.Equal(*annotation.NodeID, uniqueID)
 		as.Equal("test-node-value-"+strconv.Itoa(idx+1), annotation.Value)
 	}
 }
@@ -276,16 +287,18 @@ func (as *annotationsSuite) TestBackend_GetNodesByAnnotation() {
 
 	for idx, document := range as.documents {
 		uniqueID, err := ent.GenerateUUID(document)
-
 		as.Require().NoError(err)
 
-		for idx, value := range []string{
+		nodeUUID, err := ent.GenerateUUID(as.nodes[idx])
+		as.Require().NoError(err)
+
+		for _, value := range []string{
 			"test-node-value-" + strconv.Itoa(idx+1),
 			"test-node-value-" + strconv.Itoa(idx+2),
 			"test-node-value-" + strconv.Itoa(idx+3),
 		} {
 			_, err := as.Backend.Client().ExecContext(
-				as.Backend.Context(), query, uniqueID, as.nodes[idx].GetId(), false, annotationName, value,
+				as.Backend.Context(), query, uniqueID, nodeUUID, false, annotationName, value,
 			)
 			as.Require().NoError(err)
 		}
@@ -349,7 +362,10 @@ func (as *annotationsSuite) TestBackend_GetDocumentUniqueAnnotation() {
 }
 
 func (as *annotationsSuite) TestBackend_GetNodeUniqueAnnotation() {
-	id, err := ent.GenerateUUID(as.documents[0])
+	docUUID, err := ent.GenerateUUID(as.documents[0])
+	as.Require().NoError(err)
+
+	nodeUUID, err := ent.GenerateUUID(as.nodes[0])
 	as.Require().NoError(err)
 
 	annotationName := "get_node_unique_annotation_test"
@@ -357,7 +373,7 @@ func (as *annotationsSuite) TestBackend_GetNodeUniqueAnnotation() {
 	query := "INSERT INTO annotations (document_id, node_id, is_unique, name, value) VALUES (?, ?, ?, ?, ?)"
 
 	_, err = as.Backend.Client().ExecContext(
-		as.Backend.Context(), query, id, as.nodes[0].GetId(), true, annotationName, annotationValue,
+		as.Backend.Context(), query, docUUID, nodeUUID, true, annotationName, annotationValue,
 	)
 	as.Require().NoError(err)
 
@@ -415,8 +431,10 @@ func (as *annotationsSuite) TestBackend_RemoveDocumentAnnotations() {
 }
 
 func (as *annotationsSuite) TestBackend_RemoveNodeAnnotations() {
-	nodeID := as.nodes[0].GetId()
-	uniqueID, err := ent.GenerateUUID(as.documents[0])
+	nodeID, err := ent.GenerateUUID(as.nodes[0])
+	as.Require().NoError(err)
+
+	docUUID, err := ent.GenerateUUID(as.documents[0])
 	as.Require().NoError(err)
 
 	annotationName := "remove_node_annotations_test"
@@ -448,11 +466,11 @@ func (as *annotationsSuite) TestBackend_RemoveNodeAnnotations() {
 
 		as.Run(name, func() {
 			for _, value := range []string{"test-node-value-1", "test-node-value-2", "test-node-value-3"} {
-				_, err = as.Backend.Client().ExecContext(ctx, query, uniqueID, nodeID, false, annotationName, value)
+				_, err = as.Backend.Client().ExecContext(ctx, query, docUUID, nodeID, false, annotationName, value)
 				as.Require().NoError(err)
 			}
 
-			as.Require().NoError(as.Backend.RemoveNodeAnnotations(nodeID, annotationName, subtest.values...))
+			as.Require().NoError(as.Backend.RemoveNodeAnnotations(as.nodes[0].GetId(), annotationName, subtest.values...))
 
 			values := []string{}
 

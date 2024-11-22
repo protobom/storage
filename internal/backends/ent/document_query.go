@@ -340,7 +340,7 @@ func (dq *DocumentQuery) WithNodeList(opts ...func(*NodeListQuery)) *DocumentQue
 // Example:
 //
 //	var v []struct {
-//		MetadataID string `json:"metadata_id,omitempty"`
+//		MetadataID uuid.UUID `json:"metadata_id,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
@@ -363,7 +363,7 @@ func (dq *DocumentQuery) GroupBy(field string, fields ...string) *DocumentGroupB
 // Example:
 //
 //	var v []struct {
-//		MetadataID string `json:"metadata_id,omitempty"`
+//		MetadataID uuid.UUID `json:"metadata_id,omitempty"`
 //	}
 //
 //	client.Document.Query().
@@ -451,8 +451,8 @@ func (dq *DocumentQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Doc
 }
 
 func (dq *DocumentQuery) loadMetadata(ctx context.Context, query *MetadataQuery, nodes []*Document, init func(*Document), assign func(*Document, *Metadata)) error {
-	ids := make([]string, 0, len(nodes))
-	nodeids := make(map[string][]*Document)
+	ids := make([]uuid.UUID, 0, len(nodes))
+	nodeids := make(map[uuid.UUID][]*Document)
 	for i := range nodes {
 		fk := nodes[i].MetadataID
 		if _, ok := nodeids[fk]; !ok {

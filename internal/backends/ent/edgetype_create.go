@@ -50,14 +50,14 @@ func (etc *EdgeTypeCreate) SetType(e edgetype.Type) *EdgeTypeCreate {
 }
 
 // SetNodeID sets the "node_id" field.
-func (etc *EdgeTypeCreate) SetNodeID(s string) *EdgeTypeCreate {
-	etc.mutation.SetNodeID(s)
+func (etc *EdgeTypeCreate) SetNodeID(u uuid.UUID) *EdgeTypeCreate {
+	etc.mutation.SetNodeID(u)
 	return etc
 }
 
 // SetToNodeID sets the "to_node_id" field.
-func (etc *EdgeTypeCreate) SetToNodeID(s string) *EdgeTypeCreate {
-	etc.mutation.SetToNodeID(s)
+func (etc *EdgeTypeCreate) SetToNodeID(u uuid.UUID) *EdgeTypeCreate {
+	etc.mutation.SetToNodeID(u)
 	return etc
 }
 
@@ -67,7 +67,7 @@ func (etc *EdgeTypeCreate) SetDocument(d *Document) *EdgeTypeCreate {
 }
 
 // SetFromID sets the "from" edge to the Node entity by ID.
-func (etc *EdgeTypeCreate) SetFromID(id string) *EdgeTypeCreate {
+func (etc *EdgeTypeCreate) SetFromID(id uuid.UUID) *EdgeTypeCreate {
 	etc.mutation.SetFromID(id)
 	return etc
 }
@@ -78,7 +78,7 @@ func (etc *EdgeTypeCreate) SetFrom(n *Node) *EdgeTypeCreate {
 }
 
 // SetToID sets the "to" edge to the Node entity by ID.
-func (etc *EdgeTypeCreate) SetToID(id string) *EdgeTypeCreate {
+func (etc *EdgeTypeCreate) SetToID(id uuid.UUID) *EdgeTypeCreate {
 	etc.mutation.SetToID(id)
 	return etc
 }
@@ -207,7 +207,7 @@ func (etc *EdgeTypeCreate) createSpec() (*EdgeType, *sqlgraph.CreateSpec) {
 			Columns: []string{edgetype.FromColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -224,7 +224,7 @@ func (etc *EdgeTypeCreate) createSpec() (*EdgeType, *sqlgraph.CreateSpec) {
 			Columns: []string{edgetype.ToColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -298,7 +298,7 @@ func (u *EdgeTypeUpsert) UpdateType() *EdgeTypeUpsert {
 }
 
 // SetNodeID sets the "node_id" field.
-func (u *EdgeTypeUpsert) SetNodeID(v string) *EdgeTypeUpsert {
+func (u *EdgeTypeUpsert) SetNodeID(v uuid.UUID) *EdgeTypeUpsert {
 	u.Set(edgetype.FieldNodeID, v)
 	return u
 }
@@ -310,7 +310,7 @@ func (u *EdgeTypeUpsert) UpdateNodeID() *EdgeTypeUpsert {
 }
 
 // SetToNodeID sets the "to_node_id" field.
-func (u *EdgeTypeUpsert) SetToNodeID(v string) *EdgeTypeUpsert {
+func (u *EdgeTypeUpsert) SetToNodeID(v uuid.UUID) *EdgeTypeUpsert {
 	u.Set(edgetype.FieldToNodeID, v)
 	return u
 }
@@ -381,7 +381,7 @@ func (u *EdgeTypeUpsertOne) UpdateType() *EdgeTypeUpsertOne {
 }
 
 // SetNodeID sets the "node_id" field.
-func (u *EdgeTypeUpsertOne) SetNodeID(v string) *EdgeTypeUpsertOne {
+func (u *EdgeTypeUpsertOne) SetNodeID(v uuid.UUID) *EdgeTypeUpsertOne {
 	return u.Update(func(s *EdgeTypeUpsert) {
 		s.SetNodeID(v)
 	})
@@ -395,7 +395,7 @@ func (u *EdgeTypeUpsertOne) UpdateNodeID() *EdgeTypeUpsertOne {
 }
 
 // SetToNodeID sets the "to_node_id" field.
-func (u *EdgeTypeUpsertOne) SetToNodeID(v string) *EdgeTypeUpsertOne {
+func (u *EdgeTypeUpsertOne) SetToNodeID(v uuid.UUID) *EdgeTypeUpsertOne {
 	return u.Update(func(s *EdgeTypeUpsert) {
 		s.SetToNodeID(v)
 	})
@@ -634,7 +634,7 @@ func (u *EdgeTypeUpsertBulk) UpdateType() *EdgeTypeUpsertBulk {
 }
 
 // SetNodeID sets the "node_id" field.
-func (u *EdgeTypeUpsertBulk) SetNodeID(v string) *EdgeTypeUpsertBulk {
+func (u *EdgeTypeUpsertBulk) SetNodeID(v uuid.UUID) *EdgeTypeUpsertBulk {
 	return u.Update(func(s *EdgeTypeUpsert) {
 		s.SetNodeID(v)
 	})
@@ -648,7 +648,7 @@ func (u *EdgeTypeUpsertBulk) UpdateNodeID() *EdgeTypeUpsertBulk {
 }
 
 // SetToNodeID sets the "to_node_id" field.
-func (u *EdgeTypeUpsertBulk) SetToNodeID(v string) *EdgeTypeUpsertBulk {
+func (u *EdgeTypeUpsertBulk) SetToNodeID(v uuid.UUID) *EdgeTypeUpsertBulk {
 	return u.Update(func(s *EdgeTypeUpsert) {
 		s.SetToNodeID(v)
 	})

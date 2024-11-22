@@ -52,8 +52,8 @@ func (sdc *SourceDataCreate) SetProtoMessage(sd *sbom.SourceData) *SourceDataCre
 }
 
 // SetMetadataID sets the "metadata_id" field.
-func (sdc *SourceDataCreate) SetMetadataID(s string) *SourceDataCreate {
-	sdc.mutation.SetMetadataID(s)
+func (sdc *SourceDataCreate) SetMetadataID(u uuid.UUID) *SourceDataCreate {
+	sdc.mutation.SetMetadataID(u)
 	return sdc
 }
 
@@ -244,7 +244,7 @@ func (sdc *SourceDataCreate) createSpec() (*SourceData, *sqlgraph.CreateSpec) {
 			Columns: []string{sourcedata.MetadataColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(metadata.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(metadata.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -306,7 +306,7 @@ type (
 )
 
 // SetMetadataID sets the "metadata_id" field.
-func (u *SourceDataUpsert) SetMetadataID(v string) *SourceDataUpsert {
+func (u *SourceDataUpsert) SetMetadataID(v uuid.UUID) *SourceDataUpsert {
 	u.Set(sourcedata.FieldMetadataID, v)
 	return u
 }
@@ -438,7 +438,7 @@ func (u *SourceDataUpsertOne) Update(set func(*SourceDataUpsert)) *SourceDataUps
 }
 
 // SetMetadataID sets the "metadata_id" field.
-func (u *SourceDataUpsertOne) SetMetadataID(v string) *SourceDataUpsertOne {
+func (u *SourceDataUpsertOne) SetMetadataID(v uuid.UUID) *SourceDataUpsertOne {
 	return u.Update(func(s *SourceDataUpsert) {
 		s.SetMetadataID(v)
 	})
@@ -750,7 +750,7 @@ func (u *SourceDataUpsertBulk) Update(set func(*SourceDataUpsert)) *SourceDataUp
 }
 
 // SetMetadataID sets the "metadata_id" field.
-func (u *SourceDataUpsertBulk) SetMetadataID(v string) *SourceDataUpsertBulk {
+func (u *SourceDataUpsertBulk) SetMetadataID(v uuid.UUID) *SourceDataUpsertBulk {
 	return u.Update(func(s *SourceDataUpsert) {
 		s.SetMetadataID(v)
 	})

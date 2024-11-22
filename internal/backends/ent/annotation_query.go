@@ -480,8 +480,8 @@ func (aq *AnnotationQuery) loadDocument(ctx context.Context, query *DocumentQuer
 	return nil
 }
 func (aq *AnnotationQuery) loadNode(ctx context.Context, query *NodeQuery, nodes []*Annotation, init func(*Annotation), assign func(*Annotation, *Node)) error {
-	ids := make([]string, 0, len(nodes))
-	nodeids := make(map[string][]*Annotation)
+	ids := make([]uuid.UUID, 0, len(nodes))
+	nodeids := make(map[uuid.UUID][]*Annotation)
 	for i := range nodes {
 		if nodes[i].NodeID == nil {
 			continue

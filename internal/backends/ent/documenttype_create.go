@@ -52,15 +52,15 @@ func (dtc *DocumentTypeCreate) SetProtoMessage(st *sbom.DocumentType) *DocumentT
 }
 
 // SetMetadataID sets the "metadata_id" field.
-func (dtc *DocumentTypeCreate) SetMetadataID(s string) *DocumentTypeCreate {
-	dtc.mutation.SetMetadataID(s)
+func (dtc *DocumentTypeCreate) SetMetadataID(u uuid.UUID) *DocumentTypeCreate {
+	dtc.mutation.SetMetadataID(u)
 	return dtc
 }
 
 // SetNillableMetadataID sets the "metadata_id" field if the given value is not nil.
-func (dtc *DocumentTypeCreate) SetNillableMetadataID(s *string) *DocumentTypeCreate {
-	if s != nil {
-		dtc.SetMetadataID(*s)
+func (dtc *DocumentTypeCreate) SetNillableMetadataID(u *uuid.UUID) *DocumentTypeCreate {
+	if u != nil {
+		dtc.SetMetadataID(*u)
 	}
 	return dtc
 }
@@ -251,7 +251,7 @@ func (dtc *DocumentTypeCreate) createSpec() (*DocumentType, *sqlgraph.CreateSpec
 			Columns: []string{documenttype.MetadataColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(metadata.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(metadata.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -313,7 +313,7 @@ type (
 )
 
 // SetMetadataID sets the "metadata_id" field.
-func (u *DocumentTypeUpsert) SetMetadataID(v string) *DocumentTypeUpsert {
+func (u *DocumentTypeUpsert) SetMetadataID(v uuid.UUID) *DocumentTypeUpsert {
 	u.Set(documenttype.FieldMetadataID, v)
 	return u
 }
@@ -439,7 +439,7 @@ func (u *DocumentTypeUpsertOne) Update(set func(*DocumentTypeUpsert)) *DocumentT
 }
 
 // SetMetadataID sets the "metadata_id" field.
-func (u *DocumentTypeUpsertOne) SetMetadataID(v string) *DocumentTypeUpsertOne {
+func (u *DocumentTypeUpsertOne) SetMetadataID(v uuid.UUID) *DocumentTypeUpsertOne {
 	return u.Update(func(s *DocumentTypeUpsert) {
 		s.SetMetadataID(v)
 	})
@@ -744,7 +744,7 @@ func (u *DocumentTypeUpsertBulk) Update(set func(*DocumentTypeUpsert)) *Document
 }
 
 // SetMetadataID sets the "metadata_id" field.
-func (u *DocumentTypeUpsertBulk) SetMetadataID(v string) *DocumentTypeUpsertBulk {
+func (u *DocumentTypeUpsertBulk) SetMetadataID(v uuid.UUID) *DocumentTypeUpsertBulk {
 	return u.Update(func(s *DocumentTypeUpsert) {
 		s.SetMetadataID(v)
 	})

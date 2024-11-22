@@ -12,68 +12,64 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"github.com/google/uuid"
 	"github.com/protobom/protobom/pkg/sbom"
 	"github.com/protobom/storage/internal/backends/ent/predicate"
 )
 
 // ID filters vertices based on their ID field.
-func ID(id string) predicate.Metadata {
+func ID(id uuid.UUID) predicate.Metadata {
 	return predicate.Metadata(sql.FieldEQ(FieldID, id))
 }
 
 // IDEQ applies the EQ predicate on the ID field.
-func IDEQ(id string) predicate.Metadata {
+func IDEQ(id uuid.UUID) predicate.Metadata {
 	return predicate.Metadata(sql.FieldEQ(FieldID, id))
 }
 
 // IDNEQ applies the NEQ predicate on the ID field.
-func IDNEQ(id string) predicate.Metadata {
+func IDNEQ(id uuid.UUID) predicate.Metadata {
 	return predicate.Metadata(sql.FieldNEQ(FieldID, id))
 }
 
 // IDIn applies the In predicate on the ID field.
-func IDIn(ids ...string) predicate.Metadata {
+func IDIn(ids ...uuid.UUID) predicate.Metadata {
 	return predicate.Metadata(sql.FieldIn(FieldID, ids...))
 }
 
 // IDNotIn applies the NotIn predicate on the ID field.
-func IDNotIn(ids ...string) predicate.Metadata {
+func IDNotIn(ids ...uuid.UUID) predicate.Metadata {
 	return predicate.Metadata(sql.FieldNotIn(FieldID, ids...))
 }
 
 // IDGT applies the GT predicate on the ID field.
-func IDGT(id string) predicate.Metadata {
+func IDGT(id uuid.UUID) predicate.Metadata {
 	return predicate.Metadata(sql.FieldGT(FieldID, id))
 }
 
 // IDGTE applies the GTE predicate on the ID field.
-func IDGTE(id string) predicate.Metadata {
+func IDGTE(id uuid.UUID) predicate.Metadata {
 	return predicate.Metadata(sql.FieldGTE(FieldID, id))
 }
 
 // IDLT applies the LT predicate on the ID field.
-func IDLT(id string) predicate.Metadata {
+func IDLT(id uuid.UUID) predicate.Metadata {
 	return predicate.Metadata(sql.FieldLT(FieldID, id))
 }
 
 // IDLTE applies the LTE predicate on the ID field.
-func IDLTE(id string) predicate.Metadata {
+func IDLTE(id uuid.UUID) predicate.Metadata {
 	return predicate.Metadata(sql.FieldLTE(FieldID, id))
-}
-
-// IDEqualFold applies the EqualFold predicate on the ID field.
-func IDEqualFold(id string) predicate.Metadata {
-	return predicate.Metadata(sql.FieldEqualFold(FieldID, id))
-}
-
-// IDContainsFold applies the ContainsFold predicate on the ID field.
-func IDContainsFold(id string) predicate.Metadata {
-	return predicate.Metadata(sql.FieldContainsFold(FieldID, id))
 }
 
 // ProtoMessage applies equality check predicate on the "proto_message" field. It's identical to ProtoMessageEQ.
 func ProtoMessage(v *sbom.Metadata) predicate.Metadata {
 	return predicate.Metadata(sql.FieldEQ(FieldProtoMessage, v))
+}
+
+// NativeID applies equality check predicate on the "native_id" field. It's identical to NativeIDEQ.
+func NativeID(v string) predicate.Metadata {
+	return predicate.Metadata(sql.FieldEQ(FieldNativeID, v))
 }
 
 // Version applies equality check predicate on the "version" field. It's identical to VersionEQ.
@@ -134,6 +130,71 @@ func ProtoMessageLT(v *sbom.Metadata) predicate.Metadata {
 // ProtoMessageLTE applies the LTE predicate on the "proto_message" field.
 func ProtoMessageLTE(v *sbom.Metadata) predicate.Metadata {
 	return predicate.Metadata(sql.FieldLTE(FieldProtoMessage, v))
+}
+
+// NativeIDEQ applies the EQ predicate on the "native_id" field.
+func NativeIDEQ(v string) predicate.Metadata {
+	return predicate.Metadata(sql.FieldEQ(FieldNativeID, v))
+}
+
+// NativeIDNEQ applies the NEQ predicate on the "native_id" field.
+func NativeIDNEQ(v string) predicate.Metadata {
+	return predicate.Metadata(sql.FieldNEQ(FieldNativeID, v))
+}
+
+// NativeIDIn applies the In predicate on the "native_id" field.
+func NativeIDIn(vs ...string) predicate.Metadata {
+	return predicate.Metadata(sql.FieldIn(FieldNativeID, vs...))
+}
+
+// NativeIDNotIn applies the NotIn predicate on the "native_id" field.
+func NativeIDNotIn(vs ...string) predicate.Metadata {
+	return predicate.Metadata(sql.FieldNotIn(FieldNativeID, vs...))
+}
+
+// NativeIDGT applies the GT predicate on the "native_id" field.
+func NativeIDGT(v string) predicate.Metadata {
+	return predicate.Metadata(sql.FieldGT(FieldNativeID, v))
+}
+
+// NativeIDGTE applies the GTE predicate on the "native_id" field.
+func NativeIDGTE(v string) predicate.Metadata {
+	return predicate.Metadata(sql.FieldGTE(FieldNativeID, v))
+}
+
+// NativeIDLT applies the LT predicate on the "native_id" field.
+func NativeIDLT(v string) predicate.Metadata {
+	return predicate.Metadata(sql.FieldLT(FieldNativeID, v))
+}
+
+// NativeIDLTE applies the LTE predicate on the "native_id" field.
+func NativeIDLTE(v string) predicate.Metadata {
+	return predicate.Metadata(sql.FieldLTE(FieldNativeID, v))
+}
+
+// NativeIDContains applies the Contains predicate on the "native_id" field.
+func NativeIDContains(v string) predicate.Metadata {
+	return predicate.Metadata(sql.FieldContains(FieldNativeID, v))
+}
+
+// NativeIDHasPrefix applies the HasPrefix predicate on the "native_id" field.
+func NativeIDHasPrefix(v string) predicate.Metadata {
+	return predicate.Metadata(sql.FieldHasPrefix(FieldNativeID, v))
+}
+
+// NativeIDHasSuffix applies the HasSuffix predicate on the "native_id" field.
+func NativeIDHasSuffix(v string) predicate.Metadata {
+	return predicate.Metadata(sql.FieldHasSuffix(FieldNativeID, v))
+}
+
+// NativeIDEqualFold applies the EqualFold predicate on the "native_id" field.
+func NativeIDEqualFold(v string) predicate.Metadata {
+	return predicate.Metadata(sql.FieldEqualFold(FieldNativeID, v))
+}
+
+// NativeIDContainsFold applies the ContainsFold predicate on the "native_id" field.
+func NativeIDContainsFold(v string) predicate.Metadata {
+	return predicate.Metadata(sql.FieldContainsFold(FieldNativeID, v))
 }
 
 // VersionEQ applies the EQ predicate on the "version" field.

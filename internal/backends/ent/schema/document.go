@@ -26,7 +26,7 @@ func (Document) Mixin() []ent.Mixin {
 
 func (Document) Fields() []ent.Field {
 	return []ent.Field{
-		field.String("metadata_id").
+		field.UUID("metadata_id", uuid.UUID{}).
 			Unique().
 			Immutable().
 			Optional(),

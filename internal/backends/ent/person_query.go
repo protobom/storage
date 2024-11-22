@@ -680,8 +680,8 @@ func (pq *PersonQuery) loadContacts(ctx context.Context, query *PersonQuery, nod
 	return nil
 }
 func (pq *PersonQuery) loadMetadata(ctx context.Context, query *MetadataQuery, nodes []*Person, init func(*Person), assign func(*Person, *Metadata)) error {
-	ids := make([]string, 0, len(nodes))
-	nodeids := make(map[string][]*Person)
+	ids := make([]uuid.UUID, 0, len(nodes))
+	nodeids := make(map[uuid.UUID][]*Person)
 	for i := range nodes {
 		fk := nodes[i].MetadataID
 		if _, ok := nodeids[fk]; !ok {
@@ -709,8 +709,8 @@ func (pq *PersonQuery) loadMetadata(ctx context.Context, query *MetadataQuery, n
 	return nil
 }
 func (pq *PersonQuery) loadNode(ctx context.Context, query *NodeQuery, nodes []*Person, init func(*Person), assign func(*Person, *Node)) error {
-	ids := make([]string, 0, len(nodes))
-	nodeids := make(map[string][]*Person)
+	ids := make([]uuid.UUID, 0, len(nodes))
+	nodeids := make(map[uuid.UUID][]*Person)
 	for i := range nodes {
 		fk := nodes[i].NodeID
 		if _, ok := nodeids[fk]; !ok {

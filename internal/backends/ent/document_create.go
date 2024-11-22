@@ -31,15 +31,15 @@ type DocumentCreate struct {
 }
 
 // SetMetadataID sets the "metadata_id" field.
-func (dc *DocumentCreate) SetMetadataID(s string) *DocumentCreate {
-	dc.mutation.SetMetadataID(s)
+func (dc *DocumentCreate) SetMetadataID(u uuid.UUID) *DocumentCreate {
+	dc.mutation.SetMetadataID(u)
 	return dc
 }
 
 // SetNillableMetadataID sets the "metadata_id" field if the given value is not nil.
-func (dc *DocumentCreate) SetNillableMetadataID(s *string) *DocumentCreate {
-	if s != nil {
-		dc.SetMetadataID(*s)
+func (dc *DocumentCreate) SetNillableMetadataID(u *uuid.UUID) *DocumentCreate {
+	if u != nil {
+		dc.SetMetadataID(*u)
 	}
 	return dc
 }
@@ -152,7 +152,7 @@ func (dc *DocumentCreate) createSpec() (*Document, *sqlgraph.CreateSpec) {
 			Columns: []string{document.MetadataColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(metadata.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(metadata.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

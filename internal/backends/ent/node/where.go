@@ -18,58 +18,48 @@ import (
 )
 
 // ID filters vertices based on their ID field.
-func ID(id string) predicate.Node {
+func ID(id uuid.UUID) predicate.Node {
 	return predicate.Node(sql.FieldEQ(FieldID, id))
 }
 
 // IDEQ applies the EQ predicate on the ID field.
-func IDEQ(id string) predicate.Node {
+func IDEQ(id uuid.UUID) predicate.Node {
 	return predicate.Node(sql.FieldEQ(FieldID, id))
 }
 
 // IDNEQ applies the NEQ predicate on the ID field.
-func IDNEQ(id string) predicate.Node {
+func IDNEQ(id uuid.UUID) predicate.Node {
 	return predicate.Node(sql.FieldNEQ(FieldID, id))
 }
 
 // IDIn applies the In predicate on the ID field.
-func IDIn(ids ...string) predicate.Node {
+func IDIn(ids ...uuid.UUID) predicate.Node {
 	return predicate.Node(sql.FieldIn(FieldID, ids...))
 }
 
 // IDNotIn applies the NotIn predicate on the ID field.
-func IDNotIn(ids ...string) predicate.Node {
+func IDNotIn(ids ...uuid.UUID) predicate.Node {
 	return predicate.Node(sql.FieldNotIn(FieldID, ids...))
 }
 
 // IDGT applies the GT predicate on the ID field.
-func IDGT(id string) predicate.Node {
+func IDGT(id uuid.UUID) predicate.Node {
 	return predicate.Node(sql.FieldGT(FieldID, id))
 }
 
 // IDGTE applies the GTE predicate on the ID field.
-func IDGTE(id string) predicate.Node {
+func IDGTE(id uuid.UUID) predicate.Node {
 	return predicate.Node(sql.FieldGTE(FieldID, id))
 }
 
 // IDLT applies the LT predicate on the ID field.
-func IDLT(id string) predicate.Node {
+func IDLT(id uuid.UUID) predicate.Node {
 	return predicate.Node(sql.FieldLT(FieldID, id))
 }
 
 // IDLTE applies the LTE predicate on the ID field.
-func IDLTE(id string) predicate.Node {
+func IDLTE(id uuid.UUID) predicate.Node {
 	return predicate.Node(sql.FieldLTE(FieldID, id))
-}
-
-// IDEqualFold applies the EqualFold predicate on the ID field.
-func IDEqualFold(id string) predicate.Node {
-	return predicate.Node(sql.FieldEqualFold(FieldID, id))
-}
-
-// IDContainsFold applies the ContainsFold predicate on the ID field.
-func IDContainsFold(id string) predicate.Node {
-	return predicate.Node(sql.FieldContainsFold(FieldID, id))
 }
 
 // DocumentID applies equality check predicate on the "document_id" field. It's identical to DocumentIDEQ.
@@ -80,6 +70,11 @@ func DocumentID(v uuid.UUID) predicate.Node {
 // ProtoMessage applies equality check predicate on the "proto_message" field. It's identical to ProtoMessageEQ.
 func ProtoMessage(v *sbom.Node) predicate.Node {
 	return predicate.Node(sql.FieldEQ(FieldProtoMessage, v))
+}
+
+// NativeID applies equality check predicate on the "native_id" field. It's identical to NativeIDEQ.
+func NativeID(v string) predicate.Node {
+	return predicate.Node(sql.FieldEQ(FieldNativeID, v))
 }
 
 // NodeListID applies equality check predicate on the "node_list_id" field. It's identical to NodeListIDEQ.
@@ -230,6 +225,71 @@ func ProtoMessageLT(v *sbom.Node) predicate.Node {
 // ProtoMessageLTE applies the LTE predicate on the "proto_message" field.
 func ProtoMessageLTE(v *sbom.Node) predicate.Node {
 	return predicate.Node(sql.FieldLTE(FieldProtoMessage, v))
+}
+
+// NativeIDEQ applies the EQ predicate on the "native_id" field.
+func NativeIDEQ(v string) predicate.Node {
+	return predicate.Node(sql.FieldEQ(FieldNativeID, v))
+}
+
+// NativeIDNEQ applies the NEQ predicate on the "native_id" field.
+func NativeIDNEQ(v string) predicate.Node {
+	return predicate.Node(sql.FieldNEQ(FieldNativeID, v))
+}
+
+// NativeIDIn applies the In predicate on the "native_id" field.
+func NativeIDIn(vs ...string) predicate.Node {
+	return predicate.Node(sql.FieldIn(FieldNativeID, vs...))
+}
+
+// NativeIDNotIn applies the NotIn predicate on the "native_id" field.
+func NativeIDNotIn(vs ...string) predicate.Node {
+	return predicate.Node(sql.FieldNotIn(FieldNativeID, vs...))
+}
+
+// NativeIDGT applies the GT predicate on the "native_id" field.
+func NativeIDGT(v string) predicate.Node {
+	return predicate.Node(sql.FieldGT(FieldNativeID, v))
+}
+
+// NativeIDGTE applies the GTE predicate on the "native_id" field.
+func NativeIDGTE(v string) predicate.Node {
+	return predicate.Node(sql.FieldGTE(FieldNativeID, v))
+}
+
+// NativeIDLT applies the LT predicate on the "native_id" field.
+func NativeIDLT(v string) predicate.Node {
+	return predicate.Node(sql.FieldLT(FieldNativeID, v))
+}
+
+// NativeIDLTE applies the LTE predicate on the "native_id" field.
+func NativeIDLTE(v string) predicate.Node {
+	return predicate.Node(sql.FieldLTE(FieldNativeID, v))
+}
+
+// NativeIDContains applies the Contains predicate on the "native_id" field.
+func NativeIDContains(v string) predicate.Node {
+	return predicate.Node(sql.FieldContains(FieldNativeID, v))
+}
+
+// NativeIDHasPrefix applies the HasPrefix predicate on the "native_id" field.
+func NativeIDHasPrefix(v string) predicate.Node {
+	return predicate.Node(sql.FieldHasPrefix(FieldNativeID, v))
+}
+
+// NativeIDHasSuffix applies the HasSuffix predicate on the "native_id" field.
+func NativeIDHasSuffix(v string) predicate.Node {
+	return predicate.Node(sql.FieldHasSuffix(FieldNativeID, v))
+}
+
+// NativeIDEqualFold applies the EqualFold predicate on the "native_id" field.
+func NativeIDEqualFold(v string) predicate.Node {
+	return predicate.Node(sql.FieldEqualFold(FieldNativeID, v))
+}
+
+// NativeIDContainsFold applies the ContainsFold predicate on the "native_id" field.
+func NativeIDContainsFold(v string) predicate.Node {
+	return predicate.Node(sql.FieldContainsFold(FieldNativeID, v))
 }
 
 // NodeListIDEQ applies the EQ predicate on the "node_list_id" field.

@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
+	"github.com/google/uuid"
 	"github.com/protobom/protobom/pkg/sbom"
 )
 
@@ -28,7 +29,7 @@ func (DocumentType) Mixin() []ent.Mixin {
 
 func (DocumentType) Fields() []ent.Field {
 	return []ent.Field{
-		field.String("metadata_id").Optional(),
+		field.UUID("metadata_id", uuid.UUID{}).Optional(),
 		field.Enum("type").
 			Values(enumValues(new(sbom.DocumentType_SBOMType))...).
 			Optional().

@@ -50,14 +50,14 @@ func (nlc *NodeListCreate) SetID(u uuid.UUID) *NodeListCreate {
 }
 
 // AddNodeIDs adds the "nodes" edge to the Node entity by IDs.
-func (nlc *NodeListCreate) AddNodeIDs(ids ...string) *NodeListCreate {
+func (nlc *NodeListCreate) AddNodeIDs(ids ...uuid.UUID) *NodeListCreate {
 	nlc.mutation.AddNodeIDs(ids...)
 	return nlc
 }
 
 // AddNodes adds the "nodes" edges to the Node entity.
 func (nlc *NodeListCreate) AddNodes(n ...*Node) *NodeListCreate {
-	ids := make([]string, len(n))
+	ids := make([]uuid.UUID, len(n))
 	for i := range n {
 		ids[i] = n[i].ID
 	}
@@ -170,7 +170,7 @@ func (nlc *NodeListCreate) createSpec() (*NodeList, *sqlgraph.CreateSpec) {
 			Columns: nodelist.NodesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

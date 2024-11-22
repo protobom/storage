@@ -480,8 +480,8 @@ func (tq *ToolQuery) loadDocument(ctx context.Context, query *DocumentQuery, nod
 	return nil
 }
 func (tq *ToolQuery) loadMetadata(ctx context.Context, query *MetadataQuery, nodes []*Tool, init func(*Tool), assign func(*Tool, *Metadata)) error {
-	ids := make([]string, 0, len(nodes))
-	nodeids := make(map[string][]*Tool)
+	ids := make([]uuid.UUID, 0, len(nodes))
+	nodeids := make(map[uuid.UUID][]*Tool)
 	for i := range nodes {
 		fk := nodes[i].MetadataID
 		if _, ok := nodeids[fk]; !ok {

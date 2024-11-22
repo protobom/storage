@@ -407,14 +407,14 @@ func (nu *NodeUpdate) AddPrimaryPurpose(p ...*Purpose) *NodeUpdate {
 }
 
 // AddToNodeIDs adds the "to_nodes" edge to the Node entity by IDs.
-func (nu *NodeUpdate) AddToNodeIDs(ids ...string) *NodeUpdate {
+func (nu *NodeUpdate) AddToNodeIDs(ids ...uuid.UUID) *NodeUpdate {
 	nu.mutation.AddToNodeIDs(ids...)
 	return nu
 }
 
 // AddToNodes adds the "to_nodes" edges to the Node entity.
 func (nu *NodeUpdate) AddToNodes(n ...*Node) *NodeUpdate {
-	ids := make([]string, len(n))
+	ids := make([]uuid.UUID, len(n))
 	for i := range n {
 		ids[i] = n[i].ID
 	}
@@ -422,14 +422,14 @@ func (nu *NodeUpdate) AddToNodes(n ...*Node) *NodeUpdate {
 }
 
 // AddNodeIDs adds the "nodes" edge to the Node entity by IDs.
-func (nu *NodeUpdate) AddNodeIDs(ids ...string) *NodeUpdate {
+func (nu *NodeUpdate) AddNodeIDs(ids ...uuid.UUID) *NodeUpdate {
 	nu.mutation.AddNodeIDs(ids...)
 	return nu
 }
 
 // AddNodes adds the "nodes" edges to the Node entity.
 func (nu *NodeUpdate) AddNodes(n ...*Node) *NodeUpdate {
-	ids := make([]string, len(n))
+	ids := make([]uuid.UUID, len(n))
 	for i := range n {
 		ids[i] = n[i].ID
 	}
@@ -592,14 +592,14 @@ func (nu *NodeUpdate) ClearToNodes() *NodeUpdate {
 }
 
 // RemoveToNodeIDs removes the "to_nodes" edge to Node entities by IDs.
-func (nu *NodeUpdate) RemoveToNodeIDs(ids ...string) *NodeUpdate {
+func (nu *NodeUpdate) RemoveToNodeIDs(ids ...uuid.UUID) *NodeUpdate {
 	nu.mutation.RemoveToNodeIDs(ids...)
 	return nu
 }
 
 // RemoveToNodes removes "to_nodes" edges to Node entities.
 func (nu *NodeUpdate) RemoveToNodes(n ...*Node) *NodeUpdate {
-	ids := make([]string, len(n))
+	ids := make([]uuid.UUID, len(n))
 	for i := range n {
 		ids[i] = n[i].ID
 	}
@@ -613,14 +613,14 @@ func (nu *NodeUpdate) ClearNodes() *NodeUpdate {
 }
 
 // RemoveNodeIDs removes the "nodes" edge to Node entities by IDs.
-func (nu *NodeUpdate) RemoveNodeIDs(ids ...string) *NodeUpdate {
+func (nu *NodeUpdate) RemoveNodeIDs(ids ...uuid.UUID) *NodeUpdate {
 	nu.mutation.RemoveNodeIDs(ids...)
 	return nu
 }
 
 // RemoveNodes removes "nodes" edges to Node entities.
 func (nu *NodeUpdate) RemoveNodes(n ...*Node) *NodeUpdate {
-	ids := make([]string, len(n))
+	ids := make([]uuid.UUID, len(n))
 	for i := range n {
 		ids[i] = n[i].ID
 	}
@@ -752,7 +752,7 @@ func (nu *NodeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if err := nu.check(); err != nil {
 		return n, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(node.Table, node.Columns, sqlgraph.NewFieldSpec(node.FieldID, field.TypeString))
+	_spec := sqlgraph.NewUpdateSpec(node.Table, node.Columns, sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID))
 	if ps := nu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -1038,7 +1038,7 @@ func (nu *NodeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: node.ToNodesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
 			},
 		}
 		createE := &EdgeTypeCreate{config: nu.config, mutation: newEdgeTypeMutation(nu.config, OpCreate)}
@@ -1055,7 +1055,7 @@ func (nu *NodeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: node.ToNodesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -1075,7 +1075,7 @@ func (nu *NodeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: node.ToNodesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -1095,7 +1095,7 @@ func (nu *NodeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: node.NodesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -1108,7 +1108,7 @@ func (nu *NodeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: node.NodesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -1124,7 +1124,7 @@ func (nu *NodeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: node.NodesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -1697,14 +1697,14 @@ func (nuo *NodeUpdateOne) AddPrimaryPurpose(p ...*Purpose) *NodeUpdateOne {
 }
 
 // AddToNodeIDs adds the "to_nodes" edge to the Node entity by IDs.
-func (nuo *NodeUpdateOne) AddToNodeIDs(ids ...string) *NodeUpdateOne {
+func (nuo *NodeUpdateOne) AddToNodeIDs(ids ...uuid.UUID) *NodeUpdateOne {
 	nuo.mutation.AddToNodeIDs(ids...)
 	return nuo
 }
 
 // AddToNodes adds the "to_nodes" edges to the Node entity.
 func (nuo *NodeUpdateOne) AddToNodes(n ...*Node) *NodeUpdateOne {
-	ids := make([]string, len(n))
+	ids := make([]uuid.UUID, len(n))
 	for i := range n {
 		ids[i] = n[i].ID
 	}
@@ -1712,14 +1712,14 @@ func (nuo *NodeUpdateOne) AddToNodes(n ...*Node) *NodeUpdateOne {
 }
 
 // AddNodeIDs adds the "nodes" edge to the Node entity by IDs.
-func (nuo *NodeUpdateOne) AddNodeIDs(ids ...string) *NodeUpdateOne {
+func (nuo *NodeUpdateOne) AddNodeIDs(ids ...uuid.UUID) *NodeUpdateOne {
 	nuo.mutation.AddNodeIDs(ids...)
 	return nuo
 }
 
 // AddNodes adds the "nodes" edges to the Node entity.
 func (nuo *NodeUpdateOne) AddNodes(n ...*Node) *NodeUpdateOne {
-	ids := make([]string, len(n))
+	ids := make([]uuid.UUID, len(n))
 	for i := range n {
 		ids[i] = n[i].ID
 	}
@@ -1882,14 +1882,14 @@ func (nuo *NodeUpdateOne) ClearToNodes() *NodeUpdateOne {
 }
 
 // RemoveToNodeIDs removes the "to_nodes" edge to Node entities by IDs.
-func (nuo *NodeUpdateOne) RemoveToNodeIDs(ids ...string) *NodeUpdateOne {
+func (nuo *NodeUpdateOne) RemoveToNodeIDs(ids ...uuid.UUID) *NodeUpdateOne {
 	nuo.mutation.RemoveToNodeIDs(ids...)
 	return nuo
 }
 
 // RemoveToNodes removes "to_nodes" edges to Node entities.
 func (nuo *NodeUpdateOne) RemoveToNodes(n ...*Node) *NodeUpdateOne {
-	ids := make([]string, len(n))
+	ids := make([]uuid.UUID, len(n))
 	for i := range n {
 		ids[i] = n[i].ID
 	}
@@ -1903,14 +1903,14 @@ func (nuo *NodeUpdateOne) ClearNodes() *NodeUpdateOne {
 }
 
 // RemoveNodeIDs removes the "nodes" edge to Node entities by IDs.
-func (nuo *NodeUpdateOne) RemoveNodeIDs(ids ...string) *NodeUpdateOne {
+func (nuo *NodeUpdateOne) RemoveNodeIDs(ids ...uuid.UUID) *NodeUpdateOne {
 	nuo.mutation.RemoveNodeIDs(ids...)
 	return nuo
 }
 
 // RemoveNodes removes "nodes" edges to Node entities.
 func (nuo *NodeUpdateOne) RemoveNodes(n ...*Node) *NodeUpdateOne {
-	ids := make([]string, len(n))
+	ids := make([]uuid.UUID, len(n))
 	for i := range n {
 		ids[i] = n[i].ID
 	}
@@ -2055,7 +2055,7 @@ func (nuo *NodeUpdateOne) sqlSave(ctx context.Context) (_node *Node, err error) 
 	if err := nuo.check(); err != nil {
 		return _node, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(node.Table, node.Columns, sqlgraph.NewFieldSpec(node.FieldID, field.TypeString))
+	_spec := sqlgraph.NewUpdateSpec(node.Table, node.Columns, sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID))
 	id, ok := nuo.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "Node.id" for update`)}
@@ -2358,7 +2358,7 @@ func (nuo *NodeUpdateOne) sqlSave(ctx context.Context) (_node *Node, err error) 
 			Columns: node.ToNodesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
 			},
 		}
 		createE := &EdgeTypeCreate{config: nuo.config, mutation: newEdgeTypeMutation(nuo.config, OpCreate)}
@@ -2375,7 +2375,7 @@ func (nuo *NodeUpdateOne) sqlSave(ctx context.Context) (_node *Node, err error) 
 			Columns: node.ToNodesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -2395,7 +2395,7 @@ func (nuo *NodeUpdateOne) sqlSave(ctx context.Context) (_node *Node, err error) 
 			Columns: node.ToNodesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -2415,7 +2415,7 @@ func (nuo *NodeUpdateOne) sqlSave(ctx context.Context) (_node *Node, err error) 
 			Columns: node.NodesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -2428,7 +2428,7 @@ func (nuo *NodeUpdateOne) sqlSave(ctx context.Context) (_node *Node, err error) 
 			Columns: node.NodesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -2444,7 +2444,7 @@ func (nuo *NodeUpdateOne) sqlSave(ctx context.Context) (_node *Node, err error) 
 			Columns: node.NodesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

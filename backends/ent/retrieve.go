@@ -15,6 +15,7 @@ import (
 
 	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/externalreference"
+	"github.com/protobom/storage/internal/backends/ent/metadata"
 	"github.com/protobom/storage/internal/backends/ent/node"
 	"github.com/protobom/storage/internal/backends/ent/predicate"
 )
@@ -51,9 +52,16 @@ func (backend *Backend) Retrieve(id string, _ *storage.RetrieveOptions) (doc *sb
 func (backend *Backend) GetDocumentsByID(ids ...string) ([]*sbom.Document, error) {
 	documents := []*sbom.Document{}
 
+	docUUIDs, err := backend.client.Metadata.Query().
+		Where(metadata.NativeIDIn(ids...)).
+		IDs(backend.ctx)
+	if err != nil {
+		return nil, fmt.Errorf("querying documents IDs: %w", err)
+	}
+
 	predicates := []predicate.Document{}
 	if len(ids) > 0 {
-		predicates = append(predicates, document.MetadataIDIn(ids...))
+		predicates = append(predicates, document.MetadataIDIn(docUUIDs...))
 	}
 
 	results, err := backend.client.Document.Query().
@@ -79,7 +87,7 @@ func (backend *Backend) GetExternalReferencesByDocumentID(
 	id string, types ...string,
 ) ([]*sbom.ExternalReference, error) {
 	predicates := []predicate.ExternalReference{
-		externalreference.HasDocumentWith(document.MetadataIDEQ(id)),
+		externalreference.HasDocumentWith(document.HasMetadataWith(metadata.NativeIDEQ(id))),
 	}
 
 	extRefTypes := []externalreference.Type{}
@@ -118,8 +126,15 @@ func (backend *Backend) GetNodesByID(ids ...string) ([]*sbom.Node, error) {
 
 	predicates := []predicate.Node{}
 
+	nodeUUIDS, err := backend.client.Node.Query().
+		Where(node.NativeIDIn(ids...)).
+		IDs(backend.ctx)
+	if err != nil {
+		return nil, fmt.Errorf("querying node IDs: %w", err)
+	}
+
 	if len(ids) > 0 {
-		predicates = append(predicates, node.IDIn(ids...))
+		predicates = append(predicates, node.IDIn(nodeUUIDS...))
 	}
 
 	results, err := backend.client.Node.Query().

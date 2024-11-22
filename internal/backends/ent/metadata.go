@@ -14,6 +14,7 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/google/uuid"
 	"github.com/protobom/protobom/pkg/sbom"
 	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/metadata"
@@ -23,9 +24,11 @@ import (
 type Metadata struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID string `json:"id,omitempty"`
+	ID uuid.UUID `json:"id,omitempty"`
 	// ProtoMessage holds the value of the "proto_message" field.
 	ProtoMessage *sbom.Metadata `json:"proto_message,omitempty"`
+	// NativeID holds the value of the "native_id" field.
+	NativeID string `json:"native_id,omitempty"`
 	// Version holds the value of the "version" field.
 	Version string `json:"version,omitempty"`
 	// Name holds the value of the "name" field.
@@ -111,10 +114,12 @@ func (*Metadata) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case metadata.FieldProtoMessage:
 			values[i] = &sql.NullScanner{S: new(sbom.Metadata)}
-		case metadata.FieldID, metadata.FieldVersion, metadata.FieldName, metadata.FieldComment:
+		case metadata.FieldNativeID, metadata.FieldVersion, metadata.FieldName, metadata.FieldComment:
 			values[i] = new(sql.NullString)
 		case metadata.FieldDate:
 			values[i] = new(sql.NullTime)
+		case metadata.FieldID:
+			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -131,16 +136,22 @@ func (m *Metadata) assignValues(columns []string, values []any) error {
 	for i := range columns {
 		switch columns[i] {
 		case metadata.FieldID:
-			if value, ok := values[i].(*sql.NullString); !ok {
+			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
-			} else if value.Valid {
-				m.ID = value.String
+			} else if value != nil {
+				m.ID = *value
 			}
 		case metadata.FieldProtoMessage:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
 				return fmt.Errorf("unexpected type %T for field proto_message", values[i])
 			} else if value.Valid {
 				m.ProtoMessage = value.S.(*sbom.Metadata)
+			}
+		case metadata.FieldNativeID:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field native_id", values[i])
+			} else if value.Valid {
+				m.NativeID = value.String
 			}
 		case metadata.FieldVersion:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -231,6 +242,9 @@ func (m *Metadata) String() string {
 		builder.WriteString("proto_message=")
 		builder.WriteString(fmt.Sprintf("%v", *v))
 	}
+	builder.WriteString(", ")
+	builder.WriteString("native_id=")
+	builder.WriteString(m.NativeID)
 	builder.WriteString(", ")
 	builder.WriteString("version=")
 	builder.WriteString(m.Version)

@@ -17,6 +17,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/google/uuid"
 	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/documenttype"
 	"github.com/protobom/storage/internal/backends/ent/metadata"
@@ -208,8 +209,8 @@ func (mq *MetadataQuery) FirstX(ctx context.Context) *Metadata {
 
 // FirstID returns the first Metadata ID from the query.
 // Returns a *NotFoundError when no Metadata ID was found.
-func (mq *MetadataQuery) FirstID(ctx context.Context) (id string, err error) {
-	var ids []string
+func (mq *MetadataQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
+	var ids []uuid.UUID
 	if ids, err = mq.Limit(1).IDs(setContextOp(ctx, mq.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
@@ -221,7 +222,7 @@ func (mq *MetadataQuery) FirstID(ctx context.Context) (id string, err error) {
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (mq *MetadataQuery) FirstIDX(ctx context.Context) string {
+func (mq *MetadataQuery) FirstIDX(ctx context.Context) uuid.UUID {
 	id, err := mq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -259,8 +260,8 @@ func (mq *MetadataQuery) OnlyX(ctx context.Context) *Metadata {
 // OnlyID is like Only, but returns the only Metadata ID in the query.
 // Returns a *NotSingularError when more than one Metadata ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (mq *MetadataQuery) OnlyID(ctx context.Context) (id string, err error) {
-	var ids []string
+func (mq *MetadataQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
+	var ids []uuid.UUID
 	if ids, err = mq.Limit(2).IDs(setContextOp(ctx, mq.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
@@ -276,7 +277,7 @@ func (mq *MetadataQuery) OnlyID(ctx context.Context) (id string, err error) {
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (mq *MetadataQuery) OnlyIDX(ctx context.Context) string {
+func (mq *MetadataQuery) OnlyIDX(ctx context.Context) uuid.UUID {
 	id, err := mq.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -304,7 +305,7 @@ func (mq *MetadataQuery) AllX(ctx context.Context) []*Metadata {
 }
 
 // IDs executes the query and returns a list of Metadata IDs.
-func (mq *MetadataQuery) IDs(ctx context.Context) (ids []string, err error) {
+func (mq *MetadataQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
 	if mq.ctx.Unique == nil && mq.path != nil {
 		mq.Unique(true)
 	}
@@ -316,7 +317,7 @@ func (mq *MetadataQuery) IDs(ctx context.Context) (ids []string, err error) {
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (mq *MetadataQuery) IDsX(ctx context.Context) []string {
+func (mq *MetadataQuery) IDsX(ctx context.Context) []uuid.UUID {
 	ids, err := mq.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -585,7 +586,7 @@ func (mq *MetadataQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Met
 
 func (mq *MetadataQuery) loadTools(ctx context.Context, query *ToolQuery, nodes []*Metadata, init func(*Metadata), assign func(*Metadata, *Tool)) error {
 	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[string]*Metadata)
+	nodeids := make(map[uuid.UUID]*Metadata)
 	for i := range nodes {
 		fks = append(fks, nodes[i].ID)
 		nodeids[nodes[i].ID] = nodes[i]
@@ -615,7 +616,7 @@ func (mq *MetadataQuery) loadTools(ctx context.Context, query *ToolQuery, nodes 
 }
 func (mq *MetadataQuery) loadAuthors(ctx context.Context, query *PersonQuery, nodes []*Metadata, init func(*Metadata), assign func(*Metadata, *Person)) error {
 	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[string]*Metadata)
+	nodeids := make(map[uuid.UUID]*Metadata)
 	for i := range nodes {
 		fks = append(fks, nodes[i].ID)
 		nodeids[nodes[i].ID] = nodes[i]
@@ -646,7 +647,7 @@ func (mq *MetadataQuery) loadAuthors(ctx context.Context, query *PersonQuery, no
 }
 func (mq *MetadataQuery) loadDocumentTypes(ctx context.Context, query *DocumentTypeQuery, nodes []*Metadata, init func(*Metadata), assign func(*Metadata, *DocumentType)) error {
 	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[string]*Metadata)
+	nodeids := make(map[uuid.UUID]*Metadata)
 	for i := range nodes {
 		fks = append(fks, nodes[i].ID)
 		nodeids[nodes[i].ID] = nodes[i]
@@ -676,7 +677,7 @@ func (mq *MetadataQuery) loadDocumentTypes(ctx context.Context, query *DocumentT
 }
 func (mq *MetadataQuery) loadSourceData(ctx context.Context, query *SourceDataQuery, nodes []*Metadata, init func(*Metadata), assign func(*Metadata, *SourceData)) error {
 	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[string]*Metadata)
+	nodeids := make(map[uuid.UUID]*Metadata)
 	for i := range nodes {
 		fks = append(fks, nodes[i].ID)
 		nodeids[nodes[i].ID] = nodes[i]
@@ -706,7 +707,7 @@ func (mq *MetadataQuery) loadSourceData(ctx context.Context, query *SourceDataQu
 }
 func (mq *MetadataQuery) loadDocument(ctx context.Context, query *DocumentQuery, nodes []*Metadata, init func(*Metadata), assign func(*Metadata, *Document)) error {
 	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[string]*Metadata)
+	nodeids := make(map[uuid.UUID]*Metadata)
 	for i := range nodes {
 		fks = append(fks, nodes[i].ID)
 		nodeids[nodes[i].ID] = nodes[i]
@@ -742,7 +743,7 @@ func (mq *MetadataQuery) sqlCount(ctx context.Context) (int, error) {
 }
 
 func (mq *MetadataQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := sqlgraph.NewQuerySpec(metadata.Table, metadata.Columns, sqlgraph.NewFieldSpec(metadata.FieldID, field.TypeString))
+	_spec := sqlgraph.NewQuerySpec(metadata.Table, metadata.Columns, sqlgraph.NewFieldSpec(metadata.FieldID, field.TypeUUID))
 	_spec.From = mq.sql
 	if unique := mq.ctx.Unique; unique != nil {
 		_spec.Unique = *unique

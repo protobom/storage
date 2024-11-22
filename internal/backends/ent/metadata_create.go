@@ -41,6 +41,12 @@ func (mc *MetadataCreate) SetProtoMessage(s *sbom.Metadata) *MetadataCreate {
 	return mc
 }
 
+// SetNativeID sets the "native_id" field.
+func (mc *MetadataCreate) SetNativeID(s string) *MetadataCreate {
+	mc.mutation.SetNativeID(s)
+	return mc
+}
+
 // SetVersion sets the "version" field.
 func (mc *MetadataCreate) SetVersion(s string) *MetadataCreate {
 	mc.mutation.SetVersion(s)
@@ -66,8 +72,8 @@ func (mc *MetadataCreate) SetComment(s string) *MetadataCreate {
 }
 
 // SetID sets the "id" field.
-func (mc *MetadataCreate) SetID(s string) *MetadataCreate {
-	mc.mutation.SetID(s)
+func (mc *MetadataCreate) SetID(u uuid.UUID) *MetadataCreate {
+	mc.mutation.SetID(u)
 	return mc
 }
 
@@ -179,6 +185,14 @@ func (mc *MetadataCreate) check() error {
 	if _, ok := mc.mutation.ProtoMessage(); !ok {
 		return &ValidationError{Name: "proto_message", err: errors.New(`ent: missing required field "Metadata.proto_message"`)}
 	}
+	if _, ok := mc.mutation.NativeID(); !ok {
+		return &ValidationError{Name: "native_id", err: errors.New(`ent: missing required field "Metadata.native_id"`)}
+	}
+	if v, ok := mc.mutation.NativeID(); ok {
+		if err := metadata.NativeIDValidator(v); err != nil {
+			return &ValidationError{Name: "native_id", err: fmt.Errorf(`ent: validator failed for field "Metadata.native_id": %w`, err)}
+		}
+	}
 	if _, ok := mc.mutation.Version(); !ok {
 		return &ValidationError{Name: "version", err: errors.New(`ent: missing required field "Metadata.version"`)}
 	}
@@ -190,11 +204,6 @@ func (mc *MetadataCreate) check() error {
 	}
 	if _, ok := mc.mutation.Comment(); !ok {
 		return &ValidationError{Name: "comment", err: errors.New(`ent: missing required field "Metadata.comment"`)}
-	}
-	if v, ok := mc.mutation.ID(); ok {
-		if err := metadata.IDValidator(v); err != nil {
-			return &ValidationError{Name: "id", err: fmt.Errorf(`ent: validator failed for field "Metadata.id": %w`, err)}
-		}
 	}
 	if len(mc.mutation.DocumentIDs()) == 0 {
 		return &ValidationError{Name: "document", err: errors.New(`ent: missing required edge "Metadata.document"`)}
@@ -214,10 +223,10 @@ func (mc *MetadataCreate) sqlSave(ctx context.Context) (*Metadata, error) {
 		return nil, err
 	}
 	if _spec.ID.Value != nil {
-		if id, ok := _spec.ID.Value.(string); ok {
-			_node.ID = id
-		} else {
-			return nil, fmt.Errorf("unexpected Metadata.ID type: %T", _spec.ID.Value)
+		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
+			_node.ID = *id
+		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
+			return nil, err
 		}
 	}
 	mc.mutation.id = &_node.ID
@@ -228,16 +237,20 @@ func (mc *MetadataCreate) sqlSave(ctx context.Context) (*Metadata, error) {
 func (mc *MetadataCreate) createSpec() (*Metadata, *sqlgraph.CreateSpec) {
 	var (
 		_node = &Metadata{config: mc.config}
-		_spec = sqlgraph.NewCreateSpec(metadata.Table, sqlgraph.NewFieldSpec(metadata.FieldID, field.TypeString))
+		_spec = sqlgraph.NewCreateSpec(metadata.Table, sqlgraph.NewFieldSpec(metadata.FieldID, field.TypeUUID))
 	)
 	_spec.OnConflict = mc.conflict
 	if id, ok := mc.mutation.ID(); ok {
 		_node.ID = id
-		_spec.ID.Value = id
+		_spec.ID.Value = &id
 	}
 	if value, ok := mc.mutation.ProtoMessage(); ok {
 		_spec.SetField(metadata.FieldProtoMessage, field.TypeBytes, value)
 		_node.ProtoMessage = value
+	}
+	if value, ok := mc.mutation.NativeID(); ok {
+		_spec.SetField(metadata.FieldNativeID, field.TypeString, value)
+		_node.NativeID = value
 	}
 	if value, ok := mc.mutation.Version(); ok {
 		_spec.SetField(metadata.FieldVersion, field.TypeString, value)
@@ -455,6 +468,9 @@ func (u *MetadataUpsertOne) UpdateNewValues() *MetadataUpsertOne {
 		if _, exists := u.create.mutation.ProtoMessage(); exists {
 			s.SetIgnore(metadata.FieldProtoMessage)
 		}
+		if _, exists := u.create.mutation.NativeID(); exists {
+			s.SetIgnore(metadata.FieldNativeID)
+		}
 	}))
 	return u
 }
@@ -558,7 +574,7 @@ func (u *MetadataUpsertOne) ExecX(ctx context.Context) {
 }
 
 // Exec executes the UPSERT query and returns the inserted/updated ID.
-func (u *MetadataUpsertOne) ID(ctx context.Context) (id string, err error) {
+func (u *MetadataUpsertOne) ID(ctx context.Context) (id uuid.UUID, err error) {
 	if u.create.driver.Dialect() == dialect.MySQL {
 		// In case of "ON CONFLICT", there is no way to get back non-numeric ID
 		// fields from the database since MySQL does not support the RETURNING clause.
@@ -572,7 +588,7 @@ func (u *MetadataUpsertOne) ID(ctx context.Context) (id string, err error) {
 }
 
 // IDX is like ID, but panics if an error occurs.
-func (u *MetadataUpsertOne) IDX(ctx context.Context) string {
+func (u *MetadataUpsertOne) IDX(ctx context.Context) uuid.UUID {
 	id, err := u.ID(ctx)
 	if err != nil {
 		panic(err)
@@ -726,6 +742,9 @@ func (u *MetadataUpsertBulk) UpdateNewValues() *MetadataUpsertBulk {
 			}
 			if _, exists := b.mutation.ProtoMessage(); exists {
 				s.SetIgnore(metadata.FieldProtoMessage)
+			}
+			if _, exists := b.mutation.NativeID(); exists {
+				s.SetIgnore(metadata.FieldNativeID)
 			}
 		}
 	}))

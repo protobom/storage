@@ -15,6 +15,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/google/uuid"
 	"github.com/protobom/storage/internal/backends/ent/metadata"
 	"github.com/protobom/storage/internal/backends/ent/predicate"
 	"github.com/protobom/storage/internal/backends/ent/sourcedata"
@@ -34,15 +35,15 @@ func (sdu *SourceDataUpdate) Where(ps ...predicate.SourceData) *SourceDataUpdate
 }
 
 // SetMetadataID sets the "metadata_id" field.
-func (sdu *SourceDataUpdate) SetMetadataID(s string) *SourceDataUpdate {
-	sdu.mutation.SetMetadataID(s)
+func (sdu *SourceDataUpdate) SetMetadataID(u uuid.UUID) *SourceDataUpdate {
+	sdu.mutation.SetMetadataID(u)
 	return sdu
 }
 
 // SetNillableMetadataID sets the "metadata_id" field if the given value is not nil.
-func (sdu *SourceDataUpdate) SetNillableMetadataID(s *string) *SourceDataUpdate {
-	if s != nil {
-		sdu.SetMetadataID(*s)
+func (sdu *SourceDataUpdate) SetNillableMetadataID(u *uuid.UUID) *SourceDataUpdate {
+	if u != nil {
+		sdu.SetMetadataID(*u)
 	}
 	return sdu
 }
@@ -206,7 +207,7 @@ func (sdu *SourceDataUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{sourcedata.MetadataColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(metadata.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(metadata.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -219,7 +220,7 @@ func (sdu *SourceDataUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{sourcedata.MetadataColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(metadata.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(metadata.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -248,15 +249,15 @@ type SourceDataUpdateOne struct {
 }
 
 // SetMetadataID sets the "metadata_id" field.
-func (sduo *SourceDataUpdateOne) SetMetadataID(s string) *SourceDataUpdateOne {
-	sduo.mutation.SetMetadataID(s)
+func (sduo *SourceDataUpdateOne) SetMetadataID(u uuid.UUID) *SourceDataUpdateOne {
+	sduo.mutation.SetMetadataID(u)
 	return sduo
 }
 
 // SetNillableMetadataID sets the "metadata_id" field if the given value is not nil.
-func (sduo *SourceDataUpdateOne) SetNillableMetadataID(s *string) *SourceDataUpdateOne {
-	if s != nil {
-		sduo.SetMetadataID(*s)
+func (sduo *SourceDataUpdateOne) SetNillableMetadataID(u *uuid.UUID) *SourceDataUpdateOne {
+	if u != nil {
+		sduo.SetMetadataID(*u)
 	}
 	return sduo
 }
@@ -450,7 +451,7 @@ func (sduo *SourceDataUpdateOne) sqlSave(ctx context.Context) (_node *SourceData
 			Columns: []string{sourcedata.MetadataColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(metadata.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(metadata.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -463,7 +464,7 @@ func (sduo *SourceDataUpdateOne) sqlSave(ctx context.Context) (_node *SourceData
 			Columns: []string{sourcedata.MetadataColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(metadata.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(metadata.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

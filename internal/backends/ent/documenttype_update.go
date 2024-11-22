@@ -15,6 +15,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/google/uuid"
 	"github.com/protobom/storage/internal/backends/ent/documenttype"
 	"github.com/protobom/storage/internal/backends/ent/metadata"
 	"github.com/protobom/storage/internal/backends/ent/predicate"
@@ -34,15 +35,15 @@ func (dtu *DocumentTypeUpdate) Where(ps ...predicate.DocumentType) *DocumentType
 }
 
 // SetMetadataID sets the "metadata_id" field.
-func (dtu *DocumentTypeUpdate) SetMetadataID(s string) *DocumentTypeUpdate {
-	dtu.mutation.SetMetadataID(s)
+func (dtu *DocumentTypeUpdate) SetMetadataID(u uuid.UUID) *DocumentTypeUpdate {
+	dtu.mutation.SetMetadataID(u)
 	return dtu
 }
 
 // SetNillableMetadataID sets the "metadata_id" field if the given value is not nil.
-func (dtu *DocumentTypeUpdate) SetNillableMetadataID(s *string) *DocumentTypeUpdate {
-	if s != nil {
-		dtu.SetMetadataID(*s)
+func (dtu *DocumentTypeUpdate) SetNillableMetadataID(u *uuid.UUID) *DocumentTypeUpdate {
+	if u != nil {
+		dtu.SetMetadataID(*u)
 	}
 	return dtu
 }
@@ -204,7 +205,7 @@ func (dtu *DocumentTypeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{documenttype.MetadataColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(metadata.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(metadata.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -217,7 +218,7 @@ func (dtu *DocumentTypeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{documenttype.MetadataColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(metadata.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(metadata.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -246,15 +247,15 @@ type DocumentTypeUpdateOne struct {
 }
 
 // SetMetadataID sets the "metadata_id" field.
-func (dtuo *DocumentTypeUpdateOne) SetMetadataID(s string) *DocumentTypeUpdateOne {
-	dtuo.mutation.SetMetadataID(s)
+func (dtuo *DocumentTypeUpdateOne) SetMetadataID(u uuid.UUID) *DocumentTypeUpdateOne {
+	dtuo.mutation.SetMetadataID(u)
 	return dtuo
 }
 
 // SetNillableMetadataID sets the "metadata_id" field if the given value is not nil.
-func (dtuo *DocumentTypeUpdateOne) SetNillableMetadataID(s *string) *DocumentTypeUpdateOne {
-	if s != nil {
-		dtuo.SetMetadataID(*s)
+func (dtuo *DocumentTypeUpdateOne) SetNillableMetadataID(u *uuid.UUID) *DocumentTypeUpdateOne {
+	if u != nil {
+		dtuo.SetMetadataID(*u)
 	}
 	return dtuo
 }
@@ -446,7 +447,7 @@ func (dtuo *DocumentTypeUpdateOne) sqlSave(ctx context.Context) (_node *Document
 			Columns: []string{documenttype.MetadataColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(metadata.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(metadata.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -459,7 +460,7 @@ func (dtuo *DocumentTypeUpdateOne) sqlSave(ctx context.Context) (_node *Document
 			Columns: []string{documenttype.MetadataColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(metadata.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(metadata.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

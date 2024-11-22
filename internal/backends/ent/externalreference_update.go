@@ -15,6 +15,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/google/uuid"
 	"github.com/protobom/storage/internal/backends/ent/externalreference"
 	"github.com/protobom/storage/internal/backends/ent/node"
 	"github.com/protobom/storage/internal/backends/ent/predicate"
@@ -34,15 +35,15 @@ func (eru *ExternalReferenceUpdate) Where(ps ...predicate.ExternalReference) *Ex
 }
 
 // SetNodeID sets the "node_id" field.
-func (eru *ExternalReferenceUpdate) SetNodeID(s string) *ExternalReferenceUpdate {
-	eru.mutation.SetNodeID(s)
+func (eru *ExternalReferenceUpdate) SetNodeID(u uuid.UUID) *ExternalReferenceUpdate {
+	eru.mutation.SetNodeID(u)
 	return eru
 }
 
 // SetNillableNodeID sets the "node_id" field if the given value is not nil.
-func (eru *ExternalReferenceUpdate) SetNillableNodeID(s *string) *ExternalReferenceUpdate {
-	if s != nil {
-		eru.SetNodeID(*s)
+func (eru *ExternalReferenceUpdate) SetNillableNodeID(u *uuid.UUID) *ExternalReferenceUpdate {
+	if u != nil {
+		eru.SetNodeID(*u)
 	}
 	return eru
 }
@@ -221,7 +222,7 @@ func (eru *ExternalReferenceUpdate) sqlSave(ctx context.Context) (n int, err err
 			Columns: []string{externalreference.NodeColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -234,7 +235,7 @@ func (eru *ExternalReferenceUpdate) sqlSave(ctx context.Context) (n int, err err
 			Columns: []string{externalreference.NodeColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -263,15 +264,15 @@ type ExternalReferenceUpdateOne struct {
 }
 
 // SetNodeID sets the "node_id" field.
-func (eruo *ExternalReferenceUpdateOne) SetNodeID(s string) *ExternalReferenceUpdateOne {
-	eruo.mutation.SetNodeID(s)
+func (eruo *ExternalReferenceUpdateOne) SetNodeID(u uuid.UUID) *ExternalReferenceUpdateOne {
+	eruo.mutation.SetNodeID(u)
 	return eruo
 }
 
 // SetNillableNodeID sets the "node_id" field if the given value is not nil.
-func (eruo *ExternalReferenceUpdateOne) SetNillableNodeID(s *string) *ExternalReferenceUpdateOne {
-	if s != nil {
-		eruo.SetNodeID(*s)
+func (eruo *ExternalReferenceUpdateOne) SetNillableNodeID(u *uuid.UUID) *ExternalReferenceUpdateOne {
+	if u != nil {
+		eruo.SetNodeID(*u)
 	}
 	return eruo
 }
@@ -480,7 +481,7 @@ func (eruo *ExternalReferenceUpdateOne) sqlSave(ctx context.Context) (_node *Ext
 			Columns: []string{externalreference.NodeColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -493,7 +494,7 @@ func (eruo *ExternalReferenceUpdateOne) sqlSave(ctx context.Context) (_node *Ext
 			Columns: []string{externalreference.NodeColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

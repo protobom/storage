@@ -58,6 +58,12 @@ func (nc *NodeCreate) SetProtoMessage(s *sbom.Node) *NodeCreate {
 	return nc
 }
 
+// SetNativeID sets the "native_id" field.
+func (nc *NodeCreate) SetNativeID(s string) *NodeCreate {
+	nc.mutation.SetNativeID(s)
+	return nc
+}
+
 // SetNodeListID sets the "node_list_id" field.
 func (nc *NodeCreate) SetNodeListID(u uuid.UUID) *NodeCreate {
 	nc.mutation.SetNodeListID(u)
@@ -199,8 +205,8 @@ func (nc *NodeCreate) SetIdentifiers(m map[int32]string) *NodeCreate {
 }
 
 // SetID sets the "id" field.
-func (nc *NodeCreate) SetID(s string) *NodeCreate {
-	nc.mutation.SetID(s)
+func (nc *NodeCreate) SetID(u uuid.UUID) *NodeCreate {
+	nc.mutation.SetID(u)
 	return nc
 }
 
@@ -270,14 +276,14 @@ func (nc *NodeCreate) AddPrimaryPurpose(p ...*Purpose) *NodeCreate {
 }
 
 // AddToNodeIDs adds the "to_nodes" edge to the Node entity by IDs.
-func (nc *NodeCreate) AddToNodeIDs(ids ...string) *NodeCreate {
+func (nc *NodeCreate) AddToNodeIDs(ids ...uuid.UUID) *NodeCreate {
 	nc.mutation.AddToNodeIDs(ids...)
 	return nc
 }
 
 // AddToNodes adds the "to_nodes" edges to the Node entity.
 func (nc *NodeCreate) AddToNodes(n ...*Node) *NodeCreate {
-	ids := make([]string, len(n))
+	ids := make([]uuid.UUID, len(n))
 	for i := range n {
 		ids[i] = n[i].ID
 	}
@@ -285,14 +291,14 @@ func (nc *NodeCreate) AddToNodes(n ...*Node) *NodeCreate {
 }
 
 // AddNodeIDs adds the "nodes" edge to the Node entity by IDs.
-func (nc *NodeCreate) AddNodeIDs(ids ...string) *NodeCreate {
+func (nc *NodeCreate) AddNodeIDs(ids ...uuid.UUID) *NodeCreate {
 	nc.mutation.AddNodeIDs(ids...)
 	return nc
 }
 
 // AddNodes adds the "nodes" edges to the Node entity.
 func (nc *NodeCreate) AddNodes(n ...*Node) *NodeCreate {
-	ids := make([]string, len(n))
+	ids := make([]uuid.UUID, len(n))
 	for i := range n {
 		ids[i] = n[i].ID
 	}
@@ -405,6 +411,14 @@ func (nc *NodeCreate) check() error {
 	if _, ok := nc.mutation.ProtoMessage(); !ok {
 		return &ValidationError{Name: "proto_message", err: errors.New(`ent: missing required field "Node.proto_message"`)}
 	}
+	if _, ok := nc.mutation.NativeID(); !ok {
+		return &ValidationError{Name: "native_id", err: errors.New(`ent: missing required field "Node.native_id"`)}
+	}
+	if v, ok := nc.mutation.NativeID(); ok {
+		if err := node.NativeIDValidator(v); err != nil {
+			return &ValidationError{Name: "native_id", err: fmt.Errorf(`ent: validator failed for field "Node.native_id": %w`, err)}
+		}
+	}
 	if _, ok := nc.mutation.GetType(); !ok {
 		return &ValidationError{Name: "type", err: errors.New(`ent: missing required field "Node.type"`)}
 	}
@@ -467,11 +481,6 @@ func (nc *NodeCreate) check() error {
 	if _, ok := nc.mutation.FileTypes(); !ok {
 		return &ValidationError{Name: "file_types", err: errors.New(`ent: missing required field "Node.file_types"`)}
 	}
-	if v, ok := nc.mutation.ID(); ok {
-		if err := node.IDValidator(v); err != nil {
-			return &ValidationError{Name: "id", err: fmt.Errorf(`ent: validator failed for field "Node.id": %w`, err)}
-		}
-	}
 	return nil
 }
 
@@ -487,10 +496,10 @@ func (nc *NodeCreate) sqlSave(ctx context.Context) (*Node, error) {
 		return nil, err
 	}
 	if _spec.ID.Value != nil {
-		if id, ok := _spec.ID.Value.(string); ok {
-			_node.ID = id
-		} else {
-			return nil, fmt.Errorf("unexpected Node.ID type: %T", _spec.ID.Value)
+		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
+			_node.ID = *id
+		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
+			return nil, err
 		}
 	}
 	nc.mutation.id = &_node.ID
@@ -501,16 +510,20 @@ func (nc *NodeCreate) sqlSave(ctx context.Context) (*Node, error) {
 func (nc *NodeCreate) createSpec() (*Node, *sqlgraph.CreateSpec) {
 	var (
 		_node = &Node{config: nc.config}
-		_spec = sqlgraph.NewCreateSpec(node.Table, sqlgraph.NewFieldSpec(node.FieldID, field.TypeString))
+		_spec = sqlgraph.NewCreateSpec(node.Table, sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID))
 	)
 	_spec.OnConflict = nc.conflict
 	if id, ok := nc.mutation.ID(); ok {
 		_node.ID = id
-		_spec.ID.Value = id
+		_spec.ID.Value = &id
 	}
 	if value, ok := nc.mutation.ProtoMessage(); ok {
 		_spec.SetField(node.FieldProtoMessage, field.TypeBytes, value)
 		_node.ProtoMessage = value
+	}
+	if value, ok := nc.mutation.NativeID(); ok {
+		_spec.SetField(node.FieldNativeID, field.TypeString, value)
+		_node.NativeID = value
 	}
 	if value, ok := nc.mutation.NodeListID(); ok {
 		_spec.SetField(node.FieldNodeListID, field.TypeUUID, value)
@@ -689,7 +702,7 @@ func (nc *NodeCreate) createSpec() (*Node, *sqlgraph.CreateSpec) {
 			Columns: node.ToNodesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -709,7 +722,7 @@ func (nc *NodeCreate) createSpec() (*Node, *sqlgraph.CreateSpec) {
 			Columns: node.NodesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -1138,6 +1151,9 @@ func (u *NodeUpsertOne) UpdateNewValues() *NodeUpsertOne {
 		if _, exists := u.create.mutation.ProtoMessage(); exists {
 			s.SetIgnore(node.FieldProtoMessage)
 		}
+		if _, exists := u.create.mutation.NativeID(); exists {
+			s.SetIgnore(node.FieldNativeID)
+		}
 	}))
 	return u
 }
@@ -1514,7 +1530,7 @@ func (u *NodeUpsertOne) ExecX(ctx context.Context) {
 }
 
 // Exec executes the UPSERT query and returns the inserted/updated ID.
-func (u *NodeUpsertOne) ID(ctx context.Context) (id string, err error) {
+func (u *NodeUpsertOne) ID(ctx context.Context) (id uuid.UUID, err error) {
 	if u.create.driver.Dialect() == dialect.MySQL {
 		// In case of "ON CONFLICT", there is no way to get back non-numeric ID
 		// fields from the database since MySQL does not support the RETURNING clause.
@@ -1528,7 +1544,7 @@ func (u *NodeUpsertOne) ID(ctx context.Context) (id string, err error) {
 }
 
 // IDX is like ID, but panics if an error occurs.
-func (u *NodeUpsertOne) IDX(ctx context.Context) string {
+func (u *NodeUpsertOne) IDX(ctx context.Context) uuid.UUID {
 	id, err := u.ID(ctx)
 	if err != nil {
 		panic(err)
@@ -1686,6 +1702,9 @@ func (u *NodeUpsertBulk) UpdateNewValues() *NodeUpsertBulk {
 			}
 			if _, exists := b.mutation.ProtoMessage(); exists {
 				s.SetIgnore(node.FieldProtoMessage)
+			}
+			if _, exists := b.mutation.NativeID(); exists {
+				s.SetIgnore(node.FieldNativeID)
 			}
 		}
 	}))
