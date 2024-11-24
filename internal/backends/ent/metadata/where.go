@@ -67,6 +67,11 @@ func ProtoMessage(v *sbom.Metadata) predicate.Metadata {
 	return predicate.Metadata(sql.FieldEQ(FieldProtoMessage, v))
 }
 
+// DocumentID applies equality check predicate on the "document_id" field. It's identical to DocumentIDEQ.
+func DocumentID(v uuid.UUID) predicate.Metadata {
+	return predicate.Metadata(sql.FieldEQ(FieldDocumentID, v))
+}
+
 // NativeID applies equality check predicate on the "native_id" field. It's identical to NativeIDEQ.
 func NativeID(v string) predicate.Metadata {
 	return predicate.Metadata(sql.FieldEQ(FieldNativeID, v))
@@ -130,6 +135,26 @@ func ProtoMessageLT(v *sbom.Metadata) predicate.Metadata {
 // ProtoMessageLTE applies the LTE predicate on the "proto_message" field.
 func ProtoMessageLTE(v *sbom.Metadata) predicate.Metadata {
 	return predicate.Metadata(sql.FieldLTE(FieldProtoMessage, v))
+}
+
+// DocumentIDEQ applies the EQ predicate on the "document_id" field.
+func DocumentIDEQ(v uuid.UUID) predicate.Metadata {
+	return predicate.Metadata(sql.FieldEQ(FieldDocumentID, v))
+}
+
+// DocumentIDNEQ applies the NEQ predicate on the "document_id" field.
+func DocumentIDNEQ(v uuid.UUID) predicate.Metadata {
+	return predicate.Metadata(sql.FieldNEQ(FieldDocumentID, v))
+}
+
+// DocumentIDIn applies the In predicate on the "document_id" field.
+func DocumentIDIn(vs ...uuid.UUID) predicate.Metadata {
+	return predicate.Metadata(sql.FieldIn(FieldDocumentID, vs...))
+}
+
+// DocumentIDNotIn applies the NotIn predicate on the "document_id" field.
+func DocumentIDNotIn(vs ...uuid.UUID) predicate.Metadata {
+	return predicate.Metadata(sql.FieldNotIn(FieldDocumentID, vs...))
 }
 
 // NativeIDEQ applies the EQ predicate on the "native_id" field.
@@ -529,7 +554,7 @@ func HasDocument() predicate.Metadata {
 	return predicate.Metadata(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, false, DocumentTable, DocumentColumn),
+			sqlgraph.Edge(sqlgraph.O2O, true, DocumentTable, DocumentColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})

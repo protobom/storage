@@ -27,6 +27,8 @@ type Metadata struct {
 	ID uuid.UUID `json:"id,omitempty"`
 	// ProtoMessage holds the value of the "proto_message" field.
 	ProtoMessage *sbom.Metadata `json:"proto_message,omitempty"`
+	// DocumentID holds the value of the "document_id" field.
+	DocumentID uuid.UUID `json:"document_id,omitempty"`
 	// NativeID holds the value of the "native_id" field.
 	NativeID string `json:"native_id,omitempty"`
 	// Version holds the value of the "version" field.
@@ -118,7 +120,7 @@ func (*Metadata) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullString)
 		case metadata.FieldDate:
 			values[i] = new(sql.NullTime)
-		case metadata.FieldID:
+		case metadata.FieldID, metadata.FieldDocumentID:
 			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -146,6 +148,12 @@ func (m *Metadata) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field proto_message", values[i])
 			} else if value.Valid {
 				m.ProtoMessage = value.S.(*sbom.Metadata)
+			}
+		case metadata.FieldDocumentID:
+			if value, ok := values[i].(*uuid.UUID); !ok {
+				return fmt.Errorf("unexpected type %T for field document_id", values[i])
+			} else if value != nil {
+				m.DocumentID = *value
 			}
 		case metadata.FieldNativeID:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -242,6 +250,9 @@ func (m *Metadata) String() string {
 		builder.WriteString("proto_message=")
 		builder.WriteString(fmt.Sprintf("%v", *v))
 	}
+	builder.WriteString(", ")
+	builder.WriteString("document_id=")
+	builder.WriteString(fmt.Sprintf("%v", m.DocumentID))
 	builder.WriteString(", ")
 	builder.WriteString("native_id=")
 	builder.WriteString(m.NativeID)

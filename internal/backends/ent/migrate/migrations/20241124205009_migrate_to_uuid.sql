@@ -9,7 +9,9 @@ CREATE TABLE `new_metadata` (
   `name` text NOT NULL,
   `date` datetime NOT NULL,
   `comment` text NOT NULL,
-  PRIMARY KEY (`id`)
+  `document_id` uuid NOT NULL,
+  PRIMARY KEY (`id`),
+  CONSTRAINT `metadata_documents_metadata` FOREIGN KEY (`document_id`) REFERENCES `documents` (`id`) ON DELETE NO ACTION
 );
 -- Copy rows from old table "metadata" to new temporary table "new_metadata"
 INSERT INTO `new_metadata` (`id`, `proto_message`, `version`, `name`, `date`, `comment`) SELECT `id`, `proto_message`, `version`, `name`, `date`, `comment` FROM `metadata`;
@@ -17,8 +19,27 @@ INSERT INTO `new_metadata` (`id`, `proto_message`, `version`, `name`, `date`, `c
 DROP TABLE `metadata`;
 -- Rename temporary table "new_metadata" to "metadata"
 ALTER TABLE `new_metadata` RENAME TO `metadata`;
+-- Create index "metadata_document_id_key" to table: "metadata"
+CREATE UNIQUE INDEX `metadata_document_id_key` ON `metadata` (`document_id`);
 -- Create index "idx_metadata" to table: "metadata"
 CREATE UNIQUE INDEX `idx_metadata` ON `metadata` (`native_id`, `version`, `name`);
+-- Create "new_node_lists" table
+CREATE TABLE `new_node_lists` (
+  `id` uuid NOT NULL,
+  `proto_message` blob NOT NULL,
+  `root_elements` json NOT NULL,
+  `document_id` uuid NOT NULL,
+  PRIMARY KEY (`id`),
+  CONSTRAINT `node_lists_documents_node_list` FOREIGN KEY (`document_id`) REFERENCES `documents` (`id`) ON DELETE NO ACTION
+);
+-- Copy rows from old table "node_lists" to new temporary table "new_node_lists"
+INSERT INTO `new_node_lists` (`id`, `proto_message`, `root_elements`) SELECT `id`, `proto_message`, `root_elements` FROM `node_lists`;
+-- Drop "node_lists" table after copying rows
+DROP TABLE `node_lists`;
+-- Rename temporary table "new_node_lists" to "node_lists"
+ALTER TABLE `new_node_lists` RENAME TO `node_lists`;
+-- Create index "node_lists_document_id_key" to table: "node_lists"
+CREATE UNIQUE INDEX `node_lists_document_id_key` ON `node_lists` (`document_id`);
 -- Create "new_node_list_nodes" table
 CREATE TABLE `new_node_list_nodes` (
   `node_list_id` uuid NOT NULL,
@@ -36,24 +57,14 @@ ALTER TABLE `new_node_list_nodes` RENAME TO `node_list_nodes`;
 -- Create "new_documents" table
 CREATE TABLE `new_documents` (
   `id` uuid NOT NULL,
-  `metadata_id` uuid NULL,
-  `node_list_id` uuid NULL,
-  PRIMARY KEY (`id`),
-  CONSTRAINT `documents_metadata_document` FOREIGN KEY (`metadata_id`) REFERENCES `metadata` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `documents_node_lists_document` FOREIGN KEY (`node_list_id`) REFERENCES `node_lists` (`id`) ON DELETE CASCADE
+  PRIMARY KEY (`id`)
 );
 -- Copy rows from old table "documents" to new temporary table "new_documents"
-INSERT INTO `new_documents` (`id`, `metadata_id`, `node_list_id`) SELECT `id`, `metadata_id`, `node_list_id` FROM `documents`;
+INSERT INTO `new_documents` (`id`) SELECT `id` FROM `documents`;
 -- Drop "documents" table after copying rows
 DROP TABLE `documents`;
 -- Rename temporary table "new_documents" to "documents"
 ALTER TABLE `new_documents` RENAME TO `documents`;
--- Create index "documents_metadata_id_key" to table: "documents"
-CREATE UNIQUE INDEX `documents_metadata_id_key` ON `documents` (`metadata_id`);
--- Create index "documents_node_list_id_key" to table: "documents"
-CREATE UNIQUE INDEX `documents_node_list_id_key` ON `documents` (`node_list_id`);
--- Create index "idx_documents" to table: "documents"
-CREATE UNIQUE INDEX `idx_documents` ON `documents` (`metadata_id`, `node_list_id`);
 -- Create "new_document_types" table
 CREATE TABLE `new_document_types` (
   `id` uuid NOT NULL,

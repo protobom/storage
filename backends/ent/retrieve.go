@@ -63,7 +63,7 @@ func (backend *Backend) GetDocumentsByID(ids ...string) ([]*sbom.Document, error
 
 	predicates := []predicate.Document{}
 	if len(ids) > 0 {
-		predicates = append(predicates, document.MetadataIDIn(docUUIDs...))
+		predicates = append(predicates, document.IDIn(docUUIDs...))
 	}
 
 	results, err := backend.client.Document.Query().

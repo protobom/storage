@@ -70,7 +70,7 @@ func init() {
 	metadataFields := schema.Metadata{}.Fields()
 	_ = metadataFields
 	// metadataDescNativeID is the schema descriptor for native_id field.
-	metadataDescNativeID := metadataFields[0].Descriptor()
+	metadataDescNativeID := metadataFields[1].Descriptor()
 	// metadata.NativeIDValidator is a validator for the "native_id" field. It is called by the builders before save.
 	metadata.NativeIDValidator = metadataDescNativeID.Validators[0].(func(string) error)
 	nodeMixin := schema.Node{}.Mixin()

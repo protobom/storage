@@ -861,113 +861,27 @@ func (m *DocumentMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
 	}
 }
 
-// SetMetadataID sets the "metadata_id" field.
-func (m *DocumentMutation) SetMetadataID(u uuid.UUID) {
-	m.metadata = &u
-}
-
-// MetadataID returns the value of the "metadata_id" field in the mutation.
-func (m *DocumentMutation) MetadataID() (r uuid.UUID, exists bool) {
-	v := m.metadata
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldMetadataID returns the old "metadata_id" field's value of the Document entity.
-// If the Document object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *DocumentMutation) OldMetadataID(ctx context.Context) (v uuid.UUID, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldMetadataID is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldMetadataID requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldMetadataID: %w", err)
-	}
-	return oldValue.MetadataID, nil
-}
-
-// ClearMetadataID clears the value of the "metadata_id" field.
-func (m *DocumentMutation) ClearMetadataID() {
-	m.metadata = nil
-	m.clearedFields[document.FieldMetadataID] = struct{}{}
-}
-
-// MetadataIDCleared returns if the "metadata_id" field was cleared in this mutation.
-func (m *DocumentMutation) MetadataIDCleared() bool {
-	_, ok := m.clearedFields[document.FieldMetadataID]
-	return ok
-}
-
-// ResetMetadataID resets all changes to the "metadata_id" field.
-func (m *DocumentMutation) ResetMetadataID() {
-	m.metadata = nil
-	delete(m.clearedFields, document.FieldMetadataID)
-}
-
-// SetNodeListID sets the "node_list_id" field.
-func (m *DocumentMutation) SetNodeListID(u uuid.UUID) {
-	m.node_list = &u
-}
-
-// NodeListID returns the value of the "node_list_id" field in the mutation.
-func (m *DocumentMutation) NodeListID() (r uuid.UUID, exists bool) {
-	v := m.node_list
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldNodeListID returns the old "node_list_id" field's value of the Document entity.
-// If the Document object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *DocumentMutation) OldNodeListID(ctx context.Context) (v uuid.UUID, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldNodeListID is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldNodeListID requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldNodeListID: %w", err)
-	}
-	return oldValue.NodeListID, nil
-}
-
-// ClearNodeListID clears the value of the "node_list_id" field.
-func (m *DocumentMutation) ClearNodeListID() {
-	m.node_list = nil
-	m.clearedFields[document.FieldNodeListID] = struct{}{}
-}
-
-// NodeListIDCleared returns if the "node_list_id" field was cleared in this mutation.
-func (m *DocumentMutation) NodeListIDCleared() bool {
-	_, ok := m.clearedFields[document.FieldNodeListID]
-	return ok
-}
-
-// ResetNodeListID resets all changes to the "node_list_id" field.
-func (m *DocumentMutation) ResetNodeListID() {
-	m.node_list = nil
-	delete(m.clearedFields, document.FieldNodeListID)
+// SetMetadataID sets the "metadata" edge to the Metadata entity by id.
+func (m *DocumentMutation) SetMetadataID(id uuid.UUID) {
+	m.metadata = &id
 }
 
 // ClearMetadata clears the "metadata" edge to the Metadata entity.
 func (m *DocumentMutation) ClearMetadata() {
 	m.clearedmetadata = true
-	m.clearedFields[document.FieldMetadataID] = struct{}{}
 }
 
 // MetadataCleared reports if the "metadata" edge to the Metadata entity was cleared.
 func (m *DocumentMutation) MetadataCleared() bool {
-	return m.MetadataIDCleared() || m.clearedmetadata
+	return m.clearedmetadata
+}
+
+// MetadataID returns the "metadata" edge ID in the mutation.
+func (m *DocumentMutation) MetadataID() (id uuid.UUID, exists bool) {
+	if m.metadata != nil {
+		return *m.metadata, true
+	}
+	return
 }
 
 // MetadataIDs returns the "metadata" edge IDs in the mutation.
@@ -986,15 +900,27 @@ func (m *DocumentMutation) ResetMetadata() {
 	m.clearedmetadata = false
 }
 
+// SetNodeListID sets the "node_list" edge to the NodeList entity by id.
+func (m *DocumentMutation) SetNodeListID(id uuid.UUID) {
+	m.node_list = &id
+}
+
 // ClearNodeList clears the "node_list" edge to the NodeList entity.
 func (m *DocumentMutation) ClearNodeList() {
 	m.clearednode_list = true
-	m.clearedFields[document.FieldNodeListID] = struct{}{}
 }
 
 // NodeListCleared reports if the "node_list" edge to the NodeList entity was cleared.
 func (m *DocumentMutation) NodeListCleared() bool {
-	return m.NodeListIDCleared() || m.clearednode_list
+	return m.clearednode_list
+}
+
+// NodeListID returns the "node_list" edge ID in the mutation.
+func (m *DocumentMutation) NodeListID() (id uuid.UUID, exists bool) {
+	if m.node_list != nil {
+		return *m.node_list, true
+	}
+	return
 }
 
 // NodeListIDs returns the "node_list" edge IDs in the mutation.
@@ -1047,13 +973,7 @@ func (m *DocumentMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *DocumentMutation) Fields() []string {
-	fields := make([]string, 0, 2)
-	if m.metadata != nil {
-		fields = append(fields, document.FieldMetadataID)
-	}
-	if m.node_list != nil {
-		fields = append(fields, document.FieldNodeListID)
-	}
+	fields := make([]string, 0, 0)
 	return fields
 }
 
@@ -1061,12 +981,6 @@ func (m *DocumentMutation) Fields() []string {
 // return value indicates that this field was not set, or was not defined in the
 // schema.
 func (m *DocumentMutation) Field(name string) (ent.Value, bool) {
-	switch name {
-	case document.FieldMetadataID:
-		return m.MetadataID()
-	case document.FieldNodeListID:
-		return m.NodeListID()
-	}
 	return nil, false
 }
 
@@ -1074,12 +988,6 @@ func (m *DocumentMutation) Field(name string) (ent.Value, bool) {
 // returned if the mutation operation is not UpdateOne, or the query to the
 // database failed.
 func (m *DocumentMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
-	switch name {
-	case document.FieldMetadataID:
-		return m.OldMetadataID(ctx)
-	case document.FieldNodeListID:
-		return m.OldNodeListID(ctx)
-	}
 	return nil, fmt.Errorf("unknown Document field %s", name)
 }
 
@@ -1088,20 +996,6 @@ func (m *DocumentMutation) OldField(ctx context.Context, name string) (ent.Value
 // type.
 func (m *DocumentMutation) SetField(name string, value ent.Value) error {
 	switch name {
-	case document.FieldMetadataID:
-		v, ok := value.(uuid.UUID)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetMetadataID(v)
-		return nil
-	case document.FieldNodeListID:
-		v, ok := value.(uuid.UUID)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetNodeListID(v)
-		return nil
 	}
 	return fmt.Errorf("unknown Document field %s", name)
 }
@@ -1123,22 +1017,13 @@ func (m *DocumentMutation) AddedField(name string) (ent.Value, bool) {
 // the field is not defined in the schema, or if the type mismatched the field
 // type.
 func (m *DocumentMutation) AddField(name string, value ent.Value) error {
-	switch name {
-	}
 	return fmt.Errorf("unknown Document numeric field %s", name)
 }
 
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *DocumentMutation) ClearedFields() []string {
-	var fields []string
-	if m.FieldCleared(document.FieldMetadataID) {
-		fields = append(fields, document.FieldMetadataID)
-	}
-	if m.FieldCleared(document.FieldNodeListID) {
-		fields = append(fields, document.FieldNodeListID)
-	}
-	return fields
+	return nil
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -1151,28 +1036,12 @@ func (m *DocumentMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *DocumentMutation) ClearField(name string) error {
-	switch name {
-	case document.FieldMetadataID:
-		m.ClearMetadataID()
-		return nil
-	case document.FieldNodeListID:
-		m.ClearNodeListID()
-		return nil
-	}
 	return fmt.Errorf("unknown Document nullable field %s", name)
 }
 
 // ResetField resets all changes in the mutation for the field with the given name.
 // It returns an error if the field is not defined in the schema.
 func (m *DocumentMutation) ResetField(name string) error {
-	switch name {
-	case document.FieldMetadataID:
-		m.ResetMetadataID()
-		return nil
-	case document.FieldNodeListID:
-		m.ResetNodeListID()
-		return nil
-	}
 	return fmt.Errorf("unknown Document field %s", name)
 }
 
@@ -3811,6 +3680,42 @@ func (m *MetadataMutation) ResetProtoMessage() {
 	m.proto_message = nil
 }
 
+// SetDocumentID sets the "document_id" field.
+func (m *MetadataMutation) SetDocumentID(u uuid.UUID) {
+	m.document = &u
+}
+
+// DocumentID returns the value of the "document_id" field in the mutation.
+func (m *MetadataMutation) DocumentID() (r uuid.UUID, exists bool) {
+	v := m.document
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDocumentID returns the old "document_id" field's value of the Metadata entity.
+// If the Metadata object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MetadataMutation) OldDocumentID(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDocumentID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDocumentID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDocumentID: %w", err)
+	}
+	return oldValue.DocumentID, nil
+}
+
+// ResetDocumentID resets all changes to the "document_id" field.
+func (m *MetadataMutation) ResetDocumentID() {
+	m.document = nil
+}
+
 // SetNativeID sets the "native_id" field.
 func (m *MetadataMutation) SetNativeID(s string) {
 	m.native_id = &s
@@ -4207,27 +4112,15 @@ func (m *MetadataMutation) ResetSourceData() {
 	m.removedsource_data = nil
 }
 
-// SetDocumentID sets the "document" edge to the Document entity by id.
-func (m *MetadataMutation) SetDocumentID(id uuid.UUID) {
-	m.document = &id
-}
-
 // ClearDocument clears the "document" edge to the Document entity.
 func (m *MetadataMutation) ClearDocument() {
 	m.cleareddocument = true
+	m.clearedFields[metadata.FieldDocumentID] = struct{}{}
 }
 
 // DocumentCleared reports if the "document" edge to the Document entity was cleared.
 func (m *MetadataMutation) DocumentCleared() bool {
 	return m.cleareddocument
-}
-
-// DocumentID returns the "document" edge ID in the mutation.
-func (m *MetadataMutation) DocumentID() (id uuid.UUID, exists bool) {
-	if m.document != nil {
-		return *m.document, true
-	}
-	return
 }
 
 // DocumentIDs returns the "document" edge IDs in the mutation.
@@ -4280,9 +4173,12 @@ func (m *MetadataMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *MetadataMutation) Fields() []string {
-	fields := make([]string, 0, 6)
+	fields := make([]string, 0, 7)
 	if m.proto_message != nil {
 		fields = append(fields, metadata.FieldProtoMessage)
+	}
+	if m.document != nil {
+		fields = append(fields, metadata.FieldDocumentID)
 	}
 	if m.native_id != nil {
 		fields = append(fields, metadata.FieldNativeID)
@@ -4309,6 +4205,8 @@ func (m *MetadataMutation) Field(name string) (ent.Value, bool) {
 	switch name {
 	case metadata.FieldProtoMessage:
 		return m.ProtoMessage()
+	case metadata.FieldDocumentID:
+		return m.DocumentID()
 	case metadata.FieldNativeID:
 		return m.NativeID()
 	case metadata.FieldVersion:
@@ -4330,6 +4228,8 @@ func (m *MetadataMutation) OldField(ctx context.Context, name string) (ent.Value
 	switch name {
 	case metadata.FieldProtoMessage:
 		return m.OldProtoMessage(ctx)
+	case metadata.FieldDocumentID:
+		return m.OldDocumentID(ctx)
 	case metadata.FieldNativeID:
 		return m.OldNativeID(ctx)
 	case metadata.FieldVersion:
@@ -4355,6 +4255,13 @@ func (m *MetadataMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetProtoMessage(v)
+		return nil
+	case metadata.FieldDocumentID:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDocumentID(v)
 		return nil
 	case metadata.FieldNativeID:
 		v, ok := value.(string)
@@ -4442,6 +4349,9 @@ func (m *MetadataMutation) ResetField(name string) error {
 	switch name {
 	case metadata.FieldProtoMessage:
 		m.ResetProtoMessage()
+		return nil
+	case metadata.FieldDocumentID:
+		m.ResetDocumentID()
 		return nil
 	case metadata.FieldNativeID:
 		m.ResetNativeID()
@@ -7443,6 +7353,42 @@ func (m *NodeListMutation) ResetProtoMessage() {
 	m.proto_message = nil
 }
 
+// SetDocumentID sets the "document_id" field.
+func (m *NodeListMutation) SetDocumentID(u uuid.UUID) {
+	m.document = &u
+}
+
+// DocumentID returns the value of the "document_id" field in the mutation.
+func (m *NodeListMutation) DocumentID() (r uuid.UUID, exists bool) {
+	v := m.document
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDocumentID returns the old "document_id" field's value of the NodeList entity.
+// If the NodeList object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *NodeListMutation) OldDocumentID(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDocumentID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDocumentID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDocumentID: %w", err)
+	}
+	return oldValue.DocumentID, nil
+}
+
+// ResetDocumentID resets all changes to the "document_id" field.
+func (m *NodeListMutation) ResetDocumentID() {
+	m.document = nil
+}
+
 // SetRootElements sets the "root_elements" field.
 func (m *NodeListMutation) SetRootElements(s []string) {
 	m.root_elements = &s
@@ -7548,27 +7494,15 @@ func (m *NodeListMutation) ResetNodes() {
 	m.removednodes = nil
 }
 
-// SetDocumentID sets the "document" edge to the Document entity by id.
-func (m *NodeListMutation) SetDocumentID(id uuid.UUID) {
-	m.document = &id
-}
-
 // ClearDocument clears the "document" edge to the Document entity.
 func (m *NodeListMutation) ClearDocument() {
 	m.cleareddocument = true
+	m.clearedFields[nodelist.FieldDocumentID] = struct{}{}
 }
 
 // DocumentCleared reports if the "document" edge to the Document entity was cleared.
 func (m *NodeListMutation) DocumentCleared() bool {
 	return m.cleareddocument
-}
-
-// DocumentID returns the "document" edge ID in the mutation.
-func (m *NodeListMutation) DocumentID() (id uuid.UUID, exists bool) {
-	if m.document != nil {
-		return *m.document, true
-	}
-	return
 }
 
 // DocumentIDs returns the "document" edge IDs in the mutation.
@@ -7621,9 +7555,12 @@ func (m *NodeListMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *NodeListMutation) Fields() []string {
-	fields := make([]string, 0, 2)
+	fields := make([]string, 0, 3)
 	if m.proto_message != nil {
 		fields = append(fields, nodelist.FieldProtoMessage)
+	}
+	if m.document != nil {
+		fields = append(fields, nodelist.FieldDocumentID)
 	}
 	if m.root_elements != nil {
 		fields = append(fields, nodelist.FieldRootElements)
@@ -7638,6 +7575,8 @@ func (m *NodeListMutation) Field(name string) (ent.Value, bool) {
 	switch name {
 	case nodelist.FieldProtoMessage:
 		return m.ProtoMessage()
+	case nodelist.FieldDocumentID:
+		return m.DocumentID()
 	case nodelist.FieldRootElements:
 		return m.RootElements()
 	}
@@ -7651,6 +7590,8 @@ func (m *NodeListMutation) OldField(ctx context.Context, name string) (ent.Value
 	switch name {
 	case nodelist.FieldProtoMessage:
 		return m.OldProtoMessage(ctx)
+	case nodelist.FieldDocumentID:
+		return m.OldDocumentID(ctx)
 	case nodelist.FieldRootElements:
 		return m.OldRootElements(ctx)
 	}
@@ -7668,6 +7609,13 @@ func (m *NodeListMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetProtoMessage(v)
+		return nil
+	case nodelist.FieldDocumentID:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDocumentID(v)
 		return nil
 	case nodelist.FieldRootElements:
 		v, ok := value.([]string)
@@ -7727,6 +7675,9 @@ func (m *NodeListMutation) ResetField(name string) error {
 	switch name {
 	case nodelist.FieldProtoMessage:
 		m.ResetProtoMessage()
+		return nil
+	case nodelist.FieldDocumentID:
+		m.ResetDocumentID()
 		return nil
 	case nodelist.FieldRootElements:
 		m.ResetRootElements()

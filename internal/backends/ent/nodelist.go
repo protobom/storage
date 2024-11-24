@@ -27,6 +27,8 @@ type NodeList struct {
 	ID uuid.UUID `json:"id,omitempty"`
 	// ProtoMessage holds the value of the "proto_message" field.
 	ProtoMessage *sbom.NodeList `json:"proto_message,omitempty"`
+	// DocumentID holds the value of the "document_id" field.
+	DocumentID uuid.UUID `json:"document_id,omitempty"`
 	// RootElements holds the value of the "root_elements" field.
 	RootElements []string `json:"root_elements,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -75,7 +77,7 @@ func (*NodeList) scanValues(columns []string) ([]any, error) {
 			values[i] = &sql.NullScanner{S: new(sbom.NodeList)}
 		case nodelist.FieldRootElements:
 			values[i] = new([]byte)
-		case nodelist.FieldID:
+		case nodelist.FieldID, nodelist.FieldDocumentID:
 			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -103,6 +105,12 @@ func (nl *NodeList) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field proto_message", values[i])
 			} else if value.Valid {
 				nl.ProtoMessage = value.S.(*sbom.NodeList)
+			}
+		case nodelist.FieldDocumentID:
+			if value, ok := values[i].(*uuid.UUID); !ok {
+				return fmt.Errorf("unexpected type %T for field document_id", values[i])
+			} else if value != nil {
+				nl.DocumentID = *value
 			}
 		case nodelist.FieldRootElements:
 			if value, ok := values[i].(*[]byte); !ok {
@@ -162,6 +170,9 @@ func (nl *NodeList) String() string {
 		builder.WriteString("proto_message=")
 		builder.WriteString(fmt.Sprintf("%v", *v))
 	}
+	builder.WriteString(", ")
+	builder.WriteString("document_id=")
+	builder.WriteString(fmt.Sprintf("%v", nl.DocumentID))
 	builder.WriteString(", ")
 	builder.WriteString("root_elements=")
 	builder.WriteString(fmt.Sprintf("%v", nl.RootElements))

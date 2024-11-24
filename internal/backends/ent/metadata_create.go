@@ -41,6 +41,12 @@ func (mc *MetadataCreate) SetProtoMessage(s *sbom.Metadata) *MetadataCreate {
 	return mc
 }
 
+// SetDocumentID sets the "document_id" field.
+func (mc *MetadataCreate) SetDocumentID(u uuid.UUID) *MetadataCreate {
+	mc.mutation.SetDocumentID(u)
+	return mc
+}
+
 // SetNativeID sets the "native_id" field.
 func (mc *MetadataCreate) SetNativeID(s string) *MetadataCreate {
 	mc.mutation.SetNativeID(s)
@@ -137,12 +143,6 @@ func (mc *MetadataCreate) AddSourceData(s ...*SourceData) *MetadataCreate {
 	return mc.AddSourceDatumIDs(ids...)
 }
 
-// SetDocumentID sets the "document" edge to the Document entity by ID.
-func (mc *MetadataCreate) SetDocumentID(id uuid.UUID) *MetadataCreate {
-	mc.mutation.SetDocumentID(id)
-	return mc
-}
-
 // SetDocument sets the "document" edge to the Document entity.
 func (mc *MetadataCreate) SetDocument(d *Document) *MetadataCreate {
 	return mc.SetDocumentID(d.ID)
@@ -184,6 +184,9 @@ func (mc *MetadataCreate) ExecX(ctx context.Context) {
 func (mc *MetadataCreate) check() error {
 	if _, ok := mc.mutation.ProtoMessage(); !ok {
 		return &ValidationError{Name: "proto_message", err: errors.New(`ent: missing required field "Metadata.proto_message"`)}
+	}
+	if _, ok := mc.mutation.DocumentID(); !ok {
+		return &ValidationError{Name: "document_id", err: errors.New(`ent: missing required field "Metadata.document_id"`)}
 	}
 	if _, ok := mc.mutation.NativeID(); !ok {
 		return &ValidationError{Name: "native_id", err: errors.New(`ent: missing required field "Metadata.native_id"`)}
@@ -335,7 +338,7 @@ func (mc *MetadataCreate) createSpec() (*Metadata, *sqlgraph.CreateSpec) {
 	if nodes := mc.mutation.DocumentIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2O,
-			Inverse: false,
+			Inverse: true,
 			Table:   metadata.DocumentTable,
 			Columns: []string{metadata.DocumentColumn},
 			Bidi:    false,
@@ -346,6 +349,7 @@ func (mc *MetadataCreate) createSpec() (*Metadata, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
+		_node.DocumentID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
@@ -467,6 +471,9 @@ func (u *MetadataUpsertOne) UpdateNewValues() *MetadataUpsertOne {
 		}
 		if _, exists := u.create.mutation.ProtoMessage(); exists {
 			s.SetIgnore(metadata.FieldProtoMessage)
+		}
+		if _, exists := u.create.mutation.DocumentID(); exists {
+			s.SetIgnore(metadata.FieldDocumentID)
 		}
 		if _, exists := u.create.mutation.NativeID(); exists {
 			s.SetIgnore(metadata.FieldNativeID)
@@ -742,6 +749,9 @@ func (u *MetadataUpsertBulk) UpdateNewValues() *MetadataUpsertBulk {
 			}
 			if _, exists := b.mutation.ProtoMessage(); exists {
 				s.SetIgnore(metadata.FieldProtoMessage)
+			}
+			if _, exists := b.mutation.DocumentID(); exists {
+				s.SetIgnore(metadata.FieldDocumentID)
 			}
 			if _, exists := b.mutation.NativeID(); exists {
 				s.SetIgnore(metadata.FieldNativeID)
