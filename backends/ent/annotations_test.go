@@ -155,6 +155,11 @@ func (as *annotationsSuite) TestBackend_ClearDocumentAnnotations() {
 	documentIDs := []string{}
 
 	as.Require().NoError(as.Backend.AddAnnotationToDocuments(annotationName, "test-value", documentIDs...))
+
+	for _, document := range as.documents {
+		documentIDs = append(documentIDs, document.GetMetadata().GetId())
+	}
+
 	as.Require().NoError(as.Backend.ClearDocumentAnnotations(documentIDs...))
 
 	annotations := as.getTestResult(annotationName)
@@ -166,7 +171,12 @@ func (as *annotationsSuite) TestBackend_ClearNodeAnnotations() {
 	annotationName := "clear_node_annotations_test"
 	nodeIDs := []string{}
 
-	as.Require().NoError(as.Backend.AddAnnotationToDocuments(annotationName, "test-node-value", nodeIDs...))
+	as.Require().NoError(as.Backend.AddAnnotationToNodes(annotationName, "test-node-value", nodeIDs...))
+
+	for _, node := range as.nodes {
+		nodeIDs = append(nodeIDs, node.GetId())
+	}
+
 	as.Require().NoError(as.Backend.ClearNodeAnnotations(nodeIDs...))
 
 	annotations := as.getTestResult(annotationName)

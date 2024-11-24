@@ -22,9 +22,14 @@ import (
 // AddAnnotationToDocuments applies a single named annotation value to multiple documents.
 func (backend *Backend) AddAnnotationToDocuments(name, value string, documentIDs ...string) error {
 	data := ent.Annotations{}
+	predicates := []predicate.Metadata{}
+
+	if len(documentIDs) > 0 {
+		predicates = append(predicates, metadata.NativeIDIn(documentIDs...))
+	}
 
 	docUUIDs, err := backend.client.Metadata.Query().
-		Where(metadata.NativeIDIn(documentIDs...)).
+		Where(predicates...).
 		QueryDocument().
 		IDs(backend.ctx)
 	if err != nil {
@@ -45,12 +50,17 @@ func (backend *Backend) AddAnnotationToDocuments(name, value string, documentIDs
 // AddAnnotationToNodes applies a single named annotation value to multiple nodes.
 func (backend *Backend) AddAnnotationToNodes(name, value string, nodeIDs ...string) error {
 	data := ent.Annotations{}
+	predicates := []predicate.Node{}
+
+	if len(nodeIDs) > 0 {
+		predicates = append(predicates, node.NativeIDIn(nodeIDs...))
+	}
 
 	nodes, err := backend.client.Node.Query().
-		Where(node.NativeIDIn(nodeIDs...)).
+		Where(predicates...).
 		All(backend.ctx)
 	if err != nil {
-		return fmt.Errorf("querying Node IDs: %w", err)
+		return fmt.Errorf("querying nodes: %w", err)
 	}
 
 	for _, n := range nodes {
@@ -117,9 +127,9 @@ func (backend *Backend) ClearDocumentAnnotations(documentIDs ...string) error {
 		return nil
 	}
 
-	docUUIDs, err := backend.client.Document.Query().
-		QueryMetadata().
+	docUUIDs, err := backend.client.Metadata.Query().
 		Where(metadata.NativeIDIn(documentIDs...)).
+		QueryDocument().
 		IDs(backend.ctx)
 	if err != nil {
 		return fmt.Errorf("querying document IDs: %w", err)
@@ -127,7 +137,7 @@ func (backend *Backend) ClearDocumentAnnotations(documentIDs ...string) error {
 
 	return backend.withTx(func(tx *ent.Tx) error {
 		if _, err := tx.Annotation.Delete().
-			Where(annotation.HasDocumentWith(document.MetadataIDIn(docUUIDs...))).
+			Where(annotation.HasDocumentWith(document.IDIn(docUUIDs...))).
 			Exec(backend.ctx); err != nil {
 			return fmt.Errorf("clearing annotations: %w", err)
 		}
@@ -196,30 +206,20 @@ func (backend *Backend) GetDocumentsByAnnotation(name string, values ...string) 
 		predicates = append(predicates, annotation.ValueIn(values...))
 	}
 
-	uniqueIDs, err := backend.client.Annotation.Query().
+	ids := []string{}
+
+	err := backend.client.Annotation.Query().
 		Where(predicates...).
 		QueryDocument().
 		QueryMetadata().
-		IDs(backend.ctx)
+		Select(metadata.FieldNativeID).
+		Scan(backend.ctx, &ids)
 	if err != nil {
 		return nil, fmt.Errorf("querying documents table: %w", err)
 	}
 
-	if len(uniqueIDs) == 0 {
+	if len(ids) == 0 {
 		return []*sbom.Document{}, nil
-	}
-
-	mds, err := backend.client.Document.Query().
-		QueryMetadata().
-		Where(metadata.IDIn(uniqueIDs...)).
-		All(backend.ctx)
-	if err != nil {
-		return nil, fmt.Errorf("querying document IDs: %w", err)
-	}
-
-	ids := []string{}
-	for _, md := range mds {
-		ids = append(ids, md.NativeID)
 	}
 
 	return backend.GetDocumentsByID(ids...)
@@ -287,28 +287,19 @@ func (backend *Backend) GetNodesByAnnotation(name string, values ...string) ([]*
 		predicates = append(predicates, annotation.ValueIn(values...))
 	}
 
-	uniqueIDs, err := backend.client.Annotation.Query().
+	ids := []string{}
+
+	err := backend.client.Annotation.Query().
 		Where(predicates...).
 		QueryNode().
-		IDs(backend.ctx)
+		Select(node.FieldNativeID).
+		Scan(backend.ctx, &ids)
 	if err != nil {
 		return nil, fmt.Errorf("querying nodes table: %w", err)
 	}
 
-	if len(uniqueIDs) == 0 {
+	if len(ids) == 0 {
 		return []*sbom.Node{}, nil
-	}
-
-	nodes, err := backend.client.Node.Query().
-		Where(node.IDIn(uniqueIDs...)).
-		All(backend.ctx)
-	if err != nil {
-		return nil, fmt.Errorf("querying node IDs: %w", err)
-	}
-
-	ids := []string{}
-	for _, md := range nodes {
-		ids = append(ids, md.NativeID)
 	}
 
 	return backend.GetNodesByID(ids...)
