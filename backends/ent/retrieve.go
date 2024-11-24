@@ -53,7 +53,9 @@ func (backend *Backend) GetDocumentsByID(ids ...string) ([]*sbom.Document, error
 	documents := []*sbom.Document{}
 
 	docUUIDs, err := backend.client.Metadata.Query().
+		WithDocument().
 		Where(metadata.NativeIDIn(ids...)).
+		QueryDocument().
 		IDs(backend.ctx)
 	if err != nil {
 		return nil, fmt.Errorf("querying documents IDs: %w", err)

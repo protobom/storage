@@ -29,6 +29,7 @@ func (backend *Backend) AddAnnotationToDocuments(name, value string, documentIDs
 	}
 
 	docUUIDs, err := backend.client.Metadata.Query().
+		WithDocument().
 		Where(predicates...).
 		QueryDocument().
 		IDs(backend.ctx)
@@ -80,6 +81,7 @@ func (backend *Backend) AddDocumentAnnotations(documentID, name string, values .
 	data := ent.Annotations{}
 
 	documentUUID, err := backend.client.Metadata.Query().
+		WithDocument().
 		Where(metadata.NativeIDEQ(documentID)).
 		QueryDocument().
 		OnlyID(backend.ctx)
@@ -128,6 +130,7 @@ func (backend *Backend) ClearDocumentAnnotations(documentIDs ...string) error {
 	}
 
 	docUUIDs, err := backend.client.Metadata.Query().
+		WithDocument().
 		Where(metadata.NativeIDIn(documentIDs...)).
 		QueryDocument().
 		IDs(backend.ctx)
