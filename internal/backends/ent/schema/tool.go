@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
+	"github.com/google/uuid"
 	"github.com/protobom/protobom/pkg/sbom"
 )
 
@@ -28,7 +29,7 @@ func (Tool) Mixin() []ent.Mixin {
 
 func (Tool) Fields() []ent.Field {
 	return []ent.Field{
-		field.String("metadata_id").Optional(),
+		field.UUID("metadata_id", uuid.UUID{}).Optional(),
 		field.String("name"),
 		field.String("version"),
 		field.String("vendor"),

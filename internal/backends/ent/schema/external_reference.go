@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
+	"github.com/google/uuid"
 	"github.com/protobom/protobom/pkg/sbom"
 )
 
@@ -28,7 +29,7 @@ func (ExternalReference) Mixin() []ent.Mixin {
 
 func (ExternalReference) Fields() []ent.Field {
 	return []ent.Field{
-		field.String("node_id").Optional(),
+		field.UUID("node_id", uuid.UUID{}).Optional(),
 		field.String("url"),
 		field.String("comment"),
 		field.String("authority").Optional(),

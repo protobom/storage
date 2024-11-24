@@ -24,12 +24,13 @@ func (Node) Mixin() []ent.Mixin {
 	return []ent.Mixin{
 		DocumentMixin{},
 		ProtoMessageMixin[*sbom.Node]{},
+		UUIDMixin{},
 	}
 }
 
 func (Node) Fields() []ent.Field {
 	return []ent.Field{
-		field.String("id").NotEmpty().Immutable(),
+		field.String("native_id").NotEmpty().Immutable(),
 		field.UUID("node_list_id", uuid.UUID{}).Optional(),
 		field.Enum("type").Values("PACKAGE", "FILE"),
 		field.String("name"),
@@ -80,7 +81,7 @@ func (Node) Edges() []ent.Edge {
 
 func (Node) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("id", "node_list_id").
+		index.Fields("native_id", "node_list_id").
 			Unique().
 			StorageKey("idx_nodes"),
 	}

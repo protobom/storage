@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
+	"github.com/google/uuid"
 	"github.com/protobom/protobom/pkg/sbom"
 )
 
@@ -27,6 +28,7 @@ func (NodeList) Mixin() []ent.Mixin {
 
 func (NodeList) Fields() []ent.Field {
 	return []ent.Field{
+		field.UUID("document_id", uuid.UUID{}).Unique().Immutable(),
 		field.Strings("root_elements"),
 	}
 }
@@ -35,10 +37,12 @@ func (NodeList) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("nodes", Node.Type).
 			Annotations(entsql.OnDelete(entsql.Cascade)),
-		edge.To("document", Document.Type).
+		edge.From("document", Document.Type).
+			Ref("node_list").
 			Required().
 			Unique().
 			Immutable().
-			Annotations(entsql.OnDelete(entsql.Cascade)),
+			Annotations(entsql.OnDelete(entsql.Cascade)).
+			Field("document_id"),
 	}
 }
