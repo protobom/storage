@@ -594,7 +594,7 @@ func (c *DocumentClient) QueryMetadata(d *Document) *MetadataQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(document.Table, document.FieldID, id),
 			sqlgraph.To(metadata.Table, metadata.FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, true, document.MetadataTable, document.MetadataColumn),
+			sqlgraph.Edge(sqlgraph.O2O, false, document.MetadataTable, document.MetadataColumn),
 		)
 		fromV = sqlgraph.Neighbors(d.driver.Dialect(), step)
 		return fromV, nil
@@ -610,7 +610,7 @@ func (c *DocumentClient) QueryNodeList(d *Document) *NodeListQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(document.Table, document.FieldID, id),
 			sqlgraph.To(nodelist.Table, nodelist.FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, true, document.NodeListTable, document.NodeListColumn),
+			sqlgraph.Edge(sqlgraph.O2O, false, document.NodeListTable, document.NodeListColumn),
 		)
 		fromV = sqlgraph.Neighbors(d.driver.Dialect(), step)
 		return fromV, nil
@@ -1215,7 +1215,7 @@ func (c *MetadataClient) UpdateOne(m *Metadata) *MetadataUpdateOne {
 }
 
 // UpdateOneID returns an update builder for the given id.
-func (c *MetadataClient) UpdateOneID(id string) *MetadataUpdateOne {
+func (c *MetadataClient) UpdateOneID(id uuid.UUID) *MetadataUpdateOne {
 	mutation := newMetadataMutation(c.config, OpUpdateOne, withMetadataID(id))
 	return &MetadataUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
@@ -1232,7 +1232,7 @@ func (c *MetadataClient) DeleteOne(m *Metadata) *MetadataDeleteOne {
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
-func (c *MetadataClient) DeleteOneID(id string) *MetadataDeleteOne {
+func (c *MetadataClient) DeleteOneID(id uuid.UUID) *MetadataDeleteOne {
 	builder := c.Delete().Where(metadata.ID(id))
 	builder.mutation.id = &id
 	builder.mutation.op = OpDeleteOne
@@ -1249,12 +1249,12 @@ func (c *MetadataClient) Query() *MetadataQuery {
 }
 
 // Get returns a Metadata entity by its id.
-func (c *MetadataClient) Get(ctx context.Context, id string) (*Metadata, error) {
+func (c *MetadataClient) Get(ctx context.Context, id uuid.UUID) (*Metadata, error) {
 	return c.Query().Where(metadata.ID(id)).Only(ctx)
 }
 
 // GetX is like Get, but panics if an error occurs.
-func (c *MetadataClient) GetX(ctx context.Context, id string) *Metadata {
+func (c *MetadataClient) GetX(ctx context.Context, id uuid.UUID) *Metadata {
 	obj, err := c.Get(ctx, id)
 	if err != nil {
 		panic(err)
@@ -1334,7 +1334,7 @@ func (c *MetadataClient) QueryDocument(m *Metadata) *DocumentQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(metadata.Table, metadata.FieldID, id),
 			sqlgraph.To(document.Table, document.FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, false, metadata.DocumentTable, metadata.DocumentColumn),
+			sqlgraph.Edge(sqlgraph.O2O, true, metadata.DocumentTable, metadata.DocumentColumn),
 		)
 		fromV = sqlgraph.Neighbors(m.driver.Dialect(), step)
 		return fromV, nil
@@ -1428,7 +1428,7 @@ func (c *NodeClient) UpdateOne(n *Node) *NodeUpdateOne {
 }
 
 // UpdateOneID returns an update builder for the given id.
-func (c *NodeClient) UpdateOneID(id string) *NodeUpdateOne {
+func (c *NodeClient) UpdateOneID(id uuid.UUID) *NodeUpdateOne {
 	mutation := newNodeMutation(c.config, OpUpdateOne, withNodeID(id))
 	return &NodeUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
@@ -1445,7 +1445,7 @@ func (c *NodeClient) DeleteOne(n *Node) *NodeDeleteOne {
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
-func (c *NodeClient) DeleteOneID(id string) *NodeDeleteOne {
+func (c *NodeClient) DeleteOneID(id uuid.UUID) *NodeDeleteOne {
 	builder := c.Delete().Where(node.ID(id))
 	builder.mutation.id = &id
 	builder.mutation.op = OpDeleteOne
@@ -1462,12 +1462,12 @@ func (c *NodeClient) Query() *NodeQuery {
 }
 
 // Get returns a Node entity by its id.
-func (c *NodeClient) Get(ctx context.Context, id string) (*Node, error) {
+func (c *NodeClient) Get(ctx context.Context, id uuid.UUID) (*Node, error) {
 	return c.Query().Where(node.ID(id)).Only(ctx)
 }
 
 // GetX is like Get, but panics if an error occurs.
-func (c *NodeClient) GetX(ctx context.Context, id string) *Node {
+func (c *NodeClient) GetX(ctx context.Context, id uuid.UUID) *Node {
 	obj, err := c.Get(ctx, id)
 	if err != nil {
 		panic(err)
@@ -1808,7 +1808,7 @@ func (c *NodeListClient) QueryDocument(nl *NodeList) *DocumentQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(nodelist.Table, nodelist.FieldID, id),
 			sqlgraph.To(document.Table, document.FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, false, nodelist.DocumentTable, nodelist.DocumentColumn),
+			sqlgraph.Edge(sqlgraph.O2O, true, nodelist.DocumentTable, nodelist.DocumentColumn),
 		)
 		fromV = sqlgraph.Neighbors(nl.driver.Dialect(), step)
 		return fromV, nil

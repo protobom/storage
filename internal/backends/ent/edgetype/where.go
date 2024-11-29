@@ -65,12 +65,12 @@ func DocumentID(v uuid.UUID) predicate.EdgeType {
 }
 
 // NodeID applies equality check predicate on the "node_id" field. It's identical to NodeIDEQ.
-func NodeID(v string) predicate.EdgeType {
+func NodeID(v uuid.UUID) predicate.EdgeType {
 	return predicate.EdgeType(sql.FieldEQ(FieldNodeID, v))
 }
 
 // ToNodeID applies equality check predicate on the "to_node_id" field. It's identical to ToNodeIDEQ.
-func ToNodeID(v string) predicate.EdgeType {
+func ToNodeID(v uuid.UUID) predicate.EdgeType {
 	return predicate.EdgeType(sql.FieldEQ(FieldToNodeID, v))
 }
 
@@ -125,133 +125,43 @@ func TypeNotIn(vs ...Type) predicate.EdgeType {
 }
 
 // NodeIDEQ applies the EQ predicate on the "node_id" field.
-func NodeIDEQ(v string) predicate.EdgeType {
+func NodeIDEQ(v uuid.UUID) predicate.EdgeType {
 	return predicate.EdgeType(sql.FieldEQ(FieldNodeID, v))
 }
 
 // NodeIDNEQ applies the NEQ predicate on the "node_id" field.
-func NodeIDNEQ(v string) predicate.EdgeType {
+func NodeIDNEQ(v uuid.UUID) predicate.EdgeType {
 	return predicate.EdgeType(sql.FieldNEQ(FieldNodeID, v))
 }
 
 // NodeIDIn applies the In predicate on the "node_id" field.
-func NodeIDIn(vs ...string) predicate.EdgeType {
+func NodeIDIn(vs ...uuid.UUID) predicate.EdgeType {
 	return predicate.EdgeType(sql.FieldIn(FieldNodeID, vs...))
 }
 
 // NodeIDNotIn applies the NotIn predicate on the "node_id" field.
-func NodeIDNotIn(vs ...string) predicate.EdgeType {
+func NodeIDNotIn(vs ...uuid.UUID) predicate.EdgeType {
 	return predicate.EdgeType(sql.FieldNotIn(FieldNodeID, vs...))
 }
 
-// NodeIDGT applies the GT predicate on the "node_id" field.
-func NodeIDGT(v string) predicate.EdgeType {
-	return predicate.EdgeType(sql.FieldGT(FieldNodeID, v))
-}
-
-// NodeIDGTE applies the GTE predicate on the "node_id" field.
-func NodeIDGTE(v string) predicate.EdgeType {
-	return predicate.EdgeType(sql.FieldGTE(FieldNodeID, v))
-}
-
-// NodeIDLT applies the LT predicate on the "node_id" field.
-func NodeIDLT(v string) predicate.EdgeType {
-	return predicate.EdgeType(sql.FieldLT(FieldNodeID, v))
-}
-
-// NodeIDLTE applies the LTE predicate on the "node_id" field.
-func NodeIDLTE(v string) predicate.EdgeType {
-	return predicate.EdgeType(sql.FieldLTE(FieldNodeID, v))
-}
-
-// NodeIDContains applies the Contains predicate on the "node_id" field.
-func NodeIDContains(v string) predicate.EdgeType {
-	return predicate.EdgeType(sql.FieldContains(FieldNodeID, v))
-}
-
-// NodeIDHasPrefix applies the HasPrefix predicate on the "node_id" field.
-func NodeIDHasPrefix(v string) predicate.EdgeType {
-	return predicate.EdgeType(sql.FieldHasPrefix(FieldNodeID, v))
-}
-
-// NodeIDHasSuffix applies the HasSuffix predicate on the "node_id" field.
-func NodeIDHasSuffix(v string) predicate.EdgeType {
-	return predicate.EdgeType(sql.FieldHasSuffix(FieldNodeID, v))
-}
-
-// NodeIDEqualFold applies the EqualFold predicate on the "node_id" field.
-func NodeIDEqualFold(v string) predicate.EdgeType {
-	return predicate.EdgeType(sql.FieldEqualFold(FieldNodeID, v))
-}
-
-// NodeIDContainsFold applies the ContainsFold predicate on the "node_id" field.
-func NodeIDContainsFold(v string) predicate.EdgeType {
-	return predicate.EdgeType(sql.FieldContainsFold(FieldNodeID, v))
-}
-
 // ToNodeIDEQ applies the EQ predicate on the "to_node_id" field.
-func ToNodeIDEQ(v string) predicate.EdgeType {
+func ToNodeIDEQ(v uuid.UUID) predicate.EdgeType {
 	return predicate.EdgeType(sql.FieldEQ(FieldToNodeID, v))
 }
 
 // ToNodeIDNEQ applies the NEQ predicate on the "to_node_id" field.
-func ToNodeIDNEQ(v string) predicate.EdgeType {
+func ToNodeIDNEQ(v uuid.UUID) predicate.EdgeType {
 	return predicate.EdgeType(sql.FieldNEQ(FieldToNodeID, v))
 }
 
 // ToNodeIDIn applies the In predicate on the "to_node_id" field.
-func ToNodeIDIn(vs ...string) predicate.EdgeType {
+func ToNodeIDIn(vs ...uuid.UUID) predicate.EdgeType {
 	return predicate.EdgeType(sql.FieldIn(FieldToNodeID, vs...))
 }
 
 // ToNodeIDNotIn applies the NotIn predicate on the "to_node_id" field.
-func ToNodeIDNotIn(vs ...string) predicate.EdgeType {
+func ToNodeIDNotIn(vs ...uuid.UUID) predicate.EdgeType {
 	return predicate.EdgeType(sql.FieldNotIn(FieldToNodeID, vs...))
-}
-
-// ToNodeIDGT applies the GT predicate on the "to_node_id" field.
-func ToNodeIDGT(v string) predicate.EdgeType {
-	return predicate.EdgeType(sql.FieldGT(FieldToNodeID, v))
-}
-
-// ToNodeIDGTE applies the GTE predicate on the "to_node_id" field.
-func ToNodeIDGTE(v string) predicate.EdgeType {
-	return predicate.EdgeType(sql.FieldGTE(FieldToNodeID, v))
-}
-
-// ToNodeIDLT applies the LT predicate on the "to_node_id" field.
-func ToNodeIDLT(v string) predicate.EdgeType {
-	return predicate.EdgeType(sql.FieldLT(FieldToNodeID, v))
-}
-
-// ToNodeIDLTE applies the LTE predicate on the "to_node_id" field.
-func ToNodeIDLTE(v string) predicate.EdgeType {
-	return predicate.EdgeType(sql.FieldLTE(FieldToNodeID, v))
-}
-
-// ToNodeIDContains applies the Contains predicate on the "to_node_id" field.
-func ToNodeIDContains(v string) predicate.EdgeType {
-	return predicate.EdgeType(sql.FieldContains(FieldToNodeID, v))
-}
-
-// ToNodeIDHasPrefix applies the HasPrefix predicate on the "to_node_id" field.
-func ToNodeIDHasPrefix(v string) predicate.EdgeType {
-	return predicate.EdgeType(sql.FieldHasPrefix(FieldToNodeID, v))
-}
-
-// ToNodeIDHasSuffix applies the HasSuffix predicate on the "to_node_id" field.
-func ToNodeIDHasSuffix(v string) predicate.EdgeType {
-	return predicate.EdgeType(sql.FieldHasSuffix(FieldToNodeID, v))
-}
-
-// ToNodeIDEqualFold applies the EqualFold predicate on the "to_node_id" field.
-func ToNodeIDEqualFold(v string) predicate.EdgeType {
-	return predicate.EdgeType(sql.FieldEqualFold(FieldToNodeID, v))
-}
-
-// ToNodeIDContainsFold applies the ContainsFold predicate on the "to_node_id" field.
-func ToNodeIDContainsFold(v string) predicate.EdgeType {
-	return predicate.EdgeType(sql.FieldContainsFold(FieldToNodeID, v))
 }
 
 // HasDocument applies the HasEdge predicate on the "document" edge.

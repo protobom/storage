@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
+	"github.com/google/uuid"
 	"github.com/protobom/protobom/pkg/sbom"
 )
 
@@ -26,7 +27,7 @@ func (Purpose) Mixin() []ent.Mixin {
 
 func (Purpose) Fields() []ent.Field {
 	return []ent.Field{
-		field.String("node_id").Optional(),
+		field.UUID("node_id", uuid.UUID{}).Optional(),
 		field.Enum("primary_purpose").Values(enumValues(new(sbom.Purpose))...),
 	}
 }

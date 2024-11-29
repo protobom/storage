@@ -25,11 +25,13 @@ import (
 type Node struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID string `json:"id,omitempty"`
+	ID uuid.UUID `json:"id,omitempty"`
 	// DocumentID holds the value of the "document_id" field.
 	DocumentID uuid.UUID `json:"document_id,omitempty"`
 	// ProtoMessage holds the value of the "proto_message" field.
 	ProtoMessage *sbom.Node `json:"proto_message,omitempty"`
+	// NativeID holds the value of the "native_id" field.
+	NativeID string `json:"native_id,omitempty"`
 	// NodeListID holds the value of the "node_list_id" field.
 	NodeListID uuid.UUID `json:"node_list_id,omitempty"`
 	// Type holds the value of the "type" field.
@@ -219,11 +221,11 @@ func (*Node) scanValues(columns []string) ([]any, error) {
 			values[i] = &sql.NullScanner{S: new(sbom.Node)}
 		case node.FieldLicenses, node.FieldAttribution, node.FieldFileTypes, node.FieldHashes, node.FieldIdentifiers:
 			values[i] = new([]byte)
-		case node.FieldID, node.FieldType, node.FieldName, node.FieldVersion, node.FieldFileName, node.FieldURLHome, node.FieldURLDownload, node.FieldLicenseConcluded, node.FieldLicenseComments, node.FieldCopyright, node.FieldSourceInfo, node.FieldComment, node.FieldSummary, node.FieldDescription:
+		case node.FieldNativeID, node.FieldType, node.FieldName, node.FieldVersion, node.FieldFileName, node.FieldURLHome, node.FieldURLDownload, node.FieldLicenseConcluded, node.FieldLicenseComments, node.FieldCopyright, node.FieldSourceInfo, node.FieldComment, node.FieldSummary, node.FieldDescription:
 			values[i] = new(sql.NullString)
 		case node.FieldReleaseDate, node.FieldBuildDate, node.FieldValidUntilDate:
 			values[i] = new(sql.NullTime)
-		case node.FieldDocumentID, node.FieldNodeListID:
+		case node.FieldID, node.FieldDocumentID, node.FieldNodeListID:
 			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -241,10 +243,10 @@ func (n *Node) assignValues(columns []string, values []any) error {
 	for i := range columns {
 		switch columns[i] {
 		case node.FieldID:
-			if value, ok := values[i].(*sql.NullString); !ok {
+			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
-			} else if value.Valid {
-				n.ID = value.String
+			} else if value != nil {
+				n.ID = *value
 			}
 		case node.FieldDocumentID:
 			if value, ok := values[i].(*uuid.UUID); !ok {
@@ -257,6 +259,12 @@ func (n *Node) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field proto_message", values[i])
 			} else if value.Valid {
 				n.ProtoMessage = value.S.(*sbom.Node)
+			}
+		case node.FieldNativeID:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field native_id", values[i])
+			} else if value.Valid {
+				n.NativeID = value.String
 			}
 		case node.FieldNodeListID:
 			if value, ok := values[i].(*uuid.UUID); !ok {
@@ -498,6 +506,9 @@ func (n *Node) String() string {
 		builder.WriteString("proto_message=")
 		builder.WriteString(fmt.Sprintf("%v", *v))
 	}
+	builder.WriteString(", ")
+	builder.WriteString("native_id=")
+	builder.WriteString(n.NativeID)
 	builder.WriteString(", ")
 	builder.WriteString("node_list_id=")
 	builder.WriteString(fmt.Sprintf("%v", n.NodeListID))

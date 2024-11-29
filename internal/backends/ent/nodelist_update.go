@@ -16,6 +16,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/dialect/sql/sqljson"
 	"entgo.io/ent/schema/field"
+	"github.com/google/uuid"
 	"github.com/protobom/storage/internal/backends/ent/node"
 	"github.com/protobom/storage/internal/backends/ent/nodelist"
 	"github.com/protobom/storage/internal/backends/ent/predicate"
@@ -47,14 +48,14 @@ func (nlu *NodeListUpdate) AppendRootElements(s []string) *NodeListUpdate {
 }
 
 // AddNodeIDs adds the "nodes" edge to the Node entity by IDs.
-func (nlu *NodeListUpdate) AddNodeIDs(ids ...string) *NodeListUpdate {
+func (nlu *NodeListUpdate) AddNodeIDs(ids ...uuid.UUID) *NodeListUpdate {
 	nlu.mutation.AddNodeIDs(ids...)
 	return nlu
 }
 
 // AddNodes adds the "nodes" edges to the Node entity.
 func (nlu *NodeListUpdate) AddNodes(n ...*Node) *NodeListUpdate {
-	ids := make([]string, len(n))
+	ids := make([]uuid.UUID, len(n))
 	for i := range n {
 		ids[i] = n[i].ID
 	}
@@ -73,14 +74,14 @@ func (nlu *NodeListUpdate) ClearNodes() *NodeListUpdate {
 }
 
 // RemoveNodeIDs removes the "nodes" edge to Node entities by IDs.
-func (nlu *NodeListUpdate) RemoveNodeIDs(ids ...string) *NodeListUpdate {
+func (nlu *NodeListUpdate) RemoveNodeIDs(ids ...uuid.UUID) *NodeListUpdate {
 	nlu.mutation.RemoveNodeIDs(ids...)
 	return nlu
 }
 
 // RemoveNodes removes "nodes" edges to Node entities.
 func (nlu *NodeListUpdate) RemoveNodes(n ...*Node) *NodeListUpdate {
-	ids := make([]string, len(n))
+	ids := make([]uuid.UUID, len(n))
 	for i := range n {
 		ids[i] = n[i].ID
 	}
@@ -150,7 +151,7 @@ func (nlu *NodeListUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: nodelist.NodesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -163,7 +164,7 @@ func (nlu *NodeListUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: nodelist.NodesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -179,7 +180,7 @@ func (nlu *NodeListUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: nodelist.NodesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -220,14 +221,14 @@ func (nluo *NodeListUpdateOne) AppendRootElements(s []string) *NodeListUpdateOne
 }
 
 // AddNodeIDs adds the "nodes" edge to the Node entity by IDs.
-func (nluo *NodeListUpdateOne) AddNodeIDs(ids ...string) *NodeListUpdateOne {
+func (nluo *NodeListUpdateOne) AddNodeIDs(ids ...uuid.UUID) *NodeListUpdateOne {
 	nluo.mutation.AddNodeIDs(ids...)
 	return nluo
 }
 
 // AddNodes adds the "nodes" edges to the Node entity.
 func (nluo *NodeListUpdateOne) AddNodes(n ...*Node) *NodeListUpdateOne {
-	ids := make([]string, len(n))
+	ids := make([]uuid.UUID, len(n))
 	for i := range n {
 		ids[i] = n[i].ID
 	}
@@ -246,14 +247,14 @@ func (nluo *NodeListUpdateOne) ClearNodes() *NodeListUpdateOne {
 }
 
 // RemoveNodeIDs removes the "nodes" edge to Node entities by IDs.
-func (nluo *NodeListUpdateOne) RemoveNodeIDs(ids ...string) *NodeListUpdateOne {
+func (nluo *NodeListUpdateOne) RemoveNodeIDs(ids ...uuid.UUID) *NodeListUpdateOne {
 	nluo.mutation.RemoveNodeIDs(ids...)
 	return nluo
 }
 
 // RemoveNodes removes "nodes" edges to Node entities.
 func (nluo *NodeListUpdateOne) RemoveNodes(n ...*Node) *NodeListUpdateOne {
-	ids := make([]string, len(n))
+	ids := make([]uuid.UUID, len(n))
 	for i := range n {
 		ids[i] = n[i].ID
 	}
@@ -353,7 +354,7 @@ func (nluo *NodeListUpdateOne) sqlSave(ctx context.Context) (_node *NodeList, er
 			Columns: nodelist.NodesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -366,7 +367,7 @@ func (nluo *NodeListUpdateOne) sqlSave(ctx context.Context) (_node *NodeList, er
 			Columns: nodelist.NodesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -382,7 +383,7 @@ func (nluo *NodeListUpdateOne) sqlSave(ctx context.Context) (_node *NodeList, er
 			Columns: nodelist.NodesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

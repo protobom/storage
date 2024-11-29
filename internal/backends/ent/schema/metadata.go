@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
+	"github.com/google/uuid"
 	"github.com/protobom/protobom/pkg/sbom"
 )
 
@@ -22,12 +23,14 @@ type Metadata struct {
 func (Metadata) Mixin() []ent.Mixin {
 	return []ent.Mixin{
 		ProtoMessageMixin[*sbom.Metadata]{},
+		UUIDMixin{},
 	}
 }
 
 func (Metadata) Fields() []ent.Field {
 	return []ent.Field{
-		field.String("id").NotEmpty().Immutable(),
+		field.UUID("document_id", uuid.UUID{}).Unique().Immutable(),
+		field.String("native_id").NotEmpty().Immutable(),
 		field.String("version"),
 		field.String("name"),
 		field.Time("date"),
@@ -45,17 +48,19 @@ func (Metadata) Edges() []ent.Edge {
 			Annotations(entsql.OnDelete(entsql.Cascade)),
 		edge.To("source_data", SourceData.Type).
 			Annotations(entsql.OnDelete(entsql.Cascade)),
-		edge.To("document", Document.Type).
+		edge.From("document", Document.Type).
+			Ref("metadata").
 			Required().
 			Unique().
 			Immutable().
-			Annotations(entsql.OnDelete(entsql.Cascade)),
+			Annotations(entsql.OnDelete(entsql.Cascade)).
+			Field("document_id"),
 	}
 }
 
 func (Metadata) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("id", "version", "name").
+		index.Fields("native_id", "version", "name").
 			Unique().
 			StorageKey("idx_metadata"),
 	}

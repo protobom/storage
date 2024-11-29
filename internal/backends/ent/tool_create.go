@@ -52,15 +52,15 @@ func (tc *ToolCreate) SetProtoMessage(s *sbom.Tool) *ToolCreate {
 }
 
 // SetMetadataID sets the "metadata_id" field.
-func (tc *ToolCreate) SetMetadataID(s string) *ToolCreate {
-	tc.mutation.SetMetadataID(s)
+func (tc *ToolCreate) SetMetadataID(u uuid.UUID) *ToolCreate {
+	tc.mutation.SetMetadataID(u)
 	return tc
 }
 
 // SetNillableMetadataID sets the "metadata_id" field if the given value is not nil.
-func (tc *ToolCreate) SetNillableMetadataID(s *string) *ToolCreate {
-	if s != nil {
-		tc.SetMetadataID(*s)
+func (tc *ToolCreate) SetNillableMetadataID(u *uuid.UUID) *ToolCreate {
+	if u != nil {
+		tc.SetMetadataID(*u)
 	}
 	return tc
 }
@@ -231,7 +231,7 @@ func (tc *ToolCreate) createSpec() (*Tool, *sqlgraph.CreateSpec) {
 			Columns: []string{tool.MetadataColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(metadata.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(metadata.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -293,7 +293,7 @@ type (
 )
 
 // SetMetadataID sets the "metadata_id" field.
-func (u *ToolUpsert) SetMetadataID(v string) *ToolUpsert {
+func (u *ToolUpsert) SetMetadataID(v uuid.UUID) *ToolUpsert {
 	u.Set(tool.FieldMetadataID, v)
 	return u
 }
@@ -401,7 +401,7 @@ func (u *ToolUpsertOne) Update(set func(*ToolUpsert)) *ToolUpsertOne {
 }
 
 // SetMetadataID sets the "metadata_id" field.
-func (u *ToolUpsertOne) SetMetadataID(v string) *ToolUpsertOne {
+func (u *ToolUpsertOne) SetMetadataID(v uuid.UUID) *ToolUpsertOne {
 	return u.Update(func(s *ToolUpsert) {
 		s.SetMetadataID(v)
 	})
@@ -685,7 +685,7 @@ func (u *ToolUpsertBulk) Update(set func(*ToolUpsert)) *ToolUpsertBulk {
 }
 
 // SetMetadataID sets the "metadata_id" field.
-func (u *ToolUpsertBulk) SetMetadataID(v string) *ToolUpsertBulk {
+func (u *ToolUpsertBulk) SetMetadataID(v uuid.UUID) *ToolUpsertBulk {
 	return u.Update(func(s *ToolUpsert) {
 		s.SetMetadataID(v)
 	})

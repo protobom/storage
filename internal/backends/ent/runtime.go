@@ -36,10 +36,6 @@ func init() {
 	annotationDescDocumentID := annotationMixinFields0[0].Descriptor()
 	// annotation.DefaultDocumentID holds the default value on creation for the document_id field.
 	annotation.DefaultDocumentID = annotationDescDocumentID.Default.(func() uuid.UUID)
-	// annotationDescNodeID is the schema descriptor for node_id field.
-	annotationDescNodeID := annotationFields[0].Descriptor()
-	// annotation.NodeIDValidator is a validator for the "node_id" field. It is called by the builders before save.
-	annotation.NodeIDValidator = annotationDescNodeID.Validators[0].(func(string) error)
 	// annotationDescIsUnique is the schema descriptor for is_unique field.
 	annotationDescIsUnique := annotationFields[3].Descriptor()
 	// annotation.DefaultIsUnique holds the default value on creation for the is_unique field.
@@ -73,10 +69,10 @@ func init() {
 	externalreference.DefaultDocumentID = externalreferenceDescDocumentID.Default.(func() uuid.UUID)
 	metadataFields := schema.Metadata{}.Fields()
 	_ = metadataFields
-	// metadataDescID is the schema descriptor for id field.
-	metadataDescID := metadataFields[0].Descriptor()
-	// metadata.IDValidator is a validator for the "id" field. It is called by the builders before save.
-	metadata.IDValidator = metadataDescID.Validators[0].(func(string) error)
+	// metadataDescNativeID is the schema descriptor for native_id field.
+	metadataDescNativeID := metadataFields[1].Descriptor()
+	// metadata.NativeIDValidator is a validator for the "native_id" field. It is called by the builders before save.
+	metadata.NativeIDValidator = metadataDescNativeID.Validators[0].(func(string) error)
 	nodeMixin := schema.Node{}.Mixin()
 	nodeMixinFields0 := nodeMixin[0].Fields()
 	_ = nodeMixinFields0
@@ -86,10 +82,10 @@ func init() {
 	nodeDescDocumentID := nodeMixinFields0[0].Descriptor()
 	// node.DefaultDocumentID holds the default value on creation for the document_id field.
 	node.DefaultDocumentID = nodeDescDocumentID.Default.(func() uuid.UUID)
-	// nodeDescID is the schema descriptor for id field.
-	nodeDescID := nodeFields[0].Descriptor()
-	// node.IDValidator is a validator for the "id" field. It is called by the builders before save.
-	node.IDValidator = nodeDescID.Validators[0].(func(string) error)
+	// nodeDescNativeID is the schema descriptor for native_id field.
+	nodeDescNativeID := nodeFields[0].Descriptor()
+	// node.NativeIDValidator is a validator for the "native_id" field. It is called by the builders before save.
+	node.NativeIDValidator = nodeDescNativeID.Validators[0].(func(string) error)
 	personMixin := schema.Person{}.Mixin()
 	personMixinFields0 := personMixin[0].Fields()
 	_ = personMixinFields0

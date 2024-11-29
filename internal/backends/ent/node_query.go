@@ -350,8 +350,8 @@ func (nq *NodeQuery) FirstX(ctx context.Context) *Node {
 
 // FirstID returns the first Node ID from the query.
 // Returns a *NotFoundError when no Node ID was found.
-func (nq *NodeQuery) FirstID(ctx context.Context) (id string, err error) {
-	var ids []string
+func (nq *NodeQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
+	var ids []uuid.UUID
 	if ids, err = nq.Limit(1).IDs(setContextOp(ctx, nq.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
@@ -363,7 +363,7 @@ func (nq *NodeQuery) FirstID(ctx context.Context) (id string, err error) {
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (nq *NodeQuery) FirstIDX(ctx context.Context) string {
+func (nq *NodeQuery) FirstIDX(ctx context.Context) uuid.UUID {
 	id, err := nq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -401,8 +401,8 @@ func (nq *NodeQuery) OnlyX(ctx context.Context) *Node {
 // OnlyID is like Only, but returns the only Node ID in the query.
 // Returns a *NotSingularError when more than one Node ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (nq *NodeQuery) OnlyID(ctx context.Context) (id string, err error) {
-	var ids []string
+func (nq *NodeQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
+	var ids []uuid.UUID
 	if ids, err = nq.Limit(2).IDs(setContextOp(ctx, nq.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
@@ -418,7 +418,7 @@ func (nq *NodeQuery) OnlyID(ctx context.Context) (id string, err error) {
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (nq *NodeQuery) OnlyIDX(ctx context.Context) string {
+func (nq *NodeQuery) OnlyIDX(ctx context.Context) uuid.UUID {
 	id, err := nq.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -446,7 +446,7 @@ func (nq *NodeQuery) AllX(ctx context.Context) []*Node {
 }
 
 // IDs executes the query and returns a list of Node IDs.
-func (nq *NodeQuery) IDs(ctx context.Context) (ids []string, err error) {
+func (nq *NodeQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
 	if nq.ctx.Unique == nil && nq.path != nil {
 		nq.Unique(true)
 	}
@@ -458,7 +458,7 @@ func (nq *NodeQuery) IDs(ctx context.Context) (ids []string, err error) {
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (nq *NodeQuery) IDsX(ctx context.Context) []string {
+func (nq *NodeQuery) IDsX(ctx context.Context) []uuid.UUID {
 	ids, err := nq.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -878,7 +878,7 @@ func (nq *NodeQuery) loadDocument(ctx context.Context, query *DocumentQuery, nod
 }
 func (nq *NodeQuery) loadSuppliers(ctx context.Context, query *PersonQuery, nodes []*Node, init func(*Node), assign func(*Node, *Person)) error {
 	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[string]*Node)
+	nodeids := make(map[uuid.UUID]*Node)
 	for i := range nodes {
 		fks = append(fks, nodes[i].ID)
 		nodeids[nodes[i].ID] = nodes[i]
@@ -909,7 +909,7 @@ func (nq *NodeQuery) loadSuppliers(ctx context.Context, query *PersonQuery, node
 }
 func (nq *NodeQuery) loadOriginators(ctx context.Context, query *PersonQuery, nodes []*Node, init func(*Node), assign func(*Node, *Person)) error {
 	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[string]*Node)
+	nodeids := make(map[uuid.UUID]*Node)
 	for i := range nodes {
 		fks = append(fks, nodes[i].ID)
 		nodeids[nodes[i].ID] = nodes[i]
@@ -940,7 +940,7 @@ func (nq *NodeQuery) loadOriginators(ctx context.Context, query *PersonQuery, no
 }
 func (nq *NodeQuery) loadExternalReferences(ctx context.Context, query *ExternalReferenceQuery, nodes []*Node, init func(*Node), assign func(*Node, *ExternalReference)) error {
 	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[string]*Node)
+	nodeids := make(map[uuid.UUID]*Node)
 	for i := range nodes {
 		fks = append(fks, nodes[i].ID)
 		nodeids[nodes[i].ID] = nodes[i]
@@ -970,7 +970,7 @@ func (nq *NodeQuery) loadExternalReferences(ctx context.Context, query *External
 }
 func (nq *NodeQuery) loadPrimaryPurpose(ctx context.Context, query *PurposeQuery, nodes []*Node, init func(*Node), assign func(*Node, *Purpose)) error {
 	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[string]*Node)
+	nodeids := make(map[uuid.UUID]*Node)
 	for i := range nodes {
 		fks = append(fks, nodes[i].ID)
 		nodeids[nodes[i].ID] = nodes[i]
@@ -1000,8 +1000,8 @@ func (nq *NodeQuery) loadPrimaryPurpose(ctx context.Context, query *PurposeQuery
 }
 func (nq *NodeQuery) loadToNodes(ctx context.Context, query *NodeQuery, nodes []*Node, init func(*Node), assign func(*Node, *Node)) error {
 	edgeIDs := make([]driver.Value, len(nodes))
-	byID := make(map[string]*Node)
-	nids := make(map[string]map[*Node]struct{})
+	byID := make(map[uuid.UUID]*Node)
+	nids := make(map[uuid.UUID]map[*Node]struct{})
 	for i, node := range nodes {
 		edgeIDs[i] = node.ID
 		byID[node.ID] = node
@@ -1030,11 +1030,11 @@ func (nq *NodeQuery) loadToNodes(ctx context.Context, query *NodeQuery, nodes []
 				if err != nil {
 					return nil, err
 				}
-				return append([]any{new(sql.NullString)}, values...), nil
+				return append([]any{new(uuid.UUID)}, values...), nil
 			}
 			spec.Assign = func(columns []string, values []any) error {
-				outValue := values[0].(*sql.NullString).String
-				inValue := values[1].(*sql.NullString).String
+				outValue := *values[0].(*uuid.UUID)
+				inValue := *values[1].(*uuid.UUID)
 				if nids[inValue] == nil {
 					nids[inValue] = map[*Node]struct{}{byID[outValue]: {}}
 					return assign(columns[1:], values[1:])
@@ -1061,8 +1061,8 @@ func (nq *NodeQuery) loadToNodes(ctx context.Context, query *NodeQuery, nodes []
 }
 func (nq *NodeQuery) loadNodes(ctx context.Context, query *NodeQuery, nodes []*Node, init func(*Node), assign func(*Node, *Node)) error {
 	edgeIDs := make([]driver.Value, len(nodes))
-	byID := make(map[string]*Node)
-	nids := make(map[string]map[*Node]struct{})
+	byID := make(map[uuid.UUID]*Node)
+	nids := make(map[uuid.UUID]map[*Node]struct{})
 	for i, node := range nodes {
 		edgeIDs[i] = node.ID
 		byID[node.ID] = node
@@ -1091,11 +1091,11 @@ func (nq *NodeQuery) loadNodes(ctx context.Context, query *NodeQuery, nodes []*N
 				if err != nil {
 					return nil, err
 				}
-				return append([]any{new(sql.NullString)}, values...), nil
+				return append([]any{new(uuid.UUID)}, values...), nil
 			}
 			spec.Assign = func(columns []string, values []any) error {
-				outValue := values[0].(*sql.NullString).String
-				inValue := values[1].(*sql.NullString).String
+				outValue := *values[0].(*uuid.UUID)
+				inValue := *values[1].(*uuid.UUID)
 				if nids[inValue] == nil {
 					nids[inValue] = map[*Node]struct{}{byID[outValue]: {}}
 					return assign(columns[1:], values[1:])
@@ -1122,7 +1122,7 @@ func (nq *NodeQuery) loadNodes(ctx context.Context, query *NodeQuery, nodes []*N
 }
 func (nq *NodeQuery) loadProperties(ctx context.Context, query *PropertyQuery, nodes []*Node, init func(*Node), assign func(*Node, *Property)) error {
 	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[string]*Node)
+	nodeids := make(map[uuid.UUID]*Node)
 	for i := range nodes {
 		fks = append(fks, nodes[i].ID)
 		nodeids[nodes[i].ID] = nodes[i]
@@ -1152,7 +1152,7 @@ func (nq *NodeQuery) loadProperties(ctx context.Context, query *PropertyQuery, n
 }
 func (nq *NodeQuery) loadNodeLists(ctx context.Context, query *NodeListQuery, nodes []*Node, init func(*Node), assign func(*Node, *NodeList)) error {
 	edgeIDs := make([]driver.Value, len(nodes))
-	byID := make(map[string]*Node)
+	byID := make(map[uuid.UUID]*Node)
 	nids := make(map[uuid.UUID]map[*Node]struct{})
 	for i, node := range nodes {
 		edgeIDs[i] = node.ID
@@ -1182,10 +1182,10 @@ func (nq *NodeQuery) loadNodeLists(ctx context.Context, query *NodeListQuery, no
 				if err != nil {
 					return nil, err
 				}
-				return append([]any{new(sql.NullString)}, values...), nil
+				return append([]any{new(uuid.UUID)}, values...), nil
 			}
 			spec.Assign = func(columns []string, values []any) error {
-				outValue := values[0].(*sql.NullString).String
+				outValue := *values[0].(*uuid.UUID)
 				inValue := *values[1].(*uuid.UUID)
 				if nids[inValue] == nil {
 					nids[inValue] = map[*Node]struct{}{byID[outValue]: {}}
@@ -1213,7 +1213,7 @@ func (nq *NodeQuery) loadNodeLists(ctx context.Context, query *NodeListQuery, no
 }
 func (nq *NodeQuery) loadAnnotations(ctx context.Context, query *AnnotationQuery, nodes []*Node, init func(*Node), assign func(*Node, *Annotation)) error {
 	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[string]*Node)
+	nodeids := make(map[uuid.UUID]*Node)
 	for i := range nodes {
 		fks = append(fks, nodes[i].ID)
 		nodeids[nodes[i].ID] = nodes[i]
@@ -1246,7 +1246,7 @@ func (nq *NodeQuery) loadAnnotations(ctx context.Context, query *AnnotationQuery
 }
 func (nq *NodeQuery) loadEdgeTypes(ctx context.Context, query *EdgeTypeQuery, nodes []*Node, init func(*Node), assign func(*Node, *EdgeType)) error {
 	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[string]*Node)
+	nodeids := make(map[uuid.UUID]*Node)
 	for i := range nodes {
 		fks = append(fks, nodes[i].ID)
 		nodeids[nodes[i].ID] = nodes[i]
@@ -1285,7 +1285,7 @@ func (nq *NodeQuery) sqlCount(ctx context.Context) (int, error) {
 }
 
 func (nq *NodeQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := sqlgraph.NewQuerySpec(node.Table, node.Columns, sqlgraph.NewFieldSpec(node.FieldID, field.TypeString))
+	_spec := sqlgraph.NewQuerySpec(node.Table, node.Columns, sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID))
 	_spec.From = nq.sql
 	if unique := nq.ctx.Unique; unique != nil {
 		_spec.Unique = *unique

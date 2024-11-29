@@ -19,6 +19,10 @@ const (
 	FieldID = "id"
 	// FieldProtoMessage holds the string denoting the proto_message field in the database.
 	FieldProtoMessage = "proto_message"
+	// FieldDocumentID holds the string denoting the document_id field in the database.
+	FieldDocumentID = "document_id"
+	// FieldNativeID holds the string denoting the native_id field in the database.
+	FieldNativeID = "native_id"
 	// FieldVersion holds the string denoting the version field in the database.
 	FieldVersion = "version"
 	// FieldName holds the string denoting the name field in the database.
@@ -68,18 +72,20 @@ const (
 	// SourceDataColumn is the table column denoting the source_data relation/edge.
 	SourceDataColumn = "metadata_id"
 	// DocumentTable is the table that holds the document relation/edge.
-	DocumentTable = "documents"
+	DocumentTable = "metadata"
 	// DocumentInverseTable is the table name for the Document entity.
 	// It exists in this package in order to avoid circular dependency with the "document" package.
 	DocumentInverseTable = "documents"
 	// DocumentColumn is the table column denoting the document relation/edge.
-	DocumentColumn = "metadata_id"
+	DocumentColumn = "document_id"
 )
 
 // Columns holds all SQL columns for metadata fields.
 var Columns = []string{
 	FieldID,
 	FieldProtoMessage,
+	FieldDocumentID,
+	FieldNativeID,
 	FieldVersion,
 	FieldName,
 	FieldDate,
@@ -97,8 +103,8 @@ func ValidColumn(column string) bool {
 }
 
 var (
-	// IDValidator is a validator for the "id" field. It is called by the builders before save.
-	IDValidator func(string) error
+	// NativeIDValidator is a validator for the "native_id" field. It is called by the builders before save.
+	NativeIDValidator func(string) error
 )
 
 // OrderOption defines the ordering options for the Metadata queries.
@@ -107,6 +113,16 @@ type OrderOption func(*sql.Selector)
 // ByID orders the results by the id field.
 func ByID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldID, opts...).ToFunc()
+}
+
+// ByDocumentID orders the results by the document_id field.
+func ByDocumentID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDocumentID, opts...).ToFunc()
+}
+
+// ByNativeID orders the results by the native_id field.
+func ByNativeID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldNativeID, opts...).ToFunc()
 }
 
 // ByVersion orders the results by the version field.
@@ -223,6 +239,6 @@ func newDocumentStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(DocumentInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2O, false, DocumentTable, DocumentColumn),
+		sqlgraph.Edge(sqlgraph.O2O, true, DocumentTable, DocumentColumn),
 	)
 }

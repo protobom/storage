@@ -30,7 +30,7 @@ type Tool struct {
 	// ProtoMessage holds the value of the "proto_message" field.
 	ProtoMessage *sbom.Tool `json:"proto_message,omitempty"`
 	// MetadataID holds the value of the "metadata_id" field.
-	MetadataID string `json:"metadata_id,omitempty"`
+	MetadataID uuid.UUID `json:"metadata_id,omitempty"`
 	// Name holds the value of the "name" field.
 	Name string `json:"name,omitempty"`
 	// Version holds the value of the "version" field.
@@ -83,9 +83,9 @@ func (*Tool) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case tool.FieldProtoMessage:
 			values[i] = &sql.NullScanner{S: new(sbom.Tool)}
-		case tool.FieldMetadataID, tool.FieldName, tool.FieldVersion, tool.FieldVendor:
+		case tool.FieldName, tool.FieldVersion, tool.FieldVendor:
 			values[i] = new(sql.NullString)
-		case tool.FieldID, tool.FieldDocumentID:
+		case tool.FieldID, tool.FieldDocumentID, tool.FieldMetadataID:
 			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -121,10 +121,10 @@ func (t *Tool) assignValues(columns []string, values []any) error {
 				t.ProtoMessage = value.S.(*sbom.Tool)
 			}
 		case tool.FieldMetadataID:
-			if value, ok := values[i].(*sql.NullString); !ok {
+			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field metadata_id", values[i])
-			} else if value.Valid {
-				t.MetadataID = value.String
+			} else if value != nil {
+				t.MetadataID = *value
 			}
 		case tool.FieldName:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -199,7 +199,7 @@ func (t *Tool) String() string {
 	}
 	builder.WriteString(", ")
 	builder.WriteString("metadata_id=")
-	builder.WriteString(t.MetadataID)
+	builder.WriteString(fmt.Sprintf("%v", t.MetadataID))
 	builder.WriteString(", ")
 	builder.WriteString("name=")
 	builder.WriteString(t.Name)

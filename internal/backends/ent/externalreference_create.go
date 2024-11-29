@@ -52,15 +52,15 @@ func (erc *ExternalReferenceCreate) SetProtoMessage(sr *sbom.ExternalReference) 
 }
 
 // SetNodeID sets the "node_id" field.
-func (erc *ExternalReferenceCreate) SetNodeID(s string) *ExternalReferenceCreate {
-	erc.mutation.SetNodeID(s)
+func (erc *ExternalReferenceCreate) SetNodeID(u uuid.UUID) *ExternalReferenceCreate {
+	erc.mutation.SetNodeID(u)
 	return erc
 }
 
 // SetNillableNodeID sets the "node_id" field if the given value is not nil.
-func (erc *ExternalReferenceCreate) SetNillableNodeID(s *string) *ExternalReferenceCreate {
-	if s != nil {
-		erc.SetNodeID(*s)
+func (erc *ExternalReferenceCreate) SetNillableNodeID(u *uuid.UUID) *ExternalReferenceCreate {
+	if u != nil {
+		erc.SetNodeID(*u)
 	}
 	return erc
 }
@@ -264,7 +264,7 @@ func (erc *ExternalReferenceCreate) createSpec() (*ExternalReference, *sqlgraph.
 			Columns: []string{externalreference.NodeColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -326,7 +326,7 @@ type (
 )
 
 // SetNodeID sets the "node_id" field.
-func (u *ExternalReferenceUpsert) SetNodeID(v string) *ExternalReferenceUpsert {
+func (u *ExternalReferenceUpsert) SetNodeID(v uuid.UUID) *ExternalReferenceUpsert {
 	u.Set(externalreference.FieldNodeID, v)
 	return u
 }
@@ -470,7 +470,7 @@ func (u *ExternalReferenceUpsertOne) Update(set func(*ExternalReferenceUpsert)) 
 }
 
 // SetNodeID sets the "node_id" field.
-func (u *ExternalReferenceUpsertOne) SetNodeID(v string) *ExternalReferenceUpsertOne {
+func (u *ExternalReferenceUpsertOne) SetNodeID(v uuid.UUID) *ExternalReferenceUpsertOne {
 	return u.Update(func(s *ExternalReferenceUpsert) {
 		s.SetNodeID(v)
 	})
@@ -796,7 +796,7 @@ func (u *ExternalReferenceUpsertBulk) Update(set func(*ExternalReferenceUpsert))
 }
 
 // SetNodeID sets the "node_id" field.
-func (u *ExternalReferenceUpsertBulk) SetNodeID(v string) *ExternalReferenceUpsertBulk {
+func (u *ExternalReferenceUpsertBulk) SetNodeID(v uuid.UUID) *ExternalReferenceUpsertBulk {
 	return u.Update(func(s *ExternalReferenceUpsert) {
 		s.SetNodeID(v)
 	})

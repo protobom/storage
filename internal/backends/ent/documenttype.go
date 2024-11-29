@@ -30,7 +30,7 @@ type DocumentType struct {
 	// ProtoMessage holds the value of the "proto_message" field.
 	ProtoMessage *sbom.DocumentType `json:"proto_message,omitempty"`
 	// MetadataID holds the value of the "metadata_id" field.
-	MetadataID string `json:"metadata_id,omitempty"`
+	MetadataID uuid.UUID `json:"metadata_id,omitempty"`
 	// Type holds the value of the "type" field.
 	Type *documenttype.Type `json:"type,omitempty"`
 	// Name holds the value of the "name" field.
@@ -83,9 +83,9 @@ func (*DocumentType) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case documenttype.FieldProtoMessage:
 			values[i] = &sql.NullScanner{S: new(sbom.DocumentType)}
-		case documenttype.FieldMetadataID, documenttype.FieldType, documenttype.FieldName, documenttype.FieldDescription:
+		case documenttype.FieldType, documenttype.FieldName, documenttype.FieldDescription:
 			values[i] = new(sql.NullString)
-		case documenttype.FieldID, documenttype.FieldDocumentID:
+		case documenttype.FieldID, documenttype.FieldDocumentID, documenttype.FieldMetadataID:
 			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -121,10 +121,10 @@ func (dt *DocumentType) assignValues(columns []string, values []any) error {
 				dt.ProtoMessage = value.S.(*sbom.DocumentType)
 			}
 		case documenttype.FieldMetadataID:
-			if value, ok := values[i].(*sql.NullString); !ok {
+			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field metadata_id", values[i])
-			} else if value.Valid {
-				dt.MetadataID = value.String
+			} else if value != nil {
+				dt.MetadataID = *value
 			}
 		case documenttype.FieldType:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -202,7 +202,7 @@ func (dt *DocumentType) String() string {
 	}
 	builder.WriteString(", ")
 	builder.WriteString("metadata_id=")
-	builder.WriteString(dt.MetadataID)
+	builder.WriteString(fmt.Sprintf("%v", dt.MetadataID))
 	builder.WriteString(", ")
 	if v := dt.Type; v != nil {
 		builder.WriteString("type=")

@@ -29,9 +29,9 @@ type EdgeType struct {
 	// Type holds the value of the "type" field.
 	Type edgetype.Type `json:"type,omitempty"`
 	// NodeID holds the value of the "node_id" field.
-	NodeID string `json:"node_id,omitempty"`
+	NodeID uuid.UUID `json:"node_id,omitempty"`
 	// ToNodeID holds the value of the "to_node_id" field.
-	ToNodeID string `json:"to_node_id,omitempty"`
+	ToNodeID uuid.UUID `json:"to_node_id,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the EdgeTypeQuery when eager-loading is set.
 	Edges        EdgeTypeEdges `json:"edges"`
@@ -91,9 +91,9 @@ func (*EdgeType) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case edgetype.FieldID:
 			values[i] = new(sql.NullInt64)
-		case edgetype.FieldType, edgetype.FieldNodeID, edgetype.FieldToNodeID:
+		case edgetype.FieldType:
 			values[i] = new(sql.NullString)
-		case edgetype.FieldDocumentID:
+		case edgetype.FieldDocumentID, edgetype.FieldNodeID, edgetype.FieldToNodeID:
 			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -129,16 +129,16 @@ func (et *EdgeType) assignValues(columns []string, values []any) error {
 				et.Type = edgetype.Type(value.String)
 			}
 		case edgetype.FieldNodeID:
-			if value, ok := values[i].(*sql.NullString); !ok {
+			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field node_id", values[i])
-			} else if value.Valid {
-				et.NodeID = value.String
+			} else if value != nil {
+				et.NodeID = *value
 			}
 		case edgetype.FieldToNodeID:
-			if value, ok := values[i].(*sql.NullString); !ok {
+			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field to_node_id", values[i])
-			} else if value.Valid {
-				et.ToNodeID = value.String
+			} else if value != nil {
+				et.ToNodeID = *value
 			}
 		default:
 			et.selectValues.Set(columns[i], values[i])
@@ -198,10 +198,10 @@ func (et *EdgeType) String() string {
 	builder.WriteString(fmt.Sprintf("%v", et.Type))
 	builder.WriteString(", ")
 	builder.WriteString("node_id=")
-	builder.WriteString(et.NodeID)
+	builder.WriteString(fmt.Sprintf("%v", et.NodeID))
 	builder.WriteString(", ")
 	builder.WriteString("to_node_id=")
-	builder.WriteString(et.ToNodeID)
+	builder.WriteString(fmt.Sprintf("%v", et.ToNodeID))
 	builder.WriteByte(')')
 	return builder.String()
 }

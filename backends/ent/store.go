@@ -9,6 +9,7 @@ package ent
 import (
 	"context"
 	"crypto/sha256"
+	"errors"
 	"fmt"
 	"slices"
 
@@ -32,9 +33,12 @@ type (
 	metadataIDKey          struct{}
 	nodeIDKey              struct{}
 	nodeListIDKey          struct{}
+	nodeNativeIDMappingKey struct{}
 
 	TxFunc func(*ent.Tx) error
 )
+
+var errNativeIDMap = errors.New("retrieving node map from context")
 
 // Store implements the storage.Storer interface.
 func (backend *Backend) Store(doc *sbom.Document, opts *storage.StoreOptions) error {
@@ -141,14 +145,19 @@ func (backend *Backend) saveDocumentTypes(docTypes []*sbom.DocumentType) TxFunc 
 	}
 }
 
-func (backend *Backend) saveEdges(edges []*sbom.Edge) TxFunc {
+func (backend *Backend) saveEdges(edges []*sbom.Edge) TxFunc { //nolint:gocognit
 	return func(tx *ent.Tx) error {
+		nativeIDMap, ok := backend.ctx.Value(nodeNativeIDMappingKey{}).(map[string]uuid.UUID)
+		if !ok {
+			return errNativeIDMap
+		}
+
 		for _, edge := range edges {
 			for _, toID := range edge.GetTo() {
 				newEdgeType := tx.EdgeType.Create().
 					SetType(edgetype.Type(edge.GetType().String())).
-					SetFromID(edge.GetFrom()).
-					SetToID(toID)
+					SetFromID(nativeIDMap[edge.GetFrom()]).
+					SetToID(nativeIDMap[toID])
 
 				setDocumentID(backend.ctx, newEdgeType)
 
@@ -165,7 +174,7 @@ func (backend *Backend) saveEdges(edges []*sbom.Edge) TxFunc {
 	}
 }
 
-func (backend *Backend) saveExternalReferences(refs []*sbom.ExternalReference, nodeID string) TxFunc {
+func (backend *Backend) saveExternalReferences(refs []*sbom.ExternalReference, nodeID uuid.UUID) TxFunc {
 	return func(tx *ent.Tx) error {
 		for _, ref := range refs {
 			id, err := GenerateUUID(ref)
@@ -196,9 +205,15 @@ func (backend *Backend) saveExternalReferences(refs []*sbom.ExternalReference, n
 }
 
 func (backend *Backend) saveMetadata(metadata *sbom.Metadata) TxFunc {
+	mdUUID, err := GenerateUUID(metadata)
+	if err != nil {
+		return nil
+	}
+
 	return func(tx *ent.Tx) error {
 		newMetadata := tx.Metadata.Create().
-			SetID(metadata.GetId()).
+			SetID(mdUUID).
+			SetNativeID(metadata.GetId()).
 			SetProtoMessage(metadata).
 			SetVersion(metadata.GetVersion()).
 			SetName(metadata.GetName()).
@@ -211,7 +226,7 @@ func (backend *Backend) saveMetadata(metadata *sbom.Metadata) TxFunc {
 			return fmt.Errorf("saving metadata: %w", err)
 		}
 
-		backend.ctx = context.WithValue(backend.ctx, metadataIDKey{}, metadata.GetId())
+		backend.ctx = context.WithValue(backend.ctx, metadataIDKey{}, mdUUID)
 
 		for _, fn := range []TxFunc{
 			backend.savePersons(metadata.GetAuthors()),
@@ -260,16 +275,24 @@ func (backend *Backend) saveNodeList(nodeList *sbom.NodeList) TxFunc {
 	}
 }
 
-func (backend *Backend) saveNodes(nodes []*sbom.Node) TxFunc {
+func (backend *Backend) saveNodes(nodes []*sbom.Node) TxFunc { //nolint:funlen,gocognit
 	return func(tx *ent.Tx) error {
 		builders := []*ent.NodeCreate{}
 		fns := []TxFunc{}
+		nativeIDMap := make(map[string]uuid.UUID)
 
 		for _, srcNode := range nodes {
-			nodeID := srcNode.GetId()
+			nodeID, err := GenerateUUID(srcNode)
+			if err != nil {
+				return fmt.Errorf("generating UUID: %w", err)
+			}
+
+			nativeIDMap[srcNode.GetId()] = nodeID
+
 			backend.ctx = context.WithValue(backend.ctx, nodeIDKey{}, nodeID)
 			newNode := tx.Node.Create().
 				SetID(nodeID).
+				SetNativeID(srcNode.GetId()).
 				SetProtoMessage(srcNode).
 				SetAttribution(srcNode.GetAttribution()).
 				SetBuildDate(srcNode.GetBuildDate().AsTime()).
@@ -319,6 +342,8 @@ func (backend *Backend) saveNodes(nodes []*sbom.Node) TxFunc {
 			}
 		}
 
+		backend.ctx = context.WithValue(backend.ctx, nodeNativeIDMappingKey{}, nativeIDMap)
+
 		return nil
 	}
 }
@@ -366,7 +391,7 @@ func (backend *Backend) savePersons(persons []*sbom.Person) TxFunc { //nolint:go
 	}
 }
 
-func (backend *Backend) saveProperties(properties []*sbom.Property, nodeID string) TxFunc {
+func (backend *Backend) saveProperties(properties []*sbom.Property, nodeID uuid.UUID) TxFunc {
 	return func(tx *ent.Tx) error {
 		builders := []*ent.PropertyCreate{}
 
@@ -401,7 +426,7 @@ func (backend *Backend) saveProperties(properties []*sbom.Property, nodeID strin
 	}
 }
 
-func (backend *Backend) savePurposes(purposes []sbom.Purpose, nodeID string) TxFunc {
+func (backend *Backend) savePurposes(purposes []sbom.Purpose, nodeID uuid.UUID) TxFunc {
 	return func(tx *ent.Tx) error {
 		builders := []*ent.PurposeCreate{}
 
@@ -490,14 +515,14 @@ func setDocumentID[T interface{ SetDocumentID(uuid.UUID) T }](ctx context.Contex
 	}
 }
 
-func setMetadataID[T interface{ SetMetadataID(string) T }](ctx context.Context, builder T) {
-	if metadataID, ok := ctx.Value(metadataIDKey{}).(string); ok {
+func setMetadataID[T interface{ SetMetadataID(uuid.UUID) T }](ctx context.Context, builder T) {
+	if metadataID, ok := ctx.Value(metadataIDKey{}).(uuid.UUID); ok {
 		builder.SetMetadataID(metadataID)
 	}
 }
 
-func setNodeID[T interface{ SetNodeID(string) T }](ctx context.Context, builder T) {
-	if nodeID, ok := ctx.Value(nodeIDKey{}).(string); ok {
+func setNodeID[T interface{ SetNodeID(uuid.UUID) T }](ctx context.Context, builder T) {
+	if nodeID, ok := ctx.Value(nodeIDKey{}).(uuid.UUID); ok {
 		builder.SetNodeID(nodeID)
 	}
 }

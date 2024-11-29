@@ -12,10 +12,12 @@ import (
 	"fmt"
 	"slices"
 
+	"entgo.io/ent/dialect/sql/schema"
 	sqlite "github.com/glebarez/go-sqlite"
 	"github.com/protobom/protobom/pkg/storage"
 
 	"github.com/protobom/storage/internal/backends/ent"
+	"github.com/protobom/storage/internal/backends/ent/migrate"
 )
 
 // Backend implements the protobom.pkg.storage.Backend interface.
@@ -65,7 +67,8 @@ func (backend *Backend) InitClient() error {
 	backend.ctx = ent.NewContext(context.Background(), client)
 
 	// Run the auto migration tool.
-	if err := backend.client.Schema.Create(backend.ctx); err != nil {
+	migrateOpts := []schema.MigrateOption{migrate.WithGlobalUniqueID(true), migrate.WithDropIndex(true)}
+	if err := backend.client.Schema.Create(backend.ctx, migrateOpts...); err != nil {
 		return fmt.Errorf("failed creating schema resources: %w", err)
 	}
 

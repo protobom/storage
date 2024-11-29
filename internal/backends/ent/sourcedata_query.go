@@ -480,8 +480,8 @@ func (sdq *SourceDataQuery) loadDocument(ctx context.Context, query *DocumentQue
 	return nil
 }
 func (sdq *SourceDataQuery) loadMetadata(ctx context.Context, query *MetadataQuery, nodes []*SourceData, init func(*SourceData), assign func(*SourceData, *Metadata)) error {
-	ids := make([]string, 0, len(nodes))
-	nodeids := make(map[string][]*SourceData)
+	ids := make([]uuid.UUID, 0, len(nodes))
+	nodeids := make(map[uuid.UUID][]*SourceData)
 	for i := range nodes {
 		fk := nodes[i].MetadataID
 		if _, ok := nodeids[fk]; !ok {

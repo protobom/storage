@@ -21,13 +21,9 @@ import (
 
 // Document is the model entity for the Document schema.
 type Document struct {
-	config `json:"-"`
+	config
 	// ID of the ent.
 	ID uuid.UUID `json:"id,omitempty"`
-	// MetadataID holds the value of the "metadata_id" field.
-	MetadataID string `json:"metadata_id,omitempty"`
-	// NodeListID holds the value of the "node_list_id" field.
-	NodeListID uuid.UUID `json:"node_list_id,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the DocumentQuery when eager-loading is set.
 	Edges        DocumentEdges `json:"edges"`
@@ -72,9 +68,7 @@ func (*Document) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case document.FieldMetadataID:
-			values[i] = new(sql.NullString)
-		case document.FieldID, document.FieldNodeListID:
+		case document.FieldID:
 			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -96,18 +90,6 @@ func (d *Document) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value != nil {
 				d.ID = *value
-			}
-		case document.FieldMetadataID:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field metadata_id", values[i])
-			} else if value.Valid {
-				d.MetadataID = value.String
-			}
-		case document.FieldNodeListID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
-				return fmt.Errorf("unexpected type %T for field node_list_id", values[i])
-			} else if value != nil {
-				d.NodeListID = *value
 			}
 		default:
 			d.selectValues.Set(columns[i], values[i])
@@ -154,12 +136,7 @@ func (d *Document) Unwrap() *Document {
 func (d *Document) String() string {
 	var builder strings.Builder
 	builder.WriteString("Document(")
-	builder.WriteString(fmt.Sprintf("id=%v, ", d.ID))
-	builder.WriteString("metadata_id=")
-	builder.WriteString(d.MetadataID)
-	builder.WriteString(", ")
-	builder.WriteString("node_list_id=")
-	builder.WriteString(fmt.Sprintf("%v", d.NodeListID))
+	builder.WriteString(fmt.Sprintf("id=%v", d.ID))
 	builder.WriteByte(')')
 	return builder.String()
 }

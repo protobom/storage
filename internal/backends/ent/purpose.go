@@ -27,7 +27,7 @@ type Purpose struct {
 	// DocumentID holds the value of the "document_id" field.
 	DocumentID uuid.UUID `json:"document_id,omitempty"`
 	// NodeID holds the value of the "node_id" field.
-	NodeID string `json:"node_id,omitempty"`
+	NodeID uuid.UUID `json:"node_id,omitempty"`
 	// PrimaryPurpose holds the value of the "primary_purpose" field.
 	PrimaryPurpose purpose.PrimaryPurpose `json:"primary_purpose,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -76,9 +76,9 @@ func (*Purpose) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case purpose.FieldID:
 			values[i] = new(sql.NullInt64)
-		case purpose.FieldNodeID, purpose.FieldPrimaryPurpose:
+		case purpose.FieldPrimaryPurpose:
 			values[i] = new(sql.NullString)
-		case purpose.FieldDocumentID:
+		case purpose.FieldDocumentID, purpose.FieldNodeID:
 			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -108,10 +108,10 @@ func (pu *Purpose) assignValues(columns []string, values []any) error {
 				pu.DocumentID = *value
 			}
 		case purpose.FieldNodeID:
-			if value, ok := values[i].(*sql.NullString); !ok {
+			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field node_id", values[i])
-			} else if value.Valid {
-				pu.NodeID = value.String
+			} else if value != nil {
+				pu.NodeID = *value
 			}
 		case purpose.FieldPrimaryPurpose:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -169,7 +169,7 @@ func (pu *Purpose) String() string {
 	builder.WriteString(fmt.Sprintf("%v", pu.DocumentID))
 	builder.WriteString(", ")
 	builder.WriteString("node_id=")
-	builder.WriteString(pu.NodeID)
+	builder.WriteString(fmt.Sprintf("%v", pu.NodeID))
 	builder.WriteString(", ")
 	builder.WriteString("primary_purpose=")
 	builder.WriteString(fmt.Sprintf("%v", pu.PrimaryPurpose))

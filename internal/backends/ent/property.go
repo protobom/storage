@@ -30,7 +30,7 @@ type Property struct {
 	// ProtoMessage holds the value of the "proto_message" field.
 	ProtoMessage *sbom.Property `json:"proto_message,omitempty"`
 	// NodeID holds the value of the "node_id" field.
-	NodeID string `json:"node_id,omitempty"`
+	NodeID uuid.UUID `json:"node_id,omitempty"`
 	// Name holds the value of the "name" field.
 	Name string `json:"name,omitempty"`
 	// Data holds the value of the "data" field.
@@ -81,9 +81,9 @@ func (*Property) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case property.FieldProtoMessage:
 			values[i] = &sql.NullScanner{S: new(sbom.Property)}
-		case property.FieldNodeID, property.FieldName, property.FieldData:
+		case property.FieldName, property.FieldData:
 			values[i] = new(sql.NullString)
-		case property.FieldID, property.FieldDocumentID:
+		case property.FieldID, property.FieldDocumentID, property.FieldNodeID:
 			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -119,10 +119,10 @@ func (pr *Property) assignValues(columns []string, values []any) error {
 				pr.ProtoMessage = value.S.(*sbom.Property)
 			}
 		case property.FieldNodeID:
-			if value, ok := values[i].(*sql.NullString); !ok {
+			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field node_id", values[i])
-			} else if value.Valid {
-				pr.NodeID = value.String
+			} else if value != nil {
+				pr.NodeID = *value
 			}
 		case property.FieldName:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -191,7 +191,7 @@ func (pr *Property) String() string {
 	}
 	builder.WriteString(", ")
 	builder.WriteString("node_id=")
-	builder.WriteString(pr.NodeID)
+	builder.WriteString(fmt.Sprintf("%v", pr.NodeID))
 	builder.WriteString(", ")
 	builder.WriteString("name=")
 	builder.WriteString(pr.Name)

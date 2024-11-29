@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
+	"github.com/google/uuid"
 	"github.com/protobom/protobom/pkg/sbom"
 )
 
@@ -28,8 +29,8 @@ func (EdgeType) Mixin() []ent.Mixin {
 func (EdgeType) Fields() []ent.Field {
 	return []ent.Field{
 		field.Enum("type").Values(enumValues(new(sbom.Edge_Type))...),
-		field.String("node_id"),
-		field.String("to_node_id"),
+		field.UUID("node_id", uuid.UUID{}),
+		field.UUID("to_node_id", uuid.UUID{}),
 	}
 }
 

@@ -15,6 +15,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/google/uuid"
 	"github.com/protobom/storage/internal/backends/ent/edgetype"
 	"github.com/protobom/storage/internal/backends/ent/node"
 	"github.com/protobom/storage/internal/backends/ent/predicate"
@@ -48,35 +49,35 @@ func (etu *EdgeTypeUpdate) SetNillableType(e *edgetype.Type) *EdgeTypeUpdate {
 }
 
 // SetNodeID sets the "node_id" field.
-func (etu *EdgeTypeUpdate) SetNodeID(s string) *EdgeTypeUpdate {
-	etu.mutation.SetNodeID(s)
+func (etu *EdgeTypeUpdate) SetNodeID(u uuid.UUID) *EdgeTypeUpdate {
+	etu.mutation.SetNodeID(u)
 	return etu
 }
 
 // SetNillableNodeID sets the "node_id" field if the given value is not nil.
-func (etu *EdgeTypeUpdate) SetNillableNodeID(s *string) *EdgeTypeUpdate {
-	if s != nil {
-		etu.SetNodeID(*s)
+func (etu *EdgeTypeUpdate) SetNillableNodeID(u *uuid.UUID) *EdgeTypeUpdate {
+	if u != nil {
+		etu.SetNodeID(*u)
 	}
 	return etu
 }
 
 // SetToNodeID sets the "to_node_id" field.
-func (etu *EdgeTypeUpdate) SetToNodeID(s string) *EdgeTypeUpdate {
-	etu.mutation.SetToNodeID(s)
+func (etu *EdgeTypeUpdate) SetToNodeID(u uuid.UUID) *EdgeTypeUpdate {
+	etu.mutation.SetToNodeID(u)
 	return etu
 }
 
 // SetNillableToNodeID sets the "to_node_id" field if the given value is not nil.
-func (etu *EdgeTypeUpdate) SetNillableToNodeID(s *string) *EdgeTypeUpdate {
-	if s != nil {
-		etu.SetToNodeID(*s)
+func (etu *EdgeTypeUpdate) SetNillableToNodeID(u *uuid.UUID) *EdgeTypeUpdate {
+	if u != nil {
+		etu.SetToNodeID(*u)
 	}
 	return etu
 }
 
 // SetFromID sets the "from" edge to the Node entity by ID.
-func (etu *EdgeTypeUpdate) SetFromID(id string) *EdgeTypeUpdate {
+func (etu *EdgeTypeUpdate) SetFromID(id uuid.UUID) *EdgeTypeUpdate {
 	etu.mutation.SetFromID(id)
 	return etu
 }
@@ -87,7 +88,7 @@ func (etu *EdgeTypeUpdate) SetFrom(n *Node) *EdgeTypeUpdate {
 }
 
 // SetToID sets the "to" edge to the Node entity by ID.
-func (etu *EdgeTypeUpdate) SetToID(id string) *EdgeTypeUpdate {
+func (etu *EdgeTypeUpdate) SetToID(id uuid.UUID) *EdgeTypeUpdate {
 	etu.mutation.SetToID(id)
 	return etu
 }
@@ -180,7 +181,7 @@ func (etu *EdgeTypeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{edgetype.FromColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -193,7 +194,7 @@ func (etu *EdgeTypeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{edgetype.FromColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -209,7 +210,7 @@ func (etu *EdgeTypeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{edgetype.ToColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -222,7 +223,7 @@ func (etu *EdgeTypeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{edgetype.ToColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -265,35 +266,35 @@ func (etuo *EdgeTypeUpdateOne) SetNillableType(e *edgetype.Type) *EdgeTypeUpdate
 }
 
 // SetNodeID sets the "node_id" field.
-func (etuo *EdgeTypeUpdateOne) SetNodeID(s string) *EdgeTypeUpdateOne {
-	etuo.mutation.SetNodeID(s)
+func (etuo *EdgeTypeUpdateOne) SetNodeID(u uuid.UUID) *EdgeTypeUpdateOne {
+	etuo.mutation.SetNodeID(u)
 	return etuo
 }
 
 // SetNillableNodeID sets the "node_id" field if the given value is not nil.
-func (etuo *EdgeTypeUpdateOne) SetNillableNodeID(s *string) *EdgeTypeUpdateOne {
-	if s != nil {
-		etuo.SetNodeID(*s)
+func (etuo *EdgeTypeUpdateOne) SetNillableNodeID(u *uuid.UUID) *EdgeTypeUpdateOne {
+	if u != nil {
+		etuo.SetNodeID(*u)
 	}
 	return etuo
 }
 
 // SetToNodeID sets the "to_node_id" field.
-func (etuo *EdgeTypeUpdateOne) SetToNodeID(s string) *EdgeTypeUpdateOne {
-	etuo.mutation.SetToNodeID(s)
+func (etuo *EdgeTypeUpdateOne) SetToNodeID(u uuid.UUID) *EdgeTypeUpdateOne {
+	etuo.mutation.SetToNodeID(u)
 	return etuo
 }
 
 // SetNillableToNodeID sets the "to_node_id" field if the given value is not nil.
-func (etuo *EdgeTypeUpdateOne) SetNillableToNodeID(s *string) *EdgeTypeUpdateOne {
-	if s != nil {
-		etuo.SetToNodeID(*s)
+func (etuo *EdgeTypeUpdateOne) SetNillableToNodeID(u *uuid.UUID) *EdgeTypeUpdateOne {
+	if u != nil {
+		etuo.SetToNodeID(*u)
 	}
 	return etuo
 }
 
 // SetFromID sets the "from" edge to the Node entity by ID.
-func (etuo *EdgeTypeUpdateOne) SetFromID(id string) *EdgeTypeUpdateOne {
+func (etuo *EdgeTypeUpdateOne) SetFromID(id uuid.UUID) *EdgeTypeUpdateOne {
 	etuo.mutation.SetFromID(id)
 	return etuo
 }
@@ -304,7 +305,7 @@ func (etuo *EdgeTypeUpdateOne) SetFrom(n *Node) *EdgeTypeUpdateOne {
 }
 
 // SetToID sets the "to" edge to the Node entity by ID.
-func (etuo *EdgeTypeUpdateOne) SetToID(id string) *EdgeTypeUpdateOne {
+func (etuo *EdgeTypeUpdateOne) SetToID(id uuid.UUID) *EdgeTypeUpdateOne {
 	etuo.mutation.SetToID(id)
 	return etuo
 }
@@ -427,7 +428,7 @@ func (etuo *EdgeTypeUpdateOne) sqlSave(ctx context.Context) (_node *EdgeType, er
 			Columns: []string{edgetype.FromColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -440,7 +441,7 @@ func (etuo *EdgeTypeUpdateOne) sqlSave(ctx context.Context) (_node *EdgeType, er
 			Columns: []string{edgetype.FromColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -456,7 +457,7 @@ func (etuo *EdgeTypeUpdateOne) sqlSave(ctx context.Context) (_node *EdgeType, er
 			Columns: []string{edgetype.ToColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -469,7 +470,7 @@ func (etuo *EdgeTypeUpdateOne) sqlSave(ctx context.Context) (_node *EdgeType, er
 			Columns: []string{edgetype.ToColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

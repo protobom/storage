@@ -27,7 +27,7 @@ type Annotation struct {
 	// DocumentID holds the value of the "document_id" field.
 	DocumentID uuid.UUID `json:"document_id,omitempty"`
 	// NodeID holds the value of the "node_id" field.
-	NodeID *string `json:"node_id,omitempty"`
+	NodeID *uuid.UUID `json:"node_id,omitempty"`
 	// Name holds the value of the "name" field.
 	Name string `json:"name,omitempty"`
 	// Value holds the value of the "value" field.
@@ -78,11 +78,13 @@ func (*Annotation) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case annotation.FieldNodeID:
+			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
 		case annotation.FieldIsUnique:
 			values[i] = new(sql.NullBool)
 		case annotation.FieldID:
 			values[i] = new(sql.NullInt64)
-		case annotation.FieldNodeID, annotation.FieldName, annotation.FieldValue:
+		case annotation.FieldName, annotation.FieldValue:
 			values[i] = new(sql.NullString)
 		case annotation.FieldDocumentID:
 			values[i] = new(uuid.UUID)
@@ -114,11 +116,11 @@ func (a *Annotation) assignValues(columns []string, values []any) error {
 				a.DocumentID = *value
 			}
 		case annotation.FieldNodeID:
-			if value, ok := values[i].(*sql.NullString); !ok {
+			if value, ok := values[i].(*sql.NullScanner); !ok {
 				return fmt.Errorf("unexpected type %T for field node_id", values[i])
 			} else if value.Valid {
-				a.NodeID = new(string)
-				*a.NodeID = value.String
+				a.NodeID = new(uuid.UUID)
+				*a.NodeID = *value.S.(*uuid.UUID)
 			}
 		case annotation.FieldName:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -189,7 +191,7 @@ func (a *Annotation) String() string {
 	builder.WriteString(", ")
 	if v := a.NodeID; v != nil {
 		builder.WriteString("node_id=")
-		builder.WriteString(*v)
+		builder.WriteString(fmt.Sprintf("%v", *v))
 	}
 	builder.WriteString(", ")
 	builder.WriteString("name=")

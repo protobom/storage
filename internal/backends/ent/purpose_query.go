@@ -480,8 +480,8 @@ func (pq *PurposeQuery) loadDocument(ctx context.Context, query *DocumentQuery, 
 	return nil
 }
 func (pq *PurposeQuery) loadNode(ctx context.Context, query *NodeQuery, nodes []*Purpose, init func(*Purpose), assign func(*Purpose, *Node)) error {
-	ids := make([]string, 0, len(nodes))
-	nodeids := make(map[string][]*Purpose)
+	ids := make([]uuid.UUID, 0, len(nodes))
+	nodeids := make(map[uuid.UUID][]*Purpose)
 	for i := range nodes {
 		fk := nodes[i].NodeID
 		if _, ok := nodeids[fk]; !ok {

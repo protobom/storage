@@ -15,6 +15,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/google/uuid"
 	"github.com/protobom/storage/internal/backends/ent/node"
 	"github.com/protobom/storage/internal/backends/ent/predicate"
 	"github.com/protobom/storage/internal/backends/ent/property"
@@ -34,15 +35,15 @@ func (pu *PropertyUpdate) Where(ps ...predicate.Property) *PropertyUpdate {
 }
 
 // SetNodeID sets the "node_id" field.
-func (pu *PropertyUpdate) SetNodeID(s string) *PropertyUpdate {
-	pu.mutation.SetNodeID(s)
+func (pu *PropertyUpdate) SetNodeID(u uuid.UUID) *PropertyUpdate {
+	pu.mutation.SetNodeID(u)
 	return pu
 }
 
 // SetNillableNodeID sets the "node_id" field if the given value is not nil.
-func (pu *PropertyUpdate) SetNillableNodeID(s *string) *PropertyUpdate {
-	if s != nil {
-		pu.SetNodeID(*s)
+func (pu *PropertyUpdate) SetNillableNodeID(u *uuid.UUID) *PropertyUpdate {
+	if u != nil {
+		pu.SetNodeID(*u)
 	}
 	return pu
 }
@@ -147,7 +148,7 @@ func (pu *PropertyUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{property.NodeColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -160,7 +161,7 @@ func (pu *PropertyUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{property.NodeColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -189,15 +190,15 @@ type PropertyUpdateOne struct {
 }
 
 // SetNodeID sets the "node_id" field.
-func (puo *PropertyUpdateOne) SetNodeID(s string) *PropertyUpdateOne {
-	puo.mutation.SetNodeID(s)
+func (puo *PropertyUpdateOne) SetNodeID(u uuid.UUID) *PropertyUpdateOne {
+	puo.mutation.SetNodeID(u)
 	return puo
 }
 
 // SetNillableNodeID sets the "node_id" field if the given value is not nil.
-func (puo *PropertyUpdateOne) SetNillableNodeID(s *string) *PropertyUpdateOne {
-	if s != nil {
-		puo.SetNodeID(*s)
+func (puo *PropertyUpdateOne) SetNillableNodeID(u *uuid.UUID) *PropertyUpdateOne {
+	if u != nil {
+		puo.SetNodeID(*u)
 	}
 	return puo
 }
@@ -332,7 +333,7 @@ func (puo *PropertyUpdateOne) sqlSave(ctx context.Context) (_node *Property, err
 			Columns: []string{property.NodeColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -345,7 +346,7 @@ func (puo *PropertyUpdateOne) sqlSave(ctx context.Context) (_node *Property, err
 			Columns: []string{property.NodeColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

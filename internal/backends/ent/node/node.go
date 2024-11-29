@@ -24,6 +24,8 @@ const (
 	FieldDocumentID = "document_id"
 	// FieldProtoMessage holds the string denoting the proto_message field in the database.
 	FieldProtoMessage = "proto_message"
+	// FieldNativeID holds the string denoting the native_id field in the database.
+	FieldNativeID = "native_id"
 	// FieldNodeListID holds the string denoting the node_list_id field in the database.
 	FieldNodeListID = "node_list_id"
 	// FieldType holds the string denoting the type field in the database.
@@ -164,6 +166,7 @@ var Columns = []string{
 	FieldID,
 	FieldDocumentID,
 	FieldProtoMessage,
+	FieldNativeID,
 	FieldNodeListID,
 	FieldType,
 	FieldName,
@@ -213,8 +216,8 @@ func ValidColumn(column string) bool {
 var (
 	// DefaultDocumentID holds the default value on creation for the "document_id" field.
 	DefaultDocumentID func() uuid.UUID
-	// IDValidator is a validator for the "id" field. It is called by the builders before save.
-	IDValidator func(string) error
+	// NativeIDValidator is a validator for the "native_id" field. It is called by the builders before save.
+	NativeIDValidator func(string) error
 )
 
 // Type defines the type for the "type" enum field.
@@ -251,6 +254,11 @@ func ByID(opts ...sql.OrderTermOption) OrderOption {
 // ByDocumentID orders the results by the document_id field.
 func ByDocumentID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDocumentID, opts...).ToFunc()
+}
+
+// ByNativeID orders the results by the native_id field.
+func ByNativeID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldNativeID, opts...).ToFunc()
 }
 
 // ByNodeListID orders the results by the node_list_id field.

@@ -53,29 +53,29 @@ func (pc *PersonCreate) SetProtoMessage(s *sbom.Person) *PersonCreate {
 }
 
 // SetMetadataID sets the "metadata_id" field.
-func (pc *PersonCreate) SetMetadataID(s string) *PersonCreate {
-	pc.mutation.SetMetadataID(s)
+func (pc *PersonCreate) SetMetadataID(u uuid.UUID) *PersonCreate {
+	pc.mutation.SetMetadataID(u)
 	return pc
 }
 
 // SetNillableMetadataID sets the "metadata_id" field if the given value is not nil.
-func (pc *PersonCreate) SetNillableMetadataID(s *string) *PersonCreate {
-	if s != nil {
-		pc.SetMetadataID(*s)
+func (pc *PersonCreate) SetNillableMetadataID(u *uuid.UUID) *PersonCreate {
+	if u != nil {
+		pc.SetMetadataID(*u)
 	}
 	return pc
 }
 
 // SetNodeID sets the "node_id" field.
-func (pc *PersonCreate) SetNodeID(s string) *PersonCreate {
-	pc.mutation.SetNodeID(s)
+func (pc *PersonCreate) SetNodeID(u uuid.UUID) *PersonCreate {
+	pc.mutation.SetNodeID(u)
 	return pc
 }
 
 // SetNillableNodeID sets the "node_id" field if the given value is not nil.
-func (pc *PersonCreate) SetNillableNodeID(s *string) *PersonCreate {
-	if s != nil {
-		pc.SetNodeID(*s)
+func (pc *PersonCreate) SetNillableNodeID(u *uuid.UUID) *PersonCreate {
+	if u != nil {
+		pc.SetNodeID(*u)
 	}
 	return pc
 }
@@ -344,7 +344,7 @@ func (pc *PersonCreate) createSpec() (*Person, *sqlgraph.CreateSpec) {
 			Columns: []string{person.MetadataColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(metadata.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(metadata.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -361,7 +361,7 @@ func (pc *PersonCreate) createSpec() (*Person, *sqlgraph.CreateSpec) {
 			Columns: []string{person.NodeColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -423,7 +423,7 @@ type (
 )
 
 // SetMetadataID sets the "metadata_id" field.
-func (u *PersonUpsert) SetMetadataID(v string) *PersonUpsert {
+func (u *PersonUpsert) SetMetadataID(v uuid.UUID) *PersonUpsert {
 	u.Set(person.FieldMetadataID, v)
 	return u
 }
@@ -441,7 +441,7 @@ func (u *PersonUpsert) ClearMetadataID() *PersonUpsert {
 }
 
 // SetNodeID sets the "node_id" field.
-func (u *PersonUpsert) SetNodeID(v string) *PersonUpsert {
+func (u *PersonUpsert) SetNodeID(v uuid.UUID) *PersonUpsert {
 	u.Set(person.FieldNodeID, v)
 	return u
 }
@@ -573,7 +573,7 @@ func (u *PersonUpsertOne) Update(set func(*PersonUpsert)) *PersonUpsertOne {
 }
 
 // SetMetadataID sets the "metadata_id" field.
-func (u *PersonUpsertOne) SetMetadataID(v string) *PersonUpsertOne {
+func (u *PersonUpsertOne) SetMetadataID(v uuid.UUID) *PersonUpsertOne {
 	return u.Update(func(s *PersonUpsert) {
 		s.SetMetadataID(v)
 	})
@@ -594,7 +594,7 @@ func (u *PersonUpsertOne) ClearMetadataID() *PersonUpsertOne {
 }
 
 // SetNodeID sets the "node_id" field.
-func (u *PersonUpsertOne) SetNodeID(v string) *PersonUpsertOne {
+func (u *PersonUpsertOne) SetNodeID(v uuid.UUID) *PersonUpsertOne {
 	return u.Update(func(s *PersonUpsert) {
 		s.SetNodeID(v)
 	})
@@ -906,7 +906,7 @@ func (u *PersonUpsertBulk) Update(set func(*PersonUpsert)) *PersonUpsertBulk {
 }
 
 // SetMetadataID sets the "metadata_id" field.
-func (u *PersonUpsertBulk) SetMetadataID(v string) *PersonUpsertBulk {
+func (u *PersonUpsertBulk) SetMetadataID(v uuid.UUID) *PersonUpsertBulk {
 	return u.Update(func(s *PersonUpsert) {
 		s.SetMetadataID(v)
 	})
@@ -927,7 +927,7 @@ func (u *PersonUpsertBulk) ClearMetadataID() *PersonUpsertBulk {
 }
 
 // SetNodeID sets the "node_id" field.
-func (u *PersonUpsertBulk) SetNodeID(v string) *PersonUpsertBulk {
+func (u *PersonUpsertBulk) SetNodeID(v uuid.UUID) *PersonUpsertBulk {
 	return u.Update(func(s *PersonUpsert) {
 		s.SetNodeID(v)
 	})

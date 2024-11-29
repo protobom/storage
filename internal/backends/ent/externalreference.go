@@ -31,7 +31,7 @@ type ExternalReference struct {
 	// ProtoMessage holds the value of the "proto_message" field.
 	ProtoMessage *sbom.ExternalReference `json:"proto_message,omitempty"`
 	// NodeID holds the value of the "node_id" field.
-	NodeID string `json:"node_id,omitempty"`
+	NodeID uuid.UUID `json:"node_id,omitempty"`
 	// URL holds the value of the "url" field.
 	URL string `json:"url,omitempty"`
 	// Comment holds the value of the "comment" field.
@@ -90,9 +90,9 @@ func (*ExternalReference) scanValues(columns []string) ([]any, error) {
 			values[i] = &sql.NullScanner{S: new(sbom.ExternalReference)}
 		case externalreference.FieldHashes:
 			values[i] = new([]byte)
-		case externalreference.FieldNodeID, externalreference.FieldURL, externalreference.FieldComment, externalreference.FieldAuthority, externalreference.FieldType:
+		case externalreference.FieldURL, externalreference.FieldComment, externalreference.FieldAuthority, externalreference.FieldType:
 			values[i] = new(sql.NullString)
-		case externalreference.FieldID, externalreference.FieldDocumentID:
+		case externalreference.FieldID, externalreference.FieldDocumentID, externalreference.FieldNodeID:
 			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -128,10 +128,10 @@ func (er *ExternalReference) assignValues(columns []string, values []any) error 
 				er.ProtoMessage = value.S.(*sbom.ExternalReference)
 			}
 		case externalreference.FieldNodeID:
-			if value, ok := values[i].(*sql.NullString); !ok {
+			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field node_id", values[i])
-			} else if value.Valid {
-				er.NodeID = value.String
+			} else if value != nil {
+				er.NodeID = *value
 			}
 		case externalreference.FieldURL:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -220,7 +220,7 @@ func (er *ExternalReference) String() string {
 	}
 	builder.WriteString(", ")
 	builder.WriteString("node_id=")
-	builder.WriteString(er.NodeID)
+	builder.WriteString(fmt.Sprintf("%v", er.NodeID))
 	builder.WriteString(", ")
 	builder.WriteString("url=")
 	builder.WriteString(er.URL)

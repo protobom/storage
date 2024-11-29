@@ -31,9 +31,9 @@ type Person struct {
 	// ProtoMessage holds the value of the "proto_message" field.
 	ProtoMessage *sbom.Person `json:"proto_message,omitempty"`
 	// MetadataID holds the value of the "metadata_id" field.
-	MetadataID string `json:"metadata_id,omitempty"`
+	MetadataID uuid.UUID `json:"metadata_id,omitempty"`
 	// NodeID holds the value of the "node_id" field.
-	NodeID string `json:"node_id,omitempty"`
+	NodeID uuid.UUID `json:"node_id,omitempty"`
 	// Name holds the value of the "name" field.
 	Name string `json:"name,omitempty"`
 	// IsOrg holds the value of the "is_org" field.
@@ -47,7 +47,7 @@ type Person struct {
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the PersonQuery when eager-loading is set.
 	Edges           PersonEdges `json:"edges"`
-	node_suppliers  *string
+	node_suppliers  *uuid.UUID
 	person_contacts *uuid.UUID
 	selectValues    sql.SelectValues
 }
@@ -131,12 +131,12 @@ func (*Person) scanValues(columns []string) ([]any, error) {
 			values[i] = &sql.NullScanner{S: new(sbom.Person)}
 		case person.FieldIsOrg:
 			values[i] = new(sql.NullBool)
-		case person.FieldMetadataID, person.FieldNodeID, person.FieldName, person.FieldEmail, person.FieldURL, person.FieldPhone:
+		case person.FieldName, person.FieldEmail, person.FieldURL, person.FieldPhone:
 			values[i] = new(sql.NullString)
-		case person.FieldID, person.FieldDocumentID:
+		case person.FieldID, person.FieldDocumentID, person.FieldMetadataID, person.FieldNodeID:
 			values[i] = new(uuid.UUID)
 		case person.ForeignKeys[0]: // node_suppliers
-			values[i] = new(sql.NullString)
+			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
 		case person.ForeignKeys[1]: // person_contacts
 			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
 		default:
@@ -173,16 +173,16 @@ func (pe *Person) assignValues(columns []string, values []any) error {
 				pe.ProtoMessage = value.S.(*sbom.Person)
 			}
 		case person.FieldMetadataID:
-			if value, ok := values[i].(*sql.NullString); !ok {
+			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field metadata_id", values[i])
-			} else if value.Valid {
-				pe.MetadataID = value.String
+			} else if value != nil {
+				pe.MetadataID = *value
 			}
 		case person.FieldNodeID:
-			if value, ok := values[i].(*sql.NullString); !ok {
+			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field node_id", values[i])
-			} else if value.Valid {
-				pe.NodeID = value.String
+			} else if value != nil {
+				pe.NodeID = *value
 			}
 		case person.FieldName:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -215,11 +215,11 @@ func (pe *Person) assignValues(columns []string, values []any) error {
 				pe.Phone = value.String
 			}
 		case person.ForeignKeys[0]:
-			if value, ok := values[i].(*sql.NullString); !ok {
+			if value, ok := values[i].(*sql.NullScanner); !ok {
 				return fmt.Errorf("unexpected type %T for field node_suppliers", values[i])
 			} else if value.Valid {
-				pe.node_suppliers = new(string)
-				*pe.node_suppliers = value.String
+				pe.node_suppliers = new(uuid.UUID)
+				*pe.node_suppliers = *value.S.(*uuid.UUID)
 			}
 		case person.ForeignKeys[1]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
@@ -298,10 +298,10 @@ func (pe *Person) String() string {
 	}
 	builder.WriteString(", ")
 	builder.WriteString("metadata_id=")
-	builder.WriteString(pe.MetadataID)
+	builder.WriteString(fmt.Sprintf("%v", pe.MetadataID))
 	builder.WriteString(", ")
 	builder.WriteString("node_id=")
-	builder.WriteString(pe.NodeID)
+	builder.WriteString(fmt.Sprintf("%v", pe.NodeID))
 	builder.WriteString(", ")
 	builder.WriteString("name=")
 	builder.WriteString(pe.Name)

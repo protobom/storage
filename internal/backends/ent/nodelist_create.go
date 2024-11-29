@@ -37,6 +37,12 @@ func (nlc *NodeListCreate) SetProtoMessage(sl *sbom.NodeList) *NodeListCreate {
 	return nlc
 }
 
+// SetDocumentID sets the "document_id" field.
+func (nlc *NodeListCreate) SetDocumentID(u uuid.UUID) *NodeListCreate {
+	nlc.mutation.SetDocumentID(u)
+	return nlc
+}
+
 // SetRootElements sets the "root_elements" field.
 func (nlc *NodeListCreate) SetRootElements(s []string) *NodeListCreate {
 	nlc.mutation.SetRootElements(s)
@@ -50,24 +56,18 @@ func (nlc *NodeListCreate) SetID(u uuid.UUID) *NodeListCreate {
 }
 
 // AddNodeIDs adds the "nodes" edge to the Node entity by IDs.
-func (nlc *NodeListCreate) AddNodeIDs(ids ...string) *NodeListCreate {
+func (nlc *NodeListCreate) AddNodeIDs(ids ...uuid.UUID) *NodeListCreate {
 	nlc.mutation.AddNodeIDs(ids...)
 	return nlc
 }
 
 // AddNodes adds the "nodes" edges to the Node entity.
 func (nlc *NodeListCreate) AddNodes(n ...*Node) *NodeListCreate {
-	ids := make([]string, len(n))
+	ids := make([]uuid.UUID, len(n))
 	for i := range n {
 		ids[i] = n[i].ID
 	}
 	return nlc.AddNodeIDs(ids...)
-}
-
-// SetDocumentID sets the "document" edge to the Document entity by ID.
-func (nlc *NodeListCreate) SetDocumentID(id uuid.UUID) *NodeListCreate {
-	nlc.mutation.SetDocumentID(id)
-	return nlc
 }
 
 // SetDocument sets the "document" edge to the Document entity.
@@ -111,6 +111,9 @@ func (nlc *NodeListCreate) ExecX(ctx context.Context) {
 func (nlc *NodeListCreate) check() error {
 	if _, ok := nlc.mutation.ProtoMessage(); !ok {
 		return &ValidationError{Name: "proto_message", err: errors.New(`ent: missing required field "NodeList.proto_message"`)}
+	}
+	if _, ok := nlc.mutation.DocumentID(); !ok {
+		return &ValidationError{Name: "document_id", err: errors.New(`ent: missing required field "NodeList.document_id"`)}
 	}
 	if _, ok := nlc.mutation.RootElements(); !ok {
 		return &ValidationError{Name: "root_elements", err: errors.New(`ent: missing required field "NodeList.root_elements"`)}
@@ -170,7 +173,7 @@ func (nlc *NodeListCreate) createSpec() (*NodeList, *sqlgraph.CreateSpec) {
 			Columns: nodelist.NodesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -181,7 +184,7 @@ func (nlc *NodeListCreate) createSpec() (*NodeList, *sqlgraph.CreateSpec) {
 	if nodes := nlc.mutation.DocumentIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2O,
-			Inverse: false,
+			Inverse: true,
 			Table:   nodelist.DocumentTable,
 			Columns: []string{nodelist.DocumentColumn},
 			Bidi:    false,
@@ -192,6 +195,7 @@ func (nlc *NodeListCreate) createSpec() (*NodeList, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
+		_node.DocumentID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
@@ -277,6 +281,9 @@ func (u *NodeListUpsertOne) UpdateNewValues() *NodeListUpsertOne {
 		}
 		if _, exists := u.create.mutation.ProtoMessage(); exists {
 			s.SetIgnore(nodelist.FieldProtoMessage)
+		}
+		if _, exists := u.create.mutation.DocumentID(); exists {
+			s.SetIgnore(nodelist.FieldDocumentID)
 		}
 	}))
 	return u
@@ -507,6 +514,9 @@ func (u *NodeListUpsertBulk) UpdateNewValues() *NodeListUpsertBulk {
 			}
 			if _, exists := b.mutation.ProtoMessage(); exists {
 				s.SetIgnore(nodelist.FieldProtoMessage)
+			}
+			if _, exists := b.mutation.DocumentID(); exists {
+				s.SetIgnore(nodelist.FieldDocumentID)
 			}
 		}
 	}))

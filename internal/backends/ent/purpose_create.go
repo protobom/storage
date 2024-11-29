@@ -44,15 +44,15 @@ func (pc *PurposeCreate) SetNillableDocumentID(u *uuid.UUID) *PurposeCreate {
 }
 
 // SetNodeID sets the "node_id" field.
-func (pc *PurposeCreate) SetNodeID(s string) *PurposeCreate {
-	pc.mutation.SetNodeID(s)
+func (pc *PurposeCreate) SetNodeID(u uuid.UUID) *PurposeCreate {
+	pc.mutation.SetNodeID(u)
 	return pc
 }
 
 // SetNillableNodeID sets the "node_id" field if the given value is not nil.
-func (pc *PurposeCreate) SetNillableNodeID(s *string) *PurposeCreate {
-	if s != nil {
-		pc.SetNodeID(*s)
+func (pc *PurposeCreate) SetNillableNodeID(u *uuid.UUID) *PurposeCreate {
+	if u != nil {
+		pc.SetNodeID(*u)
 	}
 	return pc
 }
@@ -180,7 +180,7 @@ func (pc *PurposeCreate) createSpec() (*Purpose, *sqlgraph.CreateSpec) {
 			Columns: []string{purpose.NodeColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -242,7 +242,7 @@ type (
 )
 
 // SetNodeID sets the "node_id" field.
-func (u *PurposeUpsert) SetNodeID(v string) *PurposeUpsert {
+func (u *PurposeUpsert) SetNodeID(v uuid.UUID) *PurposeUpsert {
 	u.Set(purpose.FieldNodeID, v)
 	return u
 }
@@ -317,7 +317,7 @@ func (u *PurposeUpsertOne) Update(set func(*PurposeUpsert)) *PurposeUpsertOne {
 }
 
 // SetNodeID sets the "node_id" field.
-func (u *PurposeUpsertOne) SetNodeID(v string) *PurposeUpsertOne {
+func (u *PurposeUpsertOne) SetNodeID(v uuid.UUID) *PurposeUpsertOne {
 	return u.Update(func(s *PurposeUpsert) {
 		s.SetNodeID(v)
 	})
@@ -563,7 +563,7 @@ func (u *PurposeUpsertBulk) Update(set func(*PurposeUpsert)) *PurposeUpsertBulk 
 }
 
 // SetNodeID sets the "node_id" field.
-func (u *PurposeUpsertBulk) SetNodeID(v string) *PurposeUpsertBulk {
+func (u *PurposeUpsertBulk) SetNodeID(v uuid.UUID) *PurposeUpsertBulk {
 	return u.Update(func(s *PurposeUpsert) {
 		s.SetNodeID(v)
 	})

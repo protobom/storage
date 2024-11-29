@@ -59,127 +59,12 @@ func IDLTE(id uuid.UUID) predicate.Document {
 	return predicate.Document(sql.FieldLTE(FieldID, id))
 }
 
-// MetadataID applies equality check predicate on the "metadata_id" field. It's identical to MetadataIDEQ.
-func MetadataID(v string) predicate.Document {
-	return predicate.Document(sql.FieldEQ(FieldMetadataID, v))
-}
-
-// NodeListID applies equality check predicate on the "node_list_id" field. It's identical to NodeListIDEQ.
-func NodeListID(v uuid.UUID) predicate.Document {
-	return predicate.Document(sql.FieldEQ(FieldNodeListID, v))
-}
-
-// MetadataIDEQ applies the EQ predicate on the "metadata_id" field.
-func MetadataIDEQ(v string) predicate.Document {
-	return predicate.Document(sql.FieldEQ(FieldMetadataID, v))
-}
-
-// MetadataIDNEQ applies the NEQ predicate on the "metadata_id" field.
-func MetadataIDNEQ(v string) predicate.Document {
-	return predicate.Document(sql.FieldNEQ(FieldMetadataID, v))
-}
-
-// MetadataIDIn applies the In predicate on the "metadata_id" field.
-func MetadataIDIn(vs ...string) predicate.Document {
-	return predicate.Document(sql.FieldIn(FieldMetadataID, vs...))
-}
-
-// MetadataIDNotIn applies the NotIn predicate on the "metadata_id" field.
-func MetadataIDNotIn(vs ...string) predicate.Document {
-	return predicate.Document(sql.FieldNotIn(FieldMetadataID, vs...))
-}
-
-// MetadataIDGT applies the GT predicate on the "metadata_id" field.
-func MetadataIDGT(v string) predicate.Document {
-	return predicate.Document(sql.FieldGT(FieldMetadataID, v))
-}
-
-// MetadataIDGTE applies the GTE predicate on the "metadata_id" field.
-func MetadataIDGTE(v string) predicate.Document {
-	return predicate.Document(sql.FieldGTE(FieldMetadataID, v))
-}
-
-// MetadataIDLT applies the LT predicate on the "metadata_id" field.
-func MetadataIDLT(v string) predicate.Document {
-	return predicate.Document(sql.FieldLT(FieldMetadataID, v))
-}
-
-// MetadataIDLTE applies the LTE predicate on the "metadata_id" field.
-func MetadataIDLTE(v string) predicate.Document {
-	return predicate.Document(sql.FieldLTE(FieldMetadataID, v))
-}
-
-// MetadataIDContains applies the Contains predicate on the "metadata_id" field.
-func MetadataIDContains(v string) predicate.Document {
-	return predicate.Document(sql.FieldContains(FieldMetadataID, v))
-}
-
-// MetadataIDHasPrefix applies the HasPrefix predicate on the "metadata_id" field.
-func MetadataIDHasPrefix(v string) predicate.Document {
-	return predicate.Document(sql.FieldHasPrefix(FieldMetadataID, v))
-}
-
-// MetadataIDHasSuffix applies the HasSuffix predicate on the "metadata_id" field.
-func MetadataIDHasSuffix(v string) predicate.Document {
-	return predicate.Document(sql.FieldHasSuffix(FieldMetadataID, v))
-}
-
-// MetadataIDIsNil applies the IsNil predicate on the "metadata_id" field.
-func MetadataIDIsNil() predicate.Document {
-	return predicate.Document(sql.FieldIsNull(FieldMetadataID))
-}
-
-// MetadataIDNotNil applies the NotNil predicate on the "metadata_id" field.
-func MetadataIDNotNil() predicate.Document {
-	return predicate.Document(sql.FieldNotNull(FieldMetadataID))
-}
-
-// MetadataIDEqualFold applies the EqualFold predicate on the "metadata_id" field.
-func MetadataIDEqualFold(v string) predicate.Document {
-	return predicate.Document(sql.FieldEqualFold(FieldMetadataID, v))
-}
-
-// MetadataIDContainsFold applies the ContainsFold predicate on the "metadata_id" field.
-func MetadataIDContainsFold(v string) predicate.Document {
-	return predicate.Document(sql.FieldContainsFold(FieldMetadataID, v))
-}
-
-// NodeListIDEQ applies the EQ predicate on the "node_list_id" field.
-func NodeListIDEQ(v uuid.UUID) predicate.Document {
-	return predicate.Document(sql.FieldEQ(FieldNodeListID, v))
-}
-
-// NodeListIDNEQ applies the NEQ predicate on the "node_list_id" field.
-func NodeListIDNEQ(v uuid.UUID) predicate.Document {
-	return predicate.Document(sql.FieldNEQ(FieldNodeListID, v))
-}
-
-// NodeListIDIn applies the In predicate on the "node_list_id" field.
-func NodeListIDIn(vs ...uuid.UUID) predicate.Document {
-	return predicate.Document(sql.FieldIn(FieldNodeListID, vs...))
-}
-
-// NodeListIDNotIn applies the NotIn predicate on the "node_list_id" field.
-func NodeListIDNotIn(vs ...uuid.UUID) predicate.Document {
-	return predicate.Document(sql.FieldNotIn(FieldNodeListID, vs...))
-}
-
-// NodeListIDIsNil applies the IsNil predicate on the "node_list_id" field.
-func NodeListIDIsNil() predicate.Document {
-	return predicate.Document(sql.FieldIsNull(FieldNodeListID))
-}
-
-// NodeListIDNotNil applies the NotNil predicate on the "node_list_id" field.
-func NodeListIDNotNil() predicate.Document {
-	return predicate.Document(sql.FieldNotNull(FieldNodeListID))
-}
-
 // HasMetadata applies the HasEdge predicate on the "metadata" edge.
 func HasMetadata() predicate.Document {
 	return predicate.Document(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, true, MetadataTable, MetadataColumn),
+			sqlgraph.Edge(sqlgraph.O2O, false, MetadataTable, MetadataColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
@@ -202,7 +87,7 @@ func HasNodeList() predicate.Document {
 	return predicate.Document(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, true, NodeListTable, NodeListColumn),
+			sqlgraph.Edge(sqlgraph.O2O, false, NodeListTable, NodeListColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
