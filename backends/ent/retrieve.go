@@ -51,9 +51,15 @@ func (backend *Backend) Retrieve(id string, _ *storage.RetrieveOptions) (doc *sb
 }
 
 func (backend *Backend) GetDocumentsByID(ids ...string) ([]*sbom.Document, error) {
+	predicates := []predicate.Metadata{}
+
+	if len(ids) > 0 {
+		predicates = append(predicates, metadata.NativeIDIn(ids...))
+	}
+
 	docUUIDs, err := backend.client.Metadata.Query().
 		WithDocument().
-		Where(metadata.NativeIDIn(ids...)).
+		Where(predicates...).
 		QueryDocument().
 		IDs(backend.ctx)
 	if err != nil {
@@ -65,14 +71,9 @@ func (backend *Backend) GetDocumentsByID(ids ...string) ([]*sbom.Document, error
 
 func (backend *Backend) GetDocumentsByUUID(uuids ...uuid.UUID) ([]*sbom.Document, error) {
 	documents := []*sbom.Document{}
-	predicates := []predicate.Document{}
-
-	if len(uuids) > 0 {
-		predicates = append(predicates, document.IDIn(uuids...))
-	}
 
 	results, err := backend.client.Document.Query().
-		Where(predicates...).
+		Where(document.IDIn(uuids...)).
 		WithMetadata().
 		WithNodeList().
 		All(backend.ctx)
