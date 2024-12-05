@@ -66,14 +66,24 @@ func (backend *Backend) GetDocumentsByID(ids ...string) ([]*sbom.Document, error
 		return nil, fmt.Errorf("querying documents IDs: %w", err)
 	}
 
+	// If a id string was passed in, but no matches were found, return nothing.
+	if len(ids) > 0 && len(docUUIDs) == 0 {
+		return nil, nil
+	}
+
 	return backend.GetDocumentsByUUID(docUUIDs...)
 }
 
 func (backend *Backend) GetDocumentsByUUID(uuids ...uuid.UUID) ([]*sbom.Document, error) {
 	documents := []*sbom.Document{}
+	predicates := []predicate.Document{}
+
+	if len(uuids) > 0 {
+		predicates = append(predicates, document.IDIn(uuids...))
+	}
 
 	results, err := backend.client.Document.Query().
-		Where(document.IDIn(uuids...)).
+		Where(predicates...).
 		WithMetadata().
 		WithNodeList().
 		All(backend.ctx)
