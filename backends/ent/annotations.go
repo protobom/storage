@@ -440,23 +440,3 @@ func (backend *Backend) SetNodeUniqueAnnotation(nodeID, name, value string) erro
 		}),
 	)
 }
-
-// SetNodeUUIDUniqueAnnotation sets a named annotation value that is unique to the specified node.
-func (backend *Backend) SetNodeUUIDUniqueAnnotation(nodeID uuid.UUID, name, value string) error {
-	result, err := backend.client.Node.Query().
-		Where(node.IDEQ(nodeID)).
-		Only(backend.ctx)
-	if err != nil {
-		return fmt.Errorf("querying nodes: %w", err)
-	}
-
-	return backend.withTx(
-		backend.saveAnnotations(&ent.Annotation{
-			DocumentID: result.DocumentID,
-			NodeID:     &result.ID,
-			Name:       name,
-			Value:      value,
-			IsUnique:   true,
-		}),
-	)
-}
