@@ -9,6 +9,7 @@ package ent
 import (
 	"fmt"
 
+	"github.com/google/uuid"
 	"github.com/protobom/protobom/pkg/sbom"
 
 	"github.com/protobom/storage/internal/backends/ent"
@@ -395,6 +396,12 @@ func (backend *Backend) SetDocumentUniqueAnnotation(documentID, name, value stri
 		return fmt.Errorf("%w", err)
 	}
 
+	return backend.SetDocumentUUIDUniqueAnnotation(documentUUID, name, value)
+}
+
+// SetDocumentUUIDUniqueAnnotation sets a named annotation value that is unique to a specific document.
+// Specified by UUID.
+func (backend *Backend) SetDocumentUUIDUniqueAnnotation(documentUUID uuid.UUID, name, value string) error {
 	return backend.withTx(
 		backend.saveAnnotations(&ent.Annotation{
 			DocumentID: documentUUID,

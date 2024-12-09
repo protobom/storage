@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/google/uuid"
 	"github.com/protobom/protobom/pkg/sbom"
 	"github.com/protobom/protobom/pkg/storage"
 
@@ -50,20 +51,35 @@ func (backend *Backend) Retrieve(id string, _ *storage.RetrieveOptions) (doc *sb
 }
 
 func (backend *Backend) GetDocumentsByID(ids ...string) ([]*sbom.Document, error) {
-	documents := []*sbom.Document{}
+	predicates := []predicate.Metadata{}
+
+	if len(ids) > 0 {
+		predicates = append(predicates, metadata.NativeIDIn(ids...))
+	}
 
 	docUUIDs, err := backend.client.Metadata.Query().
 		WithDocument().
-		Where(metadata.NativeIDIn(ids...)).
+		Where(predicates...).
 		QueryDocument().
 		IDs(backend.ctx)
 	if err != nil {
 		return nil, fmt.Errorf("querying documents IDs: %w", err)
 	}
 
+	// If a id string was passed in, but no matches were found, return nothing.
+	if len(ids) > 0 && len(docUUIDs) == 0 {
+		return nil, nil
+	}
+
+	return backend.GetDocumentsByUUID(docUUIDs...)
+}
+
+func (backend *Backend) GetDocumentsByUUID(uuids ...uuid.UUID) ([]*sbom.Document, error) {
+	documents := []*sbom.Document{}
 	predicates := []predicate.Document{}
-	if len(ids) > 0 {
-		predicates = append(predicates, document.IDIn(docUUIDs...))
+
+	if len(uuids) > 0 {
+		predicates = append(predicates, document.IDIn(uuids...))
 	}
 
 	results, err := backend.client.Document.Query().
@@ -124,10 +140,6 @@ func (backend *Backend) GetExternalReferencesByDocumentID(
 }
 
 func (backend *Backend) GetNodesByID(ids ...string) ([]*sbom.Node, error) {
-	nodes := []*sbom.Node{}
-
-	predicates := []predicate.Node{}
-
 	nodeUUIDS, err := backend.client.Node.Query().
 		Where(node.NativeIDIn(ids...)).
 		IDs(backend.ctx)
@@ -135,8 +147,15 @@ func (backend *Backend) GetNodesByID(ids ...string) ([]*sbom.Node, error) {
 		return nil, fmt.Errorf("querying node IDs: %w", err)
 	}
 
-	if len(ids) > 0 {
-		predicates = append(predicates, node.IDIn(nodeUUIDS...))
+	return backend.GetNodesByUUID(nodeUUIDS...)
+}
+
+func (backend *Backend) GetNodesByUUID(uuids ...uuid.UUID) ([]*sbom.Node, error) {
+	nodes := []*sbom.Node{}
+	predicates := []predicate.Node{}
+
+	if len(uuids) > 0 {
+		predicates = append(predicates, node.IDIn(uuids...))
 	}
 
 	results, err := backend.client.Node.Query().
