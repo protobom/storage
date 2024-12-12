@@ -184,6 +184,7 @@ func (backend *Backend) saveExternalReferences(refs []*sbom.ExternalReference, n
 
 			newRef := tx.ExternalReference.Create().
 				SetID(id).
+				SetHashes(ref.GetHashes()).
 				SetNodeID(nodeID).
 				SetProtoMessage(ref).
 				SetURL(ref.GetUrl()).
