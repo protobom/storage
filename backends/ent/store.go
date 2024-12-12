@@ -301,9 +301,11 @@ func (backend *Backend) saveNodes(nodes []*sbom.Node) TxFunc { //nolint:funlen,g
 				SetDescription(srcNode.GetDescription()).
 				SetFileName(srcNode.GetFileName()).
 				SetFileTypes(srcNode.GetFileTypes()).
+				SetHashes(srcNode.GetHashes()).
 				SetLicenseComments(srcNode.GetLicenseComments()).
 				SetLicenseConcluded(srcNode.GetLicenseConcluded()).
 				SetLicenses(srcNode.GetLicenses()).
+				SetIdentifiers(srcNode.GetIdentifiers()).
 				SetName(srcNode.GetName()).
 				SetReleaseDate(srcNode.GetReleaseDate().AsTime()).
 				SetSourceInfo(srcNode.GetSourceInfo()).
