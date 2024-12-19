@@ -182,6 +182,7 @@ func (backend *Backend) GetDocumentAnnotations(documentID string, names ...strin
 
 	predicates := []predicate.Annotation{
 		annotation.HasDocumentWith(document.HasMetadataWith(metadata.NativeIDEQ(documentID))),
+		annotation.Not(annotation.HasNode()),
 	}
 
 	if len(names) > 0 {
@@ -203,7 +204,10 @@ func (backend *Backend) GetDocumentsByAnnotation(name string, values ...string) 
 		return nil, errUninitializedClient
 	}
 
-	predicates := []predicate.Annotation{annotation.NameEQ(name)}
+	predicates := []predicate.Annotation{
+		annotation.NameEQ(name),
+		annotation.Not(annotation.HasNode()),
+	}
 
 	if len(values) > 0 {
 		predicates = append(predicates, annotation.ValueIn(values...))
@@ -241,6 +245,7 @@ func (backend *Backend) GetDocumentUniqueAnnotation(documentID, name string) (st
 			),
 			annotation.NameEQ(name),
 			annotation.IsUniqueEQ(true),
+			annotation.Not(annotation.HasNode()),
 		).
 		Only(backend.ctx)
 	if err != nil {

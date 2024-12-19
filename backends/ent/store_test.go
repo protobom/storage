@@ -65,7 +65,7 @@ func (ss *storeSuite) TestBackend_Store() {
 		ss.Require().NoError(ss.Backend.Store(document, nil))
 	}
 
-	results, err := ss.Backend.Client().Document.
+	results, err := ss.Backend.Ent().Document.
 		Query().
 		WithMetadata().
 		WithNodeList().

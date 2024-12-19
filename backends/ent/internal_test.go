@@ -6,15 +6,7 @@
 
 package ent
 
-import (
-	"context"
-
-	"github.com/protobom/storage/internal/backends/ent"
-)
-
-func (backend *Backend) Client() *ent.Client {
-	return backend.client
-}
+import "context"
 
 func (backend *Backend) Context() context.Context {
 	return backend.ctx
