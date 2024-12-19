@@ -43,6 +43,10 @@ func NewBackend(opts ...Option) *Backend {
 	return backend
 }
 
+func (backend *Backend) Ent() *ent.Client {
+	return backend.client
+}
+
 func (backend *Backend) InitClient() error {
 	if backend.Options == nil {
 		backend.Options = NewBackendOptions()

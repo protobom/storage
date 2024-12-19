@@ -243,7 +243,7 @@ func (as *annotationsSuite) TestBackend_GetDocumentsByAnnotation() {
 			"test-value-" + strconv.Itoa(idx+2),
 			"test-value-" + strconv.Itoa(idx+3),
 		} {
-			_, err = as.Backend.Client().ExecContext(as.Backend.Context(), query, uniqueID, false, annotationName, value)
+			_, err = as.Backend.Ent().ExecContext(as.Backend.Context(), query, uniqueID, false, annotationName, value)
 			as.Require().NoError(err)
 		}
 	}
@@ -307,7 +307,7 @@ func (as *annotationsSuite) TestBackend_GetNodesByAnnotation() {
 			"test-node-value-" + strconv.Itoa(idx+2),
 			"test-node-value-" + strconv.Itoa(idx+3),
 		} {
-			_, err := as.Backend.Client().ExecContext(
+			_, err := as.Backend.Ent().ExecContext(
 				as.Backend.Context(), query, uniqueID, nodeUUID, false, annotationName, value,
 			)
 			as.Require().NoError(err)
@@ -362,7 +362,7 @@ func (as *annotationsSuite) TestBackend_GetDocumentUniqueAnnotation() {
 	annotationValue := "unique-value"
 	query := "INSERT INTO annotations (document_id, is_unique, name, value) VALUES (?, ?, ?, ?)"
 
-	_, err = as.Backend.Client().ExecContext(as.Backend.Context(), query, id, true, annotationName, annotationValue)
+	_, err = as.Backend.Ent().ExecContext(as.Backend.Context(), query, id, true, annotationName, annotationValue)
 	as.Require().NoError(err)
 
 	got, err := as.Backend.GetDocumentUniqueAnnotation(as.documents[0].GetMetadata().GetId(), annotationName)
@@ -382,7 +382,7 @@ func (as *annotationsSuite) TestBackend_GetNodeUniqueAnnotation() {
 	annotationValue := "unique-value"
 	query := "INSERT INTO annotations (document_id, node_id, is_unique, name, value) VALUES (?, ?, ?, ?, ?)"
 
-	_, err = as.Backend.Client().ExecContext(
+	_, err = as.Backend.Ent().ExecContext(
 		as.Backend.Context(), query, docUUID, nodeUUID, true, annotationName, annotationValue,
 	)
 	as.Require().NoError(err)
@@ -423,7 +423,7 @@ func (as *annotationsSuite) TestBackend_RemoveDocumentAnnotations() {
 
 		as.Run(name, func() {
 			for _, value := range []string{"test-value-1", "test-value-2", "test-value-3"} {
-				_, err = as.Backend.Client().ExecContext(ctx, query, uniqueID, false, annotationName, value)
+				_, err = as.Backend.Ent().ExecContext(ctx, query, uniqueID, false, annotationName, value)
 				as.Require().NoError(err)
 			}
 
@@ -476,7 +476,7 @@ func (as *annotationsSuite) TestBackend_RemoveNodeAnnotations() {
 
 		as.Run(name, func() {
 			for _, value := range []string{"test-node-value-1", "test-node-value-2", "test-node-value-3"} {
-				_, err = as.Backend.Client().ExecContext(ctx, query, docUUID, nodeID, false, annotationName, value)
+				_, err = as.Backend.Ent().ExecContext(ctx, query, docUUID, nodeID, false, annotationName, value)
 				as.Require().NoError(err)
 			}
 
@@ -632,7 +632,7 @@ func (as *annotationsSuite) TestBackend_SetNodeUniqueAnnotation() { //nolint:dup
 func (as *annotationsSuite) getTestResult(annotationName string) ent.Annotations {
 	as.T().Helper()
 
-	result, err := as.Backend.Client().QueryContext(
+	result, err := as.Backend.Ent().QueryContext(
 		as.Backend.Context(),
 		"SELECT * FROM annotations WHERE name == ?",
 		annotationName,
