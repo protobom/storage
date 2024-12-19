@@ -204,7 +204,10 @@ func (backend *Backend) GetDocumentsByAnnotation(name string, values ...string) 
 		return nil, errUninitializedClient
 	}
 
-	predicates := []predicate.Annotation{annotation.NameEQ(name), annotation.Not(annotation.HasNode())}
+	predicates := []predicate.Annotation{
+		annotation.NameEQ(name),
+		annotation.Not(annotation.HasNode()),
+	}
 
 	if len(values) > 0 {
 		predicates = append(predicates, annotation.ValueIn(values...))

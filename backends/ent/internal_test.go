@@ -6,9 +6,7 @@
 
 package ent
 
-import (
-	"context"
-)
+import "context"
 
 func (backend *Backend) Context() context.Context {
 	return backend.ctx
