@@ -7,6 +7,7 @@
 package ent_test
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -14,6 +15,7 @@ import (
 	"path/filepath"
 
 	"github.com/protobom/protobom/pkg/reader"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/protobom/storage/backends/ent"
 )
@@ -57,19 +59,28 @@ func Example() {
 	// Remove source data URI to allow comparison.
 	retrieved.GetMetadata().GetSourceData().Uri = nil
 
-	output, err := json.MarshalIndent(retrieved, "", "  ")
+	// Produces a different output than the standard [encoding/json] package,
+	// which does not operate correctly on protocol buffer messages.
+	output, err := protojson.MarshalOptions{UseProtoNames: true}.Marshal(retrieved)
 	if err != nil {
 		panic(err)
 	}
 
-	fmt.Println(string(output))
+	// The output produced by the protojson package is intentionally non-deterministic.
+	// Format with standard encoding/json package for consistent whitespace.
+	formatted := bytes.NewBuffer([]byte{})
+	if err := json.Indent(formatted, output, "", "  "); err != nil {
+		panic(err)
+	}
+
+	fmt.Println(formatted.String())
 	//nolint:lll
 	// Output:
 	// {
 	//   "metadata": {
 	//     "id": "urn:uuid:3e671687-395b-41f5-a30f-a58921a69b79",
 	//     "version": "1",
-	//     "date": {},
+	//     "date": "1970-01-01T00:00:00Z",
 	//     "source_data": {
 	//       "format": "application/vnd.cyclonedx+json;version=1.5",
 	//       "hashes": {
@@ -77,7 +88,7 @@ func Example() {
 	//         "3": "71a3948e45c0bcd83a617ed94674079778d10a0578932e6e536533339b1bbea5",
 	//         "5": "2cc9ac5ab13a8074463e85996e91aa96916a08d33fc3aff9129dd44b24b850884f6176898a21d48dabd9f3824a2dd6bcc1f350e8f13d4be1c564211d1108e43c"
 	//       },
-	//       "size": 5263
+	//       "size": "5263"
 	//     }
 	//   },
 	//   "node_list": {
@@ -87,7 +98,7 @@ func Example() {
 	//         "name": "Acme Application",
 	//         "version": "9.1.1",
 	//         "primary_purpose": [
-	//           1
+	//           "APPLICATION"
 	//         ]
 	//       },
 	//       {
@@ -108,7 +119,7 @@ func Example() {
 	//           "5": "e8f33e424f3f4ed6db76a482fde1a5298970e442c531729119e37991884bdffab4f9426b7ee11fccd074eeda0634d71697d6f88a460dce0ac8d627a29f7d1282"
 	//         },
 	//         "primary_purpose": [
-	//           16
+	//           "LIBRARY"
 	//         ]
 	//       },
 	//       {
@@ -116,13 +127,13 @@ func Example() {
 	//         "name": "mylibrary",
 	//         "version": "1.0.0",
 	//         "primary_purpose": [
-	//           16
+	//           "LIBRARY"
 	//         ]
 	//       }
 	//     ],
 	//     "edges": [
 	//       {
-	//         "type": 5,
+	//         "type": "contains",
 	//         "from": "protobom-auto--000000001",
 	//         "to": [
 	//           "pkg:npm/acme/component@1.0.0",
