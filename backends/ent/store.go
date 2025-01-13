@@ -232,6 +232,7 @@ func (backend *Backend) saveMetadata(metadata *sbom.Metadata) TxFunc {
 		for _, fn := range []TxFunc{
 			backend.savePersons(metadata.GetAuthors()),
 			backend.saveDocumentTypes(metadata.GetDocumentTypes()),
+			backend.saveSourceData(metadata.GetSourceData()),
 			backend.saveTools(metadata.GetTools()),
 		} {
 			if err := fn(tx); err != nil {
@@ -449,6 +450,32 @@ func (backend *Backend) savePurposes(purposes []sbom.Purpose, nodeID uuid.UUID) 
 			Exec(backend.ctx)
 		if err != nil && !ent.IsConstraintError(err) {
 			return fmt.Errorf("saving purpose: %w", err)
+		}
+
+		return nil
+	}
+}
+
+func (backend *Backend) saveSourceData(sourceData *sbom.SourceData) TxFunc {
+	return func(tx *ent.Tx) error {
+		id, err := GenerateUUID(sourceData)
+		if err != nil {
+			return err
+		}
+
+		newSourceData := tx.SourceData.Create().
+			SetID(id).
+			SetProtoMessage(sourceData).
+			SetFormat(sourceData.GetFormat()).
+			SetHashes(sourceData.GetHashes()).
+			SetSize(sourceData.GetSize()).
+			SetURI(sourceData.GetUri())
+
+		setDocumentID(backend.ctx, newSourceData)
+		setMetadataID(backend.ctx, newSourceData)
+
+		if err := newSourceData.OnConflict().Ignore().Exec(backend.ctx); err != nil && !ent.IsConstraintError(err) {
+			return fmt.Errorf("saving source data: %w", err)
 		}
 
 		return nil

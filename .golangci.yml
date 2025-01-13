@@ -110,6 +110,9 @@ linters-settings:
     # https://golangci-lint.run/usage/linters/#exhaustive
     default-signifies-exhaustive: true
 
+  funlen:
+    ignore-comments: true
+
   gci:
     sections:
       - standard
@@ -201,8 +204,9 @@ linters-settings:
       - name: exported
         arguments: [checkPrivateReceivers, sayRepetitiveInsteadOfStutters]
 
+      # Handled by the `funlen` linter
       - name: function-length
-        exclude: [TEST]
+        disabled: true
 
       # Handled by the `lll` linter
       - name: line-length-limit
