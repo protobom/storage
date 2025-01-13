@@ -12,13 +12,16 @@ import (
 	"errors"
 	"fmt"
 
+	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
+	"github.com/protobom/protobom/pkg/sbom"
 	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/edgetype"
 	"github.com/protobom/storage/internal/backends/ent/node"
+	"github.com/protobom/storage/internal/backends/ent/nodelist"
 )
 
 // EdgeTypeCreate is the builder for creating a EdgeType entity.
@@ -43,6 +46,12 @@ func (etc *EdgeTypeCreate) SetNillableDocumentID(u *uuid.UUID) *EdgeTypeCreate {
 	return etc
 }
 
+// SetProtoMessage sets the "proto_message" field.
+func (etc *EdgeTypeCreate) SetProtoMessage(s *sbom.Edge) *EdgeTypeCreate {
+	etc.mutation.SetProtoMessage(s)
+	return etc
+}
+
 // SetType sets the "type" field.
 func (etc *EdgeTypeCreate) SetType(e edgetype.Type) *EdgeTypeCreate {
 	etc.mutation.SetType(e)
@@ -58,6 +67,12 @@ func (etc *EdgeTypeCreate) SetNodeID(u uuid.UUID) *EdgeTypeCreate {
 // SetToNodeID sets the "to_node_id" field.
 func (etc *EdgeTypeCreate) SetToNodeID(u uuid.UUID) *EdgeTypeCreate {
 	etc.mutation.SetToNodeID(u)
+	return etc
+}
+
+// SetID sets the "id" field.
+func (etc *EdgeTypeCreate) SetID(u uuid.UUID) *EdgeTypeCreate {
+	etc.mutation.SetID(u)
 	return etc
 }
 
@@ -86,6 +101,21 @@ func (etc *EdgeTypeCreate) SetToID(id uuid.UUID) *EdgeTypeCreate {
 // SetTo sets the "to" edge to the Node entity.
 func (etc *EdgeTypeCreate) SetTo(n *Node) *EdgeTypeCreate {
 	return etc.SetToID(n.ID)
+}
+
+// AddNodeListIDs adds the "node_lists" edge to the NodeList entity by IDs.
+func (etc *EdgeTypeCreate) AddNodeListIDs(ids ...uuid.UUID) *EdgeTypeCreate {
+	etc.mutation.AddNodeListIDs(ids...)
+	return etc
+}
+
+// AddNodeLists adds the "node_lists" edges to the NodeList entity.
+func (etc *EdgeTypeCreate) AddNodeLists(n ...*NodeList) *EdgeTypeCreate {
+	ids := make([]uuid.UUID, len(n))
+	for i := range n {
+		ids[i] = n[i].ID
+	}
+	return etc.AddNodeListIDs(ids...)
 }
 
 // Mutation returns the EdgeTypeMutation object of the builder.
@@ -131,6 +161,9 @@ func (etc *EdgeTypeCreate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (etc *EdgeTypeCreate) check() error {
+	if _, ok := etc.mutation.ProtoMessage(); !ok {
+		return &ValidationError{Name: "proto_message", err: errors.New(`ent: missing required field "EdgeType.proto_message"`)}
+	}
 	if _, ok := etc.mutation.GetType(); !ok {
 		return &ValidationError{Name: "type", err: errors.New(`ent: missing required field "EdgeType.type"`)}
 	}
@@ -165,8 +198,13 @@ func (etc *EdgeTypeCreate) sqlSave(ctx context.Context) (*EdgeType, error) {
 		}
 		return nil, err
 	}
-	id := _spec.ID.Value.(int64)
-	_node.ID = int(id)
+	if _spec.ID.Value != nil {
+		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
+			_node.ID = *id
+		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
+			return nil, err
+		}
+	}
 	etc.mutation.id = &_node.ID
 	etc.mutation.done = true
 	return _node, nil
@@ -175,9 +213,17 @@ func (etc *EdgeTypeCreate) sqlSave(ctx context.Context) (*EdgeType, error) {
 func (etc *EdgeTypeCreate) createSpec() (*EdgeType, *sqlgraph.CreateSpec) {
 	var (
 		_node = &EdgeType{config: etc.config}
-		_spec = sqlgraph.NewCreateSpec(edgetype.Table, sqlgraph.NewFieldSpec(edgetype.FieldID, field.TypeInt))
+		_spec = sqlgraph.NewCreateSpec(edgetype.Table, sqlgraph.NewFieldSpec(edgetype.FieldID, field.TypeUUID))
 	)
 	_spec.OnConflict = etc.conflict
+	if id, ok := etc.mutation.ID(); ok {
+		_node.ID = id
+		_spec.ID.Value = &id
+	}
+	if value, ok := etc.mutation.ProtoMessage(); ok {
+		_spec.SetField(edgetype.FieldProtoMessage, field.TypeBytes, value)
+		_node.ProtoMessage = value
+	}
 	if value, ok := etc.mutation.GetType(); ok {
 		_spec.SetField(edgetype.FieldType, field.TypeEnum, value)
 		_node.Type = value
@@ -231,6 +277,22 @@ func (etc *EdgeTypeCreate) createSpec() (*EdgeType, *sqlgraph.CreateSpec) {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.ToNodeID = nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := etc.mutation.NodeListsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   edgetype.NodeListsTable,
+			Columns: edgetype.NodeListsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(nodelist.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
@@ -321,19 +383,28 @@ func (u *EdgeTypeUpsert) UpdateToNodeID() *EdgeTypeUpsert {
 	return u
 }
 
-// UpdateNewValues updates the mutable fields using the new values that were set on create.
+// UpdateNewValues updates the mutable fields using the new values that were set on create except the ID field.
 // Using this option is equivalent to using:
 //
 //	client.EdgeType.Create().
 //		OnConflict(
 //			sql.ResolveWithNewValues(),
+//			sql.ResolveWith(func(u *sql.UpdateSet) {
+//				u.SetIgnore(edgetype.FieldID)
+//			}),
 //		).
 //		Exec(ctx)
 func (u *EdgeTypeUpsertOne) UpdateNewValues() *EdgeTypeUpsertOne {
 	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
 	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
+		if _, exists := u.create.mutation.ID(); exists {
+			s.SetIgnore(edgetype.FieldID)
+		}
 		if _, exists := u.create.mutation.DocumentID(); exists {
 			s.SetIgnore(edgetype.FieldDocumentID)
+		}
+		if _, exists := u.create.mutation.ProtoMessage(); exists {
+			s.SetIgnore(edgetype.FieldProtoMessage)
 		}
 	}))
 	return u
@@ -424,7 +495,12 @@ func (u *EdgeTypeUpsertOne) ExecX(ctx context.Context) {
 }
 
 // Exec executes the UPSERT query and returns the inserted/updated ID.
-func (u *EdgeTypeUpsertOne) ID(ctx context.Context) (id int, err error) {
+func (u *EdgeTypeUpsertOne) ID(ctx context.Context) (id uuid.UUID, err error) {
+	if u.create.driver.Dialect() == dialect.MySQL {
+		// In case of "ON CONFLICT", there is no way to get back non-numeric ID
+		// fields from the database since MySQL does not support the RETURNING clause.
+		return id, errors.New("ent: EdgeTypeUpsertOne.ID is not supported by MySQL driver. Use EdgeTypeUpsertOne.Exec instead")
+	}
 	node, err := u.create.Save(ctx)
 	if err != nil {
 		return id, err
@@ -433,7 +509,7 @@ func (u *EdgeTypeUpsertOne) ID(ctx context.Context) (id int, err error) {
 }
 
 // IDX is like ID, but panics if an error occurs.
-func (u *EdgeTypeUpsertOne) IDX(ctx context.Context) int {
+func (u *EdgeTypeUpsertOne) IDX(ctx context.Context) uuid.UUID {
 	id, err := u.ID(ctx)
 	if err != nil {
 		panic(err)
@@ -488,10 +564,6 @@ func (etcb *EdgeTypeCreateBulk) Save(ctx context.Context) ([]*EdgeType, error) {
 					return nil, err
 				}
 				mutation.id = &nodes[i].ID
-				if specs[i].ID.Value != nil {
-					id := specs[i].ID.Value.(int64)
-					nodes[i].ID = int(id)
-				}
 				mutation.done = true
 				return nodes[i], nil
 			})
@@ -578,14 +650,23 @@ type EdgeTypeUpsertBulk struct {
 //	client.EdgeType.Create().
 //		OnConflict(
 //			sql.ResolveWithNewValues(),
+//			sql.ResolveWith(func(u *sql.UpdateSet) {
+//				u.SetIgnore(edgetype.FieldID)
+//			}),
 //		).
 //		Exec(ctx)
 func (u *EdgeTypeUpsertBulk) UpdateNewValues() *EdgeTypeUpsertBulk {
 	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
 	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
 		for _, b := range u.create.builders {
+			if _, exists := b.mutation.ID(); exists {
+				s.SetIgnore(edgetype.FieldID)
+			}
 			if _, exists := b.mutation.DocumentID(); exists {
 				s.SetIgnore(edgetype.FieldDocumentID)
+			}
+			if _, exists := b.mutation.ProtoMessage(); exists {
+				s.SetIgnore(edgetype.FieldProtoMessage)
 			}
 		}
 	}))

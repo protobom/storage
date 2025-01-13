@@ -19,6 +19,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
 	"github.com/protobom/storage/internal/backends/ent/document"
+	"github.com/protobom/storage/internal/backends/ent/edgetype"
 	"github.com/protobom/storage/internal/backends/ent/node"
 	"github.com/protobom/storage/internal/backends/ent/nodelist"
 	"github.com/protobom/storage/internal/backends/ent/predicate"
@@ -27,12 +28,13 @@ import (
 // NodeListQuery is the builder for querying NodeList entities.
 type NodeListQuery struct {
 	config
-	ctx          *QueryContext
-	order        []nodelist.OrderOption
-	inters       []Interceptor
-	predicates   []predicate.NodeList
-	withNodes    *NodeQuery
-	withDocument *DocumentQuery
+	ctx           *QueryContext
+	order         []nodelist.OrderOption
+	inters        []Interceptor
+	predicates    []predicate.NodeList
+	withEdgeTypes *EdgeTypeQuery
+	withNodes     *NodeQuery
+	withDocument  *DocumentQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -67,6 +69,28 @@ func (nlq *NodeListQuery) Unique(unique bool) *NodeListQuery {
 func (nlq *NodeListQuery) Order(o ...nodelist.OrderOption) *NodeListQuery {
 	nlq.order = append(nlq.order, o...)
 	return nlq
+}
+
+// QueryEdgeTypes chains the current query on the "edge_types" edge.
+func (nlq *NodeListQuery) QueryEdgeTypes() *EdgeTypeQuery {
+	query := (&EdgeTypeClient{config: nlq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := nlq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := nlq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(nodelist.Table, nodelist.FieldID, selector),
+			sqlgraph.To(edgetype.Table, edgetype.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, nodelist.EdgeTypesTable, nodelist.EdgeTypesPrimaryKey...),
+		)
+		fromU = sqlgraph.SetNeighbors(nlq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
 }
 
 // QueryNodes chains the current query on the "nodes" edge.
@@ -300,17 +324,29 @@ func (nlq *NodeListQuery) Clone() *NodeListQuery {
 		return nil
 	}
 	return &NodeListQuery{
-		config:       nlq.config,
-		ctx:          nlq.ctx.Clone(),
-		order:        append([]nodelist.OrderOption{}, nlq.order...),
-		inters:       append([]Interceptor{}, nlq.inters...),
-		predicates:   append([]predicate.NodeList{}, nlq.predicates...),
-		withNodes:    nlq.withNodes.Clone(),
-		withDocument: nlq.withDocument.Clone(),
+		config:        nlq.config,
+		ctx:           nlq.ctx.Clone(),
+		order:         append([]nodelist.OrderOption{}, nlq.order...),
+		inters:        append([]Interceptor{}, nlq.inters...),
+		predicates:    append([]predicate.NodeList{}, nlq.predicates...),
+		withEdgeTypes: nlq.withEdgeTypes.Clone(),
+		withNodes:     nlq.withNodes.Clone(),
+		withDocument:  nlq.withDocument.Clone(),
 		// clone intermediate query.
 		sql:  nlq.sql.Clone(),
 		path: nlq.path,
 	}
+}
+
+// WithEdgeTypes tells the query-builder to eager-load the nodes that are connected to
+// the "edge_types" edge. The optional arguments are used to configure the query builder of the edge.
+func (nlq *NodeListQuery) WithEdgeTypes(opts ...func(*EdgeTypeQuery)) *NodeListQuery {
+	query := (&EdgeTypeClient{config: nlq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	nlq.withEdgeTypes = query
+	return nlq
 }
 
 // WithNodes tells the query-builder to eager-load the nodes that are connected to
@@ -413,7 +449,8 @@ func (nlq *NodeListQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*No
 	var (
 		nodes       = []*NodeList{}
 		_spec       = nlq.querySpec()
-		loadedTypes = [2]bool{
+		loadedTypes = [3]bool{
+			nlq.withEdgeTypes != nil,
 			nlq.withNodes != nil,
 			nlq.withDocument != nil,
 		}
@@ -436,6 +473,13 @@ func (nlq *NodeListQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*No
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
+	if query := nlq.withEdgeTypes; query != nil {
+		if err := nlq.loadEdgeTypes(ctx, query, nodes,
+			func(n *NodeList) { n.Edges.EdgeTypes = []*EdgeType{} },
+			func(n *NodeList, e *EdgeType) { n.Edges.EdgeTypes = append(n.Edges.EdgeTypes, e) }); err != nil {
+			return nil, err
+		}
+	}
 	if query := nlq.withNodes; query != nil {
 		if err := nlq.loadNodes(ctx, query, nodes,
 			func(n *NodeList) { n.Edges.Nodes = []*Node{} },
@@ -452,6 +496,67 @@ func (nlq *NodeListQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*No
 	return nodes, nil
 }
 
+func (nlq *NodeListQuery) loadEdgeTypes(ctx context.Context, query *EdgeTypeQuery, nodes []*NodeList, init func(*NodeList), assign func(*NodeList, *EdgeType)) error {
+	edgeIDs := make([]driver.Value, len(nodes))
+	byID := make(map[uuid.UUID]*NodeList)
+	nids := make(map[uuid.UUID]map[*NodeList]struct{})
+	for i, node := range nodes {
+		edgeIDs[i] = node.ID
+		byID[node.ID] = node
+		if init != nil {
+			init(node)
+		}
+	}
+	query.Where(func(s *sql.Selector) {
+		joinT := sql.Table(nodelist.EdgeTypesTable)
+		s.Join(joinT).On(s.C(edgetype.FieldID), joinT.C(nodelist.EdgeTypesPrimaryKey[1]))
+		s.Where(sql.InValues(joinT.C(nodelist.EdgeTypesPrimaryKey[0]), edgeIDs...))
+		columns := s.SelectedColumns()
+		s.Select(joinT.C(nodelist.EdgeTypesPrimaryKey[0]))
+		s.AppendSelect(columns...)
+		s.SetDistinct(false)
+	})
+	if err := query.prepareQuery(ctx); err != nil {
+		return err
+	}
+	qr := QuerierFunc(func(ctx context.Context, q Query) (Value, error) {
+		return query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
+			assign := spec.Assign
+			values := spec.ScanValues
+			spec.ScanValues = func(columns []string) ([]any, error) {
+				values, err := values(columns[1:])
+				if err != nil {
+					return nil, err
+				}
+				return append([]any{new(uuid.UUID)}, values...), nil
+			}
+			spec.Assign = func(columns []string, values []any) error {
+				outValue := *values[0].(*uuid.UUID)
+				inValue := *values[1].(*uuid.UUID)
+				if nids[inValue] == nil {
+					nids[inValue] = map[*NodeList]struct{}{byID[outValue]: {}}
+					return assign(columns[1:], values[1:])
+				}
+				nids[inValue][byID[outValue]] = struct{}{}
+				return nil
+			}
+		})
+	})
+	neighbors, err := withInterceptors[[]*EdgeType](ctx, query, qr, query.inters)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected "edge_types" node returned %v`, n.ID)
+		}
+		for kn := range nodes {
+			assign(kn, n)
+		}
+	}
+	return nil
+}
 func (nlq *NodeListQuery) loadNodes(ctx context.Context, query *NodeQuery, nodes []*NodeList, init func(*NodeList), assign func(*NodeList, *Node)) error {
 	edgeIDs := make([]driver.Value, len(nodes))
 	byID := make(map[uuid.UUID]*NodeList)

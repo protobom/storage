@@ -14,6 +14,7 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/google/uuid"
+	"github.com/protobom/protobom/pkg/sbom"
 	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/edgetype"
 	"github.com/protobom/storage/internal/backends/ent/node"
@@ -23,9 +24,11 @@ import (
 type EdgeType struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID int `json:"id,omitempty"`
+	ID uuid.UUID `json:"id,omitempty"`
 	// DocumentID holds the value of the "document_id" field.
 	DocumentID uuid.UUID `json:"document_id,omitempty"`
+	// ProtoMessage holds the value of the "proto_message" field.
+	ProtoMessage *sbom.Edge `json:"proto_message,omitempty"`
 	// Type holds the value of the "type" field.
 	Type edgetype.Type `json:"type,omitempty"`
 	// NodeID holds the value of the "node_id" field.
@@ -46,9 +49,11 @@ type EdgeTypeEdges struct {
 	From *Node `json:"from,omitempty"`
 	// To holds the value of the to edge.
 	To *Node `json:"to,omitempty"`
+	// NodeLists holds the value of the node_lists edge.
+	NodeLists []*NodeList `json:"node_lists,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [3]bool
+	loadedTypes [4]bool
 }
 
 // DocumentOrErr returns the Document value or an error if the edge
@@ -84,16 +89,25 @@ func (e EdgeTypeEdges) ToOrErr() (*Node, error) {
 	return nil, &NotLoadedError{edge: "to"}
 }
 
+// NodeListsOrErr returns the NodeLists value or an error if the edge
+// was not loaded in eager-loading.
+func (e EdgeTypeEdges) NodeListsOrErr() ([]*NodeList, error) {
+	if e.loadedTypes[3] {
+		return e.NodeLists, nil
+	}
+	return nil, &NotLoadedError{edge: "node_lists"}
+}
+
 // scanValues returns the types for scanning values from sql.Rows.
 func (*EdgeType) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case edgetype.FieldID:
-			values[i] = new(sql.NullInt64)
+		case edgetype.FieldProtoMessage:
+			values[i] = &sql.NullScanner{S: new(sbom.Edge)}
 		case edgetype.FieldType:
 			values[i] = new(sql.NullString)
-		case edgetype.FieldDocumentID, edgetype.FieldNodeID, edgetype.FieldToNodeID:
+		case edgetype.FieldID, edgetype.FieldDocumentID, edgetype.FieldNodeID, edgetype.FieldToNodeID:
 			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -111,16 +125,22 @@ func (et *EdgeType) assignValues(columns []string, values []any) error {
 	for i := range columns {
 		switch columns[i] {
 		case edgetype.FieldID:
-			value, ok := values[i].(*sql.NullInt64)
-			if !ok {
-				return fmt.Errorf("unexpected type %T for field id", value)
+			if value, ok := values[i].(*uuid.UUID); !ok {
+				return fmt.Errorf("unexpected type %T for field id", values[i])
+			} else if value != nil {
+				et.ID = *value
 			}
-			et.ID = int(value.Int64)
 		case edgetype.FieldDocumentID:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field document_id", values[i])
 			} else if value != nil {
 				et.DocumentID = *value
+			}
+		case edgetype.FieldProtoMessage:
+			if value, ok := values[i].(*sql.NullScanner); !ok {
+				return fmt.Errorf("unexpected type %T for field proto_message", values[i])
+			} else if value.Valid {
+				et.ProtoMessage = value.S.(*sbom.Edge)
 			}
 		case edgetype.FieldType:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -168,6 +188,11 @@ func (et *EdgeType) QueryTo() *NodeQuery {
 	return NewEdgeTypeClient(et.config).QueryTo(et)
 }
 
+// QueryNodeLists queries the "node_lists" edge of the EdgeType entity.
+func (et *EdgeType) QueryNodeLists() *NodeListQuery {
+	return NewEdgeTypeClient(et.config).QueryNodeLists(et)
+}
+
 // Update returns a builder for updating this EdgeType.
 // Note that you need to call EdgeType.Unwrap() before calling this method if this EdgeType
 // was returned from a transaction, and the transaction was committed or rolled back.
@@ -193,6 +218,11 @@ func (et *EdgeType) String() string {
 	builder.WriteString(fmt.Sprintf("id=%v, ", et.ID))
 	builder.WriteString("document_id=")
 	builder.WriteString(fmt.Sprintf("%v", et.DocumentID))
+	builder.WriteString(", ")
+	if v := et.ProtoMessage; v != nil {
+		builder.WriteString("proto_message=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
 	builder.WriteString(", ")
 	builder.WriteString("type=")
 	builder.WriteString(fmt.Sprintf("%v", et.Type))

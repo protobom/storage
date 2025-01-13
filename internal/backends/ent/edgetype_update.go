@@ -18,6 +18,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/protobom/storage/internal/backends/ent/edgetype"
 	"github.com/protobom/storage/internal/backends/ent/node"
+	"github.com/protobom/storage/internal/backends/ent/nodelist"
 	"github.com/protobom/storage/internal/backends/ent/predicate"
 )
 
@@ -98,6 +99,21 @@ func (etu *EdgeTypeUpdate) SetTo(n *Node) *EdgeTypeUpdate {
 	return etu.SetToID(n.ID)
 }
 
+// AddNodeListIDs adds the "node_lists" edge to the NodeList entity by IDs.
+func (etu *EdgeTypeUpdate) AddNodeListIDs(ids ...uuid.UUID) *EdgeTypeUpdate {
+	etu.mutation.AddNodeListIDs(ids...)
+	return etu
+}
+
+// AddNodeLists adds the "node_lists" edges to the NodeList entity.
+func (etu *EdgeTypeUpdate) AddNodeLists(n ...*NodeList) *EdgeTypeUpdate {
+	ids := make([]uuid.UUID, len(n))
+	for i := range n {
+		ids[i] = n[i].ID
+	}
+	return etu.AddNodeListIDs(ids...)
+}
+
 // Mutation returns the EdgeTypeMutation object of the builder.
 func (etu *EdgeTypeUpdate) Mutation() *EdgeTypeMutation {
 	return etu.mutation
@@ -113,6 +129,27 @@ func (etu *EdgeTypeUpdate) ClearFrom() *EdgeTypeUpdate {
 func (etu *EdgeTypeUpdate) ClearTo() *EdgeTypeUpdate {
 	etu.mutation.ClearTo()
 	return etu
+}
+
+// ClearNodeLists clears all "node_lists" edges to the NodeList entity.
+func (etu *EdgeTypeUpdate) ClearNodeLists() *EdgeTypeUpdate {
+	etu.mutation.ClearNodeLists()
+	return etu
+}
+
+// RemoveNodeListIDs removes the "node_lists" edge to NodeList entities by IDs.
+func (etu *EdgeTypeUpdate) RemoveNodeListIDs(ids ...uuid.UUID) *EdgeTypeUpdate {
+	etu.mutation.RemoveNodeListIDs(ids...)
+	return etu
+}
+
+// RemoveNodeLists removes "node_lists" edges to NodeList entities.
+func (etu *EdgeTypeUpdate) RemoveNodeLists(n ...*NodeList) *EdgeTypeUpdate {
+	ids := make([]uuid.UUID, len(n))
+	for i := range n {
+		ids[i] = n[i].ID
+	}
+	return etu.RemoveNodeListIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -162,7 +199,7 @@ func (etu *EdgeTypeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if err := etu.check(); err != nil {
 		return n, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(edgetype.Table, edgetype.Columns, sqlgraph.NewFieldSpec(edgetype.FieldID, field.TypeInt))
+	_spec := sqlgraph.NewUpdateSpec(edgetype.Table, edgetype.Columns, sqlgraph.NewFieldSpec(edgetype.FieldID, field.TypeUUID))
 	if ps := etu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -224,6 +261,51 @@ func (etu *EdgeTypeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if etu.mutation.NodeListsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   edgetype.NodeListsTable,
+			Columns: edgetype.NodeListsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(nodelist.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := etu.mutation.RemovedNodeListsIDs(); len(nodes) > 0 && !etu.mutation.NodeListsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   edgetype.NodeListsTable,
+			Columns: edgetype.NodeListsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(nodelist.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := etu.mutation.NodeListsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   edgetype.NodeListsTable,
+			Columns: edgetype.NodeListsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(nodelist.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -315,6 +397,21 @@ func (etuo *EdgeTypeUpdateOne) SetTo(n *Node) *EdgeTypeUpdateOne {
 	return etuo.SetToID(n.ID)
 }
 
+// AddNodeListIDs adds the "node_lists" edge to the NodeList entity by IDs.
+func (etuo *EdgeTypeUpdateOne) AddNodeListIDs(ids ...uuid.UUID) *EdgeTypeUpdateOne {
+	etuo.mutation.AddNodeListIDs(ids...)
+	return etuo
+}
+
+// AddNodeLists adds the "node_lists" edges to the NodeList entity.
+func (etuo *EdgeTypeUpdateOne) AddNodeLists(n ...*NodeList) *EdgeTypeUpdateOne {
+	ids := make([]uuid.UUID, len(n))
+	for i := range n {
+		ids[i] = n[i].ID
+	}
+	return etuo.AddNodeListIDs(ids...)
+}
+
 // Mutation returns the EdgeTypeMutation object of the builder.
 func (etuo *EdgeTypeUpdateOne) Mutation() *EdgeTypeMutation {
 	return etuo.mutation
@@ -330,6 +427,27 @@ func (etuo *EdgeTypeUpdateOne) ClearFrom() *EdgeTypeUpdateOne {
 func (etuo *EdgeTypeUpdateOne) ClearTo() *EdgeTypeUpdateOne {
 	etuo.mutation.ClearTo()
 	return etuo
+}
+
+// ClearNodeLists clears all "node_lists" edges to the NodeList entity.
+func (etuo *EdgeTypeUpdateOne) ClearNodeLists() *EdgeTypeUpdateOne {
+	etuo.mutation.ClearNodeLists()
+	return etuo
+}
+
+// RemoveNodeListIDs removes the "node_lists" edge to NodeList entities by IDs.
+func (etuo *EdgeTypeUpdateOne) RemoveNodeListIDs(ids ...uuid.UUID) *EdgeTypeUpdateOne {
+	etuo.mutation.RemoveNodeListIDs(ids...)
+	return etuo
+}
+
+// RemoveNodeLists removes "node_lists" edges to NodeList entities.
+func (etuo *EdgeTypeUpdateOne) RemoveNodeLists(n ...*NodeList) *EdgeTypeUpdateOne {
+	ids := make([]uuid.UUID, len(n))
+	for i := range n {
+		ids[i] = n[i].ID
+	}
+	return etuo.RemoveNodeListIDs(ids...)
 }
 
 // Where appends a list predicates to the EdgeTypeUpdate builder.
@@ -392,7 +510,7 @@ func (etuo *EdgeTypeUpdateOne) sqlSave(ctx context.Context) (_node *EdgeType, er
 	if err := etuo.check(); err != nil {
 		return _node, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(edgetype.Table, edgetype.Columns, sqlgraph.NewFieldSpec(edgetype.FieldID, field.TypeInt))
+	_spec := sqlgraph.NewUpdateSpec(edgetype.Table, edgetype.Columns, sqlgraph.NewFieldSpec(edgetype.FieldID, field.TypeUUID))
 	id, ok := etuo.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "EdgeType.id" for update`)}
@@ -471,6 +589,51 @@ func (etuo *EdgeTypeUpdateOne) sqlSave(ctx context.Context) (_node *EdgeType, er
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if etuo.mutation.NodeListsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   edgetype.NodeListsTable,
+			Columns: edgetype.NodeListsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(nodelist.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := etuo.mutation.RemovedNodeListsIDs(); len(nodes) > 0 && !etuo.mutation.NodeListsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   edgetype.NodeListsTable,
+			Columns: edgetype.NodeListsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(nodelist.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := etuo.mutation.NodeListsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   edgetype.NodeListsTable,
+			Columns: edgetype.NodeListsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(nodelist.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

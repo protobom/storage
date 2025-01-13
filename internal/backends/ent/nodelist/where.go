@@ -130,6 +130,29 @@ func DocumentIDNotIn(vs ...uuid.UUID) predicate.NodeList {
 	return predicate.NodeList(sql.FieldNotIn(FieldDocumentID, vs...))
 }
 
+// HasEdgeTypes applies the HasEdge predicate on the "edge_types" edge.
+func HasEdgeTypes() predicate.NodeList {
+	return predicate.NodeList(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, EdgeTypesTable, EdgeTypesPrimaryKey...),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasEdgeTypesWith applies the HasEdge predicate on the "edge_types" edge with a given conditions (other predicates).
+func HasEdgeTypesWith(preds ...predicate.EdgeType) predicate.NodeList {
+	return predicate.NodeList(func(s *sql.Selector) {
+		step := newEdgeTypesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // HasNodes applies the HasEdge predicate on the "nodes" edge.
 func HasNodes() predicate.NodeList {
 	return predicate.NodeList(func(s *sql.Selector) {

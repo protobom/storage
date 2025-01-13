@@ -9,6 +9,7 @@ package ent
 
 import (
 	"context"
+	"database/sql/driver"
 	"fmt"
 	"math"
 
@@ -20,19 +21,21 @@ import (
 	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/edgetype"
 	"github.com/protobom/storage/internal/backends/ent/node"
+	"github.com/protobom/storage/internal/backends/ent/nodelist"
 	"github.com/protobom/storage/internal/backends/ent/predicate"
 )
 
 // EdgeTypeQuery is the builder for querying EdgeType entities.
 type EdgeTypeQuery struct {
 	config
-	ctx          *QueryContext
-	order        []edgetype.OrderOption
-	inters       []Interceptor
-	predicates   []predicate.EdgeType
-	withDocument *DocumentQuery
-	withFrom     *NodeQuery
-	withTo       *NodeQuery
+	ctx           *QueryContext
+	order         []edgetype.OrderOption
+	inters        []Interceptor
+	predicates    []predicate.EdgeType
+	withDocument  *DocumentQuery
+	withFrom      *NodeQuery
+	withTo        *NodeQuery
+	withNodeLists *NodeListQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -135,6 +138,28 @@ func (etq *EdgeTypeQuery) QueryTo() *NodeQuery {
 	return query
 }
 
+// QueryNodeLists chains the current query on the "node_lists" edge.
+func (etq *EdgeTypeQuery) QueryNodeLists() *NodeListQuery {
+	query := (&NodeListClient{config: etq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := etq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := etq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(edgetype.Table, edgetype.FieldID, selector),
+			sqlgraph.To(nodelist.Table, nodelist.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, edgetype.NodeListsTable, edgetype.NodeListsPrimaryKey...),
+		)
+		fromU = sqlgraph.SetNeighbors(etq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
 // First returns the first EdgeType entity from the query.
 // Returns a *NotFoundError when no EdgeType was found.
 func (etq *EdgeTypeQuery) First(ctx context.Context) (*EdgeType, error) {
@@ -159,8 +184,8 @@ func (etq *EdgeTypeQuery) FirstX(ctx context.Context) *EdgeType {
 
 // FirstID returns the first EdgeType ID from the query.
 // Returns a *NotFoundError when no EdgeType ID was found.
-func (etq *EdgeTypeQuery) FirstID(ctx context.Context) (id int, err error) {
-	var ids []int
+func (etq *EdgeTypeQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
+	var ids []uuid.UUID
 	if ids, err = etq.Limit(1).IDs(setContextOp(ctx, etq.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
@@ -172,7 +197,7 @@ func (etq *EdgeTypeQuery) FirstID(ctx context.Context) (id int, err error) {
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (etq *EdgeTypeQuery) FirstIDX(ctx context.Context) int {
+func (etq *EdgeTypeQuery) FirstIDX(ctx context.Context) uuid.UUID {
 	id, err := etq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -210,8 +235,8 @@ func (etq *EdgeTypeQuery) OnlyX(ctx context.Context) *EdgeType {
 // OnlyID is like Only, but returns the only EdgeType ID in the query.
 // Returns a *NotSingularError when more than one EdgeType ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (etq *EdgeTypeQuery) OnlyID(ctx context.Context) (id int, err error) {
-	var ids []int
+func (etq *EdgeTypeQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
+	var ids []uuid.UUID
 	if ids, err = etq.Limit(2).IDs(setContextOp(ctx, etq.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
@@ -227,7 +252,7 @@ func (etq *EdgeTypeQuery) OnlyID(ctx context.Context) (id int, err error) {
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (etq *EdgeTypeQuery) OnlyIDX(ctx context.Context) int {
+func (etq *EdgeTypeQuery) OnlyIDX(ctx context.Context) uuid.UUID {
 	id, err := etq.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -255,7 +280,7 @@ func (etq *EdgeTypeQuery) AllX(ctx context.Context) []*EdgeType {
 }
 
 // IDs executes the query and returns a list of EdgeType IDs.
-func (etq *EdgeTypeQuery) IDs(ctx context.Context) (ids []int, err error) {
+func (etq *EdgeTypeQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
 	if etq.ctx.Unique == nil && etq.path != nil {
 		etq.Unique(true)
 	}
@@ -267,7 +292,7 @@ func (etq *EdgeTypeQuery) IDs(ctx context.Context) (ids []int, err error) {
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (etq *EdgeTypeQuery) IDsX(ctx context.Context) []int {
+func (etq *EdgeTypeQuery) IDsX(ctx context.Context) []uuid.UUID {
 	ids, err := etq.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -322,14 +347,15 @@ func (etq *EdgeTypeQuery) Clone() *EdgeTypeQuery {
 		return nil
 	}
 	return &EdgeTypeQuery{
-		config:       etq.config,
-		ctx:          etq.ctx.Clone(),
-		order:        append([]edgetype.OrderOption{}, etq.order...),
-		inters:       append([]Interceptor{}, etq.inters...),
-		predicates:   append([]predicate.EdgeType{}, etq.predicates...),
-		withDocument: etq.withDocument.Clone(),
-		withFrom:     etq.withFrom.Clone(),
-		withTo:       etq.withTo.Clone(),
+		config:        etq.config,
+		ctx:           etq.ctx.Clone(),
+		order:         append([]edgetype.OrderOption{}, etq.order...),
+		inters:        append([]Interceptor{}, etq.inters...),
+		predicates:    append([]predicate.EdgeType{}, etq.predicates...),
+		withDocument:  etq.withDocument.Clone(),
+		withFrom:      etq.withFrom.Clone(),
+		withTo:        etq.withTo.Clone(),
+		withNodeLists: etq.withNodeLists.Clone(),
 		// clone intermediate query.
 		sql:  etq.sql.Clone(),
 		path: etq.path,
@@ -366,6 +392,17 @@ func (etq *EdgeTypeQuery) WithTo(opts ...func(*NodeQuery)) *EdgeTypeQuery {
 		opt(query)
 	}
 	etq.withTo = query
+	return etq
+}
+
+// WithNodeLists tells the query-builder to eager-load the nodes that are connected to
+// the "node_lists" edge. The optional arguments are used to configure the query builder of the edge.
+func (etq *EdgeTypeQuery) WithNodeLists(opts ...func(*NodeListQuery)) *EdgeTypeQuery {
+	query := (&NodeListClient{config: etq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	etq.withNodeLists = query
 	return etq
 }
 
@@ -447,10 +484,11 @@ func (etq *EdgeTypeQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Ed
 	var (
 		nodes       = []*EdgeType{}
 		_spec       = etq.querySpec()
-		loadedTypes = [3]bool{
+		loadedTypes = [4]bool{
 			etq.withDocument != nil,
 			etq.withFrom != nil,
 			etq.withTo != nil,
+			etq.withNodeLists != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -486,6 +524,13 @@ func (etq *EdgeTypeQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Ed
 	if query := etq.withTo; query != nil {
 		if err := etq.loadTo(ctx, query, nodes, nil,
 			func(n *EdgeType, e *Node) { n.Edges.To = e }); err != nil {
+			return nil, err
+		}
+	}
+	if query := etq.withNodeLists; query != nil {
+		if err := etq.loadNodeLists(ctx, query, nodes,
+			func(n *EdgeType) { n.Edges.NodeLists = []*NodeList{} },
+			func(n *EdgeType, e *NodeList) { n.Edges.NodeLists = append(n.Edges.NodeLists, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -579,6 +624,67 @@ func (etq *EdgeTypeQuery) loadTo(ctx context.Context, query *NodeQuery, nodes []
 	}
 	return nil
 }
+func (etq *EdgeTypeQuery) loadNodeLists(ctx context.Context, query *NodeListQuery, nodes []*EdgeType, init func(*EdgeType), assign func(*EdgeType, *NodeList)) error {
+	edgeIDs := make([]driver.Value, len(nodes))
+	byID := make(map[uuid.UUID]*EdgeType)
+	nids := make(map[uuid.UUID]map[*EdgeType]struct{})
+	for i, node := range nodes {
+		edgeIDs[i] = node.ID
+		byID[node.ID] = node
+		if init != nil {
+			init(node)
+		}
+	}
+	query.Where(func(s *sql.Selector) {
+		joinT := sql.Table(edgetype.NodeListsTable)
+		s.Join(joinT).On(s.C(nodelist.FieldID), joinT.C(edgetype.NodeListsPrimaryKey[0]))
+		s.Where(sql.InValues(joinT.C(edgetype.NodeListsPrimaryKey[1]), edgeIDs...))
+		columns := s.SelectedColumns()
+		s.Select(joinT.C(edgetype.NodeListsPrimaryKey[1]))
+		s.AppendSelect(columns...)
+		s.SetDistinct(false)
+	})
+	if err := query.prepareQuery(ctx); err != nil {
+		return err
+	}
+	qr := QuerierFunc(func(ctx context.Context, q Query) (Value, error) {
+		return query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
+			assign := spec.Assign
+			values := spec.ScanValues
+			spec.ScanValues = func(columns []string) ([]any, error) {
+				values, err := values(columns[1:])
+				if err != nil {
+					return nil, err
+				}
+				return append([]any{new(uuid.UUID)}, values...), nil
+			}
+			spec.Assign = func(columns []string, values []any) error {
+				outValue := *values[0].(*uuid.UUID)
+				inValue := *values[1].(*uuid.UUID)
+				if nids[inValue] == nil {
+					nids[inValue] = map[*EdgeType]struct{}{byID[outValue]: {}}
+					return assign(columns[1:], values[1:])
+				}
+				nids[inValue][byID[outValue]] = struct{}{}
+				return nil
+			}
+		})
+	})
+	neighbors, err := withInterceptors[[]*NodeList](ctx, query, qr, query.inters)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected "node_lists" node returned %v`, n.ID)
+		}
+		for kn := range nodes {
+			assign(kn, n)
+		}
+	}
+	return nil
+}
 
 func (etq *EdgeTypeQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := etq.querySpec()
@@ -590,7 +696,7 @@ func (etq *EdgeTypeQuery) sqlCount(ctx context.Context) (int, error) {
 }
 
 func (etq *EdgeTypeQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := sqlgraph.NewQuerySpec(edgetype.Table, edgetype.Columns, sqlgraph.NewFieldSpec(edgetype.FieldID, field.TypeInt))
+	_spec := sqlgraph.NewQuerySpec(edgetype.Table, edgetype.Columns, sqlgraph.NewFieldSpec(edgetype.FieldID, field.TypeUUID))
 	_spec.From = etq.sql
 	if unique := etq.ctx.Unique; unique != nil {
 		_spec.Unique = *unique

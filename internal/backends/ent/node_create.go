@@ -351,14 +351,14 @@ func (nc *NodeCreate) AddAnnotations(a ...*Annotation) *NodeCreate {
 }
 
 // AddEdgeTypeIDs adds the "edge_types" edge to the EdgeType entity by IDs.
-func (nc *NodeCreate) AddEdgeTypeIDs(ids ...int) *NodeCreate {
+func (nc *NodeCreate) AddEdgeTypeIDs(ids ...uuid.UUID) *NodeCreate {
 	nc.mutation.AddEdgeTypeIDs(ids...)
 	return nc
 }
 
 // AddEdgeTypes adds the "edge_types" edges to the EdgeType entity.
 func (nc *NodeCreate) AddEdgeTypes(e ...*EdgeType) *NodeCreate {
-	ids := make([]int, len(e))
+	ids := make([]uuid.UUID, len(e))
 	for i := range e {
 		ids[i] = e[i].ID
 	}
@@ -786,7 +786,7 @@ func (nc *NodeCreate) createSpec() (*Node, *sqlgraph.CreateSpec) {
 			Columns: []string{node.EdgeTypesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(edgetype.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(edgetype.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

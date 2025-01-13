@@ -153,13 +153,21 @@ func (backend *Backend) saveEdges(edges []*sbom.Edge) TxFunc { //nolint:gocognit
 		}
 
 		for _, edge := range edges {
+			edgeID, err := GenerateUUID(edge)
+			if err != nil {
+				return fmt.Errorf("generating UUID: %w", err)
+			}
+
 			for _, toID := range edge.GetTo() {
 				newEdgeType := tx.EdgeType.Create().
+					SetID(edgeID).
+					SetProtoMessage(edge).
 					SetType(edgetype.Type(edge.GetType().String())).
 					SetFromID(nativeIDMap[edge.GetFrom()]).
 					SetToID(nativeIDMap[toID])
 
 				setDocumentID(backend.ctx, newEdgeType)
+				addNodeListIDs(backend.ctx, newEdgeType)
 
 				if err := newEdgeType.
 					OnConflict().

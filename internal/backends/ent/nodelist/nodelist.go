@@ -23,12 +23,19 @@ const (
 	FieldDocumentID = "document_id"
 	// FieldRootElements holds the string denoting the root_elements field in the database.
 	FieldRootElements = "root_elements"
+	// EdgeEdgeTypes holds the string denoting the edge_types edge name in mutations.
+	EdgeEdgeTypes = "edge_types"
 	// EdgeNodes holds the string denoting the nodes edge name in mutations.
 	EdgeNodes = "nodes"
 	// EdgeDocument holds the string denoting the document edge name in mutations.
 	EdgeDocument = "document"
 	// Table holds the table name of the nodelist in the database.
 	Table = "node_lists"
+	// EdgeTypesTable is the table that holds the edge_types relation/edge. The primary key declared below.
+	EdgeTypesTable = "node_list_edges"
+	// EdgeTypesInverseTable is the table name for the EdgeType entity.
+	// It exists in this package in order to avoid circular dependency with the "edgetype" package.
+	EdgeTypesInverseTable = "edge_types"
 	// NodesTable is the table that holds the nodes relation/edge. The primary key declared below.
 	NodesTable = "node_list_nodes"
 	// NodesInverseTable is the table name for the Node entity.
@@ -52,6 +59,9 @@ var Columns = []string{
 }
 
 var (
+	// EdgeTypesPrimaryKey and EdgeTypesColumn2 are the table columns denoting the
+	// primary key for the edge_types relation (M2M).
+	EdgeTypesPrimaryKey = []string{"node_list_id", "edge_type_id"}
 	// NodesPrimaryKey and NodesColumn2 are the table columns denoting the
 	// primary key for the nodes relation (M2M).
 	NodesPrimaryKey = []string{"node_list_id", "node_id"}
@@ -80,6 +90,20 @@ func ByDocumentID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDocumentID, opts...).ToFunc()
 }
 
+// ByEdgeTypesCount orders the results by edge_types count.
+func ByEdgeTypesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newEdgeTypesStep(), opts...)
+	}
+}
+
+// ByEdgeTypes orders the results by edge_types terms.
+func ByEdgeTypes(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newEdgeTypesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
 // ByNodesCount orders the results by nodes count.
 func ByNodesCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -99,6 +123,13 @@ func ByDocumentField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
 		sqlgraph.OrderByNeighborTerms(s, newDocumentStep(), sql.OrderByField(field, opts...))
 	}
+}
+func newEdgeTypesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(EdgeTypesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2M, false, EdgeTypesTable, EdgeTypesPrimaryKey...),
+	)
 }
 func newNodesStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(

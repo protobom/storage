@@ -482,14 +482,14 @@ func (nu *NodeUpdate) AddAnnotations(a ...*Annotation) *NodeUpdate {
 }
 
 // AddEdgeTypeIDs adds the "edge_types" edge to the EdgeType entity by IDs.
-func (nu *NodeUpdate) AddEdgeTypeIDs(ids ...int) *NodeUpdate {
+func (nu *NodeUpdate) AddEdgeTypeIDs(ids ...uuid.UUID) *NodeUpdate {
 	nu.mutation.AddEdgeTypeIDs(ids...)
 	return nu
 }
 
 // AddEdgeTypes adds the "edge_types" edges to the EdgeType entity.
 func (nu *NodeUpdate) AddEdgeTypes(e ...*EdgeType) *NodeUpdate {
-	ids := make([]int, len(e))
+	ids := make([]uuid.UUID, len(e))
 	for i := range e {
 		ids[i] = e[i].ID
 	}
@@ -697,14 +697,14 @@ func (nu *NodeUpdate) ClearEdgeTypes() *NodeUpdate {
 }
 
 // RemoveEdgeTypeIDs removes the "edge_types" edge to EdgeType entities by IDs.
-func (nu *NodeUpdate) RemoveEdgeTypeIDs(ids ...int) *NodeUpdate {
+func (nu *NodeUpdate) RemoveEdgeTypeIDs(ids ...uuid.UUID) *NodeUpdate {
 	nu.mutation.RemoveEdgeTypeIDs(ids...)
 	return nu
 }
 
 // RemoveEdgeTypes removes "edge_types" edges to EdgeType entities.
 func (nu *NodeUpdate) RemoveEdgeTypes(e ...*EdgeType) *NodeUpdate {
-	ids := make([]int, len(e))
+	ids := make([]uuid.UUID, len(e))
 	for i := range e {
 		ids[i] = e[i].ID
 	}
@@ -1275,7 +1275,7 @@ func (nu *NodeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{node.EdgeTypesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(edgetype.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(edgetype.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -1288,7 +1288,7 @@ func (nu *NodeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{node.EdgeTypesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(edgetype.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(edgetype.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -1304,7 +1304,7 @@ func (nu *NodeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{node.EdgeTypesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(edgetype.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(edgetype.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -1772,14 +1772,14 @@ func (nuo *NodeUpdateOne) AddAnnotations(a ...*Annotation) *NodeUpdateOne {
 }
 
 // AddEdgeTypeIDs adds the "edge_types" edge to the EdgeType entity by IDs.
-func (nuo *NodeUpdateOne) AddEdgeTypeIDs(ids ...int) *NodeUpdateOne {
+func (nuo *NodeUpdateOne) AddEdgeTypeIDs(ids ...uuid.UUID) *NodeUpdateOne {
 	nuo.mutation.AddEdgeTypeIDs(ids...)
 	return nuo
 }
 
 // AddEdgeTypes adds the "edge_types" edges to the EdgeType entity.
 func (nuo *NodeUpdateOne) AddEdgeTypes(e ...*EdgeType) *NodeUpdateOne {
-	ids := make([]int, len(e))
+	ids := make([]uuid.UUID, len(e))
 	for i := range e {
 		ids[i] = e[i].ID
 	}
@@ -1987,14 +1987,14 @@ func (nuo *NodeUpdateOne) ClearEdgeTypes() *NodeUpdateOne {
 }
 
 // RemoveEdgeTypeIDs removes the "edge_types" edge to EdgeType entities by IDs.
-func (nuo *NodeUpdateOne) RemoveEdgeTypeIDs(ids ...int) *NodeUpdateOne {
+func (nuo *NodeUpdateOne) RemoveEdgeTypeIDs(ids ...uuid.UUID) *NodeUpdateOne {
 	nuo.mutation.RemoveEdgeTypeIDs(ids...)
 	return nuo
 }
 
 // RemoveEdgeTypes removes "edge_types" edges to EdgeType entities.
 func (nuo *NodeUpdateOne) RemoveEdgeTypes(e ...*EdgeType) *NodeUpdateOne {
-	ids := make([]int, len(e))
+	ids := make([]uuid.UUID, len(e))
 	for i := range e {
 		ids[i] = e[i].ID
 	}
@@ -2595,7 +2595,7 @@ func (nuo *NodeUpdateOne) sqlSave(ctx context.Context) (_node *Node, err error) 
 			Columns: []string{node.EdgeTypesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(edgetype.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(edgetype.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -2608,7 +2608,7 @@ func (nuo *NodeUpdateOne) sqlSave(ctx context.Context) (_node *Node, err error) 
 			Columns: []string{node.EdgeTypesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(edgetype.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(edgetype.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -2624,7 +2624,7 @@ func (nuo *NodeUpdateOne) sqlSave(ctx context.Context) (_node *Node, err error) 
 			Columns: []string{node.EdgeTypesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(edgetype.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(edgetype.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

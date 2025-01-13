@@ -45,7 +45,7 @@ func (etd *EdgeTypeDelete) ExecX(ctx context.Context) int {
 }
 
 func (etd *EdgeTypeDelete) sqlExec(ctx context.Context) (int, error) {
-	_spec := sqlgraph.NewDeleteSpec(edgetype.Table, sqlgraph.NewFieldSpec(edgetype.FieldID, field.TypeInt))
+	_spec := sqlgraph.NewDeleteSpec(edgetype.Table, sqlgraph.NewFieldSpec(edgetype.FieldID, field.TypeUUID))
 	if ps := etd.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
