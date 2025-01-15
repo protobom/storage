@@ -35,7 +35,11 @@ func (NodeList) Fields() []ent.Field {
 
 func (NodeList) Edges() []ent.Edge {
 	return []ent.Edge{
+		edge.To("edge_types", EdgeType.Type).
+			StorageKey(edge.Table("node_list_edges"), edge.Columns("node_list_id", "edge_type_id")).
+			Annotations(entsql.OnDelete(entsql.Cascade)),
 		edge.To("nodes", Node.Type).
+			StorageKey(edge.Table("node_list_nodes"), edge.Columns("node_list_id", "node_id")).
 			Annotations(entsql.OnDelete(entsql.Cascade)),
 		edge.From("document", Document.Type).
 			Ref("node_list").

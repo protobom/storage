@@ -869,7 +869,7 @@ func (c *EdgeTypeClient) UpdateOne(et *EdgeType) *EdgeTypeUpdateOne {
 }
 
 // UpdateOneID returns an update builder for the given id.
-func (c *EdgeTypeClient) UpdateOneID(id int) *EdgeTypeUpdateOne {
+func (c *EdgeTypeClient) UpdateOneID(id uuid.UUID) *EdgeTypeUpdateOne {
 	mutation := newEdgeTypeMutation(c.config, OpUpdateOne, withEdgeTypeID(id))
 	return &EdgeTypeUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
@@ -886,7 +886,7 @@ func (c *EdgeTypeClient) DeleteOne(et *EdgeType) *EdgeTypeDeleteOne {
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
-func (c *EdgeTypeClient) DeleteOneID(id int) *EdgeTypeDeleteOne {
+func (c *EdgeTypeClient) DeleteOneID(id uuid.UUID) *EdgeTypeDeleteOne {
 	builder := c.Delete().Where(edgetype.ID(id))
 	builder.mutation.id = &id
 	builder.mutation.op = OpDeleteOne
@@ -903,12 +903,12 @@ func (c *EdgeTypeClient) Query() *EdgeTypeQuery {
 }
 
 // Get returns a EdgeType entity by its id.
-func (c *EdgeTypeClient) Get(ctx context.Context, id int) (*EdgeType, error) {
+func (c *EdgeTypeClient) Get(ctx context.Context, id uuid.UUID) (*EdgeType, error) {
 	return c.Query().Where(edgetype.ID(id)).Only(ctx)
 }
 
 // GetX is like Get, but panics if an error occurs.
-func (c *EdgeTypeClient) GetX(ctx context.Context, id int) *EdgeType {
+func (c *EdgeTypeClient) GetX(ctx context.Context, id uuid.UUID) *EdgeType {
 	obj, err := c.Get(ctx, id)
 	if err != nil {
 		panic(err)
@@ -957,6 +957,22 @@ func (c *EdgeTypeClient) QueryTo(et *EdgeType) *NodeQuery {
 			sqlgraph.From(edgetype.Table, edgetype.FieldID, id),
 			sqlgraph.To(node.Table, node.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, false, edgetype.ToTable, edgetype.ToColumn),
+		)
+		fromV = sqlgraph.Neighbors(et.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryNodeLists queries the node_lists edge of a EdgeType.
+func (c *EdgeTypeClient) QueryNodeLists(et *EdgeType) *NodeListQuery {
+	query := (&NodeListClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := et.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(edgetype.Table, edgetype.FieldID, id),
+			sqlgraph.To(nodelist.Table, nodelist.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, edgetype.NodeListsTable, edgetype.NodeListsPrimaryKey...),
 		)
 		fromV = sqlgraph.Neighbors(et.driver.Dialect(), step)
 		return fromV, nil
@@ -1782,6 +1798,22 @@ func (c *NodeListClient) GetX(ctx context.Context, id uuid.UUID) *NodeList {
 		panic(err)
 	}
 	return obj
+}
+
+// QueryEdgeTypes queries the edge_types edge of a NodeList.
+func (c *NodeListClient) QueryEdgeTypes(nl *NodeList) *EdgeTypeQuery {
+	query := (&EdgeTypeClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := nl.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(nodelist.Table, nodelist.FieldID, id),
+			sqlgraph.To(edgetype.Table, edgetype.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, nodelist.EdgeTypesTable, nodelist.EdgeTypesPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(nl.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
 }
 
 // QueryNodes queries the nodes edge of a NodeList.

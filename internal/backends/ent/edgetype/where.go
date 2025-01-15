@@ -11,57 +11,63 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/google/uuid"
+	"github.com/protobom/protobom/pkg/sbom"
 	"github.com/protobom/storage/internal/backends/ent/predicate"
 )
 
 // ID filters vertices based on their ID field.
-func ID(id int) predicate.EdgeType {
+func ID(id uuid.UUID) predicate.EdgeType {
 	return predicate.EdgeType(sql.FieldEQ(FieldID, id))
 }
 
 // IDEQ applies the EQ predicate on the ID field.
-func IDEQ(id int) predicate.EdgeType {
+func IDEQ(id uuid.UUID) predicate.EdgeType {
 	return predicate.EdgeType(sql.FieldEQ(FieldID, id))
 }
 
 // IDNEQ applies the NEQ predicate on the ID field.
-func IDNEQ(id int) predicate.EdgeType {
+func IDNEQ(id uuid.UUID) predicate.EdgeType {
 	return predicate.EdgeType(sql.FieldNEQ(FieldID, id))
 }
 
 // IDIn applies the In predicate on the ID field.
-func IDIn(ids ...int) predicate.EdgeType {
+func IDIn(ids ...uuid.UUID) predicate.EdgeType {
 	return predicate.EdgeType(sql.FieldIn(FieldID, ids...))
 }
 
 // IDNotIn applies the NotIn predicate on the ID field.
-func IDNotIn(ids ...int) predicate.EdgeType {
+func IDNotIn(ids ...uuid.UUID) predicate.EdgeType {
 	return predicate.EdgeType(sql.FieldNotIn(FieldID, ids...))
 }
 
 // IDGT applies the GT predicate on the ID field.
-func IDGT(id int) predicate.EdgeType {
+func IDGT(id uuid.UUID) predicate.EdgeType {
 	return predicate.EdgeType(sql.FieldGT(FieldID, id))
 }
 
 // IDGTE applies the GTE predicate on the ID field.
-func IDGTE(id int) predicate.EdgeType {
+func IDGTE(id uuid.UUID) predicate.EdgeType {
 	return predicate.EdgeType(sql.FieldGTE(FieldID, id))
 }
 
 // IDLT applies the LT predicate on the ID field.
-func IDLT(id int) predicate.EdgeType {
+func IDLT(id uuid.UUID) predicate.EdgeType {
 	return predicate.EdgeType(sql.FieldLT(FieldID, id))
 }
 
 // IDLTE applies the LTE predicate on the ID field.
-func IDLTE(id int) predicate.EdgeType {
+func IDLTE(id uuid.UUID) predicate.EdgeType {
 	return predicate.EdgeType(sql.FieldLTE(FieldID, id))
 }
 
 // DocumentID applies equality check predicate on the "document_id" field. It's identical to DocumentIDEQ.
 func DocumentID(v uuid.UUID) predicate.EdgeType {
 	return predicate.EdgeType(sql.FieldEQ(FieldDocumentID, v))
+}
+
+// ProtoMessage applies equality check predicate on the "proto_message" field. It's identical to ProtoMessageEQ.
+func ProtoMessage(v *sbom.Edge) predicate.EdgeType {
+	return predicate.EdgeType(sql.FieldEQ(FieldProtoMessage, v))
 }
 
 // NodeID applies equality check predicate on the "node_id" field. It's identical to NodeIDEQ.
@@ -102,6 +108,46 @@ func DocumentIDIsNil() predicate.EdgeType {
 // DocumentIDNotNil applies the NotNil predicate on the "document_id" field.
 func DocumentIDNotNil() predicate.EdgeType {
 	return predicate.EdgeType(sql.FieldNotNull(FieldDocumentID))
+}
+
+// ProtoMessageEQ applies the EQ predicate on the "proto_message" field.
+func ProtoMessageEQ(v *sbom.Edge) predicate.EdgeType {
+	return predicate.EdgeType(sql.FieldEQ(FieldProtoMessage, v))
+}
+
+// ProtoMessageNEQ applies the NEQ predicate on the "proto_message" field.
+func ProtoMessageNEQ(v *sbom.Edge) predicate.EdgeType {
+	return predicate.EdgeType(sql.FieldNEQ(FieldProtoMessage, v))
+}
+
+// ProtoMessageIn applies the In predicate on the "proto_message" field.
+func ProtoMessageIn(vs ...*sbom.Edge) predicate.EdgeType {
+	return predicate.EdgeType(sql.FieldIn(FieldProtoMessage, vs...))
+}
+
+// ProtoMessageNotIn applies the NotIn predicate on the "proto_message" field.
+func ProtoMessageNotIn(vs ...*sbom.Edge) predicate.EdgeType {
+	return predicate.EdgeType(sql.FieldNotIn(FieldProtoMessage, vs...))
+}
+
+// ProtoMessageGT applies the GT predicate on the "proto_message" field.
+func ProtoMessageGT(v *sbom.Edge) predicate.EdgeType {
+	return predicate.EdgeType(sql.FieldGT(FieldProtoMessage, v))
+}
+
+// ProtoMessageGTE applies the GTE predicate on the "proto_message" field.
+func ProtoMessageGTE(v *sbom.Edge) predicate.EdgeType {
+	return predicate.EdgeType(sql.FieldGTE(FieldProtoMessage, v))
+}
+
+// ProtoMessageLT applies the LT predicate on the "proto_message" field.
+func ProtoMessageLT(v *sbom.Edge) predicate.EdgeType {
+	return predicate.EdgeType(sql.FieldLT(FieldProtoMessage, v))
+}
+
+// ProtoMessageLTE applies the LTE predicate on the "proto_message" field.
+func ProtoMessageLTE(v *sbom.Edge) predicate.EdgeType {
+	return predicate.EdgeType(sql.FieldLTE(FieldProtoMessage, v))
 }
 
 // TypeEQ applies the EQ predicate on the "type" field.
@@ -225,6 +271,29 @@ func HasTo() predicate.EdgeType {
 func HasToWith(preds ...predicate.Node) predicate.EdgeType {
 	return predicate.EdgeType(func(s *sql.Selector) {
 		step := newToStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasNodeLists applies the HasEdge predicate on the "node_lists" edge.
+func HasNodeLists() predicate.EdgeType {
+	return predicate.EdgeType(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, NodeListsTable, NodeListsPrimaryKey...),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasNodeListsWith applies the HasEdge predicate on the "node_lists" edge with a given conditions (other predicates).
+func HasNodeListsWith(preds ...predicate.NodeList) predicate.EdgeType {
+	return predicate.EdgeType(func(s *sql.Selector) {
+		step := newNodeListsStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

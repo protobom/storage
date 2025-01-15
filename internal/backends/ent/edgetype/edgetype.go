@@ -22,6 +22,8 @@ const (
 	FieldID = "id"
 	// FieldDocumentID holds the string denoting the document_id field in the database.
 	FieldDocumentID = "document_id"
+	// FieldProtoMessage holds the string denoting the proto_message field in the database.
+	FieldProtoMessage = "proto_message"
 	// FieldType holds the string denoting the type field in the database.
 	FieldType = "type"
 	// FieldNodeID holds the string denoting the node_id field in the database.
@@ -34,6 +36,8 @@ const (
 	EdgeFrom = "from"
 	// EdgeTo holds the string denoting the to edge name in mutations.
 	EdgeTo = "to"
+	// EdgeNodeLists holds the string denoting the node_lists edge name in mutations.
+	EdgeNodeLists = "node_lists"
 	// Table holds the table name of the edgetype in the database.
 	Table = "edge_types"
 	// DocumentTable is the table that holds the document relation/edge.
@@ -57,16 +61,28 @@ const (
 	ToInverseTable = "nodes"
 	// ToColumn is the table column denoting the to relation/edge.
 	ToColumn = "to_node_id"
+	// NodeListsTable is the table that holds the node_lists relation/edge. The primary key declared below.
+	NodeListsTable = "node_list_edges"
+	// NodeListsInverseTable is the table name for the NodeList entity.
+	// It exists in this package in order to avoid circular dependency with the "nodelist" package.
+	NodeListsInverseTable = "node_lists"
 )
 
 // Columns holds all SQL columns for edgetype fields.
 var Columns = []string{
 	FieldID,
 	FieldDocumentID,
+	FieldProtoMessage,
 	FieldType,
 	FieldNodeID,
 	FieldToNodeID,
 }
+
+var (
+	// NodeListsPrimaryKey and NodeListsColumn2 are the table columns denoting the
+	// primary key for the node_lists relation (M2M).
+	NodeListsPrimaryKey = []string{"node_list_id", "edge_type_id"}
+)
 
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {
@@ -197,6 +213,20 @@ func ByToField(field string, opts ...sql.OrderTermOption) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newToStep(), sql.OrderByField(field, opts...))
 	}
 }
+
+// ByNodeListsCount orders the results by node_lists count.
+func ByNodeListsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newNodeListsStep(), opts...)
+	}
+}
+
+// ByNodeLists orders the results by node_lists terms.
+func ByNodeLists(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newNodeListsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newDocumentStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -216,5 +246,12 @@ func newToStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(ToInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.M2O, false, ToTable, ToColumn),
+	)
+}
+func newNodeListsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(NodeListsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2M, true, NodeListsTable, NodeListsPrimaryKey...),
 	)
 }

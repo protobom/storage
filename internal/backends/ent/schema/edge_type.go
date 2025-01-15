@@ -23,6 +23,8 @@ type EdgeType struct {
 func (EdgeType) Mixin() []ent.Mixin {
 	return []ent.Mixin{
 		DocumentMixin{},
+		ProtoMessageMixin[*sbom.Edge]{},
+		UUIDMixin{},
 	}
 }
 
@@ -46,6 +48,8 @@ func (EdgeType) Edges() []ent.Edge {
 			Unique().
 			Annotations(entsql.OnDelete(entsql.Cascade)).
 			Field("to_node_id"),
+		edge.From("node_lists", NodeList.Type).
+			Ref("edge_types"),
 	}
 }
 

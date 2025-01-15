@@ -126,7 +126,8 @@ var (
 	}
 	// EdgeTypesColumns holds the columns for the "edge_types" table.
 	EdgeTypesColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "id", Type: field.TypeUUID, Unique: true},
+		{Name: "proto_message", Type: field.TypeBytes},
 		{Name: "type", Type: field.TypeEnum, Enums: []string{"UNKNOWN", "amends", "ancestor", "buildDependency", "buildTool", "contains", "contained_by", "copy", "dataFile", "dependencyManifest", "dependsOn", "dependencyOf", "descendant", "describes", "describedBy", "devDependency", "devTool", "distributionArtifact", "documentation", "dynamicLink", "example", "expandedFromArchive", "fileAdded", "fileDeleted", "fileModified", "generates", "generatedFrom", "metafile", "optionalComponent", "optionalDependency", "other", "packages", "patch", "prerequisite", "prerequisiteFor", "providedDependency", "requirementFor", "runtimeDependency", "specificationFor", "staticLink", "test", "testCase", "testDependency", "testTool", "variant"}},
 		{Name: "document_id", Type: field.TypeUUID, Nullable: true},
 		{Name: "node_id", Type: field.TypeUUID},
@@ -140,19 +141,19 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "edge_types_documents_document",
-				Columns:    []*schema.Column{EdgeTypesColumns[2]},
+				Columns:    []*schema.Column{EdgeTypesColumns[3]},
 				RefColumns: []*schema.Column{DocumentsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "edge_types_nodes_from",
-				Columns:    []*schema.Column{EdgeTypesColumns[3]},
+				Columns:    []*schema.Column{EdgeTypesColumns[4]},
 				RefColumns: []*schema.Column{NodesColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "edge_types_nodes_to",
-				Columns:    []*schema.Column{EdgeTypesColumns[4]},
+				Columns:    []*schema.Column{EdgeTypesColumns[5]},
 				RefColumns: []*schema.Column{NodesColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
@@ -161,12 +162,12 @@ var (
 			{
 				Name:    "idx_edge_types",
 				Unique:  true,
-				Columns: []*schema.Column{EdgeTypesColumns[1], EdgeTypesColumns[3], EdgeTypesColumns[4]},
+				Columns: []*schema.Column{EdgeTypesColumns[2], EdgeTypesColumns[4], EdgeTypesColumns[5]},
 			},
 			{
 				Name:    "edgetype_node_id_to_node_id",
 				Unique:  true,
-				Columns: []*schema.Column{EdgeTypesColumns[3], EdgeTypesColumns[4]},
+				Columns: []*schema.Column{EdgeTypesColumns[4], EdgeTypesColumns[5]},
 			},
 		},
 	}
@@ -528,6 +529,31 @@ var (
 			},
 		},
 	}
+	// NodeListEdgesColumns holds the columns for the "node_list_edges" table.
+	NodeListEdgesColumns = []*schema.Column{
+		{Name: "node_list_id", Type: field.TypeUUID},
+		{Name: "edge_type_id", Type: field.TypeUUID},
+	}
+	// NodeListEdgesTable holds the schema information for the "node_list_edges" table.
+	NodeListEdgesTable = &schema.Table{
+		Name:       "node_list_edges",
+		Columns:    NodeListEdgesColumns,
+		PrimaryKey: []*schema.Column{NodeListEdgesColumns[0], NodeListEdgesColumns[1]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "node_list_edges_node_list_id",
+				Columns:    []*schema.Column{NodeListEdgesColumns[0]},
+				RefColumns: []*schema.Column{NodeListsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "node_list_edges_edge_type_id",
+				Columns:    []*schema.Column{NodeListEdgesColumns[1]},
+				RefColumns: []*schema.Column{EdgeTypesColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+	}
 	// NodeListNodesColumns holds the columns for the "node_list_nodes" table.
 	NodeListNodesColumns = []*schema.Column{
 		{Name: "node_list_id", Type: field.TypeUUID},
@@ -568,6 +594,7 @@ var (
 		PurposesTable,
 		SourceDataTable,
 		ToolsTable,
+		NodeListEdgesTable,
 		NodeListNodesTable,
 	}
 )
@@ -608,6 +635,9 @@ func init() {
 	ToolsTable.ForeignKeys[0].RefTable = MetadataTable
 	ToolsTable.ForeignKeys[1].RefTable = DocumentsTable
 	ToolsTable.Annotation = &entsql.Annotation{}
+	NodeListEdgesTable.ForeignKeys[0].RefTable = NodeListsTable
+	NodeListEdgesTable.ForeignKeys[1].RefTable = EdgeTypesTable
+	NodeListEdgesTable.Annotation = &entsql.Annotation{}
 	NodeListNodesTable.ForeignKeys[0].RefTable = NodeListsTable
 	NodeListNodesTable.ForeignKeys[1].RefTable = NodesTable
 	NodeListNodesTable.Annotation = &entsql.Annotation{}

@@ -19,6 +19,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/protobom/protobom/pkg/sbom"
 	"github.com/protobom/storage/internal/backends/ent/document"
+	"github.com/protobom/storage/internal/backends/ent/edgetype"
 	"github.com/protobom/storage/internal/backends/ent/node"
 	"github.com/protobom/storage/internal/backends/ent/nodelist"
 )
@@ -53,6 +54,21 @@ func (nlc *NodeListCreate) SetRootElements(s []string) *NodeListCreate {
 func (nlc *NodeListCreate) SetID(u uuid.UUID) *NodeListCreate {
 	nlc.mutation.SetID(u)
 	return nlc
+}
+
+// AddEdgeTypeIDs adds the "edge_types" edge to the EdgeType entity by IDs.
+func (nlc *NodeListCreate) AddEdgeTypeIDs(ids ...uuid.UUID) *NodeListCreate {
+	nlc.mutation.AddEdgeTypeIDs(ids...)
+	return nlc
+}
+
+// AddEdgeTypes adds the "edge_types" edges to the EdgeType entity.
+func (nlc *NodeListCreate) AddEdgeTypes(e ...*EdgeType) *NodeListCreate {
+	ids := make([]uuid.UUID, len(e))
+	for i := range e {
+		ids[i] = e[i].ID
+	}
+	return nlc.AddEdgeTypeIDs(ids...)
 }
 
 // AddNodeIDs adds the "nodes" edge to the Node entity by IDs.
@@ -164,6 +180,22 @@ func (nlc *NodeListCreate) createSpec() (*NodeList, *sqlgraph.CreateSpec) {
 	if value, ok := nlc.mutation.RootElements(); ok {
 		_spec.SetField(nodelist.FieldRootElements, field.TypeJSON, value)
 		_node.RootElements = value
+	}
+	if nodes := nlc.mutation.EdgeTypesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   nodelist.EdgeTypesTable,
+			Columns: nodelist.EdgeTypesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(edgetype.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := nlc.mutation.NodesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
