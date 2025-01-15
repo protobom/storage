@@ -243,6 +243,8 @@ func (backend *Backend) saveHashes(hashes map[int32]string, opts ...func(*ent.Ha
 				SetHashAlgorithm(hashesentry.HashAlgorithm(alg.String())).
 				SetHashData(value)
 
+			setDocumentID(backend.ctx, hashesEntry)
+
 			for _, fn := range opts {
 				fn(hashesEntry)
 			}
