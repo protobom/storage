@@ -1262,16 +1262,6 @@ func ValidUntilDateLTE(v time.Time) predicate.Node {
 	return predicate.Node(sql.FieldLTE(FieldValidUntilDate, v))
 }
 
-// HashesIsNil applies the IsNil predicate on the "hashes" field.
-func HashesIsNil() predicate.Node {
-	return predicate.Node(sql.FieldIsNull(FieldHashes))
-}
-
-// HashesNotNil applies the NotNil predicate on the "hashes" field.
-func HashesNotNil() predicate.Node {
-	return predicate.Node(sql.FieldNotNull(FieldHashes))
-}
-
 // IdentifiersIsNil applies the IsNil predicate on the "identifiers" field.
 func IdentifiersIsNil() predicate.Node {
 	return predicate.Node(sql.FieldIsNull(FieldIdentifiers))
@@ -1297,6 +1287,29 @@ func HasDocument() predicate.Node {
 func HasDocumentWith(preds ...predicate.Document) predicate.Node {
 	return predicate.Node(func(s *sql.Selector) {
 		step := newDocumentStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasAnnotations applies the HasEdge predicate on the "annotations" edge.
+func HasAnnotations() predicate.Node {
+	return predicate.Node(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, AnnotationsTable, AnnotationsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasAnnotationsWith applies the HasEdge predicate on the "annotations" edge with a given conditions (other predicates).
+func HasAnnotationsWith(preds ...predicate.Annotation) predicate.Node {
+	return predicate.Node(func(s *sql.Selector) {
+		step := newAnnotationsStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)
@@ -1356,7 +1369,7 @@ func HasExternalReferences() predicate.Node {
 	return predicate.Node(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, ExternalReferencesTable, ExternalReferencesColumn),
+			sqlgraph.Edge(sqlgraph.M2M, false, ExternalReferencesTable, ExternalReferencesPrimaryKey...),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
@@ -1443,6 +1456,29 @@ func HasNodesWith(preds ...predicate.Node) predicate.Node {
 	})
 }
 
+// HasHashes applies the HasEdge predicate on the "hashes" edge.
+func HasHashes() predicate.Node {
+	return predicate.Node(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, HashesTable, HashesPrimaryKey...),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasHashesWith applies the HasEdge predicate on the "hashes" edge with a given conditions (other predicates).
+func HasHashesWith(preds ...predicate.HashesEntry) predicate.Node {
+	return predicate.Node(func(s *sql.Selector) {
+		step := newHashesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // HasProperties applies the HasEdge predicate on the "properties" edge.
 func HasProperties() predicate.Node {
 	return predicate.Node(func(s *sql.Selector) {
@@ -1481,29 +1517,6 @@ func HasNodeLists() predicate.Node {
 func HasNodeListsWith(preds ...predicate.NodeList) predicate.Node {
 	return predicate.Node(func(s *sql.Selector) {
 		step := newNodeListsStep()
-		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
-			for _, p := range preds {
-				p(s)
-			}
-		})
-	})
-}
-
-// HasAnnotations applies the HasEdge predicate on the "annotations" edge.
-func HasAnnotations() predicate.Node {
-	return predicate.Node(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, AnnotationsTable, AnnotationsColumn),
-		)
-		sqlgraph.HasNeighbors(s, step)
-	})
-}
-
-// HasAnnotationsWith applies the HasEdge predicate on the "annotations" edge with a given conditions (other predicates).
-func HasAnnotationsWith(preds ...predicate.Annotation) predicate.Node {
-	return predicate.Node(func(s *sql.Selector) {
-		step := newAnnotationsStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

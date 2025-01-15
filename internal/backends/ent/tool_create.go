@@ -89,6 +89,14 @@ func (tc *ToolCreate) SetID(u uuid.UUID) *ToolCreate {
 	return tc
 }
 
+// SetNillableID sets the "id" field if the given value is not nil.
+func (tc *ToolCreate) SetNillableID(u *uuid.UUID) *ToolCreate {
+	if u != nil {
+		tc.SetID(*u)
+	}
+	return tc
+}
+
 // SetDocument sets the "document" edge to the Document entity.
 func (tc *ToolCreate) SetDocument(d *Document) *ToolCreate {
 	return tc.SetDocumentID(d.ID)
@@ -137,6 +145,10 @@ func (tc *ToolCreate) defaults() {
 	if _, ok := tc.mutation.DocumentID(); !ok {
 		v := tool.DefaultDocumentID()
 		tc.mutation.SetDocumentID(v)
+	}
+	if _, ok := tc.mutation.ID(); !ok {
+		v := tool.DefaultID()
+		tc.mutation.SetID(v)
 	}
 }
 

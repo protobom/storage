@@ -20,6 +20,7 @@ import (
 	"github.com/protobom/protobom/pkg/sbom"
 	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/externalreference"
+	"github.com/protobom/storage/internal/backends/ent/hashesentry"
 	"github.com/protobom/storage/internal/backends/ent/node"
 )
 
@@ -48,20 +49,6 @@ func (erc *ExternalReferenceCreate) SetNillableDocumentID(u *uuid.UUID) *Externa
 // SetProtoMessage sets the "proto_message" field.
 func (erc *ExternalReferenceCreate) SetProtoMessage(sr *sbom.ExternalReference) *ExternalReferenceCreate {
 	erc.mutation.SetProtoMessage(sr)
-	return erc
-}
-
-// SetNodeID sets the "node_id" field.
-func (erc *ExternalReferenceCreate) SetNodeID(u uuid.UUID) *ExternalReferenceCreate {
-	erc.mutation.SetNodeID(u)
-	return erc
-}
-
-// SetNillableNodeID sets the "node_id" field if the given value is not nil.
-func (erc *ExternalReferenceCreate) SetNillableNodeID(u *uuid.UUID) *ExternalReferenceCreate {
-	if u != nil {
-		erc.SetNodeID(*u)
-	}
 	return erc
 }
 
@@ -97,15 +84,17 @@ func (erc *ExternalReferenceCreate) SetType(e externalreference.Type) *ExternalR
 	return erc
 }
 
-// SetHashes sets the "hashes" field.
-func (erc *ExternalReferenceCreate) SetHashes(m map[int32]string) *ExternalReferenceCreate {
-	erc.mutation.SetHashes(m)
-	return erc
-}
-
 // SetID sets the "id" field.
 func (erc *ExternalReferenceCreate) SetID(u uuid.UUID) *ExternalReferenceCreate {
 	erc.mutation.SetID(u)
+	return erc
+}
+
+// SetNillableID sets the "id" field if the given value is not nil.
+func (erc *ExternalReferenceCreate) SetNillableID(u *uuid.UUID) *ExternalReferenceCreate {
+	if u != nil {
+		erc.SetID(*u)
+	}
 	return erc
 }
 
@@ -114,9 +103,34 @@ func (erc *ExternalReferenceCreate) SetDocument(d *Document) *ExternalReferenceC
 	return erc.SetDocumentID(d.ID)
 }
 
-// SetNode sets the "node" edge to the Node entity.
-func (erc *ExternalReferenceCreate) SetNode(n *Node) *ExternalReferenceCreate {
-	return erc.SetNodeID(n.ID)
+// AddHashIDs adds the "hashes" edge to the HashesEntry entity by IDs.
+func (erc *ExternalReferenceCreate) AddHashIDs(ids ...uuid.UUID) *ExternalReferenceCreate {
+	erc.mutation.AddHashIDs(ids...)
+	return erc
+}
+
+// AddHashes adds the "hashes" edges to the HashesEntry entity.
+func (erc *ExternalReferenceCreate) AddHashes(h ...*HashesEntry) *ExternalReferenceCreate {
+	ids := make([]uuid.UUID, len(h))
+	for i := range h {
+		ids[i] = h[i].ID
+	}
+	return erc.AddHashIDs(ids...)
+}
+
+// AddNodeIDs adds the "nodes" edge to the Node entity by IDs.
+func (erc *ExternalReferenceCreate) AddNodeIDs(ids ...uuid.UUID) *ExternalReferenceCreate {
+	erc.mutation.AddNodeIDs(ids...)
+	return erc
+}
+
+// AddNodes adds the "nodes" edges to the Node entity.
+func (erc *ExternalReferenceCreate) AddNodes(n ...*Node) *ExternalReferenceCreate {
+	ids := make([]uuid.UUID, len(n))
+	for i := range n {
+		ids[i] = n[i].ID
+	}
+	return erc.AddNodeIDs(ids...)
 }
 
 // Mutation returns the ExternalReferenceMutation object of the builder.
@@ -157,6 +171,10 @@ func (erc *ExternalReferenceCreate) defaults() {
 	if _, ok := erc.mutation.DocumentID(); !ok {
 		v := externalreference.DefaultDocumentID()
 		erc.mutation.SetDocumentID(v)
+	}
+	if _, ok := erc.mutation.ID(); !ok {
+		v := externalreference.DefaultID()
+		erc.mutation.SetID(v)
 	}
 }
 
@@ -235,10 +253,6 @@ func (erc *ExternalReferenceCreate) createSpec() (*ExternalReference, *sqlgraph.
 		_spec.SetField(externalreference.FieldType, field.TypeEnum, value)
 		_node.Type = value
 	}
-	if value, ok := erc.mutation.Hashes(); ok {
-		_spec.SetField(externalreference.FieldHashes, field.TypeJSON, value)
-		_node.Hashes = value
-	}
 	if nodes := erc.mutation.DocumentIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -256,12 +270,28 @@ func (erc *ExternalReferenceCreate) createSpec() (*ExternalReference, *sqlgraph.
 		_node.DocumentID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := erc.mutation.NodeIDs(); len(nodes) > 0 {
+	if nodes := erc.mutation.HashesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   externalreference.HashesTable,
+			Columns: externalreference.HashesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(hashesentry.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := erc.mutation.NodesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
 			Inverse: true,
-			Table:   externalreference.NodeTable,
-			Columns: []string{externalreference.NodeColumn},
+			Table:   externalreference.NodesTable,
+			Columns: externalreference.NodesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
@@ -270,7 +300,6 @@ func (erc *ExternalReferenceCreate) createSpec() (*ExternalReference, *sqlgraph.
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.NodeID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
@@ -324,24 +353,6 @@ type (
 		*sql.UpdateSet
 	}
 )
-
-// SetNodeID sets the "node_id" field.
-func (u *ExternalReferenceUpsert) SetNodeID(v uuid.UUID) *ExternalReferenceUpsert {
-	u.Set(externalreference.FieldNodeID, v)
-	return u
-}
-
-// UpdateNodeID sets the "node_id" field to the value that was provided on create.
-func (u *ExternalReferenceUpsert) UpdateNodeID() *ExternalReferenceUpsert {
-	u.SetExcluded(externalreference.FieldNodeID)
-	return u
-}
-
-// ClearNodeID clears the value of the "node_id" field.
-func (u *ExternalReferenceUpsert) ClearNodeID() *ExternalReferenceUpsert {
-	u.SetNull(externalreference.FieldNodeID)
-	return u
-}
 
 // SetURL sets the "url" field.
 func (u *ExternalReferenceUpsert) SetURL(v string) *ExternalReferenceUpsert {
@@ -397,24 +408,6 @@ func (u *ExternalReferenceUpsert) UpdateType() *ExternalReferenceUpsert {
 	return u
 }
 
-// SetHashes sets the "hashes" field.
-func (u *ExternalReferenceUpsert) SetHashes(v map[int32]string) *ExternalReferenceUpsert {
-	u.Set(externalreference.FieldHashes, v)
-	return u
-}
-
-// UpdateHashes sets the "hashes" field to the value that was provided on create.
-func (u *ExternalReferenceUpsert) UpdateHashes() *ExternalReferenceUpsert {
-	u.SetExcluded(externalreference.FieldHashes)
-	return u
-}
-
-// ClearHashes clears the value of the "hashes" field.
-func (u *ExternalReferenceUpsert) ClearHashes() *ExternalReferenceUpsert {
-	u.SetNull(externalreference.FieldHashes)
-	return u
-}
-
 // UpdateNewValues updates the mutable fields using the new values that were set on create except the ID field.
 // Using this option is equivalent to using:
 //
@@ -467,27 +460,6 @@ func (u *ExternalReferenceUpsertOne) Update(set func(*ExternalReferenceUpsert)) 
 		set(&ExternalReferenceUpsert{UpdateSet: update})
 	}))
 	return u
-}
-
-// SetNodeID sets the "node_id" field.
-func (u *ExternalReferenceUpsertOne) SetNodeID(v uuid.UUID) *ExternalReferenceUpsertOne {
-	return u.Update(func(s *ExternalReferenceUpsert) {
-		s.SetNodeID(v)
-	})
-}
-
-// UpdateNodeID sets the "node_id" field to the value that was provided on create.
-func (u *ExternalReferenceUpsertOne) UpdateNodeID() *ExternalReferenceUpsertOne {
-	return u.Update(func(s *ExternalReferenceUpsert) {
-		s.UpdateNodeID()
-	})
-}
-
-// ClearNodeID clears the value of the "node_id" field.
-func (u *ExternalReferenceUpsertOne) ClearNodeID() *ExternalReferenceUpsertOne {
-	return u.Update(func(s *ExternalReferenceUpsert) {
-		s.ClearNodeID()
-	})
 }
 
 // SetURL sets the "url" field.
@@ -550,27 +522,6 @@ func (u *ExternalReferenceUpsertOne) SetType(v externalreference.Type) *External
 func (u *ExternalReferenceUpsertOne) UpdateType() *ExternalReferenceUpsertOne {
 	return u.Update(func(s *ExternalReferenceUpsert) {
 		s.UpdateType()
-	})
-}
-
-// SetHashes sets the "hashes" field.
-func (u *ExternalReferenceUpsertOne) SetHashes(v map[int32]string) *ExternalReferenceUpsertOne {
-	return u.Update(func(s *ExternalReferenceUpsert) {
-		s.SetHashes(v)
-	})
-}
-
-// UpdateHashes sets the "hashes" field to the value that was provided on create.
-func (u *ExternalReferenceUpsertOne) UpdateHashes() *ExternalReferenceUpsertOne {
-	return u.Update(func(s *ExternalReferenceUpsert) {
-		s.UpdateHashes()
-	})
-}
-
-// ClearHashes clears the value of the "hashes" field.
-func (u *ExternalReferenceUpsertOne) ClearHashes() *ExternalReferenceUpsertOne {
-	return u.Update(func(s *ExternalReferenceUpsert) {
-		s.ClearHashes()
 	})
 }
 
@@ -795,27 +746,6 @@ func (u *ExternalReferenceUpsertBulk) Update(set func(*ExternalReferenceUpsert))
 	return u
 }
 
-// SetNodeID sets the "node_id" field.
-func (u *ExternalReferenceUpsertBulk) SetNodeID(v uuid.UUID) *ExternalReferenceUpsertBulk {
-	return u.Update(func(s *ExternalReferenceUpsert) {
-		s.SetNodeID(v)
-	})
-}
-
-// UpdateNodeID sets the "node_id" field to the value that was provided on create.
-func (u *ExternalReferenceUpsertBulk) UpdateNodeID() *ExternalReferenceUpsertBulk {
-	return u.Update(func(s *ExternalReferenceUpsert) {
-		s.UpdateNodeID()
-	})
-}
-
-// ClearNodeID clears the value of the "node_id" field.
-func (u *ExternalReferenceUpsertBulk) ClearNodeID() *ExternalReferenceUpsertBulk {
-	return u.Update(func(s *ExternalReferenceUpsert) {
-		s.ClearNodeID()
-	})
-}
-
 // SetURL sets the "url" field.
 func (u *ExternalReferenceUpsertBulk) SetURL(v string) *ExternalReferenceUpsertBulk {
 	return u.Update(func(s *ExternalReferenceUpsert) {
@@ -876,27 +806,6 @@ func (u *ExternalReferenceUpsertBulk) SetType(v externalreference.Type) *Externa
 func (u *ExternalReferenceUpsertBulk) UpdateType() *ExternalReferenceUpsertBulk {
 	return u.Update(func(s *ExternalReferenceUpsert) {
 		s.UpdateType()
-	})
-}
-
-// SetHashes sets the "hashes" field.
-func (u *ExternalReferenceUpsertBulk) SetHashes(v map[int32]string) *ExternalReferenceUpsertBulk {
-	return u.Update(func(s *ExternalReferenceUpsert) {
-		s.SetHashes(v)
-	})
-}
-
-// UpdateHashes sets the "hashes" field to the value that was provided on create.
-func (u *ExternalReferenceUpsertBulk) UpdateHashes() *ExternalReferenceUpsertBulk {
-	return u.Update(func(s *ExternalReferenceUpsert) {
-		s.UpdateHashes()
-	})
-}
-
-// ClearHashes clears the value of the "hashes" field.
-func (u *ExternalReferenceUpsertBulk) ClearHashes() *ExternalReferenceUpsertBulk {
-	return u.Update(func(s *ExternalReferenceUpsert) {
-		s.ClearHashes()
 	})
 }
 

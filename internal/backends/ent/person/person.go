@@ -118,6 +118,8 @@ func ValidColumn(column string) bool {
 var (
 	// DefaultDocumentID holds the default value on creation for the "document_id" field.
 	DefaultDocumentID func() uuid.UUID
+	// DefaultID holds the default value on creation for the "id" field.
+	DefaultID func() uuid.UUID
 )
 
 // OrderOption defines the ordering options for the Person queries.

@@ -95,6 +95,14 @@ func (sdc *SourceDataCreate) SetID(u uuid.UUID) *SourceDataCreate {
 	return sdc
 }
 
+// SetNillableID sets the "id" field if the given value is not nil.
+func (sdc *SourceDataCreate) SetNillableID(u *uuid.UUID) *SourceDataCreate {
+	if u != nil {
+		sdc.SetID(*u)
+	}
+	return sdc
+}
+
 // SetDocument sets the "document" edge to the Document entity.
 func (sdc *SourceDataCreate) SetDocument(d *Document) *SourceDataCreate {
 	return sdc.SetDocumentID(d.ID)
@@ -143,6 +151,10 @@ func (sdc *SourceDataCreate) defaults() {
 	if _, ok := sdc.mutation.DocumentID(); !ok {
 		v := sourcedata.DefaultDocumentID()
 		sdc.mutation.SetDocumentID(v)
+	}
+	if _, ok := sdc.mutation.ID(); !ok {
+		v := sourcedata.DefaultID()
+		sdc.mutation.SetID(v)
 	}
 }
 

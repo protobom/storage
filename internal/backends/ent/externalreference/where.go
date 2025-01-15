@@ -70,11 +70,6 @@ func ProtoMessage(v *sbom.ExternalReference) predicate.ExternalReference {
 	return predicate.ExternalReference(sql.FieldEQ(FieldProtoMessage, v))
 }
 
-// NodeID applies equality check predicate on the "node_id" field. It's identical to NodeIDEQ.
-func NodeID(v uuid.UUID) predicate.ExternalReference {
-	return predicate.ExternalReference(sql.FieldEQ(FieldNodeID, v))
-}
-
 // URL applies equality check predicate on the "url" field. It's identical to URLEQ.
 func URL(v string) predicate.ExternalReference {
 	return predicate.ExternalReference(sql.FieldEQ(FieldURL, v))
@@ -158,36 +153,6 @@ func ProtoMessageLT(v *sbom.ExternalReference) predicate.ExternalReference {
 // ProtoMessageLTE applies the LTE predicate on the "proto_message" field.
 func ProtoMessageLTE(v *sbom.ExternalReference) predicate.ExternalReference {
 	return predicate.ExternalReference(sql.FieldLTE(FieldProtoMessage, v))
-}
-
-// NodeIDEQ applies the EQ predicate on the "node_id" field.
-func NodeIDEQ(v uuid.UUID) predicate.ExternalReference {
-	return predicate.ExternalReference(sql.FieldEQ(FieldNodeID, v))
-}
-
-// NodeIDNEQ applies the NEQ predicate on the "node_id" field.
-func NodeIDNEQ(v uuid.UUID) predicate.ExternalReference {
-	return predicate.ExternalReference(sql.FieldNEQ(FieldNodeID, v))
-}
-
-// NodeIDIn applies the In predicate on the "node_id" field.
-func NodeIDIn(vs ...uuid.UUID) predicate.ExternalReference {
-	return predicate.ExternalReference(sql.FieldIn(FieldNodeID, vs...))
-}
-
-// NodeIDNotIn applies the NotIn predicate on the "node_id" field.
-func NodeIDNotIn(vs ...uuid.UUID) predicate.ExternalReference {
-	return predicate.ExternalReference(sql.FieldNotIn(FieldNodeID, vs...))
-}
-
-// NodeIDIsNil applies the IsNil predicate on the "node_id" field.
-func NodeIDIsNil() predicate.ExternalReference {
-	return predicate.ExternalReference(sql.FieldIsNull(FieldNodeID))
-}
-
-// NodeIDNotNil applies the NotNil predicate on the "node_id" field.
-func NodeIDNotNil() predicate.ExternalReference {
-	return predicate.ExternalReference(sql.FieldNotNull(FieldNodeID))
 }
 
 // URLEQ applies the EQ predicate on the "url" field.
@@ -415,16 +380,6 @@ func TypeNotIn(vs ...Type) predicate.ExternalReference {
 	return predicate.ExternalReference(sql.FieldNotIn(FieldType, vs...))
 }
 
-// HashesIsNil applies the IsNil predicate on the "hashes" field.
-func HashesIsNil() predicate.ExternalReference {
-	return predicate.ExternalReference(sql.FieldIsNull(FieldHashes))
-}
-
-// HashesNotNil applies the NotNil predicate on the "hashes" field.
-func HashesNotNil() predicate.ExternalReference {
-	return predicate.ExternalReference(sql.FieldNotNull(FieldHashes))
-}
-
 // HasDocument applies the HasEdge predicate on the "document" edge.
 func HasDocument() predicate.ExternalReference {
 	return predicate.ExternalReference(func(s *sql.Selector) {
@@ -448,21 +403,44 @@ func HasDocumentWith(preds ...predicate.Document) predicate.ExternalReference {
 	})
 }
 
-// HasNode applies the HasEdge predicate on the "node" edge.
-func HasNode() predicate.ExternalReference {
+// HasHashes applies the HasEdge predicate on the "hashes" edge.
+func HasHashes() predicate.ExternalReference {
 	return predicate.ExternalReference(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, NodeTable, NodeColumn),
+			sqlgraph.Edge(sqlgraph.M2M, false, HashesTable, HashesPrimaryKey...),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
 }
 
-// HasNodeWith applies the HasEdge predicate on the "node" edge with a given conditions (other predicates).
-func HasNodeWith(preds ...predicate.Node) predicate.ExternalReference {
+// HasHashesWith applies the HasEdge predicate on the "hashes" edge with a given conditions (other predicates).
+func HasHashesWith(preds ...predicate.HashesEntry) predicate.ExternalReference {
 	return predicate.ExternalReference(func(s *sql.Selector) {
-		step := newNodeStep()
+		step := newHashesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasNodes applies the HasEdge predicate on the "nodes" edge.
+func HasNodes() predicate.ExternalReference {
+	return predicate.ExternalReference(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, NodesTable, NodesPrimaryKey...),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasNodesWith applies the HasEdge predicate on the "nodes" edge with a given conditions (other predicates).
+func HasNodesWith(preds ...predicate.Node) predicate.ExternalReference {
+	return predicate.ExternalReference(func(s *sql.Selector) {
+		step := newNodesStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

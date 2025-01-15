@@ -36,6 +36,14 @@ func (dc *DocumentCreate) SetID(u uuid.UUID) *DocumentCreate {
 	return dc
 }
 
+// SetNillableID sets the "id" field if the given value is not nil.
+func (dc *DocumentCreate) SetNillableID(u *uuid.UUID) *DocumentCreate {
+	if u != nil {
+		dc.SetID(*u)
+	}
+	return dc
+}
+
 // SetMetadataID sets the "metadata" edge to the Metadata entity by ID.
 func (dc *DocumentCreate) SetMetadataID(id uuid.UUID) *DocumentCreate {
 	dc.mutation.SetMetadataID(id)
@@ -81,6 +89,7 @@ func (dc *DocumentCreate) Mutation() *DocumentMutation {
 
 // Save creates the Document in the database.
 func (dc *DocumentCreate) Save(ctx context.Context) (*Document, error) {
+	dc.defaults()
 	return withHooks(ctx, dc.sqlSave, dc.mutation, dc.hooks)
 }
 
@@ -103,6 +112,14 @@ func (dc *DocumentCreate) Exec(ctx context.Context) error {
 func (dc *DocumentCreate) ExecX(ctx context.Context) {
 	if err := dc.Exec(ctx); err != nil {
 		panic(err)
+	}
+}
+
+// defaults sets the default values of the builder before save.
+func (dc *DocumentCreate) defaults() {
+	if _, ok := dc.mutation.ID(); !ok {
+		v := document.DefaultID()
+		dc.mutation.SetID(v)
 	}
 }
 
@@ -327,6 +344,7 @@ func (dcb *DocumentCreateBulk) Save(ctx context.Context) ([]*Document, error) {
 	for i := range dcb.builders {
 		func(i int, root context.Context) {
 			builder := dcb.builders[i]
+			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*DocumentMutation)
 				if !ok {

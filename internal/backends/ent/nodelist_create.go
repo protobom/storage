@@ -56,6 +56,14 @@ func (nlc *NodeListCreate) SetID(u uuid.UUID) *NodeListCreate {
 	return nlc
 }
 
+// SetNillableID sets the "id" field if the given value is not nil.
+func (nlc *NodeListCreate) SetNillableID(u *uuid.UUID) *NodeListCreate {
+	if u != nil {
+		nlc.SetID(*u)
+	}
+	return nlc
+}
+
 // AddEdgeTypeIDs adds the "edge_types" edge to the EdgeType entity by IDs.
 func (nlc *NodeListCreate) AddEdgeTypeIDs(ids ...uuid.UUID) *NodeListCreate {
 	nlc.mutation.AddEdgeTypeIDs(ids...)
@@ -98,6 +106,7 @@ func (nlc *NodeListCreate) Mutation() *NodeListMutation {
 
 // Save creates the NodeList in the database.
 func (nlc *NodeListCreate) Save(ctx context.Context) (*NodeList, error) {
+	nlc.defaults()
 	return withHooks(ctx, nlc.sqlSave, nlc.mutation, nlc.hooks)
 }
 
@@ -120,6 +129,14 @@ func (nlc *NodeListCreate) Exec(ctx context.Context) error {
 func (nlc *NodeListCreate) ExecX(ctx context.Context) {
 	if err := nlc.Exec(ctx); err != nil {
 		panic(err)
+	}
+}
+
+// defaults sets the default values of the builder before save.
+func (nlc *NodeListCreate) defaults() {
+	if _, ok := nlc.mutation.ID(); !ok {
+		v := nodelist.DefaultID()
+		nlc.mutation.SetID(v)
 	}
 }
 
@@ -419,6 +436,7 @@ func (nlcb *NodeListCreateBulk) Save(ctx context.Context) ([]*NodeList, error) {
 	for i := range nlcb.builders {
 		func(i int, root context.Context) {
 			builder := nlcb.builders[i]
+			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*NodeListMutation)
 				if !ok {

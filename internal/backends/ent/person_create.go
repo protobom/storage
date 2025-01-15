@@ -116,6 +116,14 @@ func (pc *PersonCreate) SetID(u uuid.UUID) *PersonCreate {
 	return pc
 }
 
+// SetNillableID sets the "id" field if the given value is not nil.
+func (pc *PersonCreate) SetNillableID(u *uuid.UUID) *PersonCreate {
+	if u != nil {
+		pc.SetID(*u)
+	}
+	return pc
+}
+
 // SetDocument sets the "document" edge to the Document entity.
 func (pc *PersonCreate) SetDocument(d *Document) *PersonCreate {
 	return pc.SetDocumentID(d.ID)
@@ -203,6 +211,10 @@ func (pc *PersonCreate) defaults() {
 	if _, ok := pc.mutation.DocumentID(); !ok {
 		v := person.DefaultDocumentID()
 		pc.mutation.SetDocumentID(v)
+	}
+	if _, ok := pc.mutation.ID(); !ok {
+		v := person.DefaultID()
+		pc.mutation.SetID(v)
 	}
 }
 

@@ -83,6 +83,14 @@ func (pc *PropertyCreate) SetID(u uuid.UUID) *PropertyCreate {
 	return pc
 }
 
+// SetNillableID sets the "id" field if the given value is not nil.
+func (pc *PropertyCreate) SetNillableID(u *uuid.UUID) *PropertyCreate {
+	if u != nil {
+		pc.SetID(*u)
+	}
+	return pc
+}
+
 // SetDocument sets the "document" edge to the Document entity.
 func (pc *PropertyCreate) SetDocument(d *Document) *PropertyCreate {
 	return pc.SetDocumentID(d.ID)
@@ -131,6 +139,10 @@ func (pc *PropertyCreate) defaults() {
 	if _, ok := pc.mutation.DocumentID(); !ok {
 		v := property.DefaultDocumentID()
 		pc.mutation.SetDocumentID(v)
+	}
+	if _, ok := pc.mutation.ID(); !ok {
+		v := property.DefaultID()
+		pc.mutation.SetID(v)
 	}
 }
 

@@ -26,6 +26,7 @@ import (
 	"github.com/protobom/storage/internal/backends/ent/documenttype"
 	"github.com/protobom/storage/internal/backends/ent/edgetype"
 	"github.com/protobom/storage/internal/backends/ent/externalreference"
+	"github.com/protobom/storage/internal/backends/ent/hashesentry"
 	"github.com/protobom/storage/internal/backends/ent/metadata"
 	"github.com/protobom/storage/internal/backends/ent/node"
 	"github.com/protobom/storage/internal/backends/ent/nodelist"
@@ -53,6 +54,8 @@ type Client struct {
 	EdgeType *EdgeTypeClient
 	// ExternalReference is the client for interacting with the ExternalReference builders.
 	ExternalReference *ExternalReferenceClient
+	// HashesEntry is the client for interacting with the HashesEntry builders.
+	HashesEntry *HashesEntryClient
 	// Metadata is the client for interacting with the Metadata builders.
 	Metadata *MetadataClient
 	// Node is the client for interacting with the Node builders.
@@ -85,6 +88,7 @@ func (c *Client) init() {
 	c.DocumentType = NewDocumentTypeClient(c.config)
 	c.EdgeType = NewEdgeTypeClient(c.config)
 	c.ExternalReference = NewExternalReferenceClient(c.config)
+	c.HashesEntry = NewHashesEntryClient(c.config)
 	c.Metadata = NewMetadataClient(c.config)
 	c.Node = NewNodeClient(c.config)
 	c.NodeList = NewNodeListClient(c.config)
@@ -190,6 +194,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		DocumentType:      NewDocumentTypeClient(cfg),
 		EdgeType:          NewEdgeTypeClient(cfg),
 		ExternalReference: NewExternalReferenceClient(cfg),
+		HashesEntry:       NewHashesEntryClient(cfg),
 		Metadata:          NewMetadataClient(cfg),
 		Node:              NewNodeClient(cfg),
 		NodeList:          NewNodeListClient(cfg),
@@ -222,6 +227,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		DocumentType:      NewDocumentTypeClient(cfg),
 		EdgeType:          NewEdgeTypeClient(cfg),
 		ExternalReference: NewExternalReferenceClient(cfg),
+		HashesEntry:       NewHashesEntryClient(cfg),
 		Metadata:          NewMetadataClient(cfg),
 		Node:              NewNodeClient(cfg),
 		NodeList:          NewNodeListClient(cfg),
@@ -260,8 +266,8 @@ func (c *Client) Close() error {
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
 		c.Annotation, c.Document, c.DocumentType, c.EdgeType, c.ExternalReference,
-		c.Metadata, c.Node, c.NodeList, c.Person, c.Property, c.Purpose, c.SourceData,
-		c.Tool,
+		c.HashesEntry, c.Metadata, c.Node, c.NodeList, c.Person, c.Property, c.Purpose,
+		c.SourceData, c.Tool,
 	} {
 		n.Use(hooks...)
 	}
@@ -272,8 +278,8 @@ func (c *Client) Use(hooks ...Hook) {
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
 		c.Annotation, c.Document, c.DocumentType, c.EdgeType, c.ExternalReference,
-		c.Metadata, c.Node, c.NodeList, c.Person, c.Property, c.Purpose, c.SourceData,
-		c.Tool,
+		c.HashesEntry, c.Metadata, c.Node, c.NodeList, c.Person, c.Property, c.Purpose,
+		c.SourceData, c.Tool,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -292,6 +298,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.EdgeType.mutate(ctx, m)
 	case *ExternalReferenceMutation:
 		return c.ExternalReference.mutate(ctx, m)
+	case *HashesEntryMutation:
+		return c.HashesEntry.mutate(ctx, m)
 	case *MetadataMutation:
 		return c.Metadata.mutate(ctx, m)
 	case *NodeMutation:
@@ -1129,15 +1137,31 @@ func (c *ExternalReferenceClient) QueryDocument(er *ExternalReference) *Document
 	return query
 }
 
-// QueryNode queries the node edge of a ExternalReference.
-func (c *ExternalReferenceClient) QueryNode(er *ExternalReference) *NodeQuery {
+// QueryHashes queries the hashes edge of a ExternalReference.
+func (c *ExternalReferenceClient) QueryHashes(er *ExternalReference) *HashesEntryQuery {
+	query := (&HashesEntryClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := er.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(externalreference.Table, externalreference.FieldID, id),
+			sqlgraph.To(hashesentry.Table, hashesentry.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, externalreference.HashesTable, externalreference.HashesPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(er.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryNodes queries the nodes edge of a ExternalReference.
+func (c *ExternalReferenceClient) QueryNodes(er *ExternalReference) *NodeQuery {
 	query := (&NodeClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := er.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(externalreference.Table, externalreference.FieldID, id),
 			sqlgraph.To(node.Table, node.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, externalreference.NodeTable, externalreference.NodeColumn),
+			sqlgraph.Edge(sqlgraph.M2M, true, externalreference.NodesTable, externalreference.NodesPrimaryKey...),
 		)
 		fromV = sqlgraph.Neighbors(er.driver.Dialect(), step)
 		return fromV, nil
@@ -1167,6 +1191,187 @@ func (c *ExternalReferenceClient) mutate(ctx context.Context, m *ExternalReferen
 		return (&ExternalReferenceDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown ExternalReference mutation op: %q", m.Op())
+	}
+}
+
+// HashesEntryClient is a client for the HashesEntry schema.
+type HashesEntryClient struct {
+	config
+}
+
+// NewHashesEntryClient returns a client for the HashesEntry from the given config.
+func NewHashesEntryClient(c config) *HashesEntryClient {
+	return &HashesEntryClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `hashesentry.Hooks(f(g(h())))`.
+func (c *HashesEntryClient) Use(hooks ...Hook) {
+	c.hooks.HashesEntry = append(c.hooks.HashesEntry, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `hashesentry.Intercept(f(g(h())))`.
+func (c *HashesEntryClient) Intercept(interceptors ...Interceptor) {
+	c.inters.HashesEntry = append(c.inters.HashesEntry, interceptors...)
+}
+
+// Create returns a builder for creating a HashesEntry entity.
+func (c *HashesEntryClient) Create() *HashesEntryCreate {
+	mutation := newHashesEntryMutation(c.config, OpCreate)
+	return &HashesEntryCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of HashesEntry entities.
+func (c *HashesEntryClient) CreateBulk(builders ...*HashesEntryCreate) *HashesEntryCreateBulk {
+	return &HashesEntryCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *HashesEntryClient) MapCreateBulk(slice any, setFunc func(*HashesEntryCreate, int)) *HashesEntryCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &HashesEntryCreateBulk{err: fmt.Errorf("calling to HashesEntryClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*HashesEntryCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &HashesEntryCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for HashesEntry.
+func (c *HashesEntryClient) Update() *HashesEntryUpdate {
+	mutation := newHashesEntryMutation(c.config, OpUpdate)
+	return &HashesEntryUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *HashesEntryClient) UpdateOne(he *HashesEntry) *HashesEntryUpdateOne {
+	mutation := newHashesEntryMutation(c.config, OpUpdateOne, withHashesEntry(he))
+	return &HashesEntryUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *HashesEntryClient) UpdateOneID(id uuid.UUID) *HashesEntryUpdateOne {
+	mutation := newHashesEntryMutation(c.config, OpUpdateOne, withHashesEntryID(id))
+	return &HashesEntryUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for HashesEntry.
+func (c *HashesEntryClient) Delete() *HashesEntryDelete {
+	mutation := newHashesEntryMutation(c.config, OpDelete)
+	return &HashesEntryDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *HashesEntryClient) DeleteOne(he *HashesEntry) *HashesEntryDeleteOne {
+	return c.DeleteOneID(he.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *HashesEntryClient) DeleteOneID(id uuid.UUID) *HashesEntryDeleteOne {
+	builder := c.Delete().Where(hashesentry.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &HashesEntryDeleteOne{builder}
+}
+
+// Query returns a query builder for HashesEntry.
+func (c *HashesEntryClient) Query() *HashesEntryQuery {
+	return &HashesEntryQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeHashesEntry},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a HashesEntry entity by its id.
+func (c *HashesEntryClient) Get(ctx context.Context, id uuid.UUID) (*HashesEntry, error) {
+	return c.Query().Where(hashesentry.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *HashesEntryClient) GetX(ctx context.Context, id uuid.UUID) *HashesEntry {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryDocument queries the document edge of a HashesEntry.
+func (c *HashesEntryClient) QueryDocument(he *HashesEntry) *DocumentQuery {
+	query := (&DocumentClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := he.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(hashesentry.Table, hashesentry.FieldID, id),
+			sqlgraph.To(document.Table, document.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, hashesentry.DocumentTable, hashesentry.DocumentColumn),
+		)
+		fromV = sqlgraph.Neighbors(he.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryExternalReferences queries the external_references edge of a HashesEntry.
+func (c *HashesEntryClient) QueryExternalReferences(he *HashesEntry) *ExternalReferenceQuery {
+	query := (&ExternalReferenceClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := he.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(hashesentry.Table, hashesentry.FieldID, id),
+			sqlgraph.To(externalreference.Table, externalreference.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, hashesentry.ExternalReferencesTable, hashesentry.ExternalReferencesPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(he.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryNodes queries the nodes edge of a HashesEntry.
+func (c *HashesEntryClient) QueryNodes(he *HashesEntry) *NodeQuery {
+	query := (&NodeClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := he.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(hashesentry.Table, hashesentry.FieldID, id),
+			sqlgraph.To(node.Table, node.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, hashesentry.NodesTable, hashesentry.NodesPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(he.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *HashesEntryClient) Hooks() []Hook {
+	return c.hooks.HashesEntry
+}
+
+// Interceptors returns the client interceptors.
+func (c *HashesEntryClient) Interceptors() []Interceptor {
+	return c.inters.HashesEntry
+}
+
+func (c *HashesEntryClient) mutate(ctx context.Context, m *HashesEntryMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&HashesEntryCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&HashesEntryUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&HashesEntryUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&HashesEntryDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown HashesEntry mutation op: %q", m.Op())
 	}
 }
 
@@ -1507,6 +1712,22 @@ func (c *NodeClient) QueryDocument(n *Node) *DocumentQuery {
 	return query
 }
 
+// QueryAnnotations queries the annotations edge of a Node.
+func (c *NodeClient) QueryAnnotations(n *Node) *AnnotationQuery {
+	query := (&AnnotationClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := n.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(node.Table, node.FieldID, id),
+			sqlgraph.To(annotation.Table, annotation.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, node.AnnotationsTable, node.AnnotationsColumn),
+		)
+		fromV = sqlgraph.Neighbors(n.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QuerySuppliers queries the suppliers edge of a Node.
 func (c *NodeClient) QuerySuppliers(n *Node) *PersonQuery {
 	query := (&PersonClient{config: c.config}).Query()
@@ -1547,7 +1768,7 @@ func (c *NodeClient) QueryExternalReferences(n *Node) *ExternalReferenceQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(node.Table, node.FieldID, id),
 			sqlgraph.To(externalreference.Table, externalreference.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, node.ExternalReferencesTable, node.ExternalReferencesColumn),
+			sqlgraph.Edge(sqlgraph.M2M, false, node.ExternalReferencesTable, node.ExternalReferencesPrimaryKey...),
 		)
 		fromV = sqlgraph.Neighbors(n.driver.Dialect(), step)
 		return fromV, nil
@@ -1603,6 +1824,22 @@ func (c *NodeClient) QueryNodes(n *Node) *NodeQuery {
 	return query
 }
 
+// QueryHashes queries the hashes edge of a Node.
+func (c *NodeClient) QueryHashes(n *Node) *HashesEntryQuery {
+	query := (&HashesEntryClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := n.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(node.Table, node.FieldID, id),
+			sqlgraph.To(hashesentry.Table, hashesentry.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, node.HashesTable, node.HashesPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(n.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QueryProperties queries the properties edge of a Node.
 func (c *NodeClient) QueryProperties(n *Node) *PropertyQuery {
 	query := (&PropertyClient{config: c.config}).Query()
@@ -1628,22 +1865,6 @@ func (c *NodeClient) QueryNodeLists(n *Node) *NodeListQuery {
 			sqlgraph.From(node.Table, node.FieldID, id),
 			sqlgraph.To(nodelist.Table, nodelist.FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, true, node.NodeListsTable, node.NodeListsPrimaryKey...),
-		)
-		fromV = sqlgraph.Neighbors(n.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QueryAnnotations queries the annotations edge of a Node.
-func (c *NodeClient) QueryAnnotations(n *Node) *AnnotationQuery {
-	query := (&AnnotationClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := n.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(node.Table, node.FieldID, id),
-			sqlgraph.To(annotation.Table, annotation.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, node.AnnotationsTable, node.AnnotationsColumn),
 		)
 		fromV = sqlgraph.Neighbors(n.driver.Dialect(), step)
 		return fromV, nil
@@ -2749,12 +2970,14 @@ func (c *ToolClient) mutate(ctx context.Context, m *ToolMutation) (Value, error)
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		Annotation, Document, DocumentType, EdgeType, ExternalReference, Metadata, Node,
-		NodeList, Person, Property, Purpose, SourceData, Tool []ent.Hook
+		Annotation, Document, DocumentType, EdgeType, ExternalReference, HashesEntry,
+		Metadata, Node, NodeList, Person, Property, Purpose, SourceData,
+		Tool []ent.Hook
 	}
 	inters struct {
-		Annotation, Document, DocumentType, EdgeType, ExternalReference, Metadata, Node,
-		NodeList, Person, Property, Purpose, SourceData, Tool []ent.Interceptor
+		Annotation, Document, DocumentType, EdgeType, ExternalReference, HashesEntry,
+		Metadata, Node, NodeList, Person, Property, Purpose, SourceData,
+		Tool []ent.Interceptor
 	}
 )
 

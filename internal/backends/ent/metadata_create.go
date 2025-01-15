@@ -83,6 +83,14 @@ func (mc *MetadataCreate) SetID(u uuid.UUID) *MetadataCreate {
 	return mc
 }
 
+// SetNillableID sets the "id" field if the given value is not nil.
+func (mc *MetadataCreate) SetNillableID(u *uuid.UUID) *MetadataCreate {
+	if u != nil {
+		mc.SetID(*u)
+	}
+	return mc
+}
+
 // AddToolIDs adds the "tools" edge to the Tool entity by IDs.
 func (mc *MetadataCreate) AddToolIDs(ids ...uuid.UUID) *MetadataCreate {
 	mc.mutation.AddToolIDs(ids...)
@@ -155,6 +163,7 @@ func (mc *MetadataCreate) Mutation() *MetadataMutation {
 
 // Save creates the Metadata in the database.
 func (mc *MetadataCreate) Save(ctx context.Context) (*Metadata, error) {
+	mc.defaults()
 	return withHooks(ctx, mc.sqlSave, mc.mutation, mc.hooks)
 }
 
@@ -177,6 +186,14 @@ func (mc *MetadataCreate) Exec(ctx context.Context) error {
 func (mc *MetadataCreate) ExecX(ctx context.Context) {
 	if err := mc.Exec(ctx); err != nil {
 		panic(err)
+	}
+}
+
+// defaults sets the default values of the builder before save.
+func (mc *MetadataCreate) defaults() {
+	if _, ok := mc.mutation.ID(); !ok {
+		v := metadata.DefaultID()
+		mc.mutation.SetID(v)
 	}
 }
 
@@ -622,6 +639,7 @@ func (mcb *MetadataCreateBulk) Save(ctx context.Context) ([]*Metadata, error) {
 	for i := range mcb.builders {
 		func(i int, root context.Context) {
 			builder := mcb.builders[i]
+			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*MetadataMutation)
 				if !ok {
