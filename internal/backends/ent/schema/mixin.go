@@ -110,6 +110,11 @@ func enumValues(enum protoreflect.Enum) []string {
 }
 
 func uuidHook(next ent.Mutator) ent.Mutator {
+	type IDMutation interface {
+		ent.Mutation
+		SetID(uuid.UUID)
+	}
+
 	return ent.MutateFunc(func(ctx context.Context, mutation ent.Mutation) (ent.Value, error) {
 		// Get the value of the `proto_message` field being set as part of this mutation.
 		value, fieldSet := mutation.Field(protoMessageField)
@@ -128,11 +133,6 @@ func uuidHook(next ent.Mutator) ent.Mutator {
 
 		// Generate a UUID by hashing the wire-format bytes of the protobuf message.
 		uuidHash := uuid.NewHash(sha256.New(), uuid.Max, data, int(uuid.Max.Version()))
-
-		type IDMutation interface {
-			ent.Mutation
-			SetID(uuid.UUID)
-		}
 
 		// Set the generated UUID as the value to be inserted as part of this mutation.
 		if mut, ok := any(mutation).(IDMutation); ok {
