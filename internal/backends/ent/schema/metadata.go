@@ -12,7 +12,6 @@ import (
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
-	"github.com/google/uuid"
 	"github.com/protobom/protobom/pkg/sbom"
 )
 
@@ -29,7 +28,6 @@ func (Metadata) Mixin() []ent.Mixin {
 
 func (Metadata) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("document_id", uuid.UUID{}).Unique().Immutable(),
 		field.String("native_id").NotEmpty().Immutable(),
 		field.String("version"),
 		field.String("name"),
@@ -40,6 +38,10 @@ func (Metadata) Fields() []ent.Field {
 
 func (Metadata) Edges() []ent.Edge {
 	return []ent.Edge{
+		edge.To("document", Document.Type).
+			Required().
+			Unique().
+			Immutable(),
 		edge.To("tools", Tool.Type).
 			Annotations(entsql.OnDelete(entsql.Cascade)),
 		edge.To("authors", Person.Type).
@@ -48,13 +50,6 @@ func (Metadata) Edges() []ent.Edge {
 			Annotations(entsql.OnDelete(entsql.Cascade)),
 		edge.To("source_data", SourceData.Type).
 			Annotations(entsql.OnDelete(entsql.Cascade)),
-		edge.From("document", Document.Type).
-			Ref("metadata").
-			Required().
-			Unique().
-			Immutable().
-			Annotations(entsql.OnDelete(entsql.Cascade)).
-			Field("document_id"),
 	}
 }
 

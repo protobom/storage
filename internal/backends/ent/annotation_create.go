@@ -128,10 +128,6 @@ func (ac *AnnotationCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (ac *AnnotationCreate) defaults() {
-	if _, ok := ac.mutation.DocumentID(); !ok {
-		v := annotation.DefaultDocumentID()
-		ac.mutation.SetDocumentID(v)
-	}
 	if _, ok := ac.mutation.IsUnique(); !ok {
 		v := annotation.DefaultIsUnique
 		ac.mutation.SetIsUnique(v)
@@ -191,7 +187,7 @@ func (ac *AnnotationCreate) createSpec() (*Annotation, *sqlgraph.CreateSpec) {
 	if nodes := ac.mutation.DocumentIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
-			Inverse: false,
+			Inverse: true,
 			Table:   annotation.DocumentTable,
 			Columns: []string{annotation.DocumentColumn},
 			Bidi:    false,
@@ -202,7 +198,7 @@ func (ac *AnnotationCreate) createSpec() (*Annotation, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.DocumentID = nodes[0]
+		_node.DocumentID = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := ac.mutation.NodeIDs(); len(nodes) > 0 {
@@ -274,6 +270,24 @@ type (
 	}
 )
 
+// SetDocumentID sets the "document_id" field.
+func (u *AnnotationUpsert) SetDocumentID(v uuid.UUID) *AnnotationUpsert {
+	u.Set(annotation.FieldDocumentID, v)
+	return u
+}
+
+// UpdateDocumentID sets the "document_id" field to the value that was provided on create.
+func (u *AnnotationUpsert) UpdateDocumentID() *AnnotationUpsert {
+	u.SetExcluded(annotation.FieldDocumentID)
+	return u
+}
+
+// ClearDocumentID clears the value of the "document_id" field.
+func (u *AnnotationUpsert) ClearDocumentID() *AnnotationUpsert {
+	u.SetNull(annotation.FieldDocumentID)
+	return u
+}
+
 // SetNodeID sets the "node_id" field.
 func (u *AnnotationUpsert) SetNodeID(v uuid.UUID) *AnnotationUpsert {
 	u.Set(annotation.FieldNodeID, v)
@@ -338,11 +352,6 @@ func (u *AnnotationUpsert) UpdateIsUnique() *AnnotationUpsert {
 //		Exec(ctx)
 func (u *AnnotationUpsertOne) UpdateNewValues() *AnnotationUpsertOne {
 	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
-	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
-		if _, exists := u.create.mutation.DocumentID(); exists {
-			s.SetIgnore(annotation.FieldDocumentID)
-		}
-	}))
 	return u
 }
 
@@ -371,6 +380,27 @@ func (u *AnnotationUpsertOne) Update(set func(*AnnotationUpsert)) *AnnotationUps
 		set(&AnnotationUpsert{UpdateSet: update})
 	}))
 	return u
+}
+
+// SetDocumentID sets the "document_id" field.
+func (u *AnnotationUpsertOne) SetDocumentID(v uuid.UUID) *AnnotationUpsertOne {
+	return u.Update(func(s *AnnotationUpsert) {
+		s.SetDocumentID(v)
+	})
+}
+
+// UpdateDocumentID sets the "document_id" field to the value that was provided on create.
+func (u *AnnotationUpsertOne) UpdateDocumentID() *AnnotationUpsertOne {
+	return u.Update(func(s *AnnotationUpsert) {
+		s.UpdateDocumentID()
+	})
+}
+
+// ClearDocumentID clears the value of the "document_id" field.
+func (u *AnnotationUpsertOne) ClearDocumentID() *AnnotationUpsertOne {
+	return u.Update(func(s *AnnotationUpsert) {
+		s.ClearDocumentID()
+	})
 }
 
 // SetNodeID sets the "node_id" field.
@@ -610,13 +640,6 @@ type AnnotationUpsertBulk struct {
 //		Exec(ctx)
 func (u *AnnotationUpsertBulk) UpdateNewValues() *AnnotationUpsertBulk {
 	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
-	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
-		for _, b := range u.create.builders {
-			if _, exists := b.mutation.DocumentID(); exists {
-				s.SetIgnore(annotation.FieldDocumentID)
-			}
-		}
-	}))
 	return u
 }
 
@@ -645,6 +668,27 @@ func (u *AnnotationUpsertBulk) Update(set func(*AnnotationUpsert)) *AnnotationUp
 		set(&AnnotationUpsert{UpdateSet: update})
 	}))
 	return u
+}
+
+// SetDocumentID sets the "document_id" field.
+func (u *AnnotationUpsertBulk) SetDocumentID(v uuid.UUID) *AnnotationUpsertBulk {
+	return u.Update(func(s *AnnotationUpsert) {
+		s.SetDocumentID(v)
+	})
+}
+
+// UpdateDocumentID sets the "document_id" field to the value that was provided on create.
+func (u *AnnotationUpsertBulk) UpdateDocumentID() *AnnotationUpsertBulk {
+	return u.Update(func(s *AnnotationUpsert) {
+		s.UpdateDocumentID()
+	})
+}
+
+// ClearDocumentID clears the value of the "document_id" field.
+func (u *AnnotationUpsertBulk) ClearDocumentID() *AnnotationUpsertBulk {
+	return u.Update(func(s *AnnotationUpsert) {
+		s.ClearDocumentID()
+	})
 }
 
 // SetNodeID sets the "node_id" field.

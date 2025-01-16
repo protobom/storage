@@ -82,7 +82,7 @@ func (aq *AnnotationQuery) QueryDocument() *DocumentQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(annotation.Table, annotation.FieldID, selector),
 			sqlgraph.To(document.Table, document.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, annotation.DocumentTable, annotation.DocumentColumn),
+			sqlgraph.Edge(sqlgraph.M2O, true, annotation.DocumentTable, annotation.DocumentColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(aq.driver.Dialect(), step)
 		return fromU, nil
@@ -454,7 +454,10 @@ func (aq *AnnotationQuery) loadDocument(ctx context.Context, query *DocumentQuer
 	ids := make([]uuid.UUID, 0, len(nodes))
 	nodeids := make(map[uuid.UUID][]*Annotation)
 	for i := range nodes {
-		fk := nodes[i].DocumentID
+		if nodes[i].DocumentID == nil {
+			continue
+		}
+		fk := *nodes[i].DocumentID
 		if _, ok := nodeids[fk]; !ok {
 			ids = append(ids, fk)
 		}

@@ -20,8 +20,6 @@ const (
 	FieldID = "id"
 	// FieldProtoMessage holds the string denoting the proto_message field in the database.
 	FieldProtoMessage = "proto_message"
-	// FieldDocumentID holds the string denoting the document_id field in the database.
-	FieldDocumentID = "document_id"
 	// FieldNativeID holds the string denoting the native_id field in the database.
 	FieldNativeID = "native_id"
 	// FieldVersion holds the string denoting the version field in the database.
@@ -32,6 +30,8 @@ const (
 	FieldDate = "date"
 	// FieldComment holds the string denoting the comment field in the database.
 	FieldComment = "comment"
+	// EdgeDocument holds the string denoting the document edge name in mutations.
+	EdgeDocument = "document"
 	// EdgeTools holds the string denoting the tools edge name in mutations.
 	EdgeTools = "tools"
 	// EdgeAuthors holds the string denoting the authors edge name in mutations.
@@ -40,10 +40,15 @@ const (
 	EdgeDocumentTypes = "document_types"
 	// EdgeSourceData holds the string denoting the source_data edge name in mutations.
 	EdgeSourceData = "source_data"
-	// EdgeDocument holds the string denoting the document edge name in mutations.
-	EdgeDocument = "document"
 	// Table holds the table name of the metadata in the database.
 	Table = "metadata"
+	// DocumentTable is the table that holds the document relation/edge.
+	DocumentTable = "documents"
+	// DocumentInverseTable is the table name for the Document entity.
+	// It exists in this package in order to avoid circular dependency with the "document" package.
+	DocumentInverseTable = "documents"
+	// DocumentColumn is the table column denoting the document relation/edge.
+	DocumentColumn = "metadata_id"
 	// ToolsTable is the table that holds the tools relation/edge.
 	ToolsTable = "tools"
 	// ToolsInverseTable is the table name for the Tool entity.
@@ -72,20 +77,12 @@ const (
 	SourceDataInverseTable = "source_data"
 	// SourceDataColumn is the table column denoting the source_data relation/edge.
 	SourceDataColumn = "metadata_id"
-	// DocumentTable is the table that holds the document relation/edge.
-	DocumentTable = "metadata"
-	// DocumentInverseTable is the table name for the Document entity.
-	// It exists in this package in order to avoid circular dependency with the "document" package.
-	DocumentInverseTable = "documents"
-	// DocumentColumn is the table column denoting the document relation/edge.
-	DocumentColumn = "document_id"
 )
 
 // Columns holds all SQL columns for metadata fields.
 var Columns = []string{
 	FieldID,
 	FieldProtoMessage,
-	FieldDocumentID,
 	FieldNativeID,
 	FieldVersion,
 	FieldName,
@@ -118,11 +115,6 @@ func ByID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldID, opts...).ToFunc()
 }
 
-// ByDocumentID orders the results by the document_id field.
-func ByDocumentID(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldDocumentID, opts...).ToFunc()
-}
-
 // ByNativeID orders the results by the native_id field.
 func ByNativeID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldNativeID, opts...).ToFunc()
@@ -146,6 +138,13 @@ func ByDate(opts ...sql.OrderTermOption) OrderOption {
 // ByComment orders the results by the comment field.
 func ByComment(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldComment, opts...).ToFunc()
+}
+
+// ByDocumentField orders the results by document field.
+func ByDocumentField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newDocumentStep(), sql.OrderByField(field, opts...))
+	}
 }
 
 // ByToolsCount orders the results by tools count.
@@ -203,12 +202,12 @@ func BySourceData(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newSourceDataStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
-
-// ByDocumentField orders the results by document field.
-func ByDocumentField(field string, opts ...sql.OrderTermOption) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newDocumentStep(), sql.OrderByField(field, opts...))
-	}
+func newDocumentStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(DocumentInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2O, false, DocumentTable, DocumentColumn),
+	)
 }
 func newToolsStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
@@ -236,12 +235,5 @@ func newSourceDataStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(SourceDataInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, SourceDataTable, SourceDataColumn),
-	)
-}
-func newDocumentStep() *sqlgraph.Step {
-	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(DocumentInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2O, true, DocumentTable, DocumentColumn),
 	)
 }

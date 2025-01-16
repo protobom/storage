@@ -289,7 +289,7 @@ func HasDocument() predicate.Annotation {
 	return predicate.Annotation(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, DocumentTable, DocumentColumn),
+			sqlgraph.Edge(sqlgraph.M2O, true, DocumentTable, DocumentColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})

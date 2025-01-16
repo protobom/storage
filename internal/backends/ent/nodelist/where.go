@@ -65,11 +65,6 @@ func ProtoMessage(v *sbom.NodeList) predicate.NodeList {
 	return predicate.NodeList(sql.FieldEQ(FieldProtoMessage, v))
 }
 
-// DocumentID applies equality check predicate on the "document_id" field. It's identical to DocumentIDEQ.
-func DocumentID(v uuid.UUID) predicate.NodeList {
-	return predicate.NodeList(sql.FieldEQ(FieldDocumentID, v))
-}
-
 // ProtoMessageEQ applies the EQ predicate on the "proto_message" field.
 func ProtoMessageEQ(v *sbom.NodeList) predicate.NodeList {
 	return predicate.NodeList(sql.FieldEQ(FieldProtoMessage, v))
@@ -110,24 +105,27 @@ func ProtoMessageLTE(v *sbom.NodeList) predicate.NodeList {
 	return predicate.NodeList(sql.FieldLTE(FieldProtoMessage, v))
 }
 
-// DocumentIDEQ applies the EQ predicate on the "document_id" field.
-func DocumentIDEQ(v uuid.UUID) predicate.NodeList {
-	return predicate.NodeList(sql.FieldEQ(FieldDocumentID, v))
+// HasDocument applies the HasEdge predicate on the "document" edge.
+func HasDocument() predicate.NodeList {
+	return predicate.NodeList(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, DocumentTable, DocumentColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
 }
 
-// DocumentIDNEQ applies the NEQ predicate on the "document_id" field.
-func DocumentIDNEQ(v uuid.UUID) predicate.NodeList {
-	return predicate.NodeList(sql.FieldNEQ(FieldDocumentID, v))
-}
-
-// DocumentIDIn applies the In predicate on the "document_id" field.
-func DocumentIDIn(vs ...uuid.UUID) predicate.NodeList {
-	return predicate.NodeList(sql.FieldIn(FieldDocumentID, vs...))
-}
-
-// DocumentIDNotIn applies the NotIn predicate on the "document_id" field.
-func DocumentIDNotIn(vs ...uuid.UUID) predicate.NodeList {
-	return predicate.NodeList(sql.FieldNotIn(FieldDocumentID, vs...))
+// HasDocumentWith applies the HasEdge predicate on the "document" edge with a given conditions (other predicates).
+func HasDocumentWith(preds ...predicate.Document) predicate.NodeList {
+	return predicate.NodeList(func(s *sql.Selector) {
+		step := newDocumentStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
 }
 
 // HasEdgeTypes applies the HasEdge predicate on the "edge_types" edge.
@@ -168,29 +166,6 @@ func HasNodes() predicate.NodeList {
 func HasNodesWith(preds ...predicate.Node) predicate.NodeList {
 	return predicate.NodeList(func(s *sql.Selector) {
 		step := newNodesStep()
-		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
-			for _, p := range preds {
-				p(s)
-			}
-		})
-	})
-}
-
-// HasDocument applies the HasEdge predicate on the "document" edge.
-func HasDocument() predicate.NodeList {
-	return predicate.NodeList(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, true, DocumentTable, DocumentColumn),
-		)
-		sqlgraph.HasNeighbors(s, step)
-	})
-}
-
-// HasDocumentWith applies the HasEdge predicate on the "document" edge with a given conditions (other predicates).
-func HasDocumentWith(preds ...predicate.Document) predicate.NodeList {
-	return predicate.NodeList(func(s *sql.Selector) {
-		step := newDocumentStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

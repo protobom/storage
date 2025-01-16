@@ -31,17 +31,10 @@ import (
 // (default values, validators, hooks and policies) and stitches it
 // to their package variables.
 func init() {
-	annotationMixin := schema.Annotation{}.Mixin()
-	annotationMixinFields0 := annotationMixin[0].Fields()
-	_ = annotationMixinFields0
 	annotationFields := schema.Annotation{}.Fields()
 	_ = annotationFields
-	// annotationDescDocumentID is the schema descriptor for document_id field.
-	annotationDescDocumentID := annotationMixinFields0[0].Descriptor()
-	// annotation.DefaultDocumentID holds the default value on creation for the document_id field.
-	annotation.DefaultDocumentID = annotationDescDocumentID.Default.(func() uuid.UUID)
 	// annotationDescIsUnique is the schema descriptor for is_unique field.
-	annotationDescIsUnique := annotationFields[3].Descriptor()
+	annotationDescIsUnique := annotationFields[4].Descriptor()
 	// annotation.DefaultIsUnique holds the default value on creation for the is_unique field.
 	annotation.DefaultIsUnique = annotationDescIsUnique.Default.(bool)
 	documentMixin := schema.Document{}.Mixin()
@@ -134,7 +127,7 @@ func init() {
 	metadataFields := schema.Metadata{}.Fields()
 	_ = metadataFields
 	// metadataDescNativeID is the schema descriptor for native_id field.
-	metadataDescNativeID := metadataFields[1].Descriptor()
+	metadataDescNativeID := metadataFields[0].Descriptor()
 	// metadata.NativeIDValidator is a validator for the "native_id" field. It is called by the builders before save.
 	metadata.NativeIDValidator = metadataDescNativeID.Validators[0].(func(string) error)
 	// metadataDescID is the schema descriptor for id field.

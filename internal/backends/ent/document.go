@@ -21,9 +21,13 @@ import (
 
 // Document is the model entity for the Document schema.
 type Document struct {
-	config
+	config `json:"-"`
 	// ID of the ent.
 	ID uuid.UUID `json:"id,omitempty"`
+	// MetadataID holds the value of the "metadata_id" field.
+	MetadataID uuid.UUID `json:"metadata_id,omitempty"`
+	// NodeListID holds the value of the "node_list_id" field.
+	NodeListID uuid.UUID `json:"node_list_id,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the DocumentQuery when eager-loading is set.
 	Edges        DocumentEdges `json:"edges"`
@@ -32,13 +36,24 @@ type Document struct {
 
 // DocumentEdges holds the relations/edges for other nodes in the graph.
 type DocumentEdges struct {
+	// Annotations holds the value of the annotations edge.
+	Annotations []*Annotation `json:"annotations,omitempty"`
 	// Metadata holds the value of the metadata edge.
 	Metadata *Metadata `json:"metadata,omitempty"`
 	// NodeList holds the value of the node_list edge.
 	NodeList *NodeList `json:"node_list,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [3]bool
+}
+
+// AnnotationsOrErr returns the Annotations value or an error if the edge
+// was not loaded in eager-loading.
+func (e DocumentEdges) AnnotationsOrErr() ([]*Annotation, error) {
+	if e.loadedTypes[0] {
+		return e.Annotations, nil
+	}
+	return nil, &NotLoadedError{edge: "annotations"}
 }
 
 // MetadataOrErr returns the Metadata value or an error if the edge
@@ -46,7 +61,7 @@ type DocumentEdges struct {
 func (e DocumentEdges) MetadataOrErr() (*Metadata, error) {
 	if e.Metadata != nil {
 		return e.Metadata, nil
-	} else if e.loadedTypes[0] {
+	} else if e.loadedTypes[1] {
 		return nil, &NotFoundError{label: metadata.Label}
 	}
 	return nil, &NotLoadedError{edge: "metadata"}
@@ -57,7 +72,7 @@ func (e DocumentEdges) MetadataOrErr() (*Metadata, error) {
 func (e DocumentEdges) NodeListOrErr() (*NodeList, error) {
 	if e.NodeList != nil {
 		return e.NodeList, nil
-	} else if e.loadedTypes[1] {
+	} else if e.loadedTypes[2] {
 		return nil, &NotFoundError{label: nodelist.Label}
 	}
 	return nil, &NotLoadedError{edge: "node_list"}
@@ -68,7 +83,7 @@ func (*Document) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case document.FieldID:
+		case document.FieldID, document.FieldMetadataID, document.FieldNodeListID:
 			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -91,6 +106,18 @@ func (d *Document) assignValues(columns []string, values []any) error {
 			} else if value != nil {
 				d.ID = *value
 			}
+		case document.FieldMetadataID:
+			if value, ok := values[i].(*uuid.UUID); !ok {
+				return fmt.Errorf("unexpected type %T for field metadata_id", values[i])
+			} else if value != nil {
+				d.MetadataID = *value
+			}
+		case document.FieldNodeListID:
+			if value, ok := values[i].(*uuid.UUID); !ok {
+				return fmt.Errorf("unexpected type %T for field node_list_id", values[i])
+			} else if value != nil {
+				d.NodeListID = *value
+			}
 		default:
 			d.selectValues.Set(columns[i], values[i])
 		}
@@ -102,6 +129,11 @@ func (d *Document) assignValues(columns []string, values []any) error {
 // This includes values selected through modifiers, order, etc.
 func (d *Document) Value(name string) (ent.Value, error) {
 	return d.selectValues.Get(name)
+}
+
+// QueryAnnotations queries the "annotations" edge of the Document entity.
+func (d *Document) QueryAnnotations() *AnnotationQuery {
+	return NewDocumentClient(d.config).QueryAnnotations(d)
 }
 
 // QueryMetadata queries the "metadata" edge of the Document entity.
@@ -136,7 +168,12 @@ func (d *Document) Unwrap() *Document {
 func (d *Document) String() string {
 	var builder strings.Builder
 	builder.WriteString("Document(")
-	builder.WriteString(fmt.Sprintf("id=%v", d.ID))
+	builder.WriteString(fmt.Sprintf("id=%v, ", d.ID))
+	builder.WriteString("metadata_id=")
+	builder.WriteString(fmt.Sprintf("%v", d.MetadataID))
+	builder.WriteString(", ")
+	builder.WriteString("node_list_id=")
+	builder.WriteString(fmt.Sprintf("%v", d.NodeListID))
 	builder.WriteByte(')')
 	return builder.String()
 }

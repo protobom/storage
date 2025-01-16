@@ -27,8 +27,6 @@ type NodeList struct {
 	ID uuid.UUID `json:"id,omitempty"`
 	// ProtoMessage holds the value of the "proto_message" field.
 	ProtoMessage *sbom.NodeList `json:"proto_message,omitempty"`
-	// DocumentID holds the value of the "document_id" field.
-	DocumentID uuid.UUID `json:"document_id,omitempty"`
 	// RootElements holds the value of the "root_elements" field.
 	RootElements []string `json:"root_elements,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -39,21 +37,32 @@ type NodeList struct {
 
 // NodeListEdges holds the relations/edges for other nodes in the graph.
 type NodeListEdges struct {
+	// Document holds the value of the document edge.
+	Document *Document `json:"document,omitempty"`
 	// EdgeTypes holds the value of the edge_types edge.
 	EdgeTypes []*EdgeType `json:"edge_types,omitempty"`
 	// Nodes holds the value of the nodes edge.
 	Nodes []*Node `json:"nodes,omitempty"`
-	// Document holds the value of the document edge.
-	Document *Document `json:"document,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [3]bool
 }
 
+// DocumentOrErr returns the Document value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e NodeListEdges) DocumentOrErr() (*Document, error) {
+	if e.Document != nil {
+		return e.Document, nil
+	} else if e.loadedTypes[0] {
+		return nil, &NotFoundError{label: document.Label}
+	}
+	return nil, &NotLoadedError{edge: "document"}
+}
+
 // EdgeTypesOrErr returns the EdgeTypes value or an error if the edge
 // was not loaded in eager-loading.
 func (e NodeListEdges) EdgeTypesOrErr() ([]*EdgeType, error) {
-	if e.loadedTypes[0] {
+	if e.loadedTypes[1] {
 		return e.EdgeTypes, nil
 	}
 	return nil, &NotLoadedError{edge: "edge_types"}
@@ -62,21 +71,10 @@ func (e NodeListEdges) EdgeTypesOrErr() ([]*EdgeType, error) {
 // NodesOrErr returns the Nodes value or an error if the edge
 // was not loaded in eager-loading.
 func (e NodeListEdges) NodesOrErr() ([]*Node, error) {
-	if e.loadedTypes[1] {
+	if e.loadedTypes[2] {
 		return e.Nodes, nil
 	}
 	return nil, &NotLoadedError{edge: "nodes"}
-}
-
-// DocumentOrErr returns the Document value or an error if the edge
-// was not loaded in eager-loading, or loaded but was not found.
-func (e NodeListEdges) DocumentOrErr() (*Document, error) {
-	if e.Document != nil {
-		return e.Document, nil
-	} else if e.loadedTypes[2] {
-		return nil, &NotFoundError{label: document.Label}
-	}
-	return nil, &NotLoadedError{edge: "document"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -88,7 +86,7 @@ func (*NodeList) scanValues(columns []string) ([]any, error) {
 			values[i] = &sql.NullScanner{S: new(sbom.NodeList)}
 		case nodelist.FieldRootElements:
 			values[i] = new([]byte)
-		case nodelist.FieldID, nodelist.FieldDocumentID:
+		case nodelist.FieldID:
 			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -117,12 +115,6 @@ func (nl *NodeList) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				nl.ProtoMessage = value.S.(*sbom.NodeList)
 			}
-		case nodelist.FieldDocumentID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
-				return fmt.Errorf("unexpected type %T for field document_id", values[i])
-			} else if value != nil {
-				nl.DocumentID = *value
-			}
 		case nodelist.FieldRootElements:
 			if value, ok := values[i].(*[]byte); !ok {
 				return fmt.Errorf("unexpected type %T for field root_elements", values[i])
@@ -144,6 +136,11 @@ func (nl *NodeList) Value(name string) (ent.Value, error) {
 	return nl.selectValues.Get(name)
 }
 
+// QueryDocument queries the "document" edge of the NodeList entity.
+func (nl *NodeList) QueryDocument() *DocumentQuery {
+	return NewNodeListClient(nl.config).QueryDocument(nl)
+}
+
 // QueryEdgeTypes queries the "edge_types" edge of the NodeList entity.
 func (nl *NodeList) QueryEdgeTypes() *EdgeTypeQuery {
 	return NewNodeListClient(nl.config).QueryEdgeTypes(nl)
@@ -152,11 +149,6 @@ func (nl *NodeList) QueryEdgeTypes() *EdgeTypeQuery {
 // QueryNodes queries the "nodes" edge of the NodeList entity.
 func (nl *NodeList) QueryNodes() *NodeQuery {
 	return NewNodeListClient(nl.config).QueryNodes(nl)
-}
-
-// QueryDocument queries the "document" edge of the NodeList entity.
-func (nl *NodeList) QueryDocument() *DocumentQuery {
-	return NewNodeListClient(nl.config).QueryDocument(nl)
 }
 
 // Update returns a builder for updating this NodeList.
@@ -186,9 +178,6 @@ func (nl *NodeList) String() string {
 		builder.WriteString("proto_message=")
 		builder.WriteString(fmt.Sprintf("%v", *v))
 	}
-	builder.WriteString(", ")
-	builder.WriteString("document_id=")
-	builder.WriteString(fmt.Sprintf("%v", nl.DocumentID))
 	builder.WriteString(", ")
 	builder.WriteString("root_elements=")
 	builder.WriteString(fmt.Sprintf("%v", nl.RootElements))

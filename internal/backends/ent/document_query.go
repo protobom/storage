@@ -18,6 +18,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
+	"github.com/protobom/storage/internal/backends/ent/annotation"
 	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/metadata"
 	"github.com/protobom/storage/internal/backends/ent/nodelist"
@@ -27,12 +28,13 @@ import (
 // DocumentQuery is the builder for querying Document entities.
 type DocumentQuery struct {
 	config
-	ctx          *QueryContext
-	order        []document.OrderOption
-	inters       []Interceptor
-	predicates   []predicate.Document
-	withMetadata *MetadataQuery
-	withNodeList *NodeListQuery
+	ctx             *QueryContext
+	order           []document.OrderOption
+	inters          []Interceptor
+	predicates      []predicate.Document
+	withAnnotations *AnnotationQuery
+	withMetadata    *MetadataQuery
+	withNodeList    *NodeListQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -69,6 +71,28 @@ func (dq *DocumentQuery) Order(o ...document.OrderOption) *DocumentQuery {
 	return dq
 }
 
+// QueryAnnotations chains the current query on the "annotations" edge.
+func (dq *DocumentQuery) QueryAnnotations() *AnnotationQuery {
+	query := (&AnnotationClient{config: dq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := dq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := dq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(document.Table, document.FieldID, selector),
+			sqlgraph.To(annotation.Table, annotation.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, document.AnnotationsTable, document.AnnotationsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(dq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
 // QueryMetadata chains the current query on the "metadata" edge.
 func (dq *DocumentQuery) QueryMetadata() *MetadataQuery {
 	query := (&MetadataClient{config: dq.config}).Query()
@@ -83,7 +107,7 @@ func (dq *DocumentQuery) QueryMetadata() *MetadataQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(document.Table, document.FieldID, selector),
 			sqlgraph.To(metadata.Table, metadata.FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, false, document.MetadataTable, document.MetadataColumn),
+			sqlgraph.Edge(sqlgraph.O2O, true, document.MetadataTable, document.MetadataColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(dq.driver.Dialect(), step)
 		return fromU, nil
@@ -105,7 +129,7 @@ func (dq *DocumentQuery) QueryNodeList() *NodeListQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(document.Table, document.FieldID, selector),
 			sqlgraph.To(nodelist.Table, nodelist.FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, false, document.NodeListTable, document.NodeListColumn),
+			sqlgraph.Edge(sqlgraph.O2O, true, document.NodeListTable, document.NodeListColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(dq.driver.Dialect(), step)
 		return fromU, nil
@@ -300,17 +324,29 @@ func (dq *DocumentQuery) Clone() *DocumentQuery {
 		return nil
 	}
 	return &DocumentQuery{
-		config:       dq.config,
-		ctx:          dq.ctx.Clone(),
-		order:        append([]document.OrderOption{}, dq.order...),
-		inters:       append([]Interceptor{}, dq.inters...),
-		predicates:   append([]predicate.Document{}, dq.predicates...),
-		withMetadata: dq.withMetadata.Clone(),
-		withNodeList: dq.withNodeList.Clone(),
+		config:          dq.config,
+		ctx:             dq.ctx.Clone(),
+		order:           append([]document.OrderOption{}, dq.order...),
+		inters:          append([]Interceptor{}, dq.inters...),
+		predicates:      append([]predicate.Document{}, dq.predicates...),
+		withAnnotations: dq.withAnnotations.Clone(),
+		withMetadata:    dq.withMetadata.Clone(),
+		withNodeList:    dq.withNodeList.Clone(),
 		// clone intermediate query.
 		sql:  dq.sql.Clone(),
 		path: dq.path,
 	}
+}
+
+// WithAnnotations tells the query-builder to eager-load the nodes that are connected to
+// the "annotations" edge. The optional arguments are used to configure the query builder of the edge.
+func (dq *DocumentQuery) WithAnnotations(opts ...func(*AnnotationQuery)) *DocumentQuery {
+	query := (&AnnotationClient{config: dq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	dq.withAnnotations = query
+	return dq
 }
 
 // WithMetadata tells the query-builder to eager-load the nodes that are connected to
@@ -337,6 +373,18 @@ func (dq *DocumentQuery) WithNodeList(opts ...func(*NodeListQuery)) *DocumentQue
 
 // GroupBy is used to group vertices by one or more fields/columns.
 // It is often used with aggregate functions, like: count, max, mean, min, sum.
+//
+// Example:
+//
+//	var v []struct {
+//		MetadataID uuid.UUID `json:"metadata_id,omitempty"`
+//		Count int `json:"count,omitempty"`
+//	}
+//
+//	client.Document.Query().
+//		GroupBy(document.FieldMetadataID).
+//		Aggregate(ent.Count()).
+//		Scan(ctx, &v)
 func (dq *DocumentQuery) GroupBy(field string, fields ...string) *DocumentGroupBy {
 	dq.ctx.Fields = append([]string{field}, fields...)
 	grbuild := &DocumentGroupBy{build: dq}
@@ -348,6 +396,16 @@ func (dq *DocumentQuery) GroupBy(field string, fields ...string) *DocumentGroupB
 
 // Select allows the selection one or more fields/columns for the given query,
 // instead of selecting all fields in the entity.
+//
+// Example:
+//
+//	var v []struct {
+//		MetadataID uuid.UUID `json:"metadata_id,omitempty"`
+//	}
+//
+//	client.Document.Query().
+//		Select(document.FieldMetadataID).
+//		Scan(ctx, &v)
 func (dq *DocumentQuery) Select(fields ...string) *DocumentSelect {
 	dq.ctx.Fields = append(dq.ctx.Fields, fields...)
 	sbuild := &DocumentSelect{DocumentQuery: dq}
@@ -391,7 +449,8 @@ func (dq *DocumentQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Doc
 	var (
 		nodes       = []*Document{}
 		_spec       = dq.querySpec()
-		loadedTypes = [2]bool{
+		loadedTypes = [3]bool{
+			dq.withAnnotations != nil,
 			dq.withMetadata != nil,
 			dq.withNodeList != nil,
 		}
@@ -414,6 +473,13 @@ func (dq *DocumentQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Doc
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
+	if query := dq.withAnnotations; query != nil {
+		if err := dq.loadAnnotations(ctx, query, nodes,
+			func(n *Document) { n.Edges.Annotations = []*Annotation{} },
+			func(n *Document, e *Annotation) { n.Edges.Annotations = append(n.Edges.Annotations, e) }); err != nil {
+			return nil, err
+		}
+	}
 	if query := dq.withMetadata; query != nil {
 		if err := dq.loadMetadata(ctx, query, nodes, nil,
 			func(n *Document, e *Metadata) { n.Edges.Metadata = e }); err != nil {
@@ -429,18 +495,21 @@ func (dq *DocumentQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Doc
 	return nodes, nil
 }
 
-func (dq *DocumentQuery) loadMetadata(ctx context.Context, query *MetadataQuery, nodes []*Document, init func(*Document), assign func(*Document, *Metadata)) error {
+func (dq *DocumentQuery) loadAnnotations(ctx context.Context, query *AnnotationQuery, nodes []*Document, init func(*Document), assign func(*Document, *Annotation)) error {
 	fks := make([]driver.Value, 0, len(nodes))
 	nodeids := make(map[uuid.UUID]*Document)
 	for i := range nodes {
 		fks = append(fks, nodes[i].ID)
 		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
 	}
 	if len(query.ctx.Fields) > 0 {
-		query.ctx.AppendFieldOnce(metadata.FieldDocumentID)
+		query.ctx.AppendFieldOnce(annotation.FieldDocumentID)
 	}
-	query.Where(predicate.Metadata(func(s *sql.Selector) {
-		s.Where(sql.InValues(s.C(document.MetadataColumn), fks...))
+	query.Where(predicate.Annotation(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(document.AnnotationsColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {
@@ -448,38 +517,72 @@ func (dq *DocumentQuery) loadMetadata(ctx context.Context, query *MetadataQuery,
 	}
 	for _, n := range neighbors {
 		fk := n.DocumentID
-		node, ok := nodeids[fk]
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "document_id" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
 		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "document_id" returned %v for node %v`, fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "document_id" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}
 	return nil
 }
-func (dq *DocumentQuery) loadNodeList(ctx context.Context, query *NodeListQuery, nodes []*Document, init func(*Document), assign func(*Document, *NodeList)) error {
-	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[uuid.UUID]*Document)
+func (dq *DocumentQuery) loadMetadata(ctx context.Context, query *MetadataQuery, nodes []*Document, init func(*Document), assign func(*Document, *Metadata)) error {
+	ids := make([]uuid.UUID, 0, len(nodes))
+	nodeids := make(map[uuid.UUID][]*Document)
 	for i := range nodes {
-		fks = append(fks, nodes[i].ID)
-		nodeids[nodes[i].ID] = nodes[i]
+		fk := nodes[i].MetadataID
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
 	}
-	if len(query.ctx.Fields) > 0 {
-		query.ctx.AppendFieldOnce(nodelist.FieldDocumentID)
+	if len(ids) == 0 {
+		return nil
 	}
-	query.Where(predicate.NodeList(func(s *sql.Selector) {
-		s.Where(sql.InValues(s.C(document.NodeListColumn), fks...))
-	}))
+	query.Where(metadata.IDIn(ids...))
 	neighbors, err := query.All(ctx)
 	if err != nil {
 		return err
 	}
 	for _, n := range neighbors {
-		fk := n.DocumentID
-		node, ok := nodeids[fk]
+		nodes, ok := nodeids[n.ID]
 		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "document_id" returned %v for node %v`, fk, n.ID)
+			return fmt.Errorf(`unexpected foreign-key "metadata_id" returned %v`, n.ID)
 		}
-		assign(node, n)
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
+	}
+	return nil
+}
+func (dq *DocumentQuery) loadNodeList(ctx context.Context, query *NodeListQuery, nodes []*Document, init func(*Document), assign func(*Document, *NodeList)) error {
+	ids := make([]uuid.UUID, 0, len(nodes))
+	nodeids := make(map[uuid.UUID][]*Document)
+	for i := range nodes {
+		fk := nodes[i].NodeListID
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(nodelist.IDIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "node_list_id" returned %v`, n.ID)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
 	}
 	return nil
 }
@@ -508,6 +611,12 @@ func (dq *DocumentQuery) querySpec() *sqlgraph.QuerySpec {
 			if fields[i] != document.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
+		}
+		if dq.withMetadata != nil {
+			_spec.Node.AddColumnOnce(document.FieldMetadataID)
+		}
+		if dq.withNodeList != nil {
+			_spec.Node.AddColumnOnce(document.FieldNodeListID)
 		}
 	}
 	if ps := dq.predicates; len(ps) > 0 {

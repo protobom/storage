@@ -587,7 +587,7 @@ func (as *annotationsSuite) TestBackend_SetDocumentUniqueAnnotation() { //nolint
 			annotations := as.getTestResult(annotationName)
 
 			as.Require().Len(annotations, subtest.expectedLen)
-			as.Equal(uniqueID, annotations[subtest.documentIdx].DocumentID)
+			as.Equal(&uniqueID, annotations[subtest.documentIdx].DocumentID)
 			as.Equal(annotationName, annotations[subtest.documentIdx].Name)
 			as.Equal(subtest.value, annotations[subtest.documentIdx].Value)
 		})
@@ -622,7 +622,7 @@ func (as *annotationsSuite) TestBackend_SetNodeUniqueAnnotation() { //nolint:dup
 			annotations := as.getTestResult(annotationName)
 
 			as.Require().Len(annotations, subtest.expectedLen)
-			as.Equal(uniqueID, annotations[subtest.nodeIdx].DocumentID)
+			as.Equal(&uniqueID, annotations[subtest.nodeIdx].DocumentID)
 			as.Equal(annotationName, annotations[subtest.nodeIdx].Name)
 			as.Equal(subtest.value, annotations[subtest.nodeIdx].Value)
 		})

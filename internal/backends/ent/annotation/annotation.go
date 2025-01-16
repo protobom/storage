@@ -10,7 +10,6 @@ package annotation
 import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
-	"github.com/google/uuid"
 )
 
 const (
@@ -71,8 +70,6 @@ func ValidColumn(column string) bool {
 }
 
 var (
-	// DefaultDocumentID holds the default value on creation for the "document_id" field.
-	DefaultDocumentID func() uuid.UUID
 	// DefaultIsUnique holds the default value on creation for the "is_unique" field.
 	DefaultIsUnique bool
 )
@@ -127,7 +124,7 @@ func newDocumentStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(DocumentInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.M2O, false, DocumentTable, DocumentColumn),
+		sqlgraph.Edge(sqlgraph.M2O, true, DocumentTable, DocumentColumn),
 	)
 }
 func newNodeStep() *sqlgraph.Step {

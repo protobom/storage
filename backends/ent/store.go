@@ -71,8 +71,8 @@ func (backend *Backend) Store(doc *sbom.Document, opts *storage.StoreOptions) er
 
 	// Set each annotation's document ID if not specified.
 	for _, a := range annotations {
-		if a.DocumentID == uuid.Nil {
-			a.DocumentID = id
+		if a.DocumentID == nil || a.DocumentID == &uuid.Nil {
+			a.DocumentID = &id
 		}
 	}
 
@@ -96,7 +96,7 @@ func (backend *Backend) saveAnnotations(annotations ...*ent.Annotation) TxFunc {
 
 		for idx := range annotations {
 			builder := tx.Annotation.Create().
-				SetDocumentID(annotations[idx].DocumentID).
+				SetNillableDocumentID(annotations[idx].DocumentID).
 				SetNillableNodeID(annotations[idx].NodeID).
 				SetName(annotations[idx].Name).
 				SetValue(annotations[idx].Value).

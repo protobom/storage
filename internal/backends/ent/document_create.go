@@ -17,6 +17,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
+	"github.com/protobom/storage/internal/backends/ent/annotation"
 	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/metadata"
 	"github.com/protobom/storage/internal/backends/ent/nodelist"
@@ -28,6 +29,34 @@ type DocumentCreate struct {
 	mutation *DocumentMutation
 	hooks    []Hook
 	conflict []sql.ConflictOption
+}
+
+// SetMetadataID sets the "metadata_id" field.
+func (dc *DocumentCreate) SetMetadataID(u uuid.UUID) *DocumentCreate {
+	dc.mutation.SetMetadataID(u)
+	return dc
+}
+
+// SetNillableMetadataID sets the "metadata_id" field if the given value is not nil.
+func (dc *DocumentCreate) SetNillableMetadataID(u *uuid.UUID) *DocumentCreate {
+	if u != nil {
+		dc.SetMetadataID(*u)
+	}
+	return dc
+}
+
+// SetNodeListID sets the "node_list_id" field.
+func (dc *DocumentCreate) SetNodeListID(u uuid.UUID) *DocumentCreate {
+	dc.mutation.SetNodeListID(u)
+	return dc
+}
+
+// SetNillableNodeListID sets the "node_list_id" field if the given value is not nil.
+func (dc *DocumentCreate) SetNillableNodeListID(u *uuid.UUID) *DocumentCreate {
+	if u != nil {
+		dc.SetNodeListID(*u)
+	}
+	return dc
 }
 
 // SetID sets the "id" field.
@@ -44,37 +73,24 @@ func (dc *DocumentCreate) SetNillableID(u *uuid.UUID) *DocumentCreate {
 	return dc
 }
 
-// SetMetadataID sets the "metadata" edge to the Metadata entity by ID.
-func (dc *DocumentCreate) SetMetadataID(id uuid.UUID) *DocumentCreate {
-	dc.mutation.SetMetadataID(id)
+// AddAnnotationIDs adds the "annotations" edge to the Annotation entity by IDs.
+func (dc *DocumentCreate) AddAnnotationIDs(ids ...int) *DocumentCreate {
+	dc.mutation.AddAnnotationIDs(ids...)
 	return dc
 }
 
-// SetNillableMetadataID sets the "metadata" edge to the Metadata entity by ID if the given value is not nil.
-func (dc *DocumentCreate) SetNillableMetadataID(id *uuid.UUID) *DocumentCreate {
-	if id != nil {
-		dc = dc.SetMetadataID(*id)
+// AddAnnotations adds the "annotations" edges to the Annotation entity.
+func (dc *DocumentCreate) AddAnnotations(a ...*Annotation) *DocumentCreate {
+	ids := make([]int, len(a))
+	for i := range a {
+		ids[i] = a[i].ID
 	}
-	return dc
+	return dc.AddAnnotationIDs(ids...)
 }
 
 // SetMetadata sets the "metadata" edge to the Metadata entity.
 func (dc *DocumentCreate) SetMetadata(m *Metadata) *DocumentCreate {
 	return dc.SetMetadataID(m.ID)
-}
-
-// SetNodeListID sets the "node_list" edge to the NodeList entity by ID.
-func (dc *DocumentCreate) SetNodeListID(id uuid.UUID) *DocumentCreate {
-	dc.mutation.SetNodeListID(id)
-	return dc
-}
-
-// SetNillableNodeListID sets the "node_list" edge to the NodeList entity by ID if the given value is not nil.
-func (dc *DocumentCreate) SetNillableNodeListID(id *uuid.UUID) *DocumentCreate {
-	if id != nil {
-		dc = dc.SetNodeListID(*id)
-	}
-	return dc
 }
 
 // SetNodeList sets the "node_list" edge to the NodeList entity.
@@ -161,10 +177,26 @@ func (dc *DocumentCreate) createSpec() (*Document, *sqlgraph.CreateSpec) {
 		_node.ID = id
 		_spec.ID.Value = &id
 	}
+	if nodes := dc.mutation.AnnotationsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   document.AnnotationsTable,
+			Columns: []string{document.AnnotationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(annotation.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
 	if nodes := dc.mutation.MetadataIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2O,
-			Inverse: false,
+			Inverse: true,
 			Table:   document.MetadataTable,
 			Columns: []string{document.MetadataColumn},
 			Bidi:    false,
@@ -175,12 +207,13 @@ func (dc *DocumentCreate) createSpec() (*Document, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
+		_node.MetadataID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := dc.mutation.NodeListIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2O,
-			Inverse: false,
+			Inverse: true,
 			Table:   document.NodeListTable,
 			Columns: []string{document.NodeListColumn},
 			Bidi:    false,
@@ -191,6 +224,7 @@ func (dc *DocumentCreate) createSpec() (*Document, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
+		_node.NodeListID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
@@ -200,11 +234,17 @@ func (dc *DocumentCreate) createSpec() (*Document, *sqlgraph.CreateSpec) {
 // of the `INSERT` statement. For example:
 //
 //	client.Document.Create().
+//		SetMetadataID(v).
 //		OnConflict(
 //			// Update the row with the new values
 //			// the was proposed for insertion.
 //			sql.ResolveWithNewValues(),
 //		).
+//		// Override some of the fields with custom
+//		// update values.
+//		Update(func(u *ent.DocumentUpsert) {
+//			SetMetadataID(v+v).
+//		}).
 //		Exec(ctx)
 func (dc *DocumentCreate) OnConflict(opts ...sql.ConflictOption) *DocumentUpsertOne {
 	dc.conflict = opts
@@ -255,6 +295,12 @@ func (u *DocumentUpsertOne) UpdateNewValues() *DocumentUpsertOne {
 	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
 		if _, exists := u.create.mutation.ID(); exists {
 			s.SetIgnore(document.FieldID)
+		}
+		if _, exists := u.create.mutation.MetadataID(); exists {
+			s.SetIgnore(document.FieldMetadataID)
+		}
+		if _, exists := u.create.mutation.NodeListID(); exists {
+			s.SetIgnore(document.FieldNodeListID)
 		}
 	}))
 	return u
@@ -420,6 +466,11 @@ func (dcb *DocumentCreateBulk) ExecX(ctx context.Context) {
 //			// the was proposed for insertion.
 //			sql.ResolveWithNewValues(),
 //		).
+//		// Override some of the fields with custom
+//		// update values.
+//		Update(func(u *ent.DocumentUpsert) {
+//			SetMetadataID(v+v).
+//		}).
 //		Exec(ctx)
 func (dcb *DocumentCreateBulk) OnConflict(opts ...sql.ConflictOption) *DocumentUpsertBulk {
 	dcb.conflict = opts
@@ -464,6 +515,12 @@ func (u *DocumentUpsertBulk) UpdateNewValues() *DocumentUpsertBulk {
 		for _, b := range u.create.builders {
 			if _, exists := b.mutation.ID(); exists {
 				s.SetIgnore(document.FieldID)
+			}
+			if _, exists := b.mutation.MetadataID(); exists {
+				s.SetIgnore(document.FieldMetadataID)
+			}
+			if _, exists := b.mutation.NodeListID(); exists {
+				s.SetIgnore(document.FieldNodeListID)
 			}
 		}
 	}))
