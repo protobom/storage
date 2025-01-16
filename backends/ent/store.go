@@ -275,6 +275,8 @@ func (backend *Backend) saveIdentifiers(idents map[int32]string, opts ...func(*e
 				SetType(identifiersentry.Type(identType.String())).
 				SetValue(value)
 
+			setDocumentID(backend.ctx, identEntry)
+
 			for _, fn := range opts {
 				fn(identEntry)
 			}
