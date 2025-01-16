@@ -51,7 +51,6 @@ func (Node) Fields() []ent.Field {
 		field.Time("valid_until_date"),
 		field.Strings("attribution"),
 		field.Strings("file_types"),
-		field.JSON("identifiers", map[int32]string{}).Optional(),
 	}
 }
 
@@ -73,6 +72,9 @@ func (Node) Edges() []ent.Edge {
 			Annotations(entsql.OnDelete(entsql.Cascade)),
 		edge.To("hashes", HashesEntry.Type).
 			StorageKey(edge.Table("node_hashes"), edge.Columns("node_id", "hash_entry_id")).
+			Annotations(entsql.OnDelete(entsql.Cascade)),
+		edge.To("identifiers", IdentifiersEntry.Type).
+			StorageKey(edge.Table("node_identifiers"), edge.Columns("node_id", "identifier_entry_id")).
 			Annotations(entsql.OnDelete(entsql.Cascade)),
 		edge.To("properties", Property.Type).
 			Annotations(entsql.OnDelete(entsql.Cascade)),

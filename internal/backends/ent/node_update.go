@@ -22,6 +22,7 @@ import (
 	"github.com/protobom/storage/internal/backends/ent/edgetype"
 	"github.com/protobom/storage/internal/backends/ent/externalreference"
 	"github.com/protobom/storage/internal/backends/ent/hashesentry"
+	"github.com/protobom/storage/internal/backends/ent/identifiersentry"
 	"github.com/protobom/storage/internal/backends/ent/node"
 	"github.com/protobom/storage/internal/backends/ent/nodelist"
 	"github.com/protobom/storage/internal/backends/ent/person"
@@ -323,18 +324,6 @@ func (nu *NodeUpdate) AppendFileTypes(s []string) *NodeUpdate {
 	return nu
 }
 
-// SetIdentifiers sets the "identifiers" field.
-func (nu *NodeUpdate) SetIdentifiers(m map[int32]string) *NodeUpdate {
-	nu.mutation.SetIdentifiers(m)
-	return nu
-}
-
-// ClearIdentifiers clears the value of the "identifiers" field.
-func (nu *NodeUpdate) ClearIdentifiers() *NodeUpdate {
-	nu.mutation.ClearIdentifiers()
-	return nu
-}
-
 // AddAnnotationIDs adds the "annotations" edge to the Annotation entity by IDs.
 func (nu *NodeUpdate) AddAnnotationIDs(ids ...int) *NodeUpdate {
 	nu.mutation.AddAnnotationIDs(ids...)
@@ -453,6 +442,21 @@ func (nu *NodeUpdate) AddHashes(h ...*HashesEntry) *NodeUpdate {
 		ids[i] = h[i].ID
 	}
 	return nu.AddHashIDs(ids...)
+}
+
+// AddIdentifierIDs adds the "identifiers" edge to the IdentifiersEntry entity by IDs.
+func (nu *NodeUpdate) AddIdentifierIDs(ids ...uuid.UUID) *NodeUpdate {
+	nu.mutation.AddIdentifierIDs(ids...)
+	return nu
+}
+
+// AddIdentifiers adds the "identifiers" edges to the IdentifiersEntry entity.
+func (nu *NodeUpdate) AddIdentifiers(i ...*IdentifiersEntry) *NodeUpdate {
+	ids := make([]uuid.UUID, len(i))
+	for j := range i {
+		ids[j] = i[j].ID
+	}
+	return nu.AddIdentifierIDs(ids...)
 }
 
 // AddPropertyIDs adds the "properties" edge to the Property entity by IDs.
@@ -673,6 +677,27 @@ func (nu *NodeUpdate) RemoveHashes(h ...*HashesEntry) *NodeUpdate {
 	return nu.RemoveHashIDs(ids...)
 }
 
+// ClearIdentifiers clears all "identifiers" edges to the IdentifiersEntry entity.
+func (nu *NodeUpdate) ClearIdentifiers() *NodeUpdate {
+	nu.mutation.ClearIdentifiers()
+	return nu
+}
+
+// RemoveIdentifierIDs removes the "identifiers" edge to IdentifiersEntry entities by IDs.
+func (nu *NodeUpdate) RemoveIdentifierIDs(ids ...uuid.UUID) *NodeUpdate {
+	nu.mutation.RemoveIdentifierIDs(ids...)
+	return nu
+}
+
+// RemoveIdentifiers removes "identifiers" edges to IdentifiersEntry entities.
+func (nu *NodeUpdate) RemoveIdentifiers(i ...*IdentifiersEntry) *NodeUpdate {
+	ids := make([]uuid.UUID, len(i))
+	for j := range i {
+		ids[j] = i[j].ID
+	}
+	return nu.RemoveIdentifierIDs(ids...)
+}
+
 // ClearProperties clears all "properties" edges to the Property entity.
 func (nu *NodeUpdate) ClearProperties() *NodeUpdate {
 	nu.mutation.ClearProperties()
@@ -862,12 +887,6 @@ func (nu *NodeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
 			sqljson.Append(u, node.FieldFileTypes, value)
 		})
-	}
-	if value, ok := nu.mutation.Identifiers(); ok {
-		_spec.SetField(node.FieldIdentifiers, field.TypeJSON, value)
-	}
-	if nu.mutation.IdentifiersCleared() {
-		_spec.ClearField(node.FieldIdentifiers, field.TypeJSON)
 	}
 	if nu.mutation.AnnotationsCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -1243,6 +1262,51 @@ func (nu *NodeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(hashesentry.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if nu.mutation.IdentifiersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   node.IdentifiersTable,
+			Columns: node.IdentifiersPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(identifiersentry.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := nu.mutation.RemovedIdentifiersIDs(); len(nodes) > 0 && !nu.mutation.IdentifiersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   node.IdentifiersTable,
+			Columns: node.IdentifiersPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(identifiersentry.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := nu.mutation.IdentifiersIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   node.IdentifiersTable,
+			Columns: node.IdentifiersPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(identifiersentry.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -1685,18 +1749,6 @@ func (nuo *NodeUpdateOne) AppendFileTypes(s []string) *NodeUpdateOne {
 	return nuo
 }
 
-// SetIdentifiers sets the "identifiers" field.
-func (nuo *NodeUpdateOne) SetIdentifiers(m map[int32]string) *NodeUpdateOne {
-	nuo.mutation.SetIdentifiers(m)
-	return nuo
-}
-
-// ClearIdentifiers clears the value of the "identifiers" field.
-func (nuo *NodeUpdateOne) ClearIdentifiers() *NodeUpdateOne {
-	nuo.mutation.ClearIdentifiers()
-	return nuo
-}
-
 // AddAnnotationIDs adds the "annotations" edge to the Annotation entity by IDs.
 func (nuo *NodeUpdateOne) AddAnnotationIDs(ids ...int) *NodeUpdateOne {
 	nuo.mutation.AddAnnotationIDs(ids...)
@@ -1815,6 +1867,21 @@ func (nuo *NodeUpdateOne) AddHashes(h ...*HashesEntry) *NodeUpdateOne {
 		ids[i] = h[i].ID
 	}
 	return nuo.AddHashIDs(ids...)
+}
+
+// AddIdentifierIDs adds the "identifiers" edge to the IdentifiersEntry entity by IDs.
+func (nuo *NodeUpdateOne) AddIdentifierIDs(ids ...uuid.UUID) *NodeUpdateOne {
+	nuo.mutation.AddIdentifierIDs(ids...)
+	return nuo
+}
+
+// AddIdentifiers adds the "identifiers" edges to the IdentifiersEntry entity.
+func (nuo *NodeUpdateOne) AddIdentifiers(i ...*IdentifiersEntry) *NodeUpdateOne {
+	ids := make([]uuid.UUID, len(i))
+	for j := range i {
+		ids[j] = i[j].ID
+	}
+	return nuo.AddIdentifierIDs(ids...)
 }
 
 // AddPropertyIDs adds the "properties" edge to the Property entity by IDs.
@@ -2033,6 +2100,27 @@ func (nuo *NodeUpdateOne) RemoveHashes(h ...*HashesEntry) *NodeUpdateOne {
 		ids[i] = h[i].ID
 	}
 	return nuo.RemoveHashIDs(ids...)
+}
+
+// ClearIdentifiers clears all "identifiers" edges to the IdentifiersEntry entity.
+func (nuo *NodeUpdateOne) ClearIdentifiers() *NodeUpdateOne {
+	nuo.mutation.ClearIdentifiers()
+	return nuo
+}
+
+// RemoveIdentifierIDs removes the "identifiers" edge to IdentifiersEntry entities by IDs.
+func (nuo *NodeUpdateOne) RemoveIdentifierIDs(ids ...uuid.UUID) *NodeUpdateOne {
+	nuo.mutation.RemoveIdentifierIDs(ids...)
+	return nuo
+}
+
+// RemoveIdentifiers removes "identifiers" edges to IdentifiersEntry entities.
+func (nuo *NodeUpdateOne) RemoveIdentifiers(i ...*IdentifiersEntry) *NodeUpdateOne {
+	ids := make([]uuid.UUID, len(i))
+	for j := range i {
+		ids[j] = i[j].ID
+	}
+	return nuo.RemoveIdentifierIDs(ids...)
 }
 
 // ClearProperties clears all "properties" edges to the Property entity.
@@ -2254,12 +2342,6 @@ func (nuo *NodeUpdateOne) sqlSave(ctx context.Context) (_node *Node, err error) 
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
 			sqljson.Append(u, node.FieldFileTypes, value)
 		})
-	}
-	if value, ok := nuo.mutation.Identifiers(); ok {
-		_spec.SetField(node.FieldIdentifiers, field.TypeJSON, value)
-	}
-	if nuo.mutation.IdentifiersCleared() {
-		_spec.ClearField(node.FieldIdentifiers, field.TypeJSON)
 	}
 	if nuo.mutation.AnnotationsCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -2635,6 +2717,51 @@ func (nuo *NodeUpdateOne) sqlSave(ctx context.Context) (_node *Node, err error) 
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(hashesentry.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if nuo.mutation.IdentifiersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   node.IdentifiersTable,
+			Columns: node.IdentifiersPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(identifiersentry.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := nuo.mutation.RemovedIdentifiersIDs(); len(nodes) > 0 && !nuo.mutation.IdentifiersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   node.IdentifiersTable,
+			Columns: node.IdentifiersPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(identifiersentry.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := nuo.mutation.IdentifiersIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   node.IdentifiersTable,
+			Columns: node.IdentifiersPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(identifiersentry.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

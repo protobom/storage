@@ -72,8 +72,6 @@ type Node struct {
 	Attribution []string `json:"attribution,omitempty"`
 	// FileTypes holds the value of the "file_types" field.
 	FileTypes []string `json:"file_types,omitempty"`
-	// Identifiers holds the value of the "identifiers" field.
-	Identifiers map[int32]string `json:"identifiers,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the NodeQuery when eager-loading is set.
 	Edges        NodeEdges `json:"edges"`
@@ -100,6 +98,8 @@ type NodeEdges struct {
 	Nodes []*Node `json:"nodes,omitempty"`
 	// Hashes holds the value of the hashes edge.
 	Hashes []*HashesEntry `json:"hashes,omitempty"`
+	// Identifiers holds the value of the identifiers edge.
+	Identifiers []*IdentifiersEntry `json:"identifiers,omitempty"`
 	// Properties holds the value of the properties edge.
 	Properties []*Property `json:"properties,omitempty"`
 	// NodeLists holds the value of the node_lists edge.
@@ -108,7 +108,7 @@ type NodeEdges struct {
 	EdgeTypes []*EdgeType `json:"edge_types,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [12]bool
+	loadedTypes [13]bool
 }
 
 // DocumentOrErr returns the Document value or an error if the edge
@@ -194,10 +194,19 @@ func (e NodeEdges) HashesOrErr() ([]*HashesEntry, error) {
 	return nil, &NotLoadedError{edge: "hashes"}
 }
 
+// IdentifiersOrErr returns the Identifiers value or an error if the edge
+// was not loaded in eager-loading.
+func (e NodeEdges) IdentifiersOrErr() ([]*IdentifiersEntry, error) {
+	if e.loadedTypes[9] {
+		return e.Identifiers, nil
+	}
+	return nil, &NotLoadedError{edge: "identifiers"}
+}
+
 // PropertiesOrErr returns the Properties value or an error if the edge
 // was not loaded in eager-loading.
 func (e NodeEdges) PropertiesOrErr() ([]*Property, error) {
-	if e.loadedTypes[9] {
+	if e.loadedTypes[10] {
 		return e.Properties, nil
 	}
 	return nil, &NotLoadedError{edge: "properties"}
@@ -206,7 +215,7 @@ func (e NodeEdges) PropertiesOrErr() ([]*Property, error) {
 // NodeListsOrErr returns the NodeLists value or an error if the edge
 // was not loaded in eager-loading.
 func (e NodeEdges) NodeListsOrErr() ([]*NodeList, error) {
-	if e.loadedTypes[10] {
+	if e.loadedTypes[11] {
 		return e.NodeLists, nil
 	}
 	return nil, &NotLoadedError{edge: "node_lists"}
@@ -215,7 +224,7 @@ func (e NodeEdges) NodeListsOrErr() ([]*NodeList, error) {
 // EdgeTypesOrErr returns the EdgeTypes value or an error if the edge
 // was not loaded in eager-loading.
 func (e NodeEdges) EdgeTypesOrErr() ([]*EdgeType, error) {
-	if e.loadedTypes[11] {
+	if e.loadedTypes[12] {
 		return e.EdgeTypes, nil
 	}
 	return nil, &NotLoadedError{edge: "edge_types"}
@@ -228,7 +237,7 @@ func (*Node) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case node.FieldProtoMessage:
 			values[i] = &sql.NullScanner{S: new(sbom.Node)}
-		case node.FieldLicenses, node.FieldAttribution, node.FieldFileTypes, node.FieldIdentifiers:
+		case node.FieldLicenses, node.FieldAttribution, node.FieldFileTypes:
 			values[i] = new([]byte)
 		case node.FieldNativeID, node.FieldType, node.FieldName, node.FieldVersion, node.FieldFileName, node.FieldURLHome, node.FieldURLDownload, node.FieldLicenseConcluded, node.FieldLicenseComments, node.FieldCopyright, node.FieldSourceInfo, node.FieldComment, node.FieldSummary, node.FieldDescription:
 			values[i] = new(sql.NullString)
@@ -401,14 +410,6 @@ func (n *Node) assignValues(columns []string, values []any) error {
 					return fmt.Errorf("unmarshal field file_types: %w", err)
 				}
 			}
-		case node.FieldIdentifiers:
-			if value, ok := values[i].(*[]byte); !ok {
-				return fmt.Errorf("unexpected type %T for field identifiers", values[i])
-			} else if value != nil && len(*value) > 0 {
-				if err := json.Unmarshal(*value, &n.Identifiers); err != nil {
-					return fmt.Errorf("unmarshal field identifiers: %w", err)
-				}
-			}
 		default:
 			n.selectValues.Set(columns[i], values[i])
 		}
@@ -465,6 +466,11 @@ func (n *Node) QueryNodes() *NodeQuery {
 // QueryHashes queries the "hashes" edge of the Node entity.
 func (n *Node) QueryHashes() *HashesEntryQuery {
 	return NewNodeClient(n.config).QueryHashes(n)
+}
+
+// QueryIdentifiers queries the "identifiers" edge of the Node entity.
+func (n *Node) QueryIdentifiers() *IdentifiersEntryQuery {
+	return NewNodeClient(n.config).QueryIdentifiers(n)
 }
 
 // QueryProperties queries the "properties" edge of the Node entity.
@@ -575,9 +581,6 @@ func (n *Node) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("file_types=")
 	builder.WriteString(fmt.Sprintf("%v", n.FileTypes))
-	builder.WriteString(", ")
-	builder.WriteString("identifiers=")
-	builder.WriteString(fmt.Sprintf("%v", n.Identifiers))
 	builder.WriteByte(')')
 	return builder.String()
 }

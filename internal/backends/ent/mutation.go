@@ -24,6 +24,7 @@ import (
 	"github.com/protobom/storage/internal/backends/ent/edgetype"
 	"github.com/protobom/storage/internal/backends/ent/externalreference"
 	"github.com/protobom/storage/internal/backends/ent/hashesentry"
+	"github.com/protobom/storage/internal/backends/ent/identifiersentry"
 	"github.com/protobom/storage/internal/backends/ent/metadata"
 	"github.com/protobom/storage/internal/backends/ent/node"
 	"github.com/protobom/storage/internal/backends/ent/nodelist"
@@ -50,6 +51,7 @@ const (
 	TypeEdgeType          = "EdgeType"
 	TypeExternalReference = "ExternalReference"
 	TypeHashesEntry       = "HashesEntry"
+	TypeIdentifiersEntry  = "IdentifiersEntry"
 	TypeMetadata          = "Metadata"
 	TypeNode              = "Node"
 	TypeNodeList          = "NodeList"
@@ -4315,6 +4317,607 @@ func (m *HashesEntryMutation) ResetEdge(name string) error {
 	return fmt.Errorf("unknown HashesEntry edge %s", name)
 }
 
+// IdentifiersEntryMutation represents an operation that mutates the IdentifiersEntry nodes in the graph.
+type IdentifiersEntryMutation struct {
+	config
+	op              Op
+	typ             string
+	id              *uuid.UUID
+	_type           *identifiersentry.Type
+	value           *string
+	clearedFields   map[string]struct{}
+	document        *uuid.UUID
+	cleareddocument bool
+	nodes           map[uuid.UUID]struct{}
+	removednodes    map[uuid.UUID]struct{}
+	clearednodes    bool
+	done            bool
+	oldValue        func(context.Context) (*IdentifiersEntry, error)
+	predicates      []predicate.IdentifiersEntry
+}
+
+var _ ent.Mutation = (*IdentifiersEntryMutation)(nil)
+
+// identifiersentryOption allows management of the mutation configuration using functional options.
+type identifiersentryOption func(*IdentifiersEntryMutation)
+
+// newIdentifiersEntryMutation creates new mutation for the IdentifiersEntry entity.
+func newIdentifiersEntryMutation(c config, op Op, opts ...identifiersentryOption) *IdentifiersEntryMutation {
+	m := &IdentifiersEntryMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeIdentifiersEntry,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withIdentifiersEntryID sets the ID field of the mutation.
+func withIdentifiersEntryID(id uuid.UUID) identifiersentryOption {
+	return func(m *IdentifiersEntryMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *IdentifiersEntry
+		)
+		m.oldValue = func(ctx context.Context) (*IdentifiersEntry, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().IdentifiersEntry.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withIdentifiersEntry sets the old IdentifiersEntry of the mutation.
+func withIdentifiersEntry(node *IdentifiersEntry) identifiersentryOption {
+	return func(m *IdentifiersEntryMutation) {
+		m.oldValue = func(context.Context) (*IdentifiersEntry, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m IdentifiersEntryMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m IdentifiersEntryMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of IdentifiersEntry entities.
+func (m *IdentifiersEntryMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *IdentifiersEntryMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *IdentifiersEntryMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().IdentifiersEntry.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetDocumentID sets the "document_id" field.
+func (m *IdentifiersEntryMutation) SetDocumentID(u uuid.UUID) {
+	m.document = &u
+}
+
+// DocumentID returns the value of the "document_id" field in the mutation.
+func (m *IdentifiersEntryMutation) DocumentID() (r uuid.UUID, exists bool) {
+	v := m.document
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDocumentID returns the old "document_id" field's value of the IdentifiersEntry entity.
+// If the IdentifiersEntry object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *IdentifiersEntryMutation) OldDocumentID(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDocumentID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDocumentID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDocumentID: %w", err)
+	}
+	return oldValue.DocumentID, nil
+}
+
+// ClearDocumentID clears the value of the "document_id" field.
+func (m *IdentifiersEntryMutation) ClearDocumentID() {
+	m.document = nil
+	m.clearedFields[identifiersentry.FieldDocumentID] = struct{}{}
+}
+
+// DocumentIDCleared returns if the "document_id" field was cleared in this mutation.
+func (m *IdentifiersEntryMutation) DocumentIDCleared() bool {
+	_, ok := m.clearedFields[identifiersentry.FieldDocumentID]
+	return ok
+}
+
+// ResetDocumentID resets all changes to the "document_id" field.
+func (m *IdentifiersEntryMutation) ResetDocumentID() {
+	m.document = nil
+	delete(m.clearedFields, identifiersentry.FieldDocumentID)
+}
+
+// SetType sets the "type" field.
+func (m *IdentifiersEntryMutation) SetType(i identifiersentry.Type) {
+	m._type = &i
+}
+
+// GetType returns the value of the "type" field in the mutation.
+func (m *IdentifiersEntryMutation) GetType() (r identifiersentry.Type, exists bool) {
+	v := m._type
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldType returns the old "type" field's value of the IdentifiersEntry entity.
+// If the IdentifiersEntry object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *IdentifiersEntryMutation) OldType(ctx context.Context) (v identifiersentry.Type, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldType is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldType requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldType: %w", err)
+	}
+	return oldValue.Type, nil
+}
+
+// ResetType resets all changes to the "type" field.
+func (m *IdentifiersEntryMutation) ResetType() {
+	m._type = nil
+}
+
+// SetValue sets the "value" field.
+func (m *IdentifiersEntryMutation) SetValue(s string) {
+	m.value = &s
+}
+
+// Value returns the value of the "value" field in the mutation.
+func (m *IdentifiersEntryMutation) Value() (r string, exists bool) {
+	v := m.value
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldValue returns the old "value" field's value of the IdentifiersEntry entity.
+// If the IdentifiersEntry object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *IdentifiersEntryMutation) OldValue(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldValue is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldValue requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldValue: %w", err)
+	}
+	return oldValue.Value, nil
+}
+
+// ResetValue resets all changes to the "value" field.
+func (m *IdentifiersEntryMutation) ResetValue() {
+	m.value = nil
+}
+
+// ClearDocument clears the "document" edge to the Document entity.
+func (m *IdentifiersEntryMutation) ClearDocument() {
+	m.cleareddocument = true
+	m.clearedFields[identifiersentry.FieldDocumentID] = struct{}{}
+}
+
+// DocumentCleared reports if the "document" edge to the Document entity was cleared.
+func (m *IdentifiersEntryMutation) DocumentCleared() bool {
+	return m.DocumentIDCleared() || m.cleareddocument
+}
+
+// DocumentIDs returns the "document" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// DocumentID instead. It exists only for internal usage by the builders.
+func (m *IdentifiersEntryMutation) DocumentIDs() (ids []uuid.UUID) {
+	if id := m.document; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetDocument resets all changes to the "document" edge.
+func (m *IdentifiersEntryMutation) ResetDocument() {
+	m.document = nil
+	m.cleareddocument = false
+}
+
+// AddNodeIDs adds the "nodes" edge to the Node entity by ids.
+func (m *IdentifiersEntryMutation) AddNodeIDs(ids ...uuid.UUID) {
+	if m.nodes == nil {
+		m.nodes = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.nodes[ids[i]] = struct{}{}
+	}
+}
+
+// ClearNodes clears the "nodes" edge to the Node entity.
+func (m *IdentifiersEntryMutation) ClearNodes() {
+	m.clearednodes = true
+}
+
+// NodesCleared reports if the "nodes" edge to the Node entity was cleared.
+func (m *IdentifiersEntryMutation) NodesCleared() bool {
+	return m.clearednodes
+}
+
+// RemoveNodeIDs removes the "nodes" edge to the Node entity by IDs.
+func (m *IdentifiersEntryMutation) RemoveNodeIDs(ids ...uuid.UUID) {
+	if m.removednodes == nil {
+		m.removednodes = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.nodes, ids[i])
+		m.removednodes[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedNodes returns the removed IDs of the "nodes" edge to the Node entity.
+func (m *IdentifiersEntryMutation) RemovedNodesIDs() (ids []uuid.UUID) {
+	for id := range m.removednodes {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// NodesIDs returns the "nodes" edge IDs in the mutation.
+func (m *IdentifiersEntryMutation) NodesIDs() (ids []uuid.UUID) {
+	for id := range m.nodes {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetNodes resets all changes to the "nodes" edge.
+func (m *IdentifiersEntryMutation) ResetNodes() {
+	m.nodes = nil
+	m.clearednodes = false
+	m.removednodes = nil
+}
+
+// Where appends a list predicates to the IdentifiersEntryMutation builder.
+func (m *IdentifiersEntryMutation) Where(ps ...predicate.IdentifiersEntry) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the IdentifiersEntryMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *IdentifiersEntryMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.IdentifiersEntry, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *IdentifiersEntryMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *IdentifiersEntryMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (IdentifiersEntry).
+func (m *IdentifiersEntryMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *IdentifiersEntryMutation) Fields() []string {
+	fields := make([]string, 0, 3)
+	if m.document != nil {
+		fields = append(fields, identifiersentry.FieldDocumentID)
+	}
+	if m._type != nil {
+		fields = append(fields, identifiersentry.FieldType)
+	}
+	if m.value != nil {
+		fields = append(fields, identifiersentry.FieldValue)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *IdentifiersEntryMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case identifiersentry.FieldDocumentID:
+		return m.DocumentID()
+	case identifiersentry.FieldType:
+		return m.GetType()
+	case identifiersentry.FieldValue:
+		return m.Value()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *IdentifiersEntryMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case identifiersentry.FieldDocumentID:
+		return m.OldDocumentID(ctx)
+	case identifiersentry.FieldType:
+		return m.OldType(ctx)
+	case identifiersentry.FieldValue:
+		return m.OldValue(ctx)
+	}
+	return nil, fmt.Errorf("unknown IdentifiersEntry field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *IdentifiersEntryMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case identifiersentry.FieldDocumentID:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDocumentID(v)
+		return nil
+	case identifiersentry.FieldType:
+		v, ok := value.(identifiersentry.Type)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetType(v)
+		return nil
+	case identifiersentry.FieldValue:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetValue(v)
+		return nil
+	}
+	return fmt.Errorf("unknown IdentifiersEntry field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *IdentifiersEntryMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *IdentifiersEntryMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *IdentifiersEntryMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown IdentifiersEntry numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *IdentifiersEntryMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(identifiersentry.FieldDocumentID) {
+		fields = append(fields, identifiersentry.FieldDocumentID)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *IdentifiersEntryMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *IdentifiersEntryMutation) ClearField(name string) error {
+	switch name {
+	case identifiersentry.FieldDocumentID:
+		m.ClearDocumentID()
+		return nil
+	}
+	return fmt.Errorf("unknown IdentifiersEntry nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *IdentifiersEntryMutation) ResetField(name string) error {
+	switch name {
+	case identifiersentry.FieldDocumentID:
+		m.ResetDocumentID()
+		return nil
+	case identifiersentry.FieldType:
+		m.ResetType()
+		return nil
+	case identifiersentry.FieldValue:
+		m.ResetValue()
+		return nil
+	}
+	return fmt.Errorf("unknown IdentifiersEntry field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *IdentifiersEntryMutation) AddedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.document != nil {
+		edges = append(edges, identifiersentry.EdgeDocument)
+	}
+	if m.nodes != nil {
+		edges = append(edges, identifiersentry.EdgeNodes)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *IdentifiersEntryMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case identifiersentry.EdgeDocument:
+		if id := m.document; id != nil {
+			return []ent.Value{*id}
+		}
+	case identifiersentry.EdgeNodes:
+		ids := make([]ent.Value, 0, len(m.nodes))
+		for id := range m.nodes {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *IdentifiersEntryMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.removednodes != nil {
+		edges = append(edges, identifiersentry.EdgeNodes)
+	}
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *IdentifiersEntryMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case identifiersentry.EdgeNodes:
+		ids := make([]ent.Value, 0, len(m.removednodes))
+		for id := range m.removednodes {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *IdentifiersEntryMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.cleareddocument {
+		edges = append(edges, identifiersentry.EdgeDocument)
+	}
+	if m.clearednodes {
+		edges = append(edges, identifiersentry.EdgeNodes)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *IdentifiersEntryMutation) EdgeCleared(name string) bool {
+	switch name {
+	case identifiersentry.EdgeDocument:
+		return m.cleareddocument
+	case identifiersentry.EdgeNodes:
+		return m.clearednodes
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *IdentifiersEntryMutation) ClearEdge(name string) error {
+	switch name {
+	case identifiersentry.EdgeDocument:
+		m.ClearDocument()
+		return nil
+	}
+	return fmt.Errorf("unknown IdentifiersEntry unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *IdentifiersEntryMutation) ResetEdge(name string) error {
+	switch name {
+	case identifiersentry.EdgeDocument:
+		m.ResetDocument()
+		return nil
+	case identifiersentry.EdgeNodes:
+		m.ResetNodes()
+		return nil
+	}
+	return fmt.Errorf("unknown IdentifiersEntry edge %s", name)
+}
+
 // MetadataMutation represents an operation that mutates the Metadata nodes in the graph.
 type MetadataMutation struct {
 	config
@@ -5390,7 +5993,6 @@ type NodeMutation struct {
 	appendattribution          []string
 	file_types                 *[]string
 	appendfile_types           []string
-	identifiers                *map[int32]string
 	clearedFields              map[string]struct{}
 	document                   *uuid.UUID
 	cleareddocument            bool
@@ -5418,6 +6020,9 @@ type NodeMutation struct {
 	hashes                     map[uuid.UUID]struct{}
 	removedhashes              map[uuid.UUID]struct{}
 	clearedhashes              bool
+	identifiers                map[uuid.UUID]struct{}
+	removedidentifiers         map[uuid.UUID]struct{}
+	clearedidentifiers         bool
 	properties                 map[uuid.UUID]struct{}
 	removedproperties          map[uuid.UUID]struct{}
 	clearedproperties          bool
@@ -6435,55 +7040,6 @@ func (m *NodeMutation) ResetFileTypes() {
 	m.appendfile_types = nil
 }
 
-// SetIdentifiers sets the "identifiers" field.
-func (m *NodeMutation) SetIdentifiers(value map[int32]string) {
-	m.identifiers = &value
-}
-
-// Identifiers returns the value of the "identifiers" field in the mutation.
-func (m *NodeMutation) Identifiers() (r map[int32]string, exists bool) {
-	v := m.identifiers
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldIdentifiers returns the old "identifiers" field's value of the Node entity.
-// If the Node object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *NodeMutation) OldIdentifiers(ctx context.Context) (v map[int32]string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldIdentifiers is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldIdentifiers requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldIdentifiers: %w", err)
-	}
-	return oldValue.Identifiers, nil
-}
-
-// ClearIdentifiers clears the value of the "identifiers" field.
-func (m *NodeMutation) ClearIdentifiers() {
-	m.identifiers = nil
-	m.clearedFields[node.FieldIdentifiers] = struct{}{}
-}
-
-// IdentifiersCleared returns if the "identifiers" field was cleared in this mutation.
-func (m *NodeMutation) IdentifiersCleared() bool {
-	_, ok := m.clearedFields[node.FieldIdentifiers]
-	return ok
-}
-
-// ResetIdentifiers resets all changes to the "identifiers" field.
-func (m *NodeMutation) ResetIdentifiers() {
-	m.identifiers = nil
-	delete(m.clearedFields, node.FieldIdentifiers)
-}
-
 // ClearDocument clears the "document" edge to the Document entity.
 func (m *NodeMutation) ClearDocument() {
 	m.cleareddocument = true
@@ -6943,6 +7499,60 @@ func (m *NodeMutation) ResetHashes() {
 	m.removedhashes = nil
 }
 
+// AddIdentifierIDs adds the "identifiers" edge to the IdentifiersEntry entity by ids.
+func (m *NodeMutation) AddIdentifierIDs(ids ...uuid.UUID) {
+	if m.identifiers == nil {
+		m.identifiers = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.identifiers[ids[i]] = struct{}{}
+	}
+}
+
+// ClearIdentifiers clears the "identifiers" edge to the IdentifiersEntry entity.
+func (m *NodeMutation) ClearIdentifiers() {
+	m.clearedidentifiers = true
+}
+
+// IdentifiersCleared reports if the "identifiers" edge to the IdentifiersEntry entity was cleared.
+func (m *NodeMutation) IdentifiersCleared() bool {
+	return m.clearedidentifiers
+}
+
+// RemoveIdentifierIDs removes the "identifiers" edge to the IdentifiersEntry entity by IDs.
+func (m *NodeMutation) RemoveIdentifierIDs(ids ...uuid.UUID) {
+	if m.removedidentifiers == nil {
+		m.removedidentifiers = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.identifiers, ids[i])
+		m.removedidentifiers[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedIdentifiers returns the removed IDs of the "identifiers" edge to the IdentifiersEntry entity.
+func (m *NodeMutation) RemovedIdentifiersIDs() (ids []uuid.UUID) {
+	for id := range m.removedidentifiers {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// IdentifiersIDs returns the "identifiers" edge IDs in the mutation.
+func (m *NodeMutation) IdentifiersIDs() (ids []uuid.UUID) {
+	for id := range m.identifiers {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetIdentifiers resets all changes to the "identifiers" edge.
+func (m *NodeMutation) ResetIdentifiers() {
+	m.identifiers = nil
+	m.clearedidentifiers = false
+	m.removedidentifiers = nil
+}
+
 // AddPropertyIDs adds the "properties" edge to the Property entity by ids.
 func (m *NodeMutation) AddPropertyIDs(ids ...uuid.UUID) {
 	if m.properties == nil {
@@ -7139,7 +7749,7 @@ func (m *NodeMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *NodeMutation) Fields() []string {
-	fields := make([]string, 0, 24)
+	fields := make([]string, 0, 23)
 	if m.document != nil {
 		fields = append(fields, node.FieldDocumentID)
 	}
@@ -7209,9 +7819,6 @@ func (m *NodeMutation) Fields() []string {
 	if m.file_types != nil {
 		fields = append(fields, node.FieldFileTypes)
 	}
-	if m.identifiers != nil {
-		fields = append(fields, node.FieldIdentifiers)
-	}
 	return fields
 }
 
@@ -7266,8 +7873,6 @@ func (m *NodeMutation) Field(name string) (ent.Value, bool) {
 		return m.Attribution()
 	case node.FieldFileTypes:
 		return m.FileTypes()
-	case node.FieldIdentifiers:
-		return m.Identifiers()
 	}
 	return nil, false
 }
@@ -7323,8 +7928,6 @@ func (m *NodeMutation) OldField(ctx context.Context, name string) (ent.Value, er
 		return m.OldAttribution(ctx)
 	case node.FieldFileTypes:
 		return m.OldFileTypes(ctx)
-	case node.FieldIdentifiers:
-		return m.OldIdentifiers(ctx)
 	}
 	return nil, fmt.Errorf("unknown Node field %s", name)
 }
@@ -7495,13 +8098,6 @@ func (m *NodeMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetFileTypes(v)
 		return nil
-	case node.FieldIdentifiers:
-		v, ok := value.(map[int32]string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetIdentifiers(v)
-		return nil
 	}
 	return fmt.Errorf("unknown Node field %s", name)
 }
@@ -7538,9 +8134,6 @@ func (m *NodeMutation) ClearedFields() []string {
 	if m.FieldCleared(node.FieldNodeListID) {
 		fields = append(fields, node.FieldNodeListID)
 	}
-	if m.FieldCleared(node.FieldIdentifiers) {
-		fields = append(fields, node.FieldIdentifiers)
-	}
 	return fields
 }
 
@@ -7560,9 +8153,6 @@ func (m *NodeMutation) ClearField(name string) error {
 		return nil
 	case node.FieldNodeListID:
 		m.ClearNodeListID()
-		return nil
-	case node.FieldIdentifiers:
-		m.ClearIdentifiers()
 		return nil
 	}
 	return fmt.Errorf("unknown Node nullable field %s", name)
@@ -7641,16 +8231,13 @@ func (m *NodeMutation) ResetField(name string) error {
 	case node.FieldFileTypes:
 		m.ResetFileTypes()
 		return nil
-	case node.FieldIdentifiers:
-		m.ResetIdentifiers()
-		return nil
 	}
 	return fmt.Errorf("unknown Node field %s", name)
 }
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *NodeMutation) AddedEdges() []string {
-	edges := make([]string, 0, 12)
+	edges := make([]string, 0, 13)
 	if m.document != nil {
 		edges = append(edges, node.EdgeDocument)
 	}
@@ -7677,6 +8264,9 @@ func (m *NodeMutation) AddedEdges() []string {
 	}
 	if m.hashes != nil {
 		edges = append(edges, node.EdgeHashes)
+	}
+	if m.identifiers != nil {
+		edges = append(edges, node.EdgeIdentifiers)
 	}
 	if m.properties != nil {
 		edges = append(edges, node.EdgeProperties)
@@ -7746,6 +8336,12 @@ func (m *NodeMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case node.EdgeIdentifiers:
+		ids := make([]ent.Value, 0, len(m.identifiers))
+		for id := range m.identifiers {
+			ids = append(ids, id)
+		}
+		return ids
 	case node.EdgeProperties:
 		ids := make([]ent.Value, 0, len(m.properties))
 		for id := range m.properties {
@@ -7770,7 +8366,7 @@ func (m *NodeMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *NodeMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 12)
+	edges := make([]string, 0, 13)
 	if m.removedannotations != nil {
 		edges = append(edges, node.EdgeAnnotations)
 	}
@@ -7794,6 +8390,9 @@ func (m *NodeMutation) RemovedEdges() []string {
 	}
 	if m.removedhashes != nil {
 		edges = append(edges, node.EdgeHashes)
+	}
+	if m.removedidentifiers != nil {
+		edges = append(edges, node.EdgeIdentifiers)
 	}
 	if m.removedproperties != nil {
 		edges = append(edges, node.EdgeProperties)
@@ -7859,6 +8458,12 @@ func (m *NodeMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case node.EdgeIdentifiers:
+		ids := make([]ent.Value, 0, len(m.removedidentifiers))
+		for id := range m.removedidentifiers {
+			ids = append(ids, id)
+		}
+		return ids
 	case node.EdgeProperties:
 		ids := make([]ent.Value, 0, len(m.removedproperties))
 		for id := range m.removedproperties {
@@ -7883,7 +8488,7 @@ func (m *NodeMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *NodeMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 12)
+	edges := make([]string, 0, 13)
 	if m.cleareddocument {
 		edges = append(edges, node.EdgeDocument)
 	}
@@ -7910,6 +8515,9 @@ func (m *NodeMutation) ClearedEdges() []string {
 	}
 	if m.clearedhashes {
 		edges = append(edges, node.EdgeHashes)
+	}
+	if m.clearedidentifiers {
+		edges = append(edges, node.EdgeIdentifiers)
 	}
 	if m.clearedproperties {
 		edges = append(edges, node.EdgeProperties)
@@ -7945,6 +8553,8 @@ func (m *NodeMutation) EdgeCleared(name string) bool {
 		return m.clearednodes
 	case node.EdgeHashes:
 		return m.clearedhashes
+	case node.EdgeIdentifiers:
+		return m.clearedidentifiers
 	case node.EdgeProperties:
 		return m.clearedproperties
 	case node.EdgeNodeLists:
@@ -7996,6 +8606,9 @@ func (m *NodeMutation) ResetEdge(name string) error {
 		return nil
 	case node.EdgeHashes:
 		m.ResetHashes()
+		return nil
+	case node.EdgeIdentifiers:
+		m.ResetIdentifiers()
 		return nil
 	case node.EdgeProperties:
 		m.ResetProperties()

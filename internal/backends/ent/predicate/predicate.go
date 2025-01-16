@@ -29,6 +29,9 @@ type ExternalReference func(*sql.Selector)
 // HashesEntry is the predicate function for hashesentry builders.
 type HashesEntry func(*sql.Selector)
 
+// IdentifiersEntry is the predicate function for identifiersentry builders.
+type IdentifiersEntry func(*sql.Selector)
+
 // Metadata is the predicate function for metadata builders.
 type Metadata func(*sql.Selector)
 

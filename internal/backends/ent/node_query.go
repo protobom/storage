@@ -23,6 +23,7 @@ import (
 	"github.com/protobom/storage/internal/backends/ent/edgetype"
 	"github.com/protobom/storage/internal/backends/ent/externalreference"
 	"github.com/protobom/storage/internal/backends/ent/hashesentry"
+	"github.com/protobom/storage/internal/backends/ent/identifiersentry"
 	"github.com/protobom/storage/internal/backends/ent/node"
 	"github.com/protobom/storage/internal/backends/ent/nodelist"
 	"github.com/protobom/storage/internal/backends/ent/person"
@@ -47,6 +48,7 @@ type NodeQuery struct {
 	withToNodes            *NodeQuery
 	withNodes              *NodeQuery
 	withHashes             *HashesEntryQuery
+	withIdentifiers        *IdentifiersEntryQuery
 	withProperties         *PropertyQuery
 	withNodeLists          *NodeListQuery
 	withEdgeTypes          *EdgeTypeQuery
@@ -277,6 +279,28 @@ func (nq *NodeQuery) QueryHashes() *HashesEntryQuery {
 			sqlgraph.From(node.Table, node.FieldID, selector),
 			sqlgraph.To(hashesentry.Table, hashesentry.FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, false, node.HashesTable, node.HashesPrimaryKey...),
+		)
+		fromU = sqlgraph.SetNeighbors(nq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryIdentifiers chains the current query on the "identifiers" edge.
+func (nq *NodeQuery) QueryIdentifiers() *IdentifiersEntryQuery {
+	query := (&IdentifiersEntryClient{config: nq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := nq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := nq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(node.Table, node.FieldID, selector),
+			sqlgraph.To(identifiersentry.Table, identifiersentry.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, node.IdentifiersTable, node.IdentifiersPrimaryKey...),
 		)
 		fromU = sqlgraph.SetNeighbors(nq.driver.Dialect(), step)
 		return fromU, nil
@@ -551,6 +575,7 @@ func (nq *NodeQuery) Clone() *NodeQuery {
 		withToNodes:            nq.withToNodes.Clone(),
 		withNodes:              nq.withNodes.Clone(),
 		withHashes:             nq.withHashes.Clone(),
+		withIdentifiers:        nq.withIdentifiers.Clone(),
 		withProperties:         nq.withProperties.Clone(),
 		withNodeLists:          nq.withNodeLists.Clone(),
 		withEdgeTypes:          nq.withEdgeTypes.Clone(),
@@ -656,6 +681,17 @@ func (nq *NodeQuery) WithHashes(opts ...func(*HashesEntryQuery)) *NodeQuery {
 		opt(query)
 	}
 	nq.withHashes = query
+	return nq
+}
+
+// WithIdentifiers tells the query-builder to eager-load the nodes that are connected to
+// the "identifiers" edge. The optional arguments are used to configure the query builder of the edge.
+func (nq *NodeQuery) WithIdentifiers(opts ...func(*IdentifiersEntryQuery)) *NodeQuery {
+	query := (&IdentifiersEntryClient{config: nq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	nq.withIdentifiers = query
 	return nq
 }
 
@@ -770,7 +806,7 @@ func (nq *NodeQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Node, e
 	var (
 		nodes       = []*Node{}
 		_spec       = nq.querySpec()
-		loadedTypes = [12]bool{
+		loadedTypes = [13]bool{
 			nq.withDocument != nil,
 			nq.withAnnotations != nil,
 			nq.withSuppliers != nil,
@@ -780,6 +816,7 @@ func (nq *NodeQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Node, e
 			nq.withToNodes != nil,
 			nq.withNodes != nil,
 			nq.withHashes != nil,
+			nq.withIdentifiers != nil,
 			nq.withProperties != nil,
 			nq.withNodeLists != nil,
 			nq.withEdgeTypes != nil,
@@ -864,6 +901,13 @@ func (nq *NodeQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Node, e
 		if err := nq.loadHashes(ctx, query, nodes,
 			func(n *Node) { n.Edges.Hashes = []*HashesEntry{} },
 			func(n *Node, e *HashesEntry) { n.Edges.Hashes = append(n.Edges.Hashes, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := nq.withIdentifiers; query != nil {
+		if err := nq.loadIdentifiers(ctx, query, nodes,
+			func(n *Node) { n.Edges.Identifiers = []*IdentifiersEntry{} },
+			func(n *Node, e *IdentifiersEntry) { n.Edges.Identifiers = append(n.Edges.Identifiers, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -1282,6 +1326,67 @@ func (nq *NodeQuery) loadHashes(ctx context.Context, query *HashesEntryQuery, no
 		nodes, ok := nids[n.ID]
 		if !ok {
 			return fmt.Errorf(`unexpected "hashes" node returned %v`, n.ID)
+		}
+		for kn := range nodes {
+			assign(kn, n)
+		}
+	}
+	return nil
+}
+func (nq *NodeQuery) loadIdentifiers(ctx context.Context, query *IdentifiersEntryQuery, nodes []*Node, init func(*Node), assign func(*Node, *IdentifiersEntry)) error {
+	edgeIDs := make([]driver.Value, len(nodes))
+	byID := make(map[uuid.UUID]*Node)
+	nids := make(map[uuid.UUID]map[*Node]struct{})
+	for i, node := range nodes {
+		edgeIDs[i] = node.ID
+		byID[node.ID] = node
+		if init != nil {
+			init(node)
+		}
+	}
+	query.Where(func(s *sql.Selector) {
+		joinT := sql.Table(node.IdentifiersTable)
+		s.Join(joinT).On(s.C(identifiersentry.FieldID), joinT.C(node.IdentifiersPrimaryKey[1]))
+		s.Where(sql.InValues(joinT.C(node.IdentifiersPrimaryKey[0]), edgeIDs...))
+		columns := s.SelectedColumns()
+		s.Select(joinT.C(node.IdentifiersPrimaryKey[0]))
+		s.AppendSelect(columns...)
+		s.SetDistinct(false)
+	})
+	if err := query.prepareQuery(ctx); err != nil {
+		return err
+	}
+	qr := QuerierFunc(func(ctx context.Context, q Query) (Value, error) {
+		return query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
+			assign := spec.Assign
+			values := spec.ScanValues
+			spec.ScanValues = func(columns []string) ([]any, error) {
+				values, err := values(columns[1:])
+				if err != nil {
+					return nil, err
+				}
+				return append([]any{new(uuid.UUID)}, values...), nil
+			}
+			spec.Assign = func(columns []string, values []any) error {
+				outValue := *values[0].(*uuid.UUID)
+				inValue := *values[1].(*uuid.UUID)
+				if nids[inValue] == nil {
+					nids[inValue] = map[*Node]struct{}{byID[outValue]: {}}
+					return assign(columns[1:], values[1:])
+				}
+				nids[inValue][byID[outValue]] = struct{}{}
+				return nil
+			}
+		})
+	})
+	neighbors, err := withInterceptors[[]*IdentifiersEntry](ctx, query, qr, query.inters)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected "identifiers" node returned %v`, n.ID)
 		}
 		for kn := range nodes {
 			assign(kn, n)
