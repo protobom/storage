@@ -114,7 +114,9 @@ func (tc *ToolCreate) Mutation() *ToolMutation {
 
 // Save creates the Tool in the database.
 func (tc *ToolCreate) Save(ctx context.Context) (*Tool, error) {
-	tc.defaults()
+	if err := tc.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, tc.sqlSave, tc.mutation, tc.hooks)
 }
 
@@ -141,15 +143,22 @@ func (tc *ToolCreate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (tc *ToolCreate) defaults() {
+func (tc *ToolCreate) defaults() error {
 	if _, ok := tc.mutation.DocumentID(); !ok {
+		if tool.DefaultDocumentID == nil {
+			return fmt.Errorf("ent: uninitialized tool.DefaultDocumentID (forgotten import ent/runtime?)")
+		}
 		v := tool.DefaultDocumentID()
 		tc.mutation.SetDocumentID(v)
 	}
 	if _, ok := tc.mutation.ID(); !ok {
+		if tool.DefaultID == nil {
+			return fmt.Errorf("ent: uninitialized tool.DefaultID (forgotten import ent/runtime?)")
+		}
 		v := tool.DefaultID()
 		tc.mutation.SetID(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.

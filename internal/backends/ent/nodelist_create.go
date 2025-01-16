@@ -106,7 +106,9 @@ func (nlc *NodeListCreate) Mutation() *NodeListMutation {
 
 // Save creates the NodeList in the database.
 func (nlc *NodeListCreate) Save(ctx context.Context) (*NodeList, error) {
-	nlc.defaults()
+	if err := nlc.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, nlc.sqlSave, nlc.mutation, nlc.hooks)
 }
 
@@ -133,11 +135,15 @@ func (nlc *NodeListCreate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (nlc *NodeListCreate) defaults() {
+func (nlc *NodeListCreate) defaults() error {
 	if _, ok := nlc.mutation.ID(); !ok {
+		if nodelist.DefaultID == nil {
+			return fmt.Errorf("ent: uninitialized nodelist.DefaultID (forgotten import ent/runtime?)")
+		}
 		v := nodelist.DefaultID()
 		nlc.mutation.SetID(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.

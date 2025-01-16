@@ -140,7 +140,9 @@ func (erc *ExternalReferenceCreate) Mutation() *ExternalReferenceMutation {
 
 // Save creates the ExternalReference in the database.
 func (erc *ExternalReferenceCreate) Save(ctx context.Context) (*ExternalReference, error) {
-	erc.defaults()
+	if err := erc.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, erc.sqlSave, erc.mutation, erc.hooks)
 }
 
@@ -167,15 +169,22 @@ func (erc *ExternalReferenceCreate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (erc *ExternalReferenceCreate) defaults() {
+func (erc *ExternalReferenceCreate) defaults() error {
 	if _, ok := erc.mutation.DocumentID(); !ok {
+		if externalreference.DefaultDocumentID == nil {
+			return fmt.Errorf("ent: uninitialized externalreference.DefaultDocumentID (forgotten import ent/runtime?)")
+		}
 		v := externalreference.DefaultDocumentID()
 		erc.mutation.SetDocumentID(v)
 	}
 	if _, ok := erc.mutation.ID(); !ok {
+		if externalreference.DefaultID == nil {
+			return fmt.Errorf("ent: uninitialized externalreference.DefaultID (forgotten import ent/runtime?)")
+		}
 		v := externalreference.DefaultID()
 		erc.mutation.SetID(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.

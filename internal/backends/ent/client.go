@@ -817,7 +817,8 @@ func (c *DocumentTypeClient) QueryMetadata(dt *DocumentType) *MetadataQuery {
 
 // Hooks returns the client hooks.
 func (c *DocumentTypeClient) Hooks() []Hook {
-	return c.hooks.DocumentType
+	hooks := c.hooks.DocumentType
+	return append(hooks[:len(hooks):len(hooks)], documenttype.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -1014,7 +1015,8 @@ func (c *EdgeTypeClient) QueryNodeLists(et *EdgeType) *NodeListQuery {
 
 // Hooks returns the client hooks.
 func (c *EdgeTypeClient) Hooks() []Hook {
-	return c.hooks.EdgeType
+	hooks := c.hooks.EdgeType
+	return append(hooks[:len(hooks):len(hooks)], edgetype.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -1195,7 +1197,8 @@ func (c *ExternalReferenceClient) QueryNodes(er *ExternalReference) *NodeQuery {
 
 // Hooks returns the client hooks.
 func (c *ExternalReferenceClient) Hooks() []Hook {
-	return c.hooks.ExternalReference
+	hooks := c.hooks.ExternalReference
+	return append(hooks[:len(hooks):len(hooks)], externalreference.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -1754,7 +1757,8 @@ func (c *MetadataClient) QuerySourceData(m *Metadata) *SourceDataQuery {
 
 // Hooks returns the client hooks.
 func (c *MetadataClient) Hooks() []Hook {
-	return c.hooks.Metadata
+	hooks := c.hooks.Metadata
+	return append(hooks[:len(hooks):len(hooks)], metadata.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -2095,7 +2099,8 @@ func (c *NodeClient) QueryEdgeTypes(n *Node) *EdgeTypeQuery {
 
 // Hooks returns the client hooks.
 func (c *NodeClient) Hooks() []Hook {
-	return c.hooks.Node
+	hooks := c.hooks.Node
+	return append(hooks[:len(hooks):len(hooks)], node.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -2276,7 +2281,8 @@ func (c *NodeListClient) QueryNodes(nl *NodeList) *NodeQuery {
 
 // Hooks returns the client hooks.
 func (c *NodeListClient) Hooks() []Hook {
-	return c.hooks.NodeList
+	hooks := c.hooks.NodeList
+	return append(hooks[:len(hooks):len(hooks)], nodelist.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -2489,7 +2495,8 @@ func (c *PersonClient) QueryNode(pe *Person) *NodeQuery {
 
 // Hooks returns the client hooks.
 func (c *PersonClient) Hooks() []Hook {
-	return c.hooks.Person
+	hooks := c.hooks.Person
+	return append(hooks[:len(hooks):len(hooks)], person.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -2654,7 +2661,8 @@ func (c *PropertyClient) QueryNode(pr *Property) *NodeQuery {
 
 // Hooks returns the client hooks.
 func (c *PropertyClient) Hooks() []Hook {
-	return c.hooks.Property
+	hooks := c.hooks.Property
+	return append(hooks[:len(hooks):len(hooks)], property.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -2984,7 +2992,8 @@ func (c *SourceDataClient) QueryMetadata(sd *SourceData) *MetadataQuery {
 
 // Hooks returns the client hooks.
 func (c *SourceDataClient) Hooks() []Hook {
-	return c.hooks.SourceData
+	hooks := c.hooks.SourceData
+	return append(hooks[:len(hooks):len(hooks)], sourcedata.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -3149,7 +3158,8 @@ func (c *ToolClient) QueryMetadata(t *Tool) *MetadataQuery {
 
 // Hooks returns the client hooks.
 func (c *ToolClient) Hooks() []Hook {
-	return c.hooks.Tool
+	hooks := c.hooks.Tool
+	return append(hooks[:len(hooks):len(hooks)], tool.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.

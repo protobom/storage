@@ -400,7 +400,9 @@ func (nc *NodeCreate) Mutation() *NodeMutation {
 
 // Save creates the Node in the database.
 func (nc *NodeCreate) Save(ctx context.Context) (*Node, error) {
-	nc.defaults()
+	if err := nc.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, nc.sqlSave, nc.mutation, nc.hooks)
 }
 
@@ -427,15 +429,22 @@ func (nc *NodeCreate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (nc *NodeCreate) defaults() {
+func (nc *NodeCreate) defaults() error {
 	if _, ok := nc.mutation.DocumentID(); !ok {
+		if node.DefaultDocumentID == nil {
+			return fmt.Errorf("ent: uninitialized node.DefaultDocumentID (forgotten import ent/runtime?)")
+		}
 		v := node.DefaultDocumentID()
 		nc.mutation.SetDocumentID(v)
 	}
 	if _, ok := nc.mutation.ID(); !ok {
+		if node.DefaultID == nil {
+			return fmt.Errorf("ent: uninitialized node.DefaultID (forgotten import ent/runtime?)")
+		}
 		v := node.DefaultID()
 		nc.mutation.SetID(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -749,7 +758,7 @@ func (nc *NodeCreate) createSpec() (*Node, *sqlgraph.CreateSpec) {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		createE := &EdgeTypeCreate{config: nc.config, mutation: newEdgeTypeMutation(nc.config, OpCreate)}
-		createE.defaults()
+		_ = createE.defaults()
 		_, specE := createE.createSpec()
 		edge.Target.Fields = specE.Fields
 		if specE.ID.Value != nil {

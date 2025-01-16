@@ -23,6 +23,7 @@ func main() {
 	if err := entc.Generate("./schema", &gen.Config{
 		Features: []gen.Feature{
 			gen.FeatureExecQuery,
+			gen.FeatureIntercept,
 			gen.FeatureUpsert,
 			gen.FeatureVersionedMigration,
 		},

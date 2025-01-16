@@ -108,7 +108,9 @@ func (pc *PropertyCreate) Mutation() *PropertyMutation {
 
 // Save creates the Property in the database.
 func (pc *PropertyCreate) Save(ctx context.Context) (*Property, error) {
-	pc.defaults()
+	if err := pc.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, pc.sqlSave, pc.mutation, pc.hooks)
 }
 
@@ -135,15 +137,22 @@ func (pc *PropertyCreate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (pc *PropertyCreate) defaults() {
+func (pc *PropertyCreate) defaults() error {
 	if _, ok := pc.mutation.DocumentID(); !ok {
+		if property.DefaultDocumentID == nil {
+			return fmt.Errorf("ent: uninitialized property.DefaultDocumentID (forgotten import ent/runtime?)")
+		}
 		v := property.DefaultDocumentID()
 		pc.mutation.SetDocumentID(v)
 	}
 	if _, ok := pc.mutation.ID(); !ok {
+		if property.DefaultID == nil {
+			return fmt.Errorf("ent: uninitialized property.DefaultID (forgotten import ent/runtime?)")
+		}
 		v := property.DefaultID()
 		pc.mutation.SetID(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.

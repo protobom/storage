@@ -21,7 +21,6 @@ type NodeList struct {
 func (NodeList) Mixin() []ent.Mixin {
 	return []ent.Mixin{
 		ProtoMessageMixin[*sbom.NodeList]{},
-		UUIDMixin{},
 	}
 }
 

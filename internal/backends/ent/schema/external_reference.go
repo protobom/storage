@@ -22,7 +22,6 @@ func (ExternalReference) Mixin() []ent.Mixin {
 	return []ent.Mixin{
 		DocumentMixin{},
 		ProtoMessageMixin[*sbom.ExternalReference]{},
-		UUIDMixin{},
 	}
 }
 

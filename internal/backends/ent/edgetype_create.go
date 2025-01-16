@@ -133,7 +133,9 @@ func (etc *EdgeTypeCreate) Mutation() *EdgeTypeMutation {
 
 // Save creates the EdgeType in the database.
 func (etc *EdgeTypeCreate) Save(ctx context.Context) (*EdgeType, error) {
-	etc.defaults()
+	if err := etc.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, etc.sqlSave, etc.mutation, etc.hooks)
 }
 
@@ -160,15 +162,22 @@ func (etc *EdgeTypeCreate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (etc *EdgeTypeCreate) defaults() {
+func (etc *EdgeTypeCreate) defaults() error {
 	if _, ok := etc.mutation.DocumentID(); !ok {
+		if edgetype.DefaultDocumentID == nil {
+			return fmt.Errorf("ent: uninitialized edgetype.DefaultDocumentID (forgotten import ent/runtime?)")
+		}
 		v := edgetype.DefaultDocumentID()
 		etc.mutation.SetDocumentID(v)
 	}
 	if _, ok := etc.mutation.ID(); !ok {
+		if edgetype.DefaultID == nil {
+			return fmt.Errorf("ent: uninitialized edgetype.DefaultID (forgotten import ent/runtime?)")
+		}
 		v := edgetype.DefaultID()
 		etc.mutation.SetID(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.

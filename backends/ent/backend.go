@@ -12,12 +12,14 @@ import (
 	"fmt"
 	"slices"
 
+	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql/schema"
 	sqlite "github.com/glebarez/go-sqlite"
 	"github.com/protobom/protobom/pkg/storage"
 
 	"github.com/protobom/storage/internal/backends/ent"
 	"github.com/protobom/storage/internal/backends/ent/migrate"
+	_ "github.com/protobom/storage/internal/backends/ent/runtime" // Prevents circular imports in generated code
 )
 
 // Backend implements the protobom.pkg.storage.Backend interface.
@@ -53,7 +55,7 @@ func (backend *Backend) InitClient() error {
 	}
 
 	// Register the SQLite driver as "sqlite3".
-	if !slices.Contains(sql.Drivers(), "sqlite3") {
+	if !slices.Contains(sql.Drivers(), dialect.SQLite) {
 		sqlite.RegisterAsSQLITE3()
 	}
 
@@ -62,7 +64,7 @@ func (backend *Backend) InitClient() error {
 		clientOpts = append(clientOpts, ent.Debug())
 	}
 
-	client, err := ent.Open("sqlite3", backend.Options.DatabaseFile+dsnParams, clientOpts...)
+	client, err := ent.Open(dialect.SQLite, backend.Options.DatabaseFile+dsnParams, clientOpts...)
 	if err != nil {
 		return fmt.Errorf("failed opening connection to sqlite: %w", err)
 	}

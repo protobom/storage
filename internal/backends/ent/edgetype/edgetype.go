@@ -10,6 +10,7 @@ package edgetype
 import (
 	"fmt"
 
+	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/google/uuid"
@@ -94,7 +95,13 @@ func ValidColumn(column string) bool {
 	return false
 }
 
+// Note that the variables below are initialized by the runtime
+// package on the initialization of the application. Therefore,
+// it should be imported in the main as follows:
+//
+//	import _ "github.com/protobom/storage/internal/backends/ent/runtime"
 var (
+	Hooks [1]ent.Hook
 	// DefaultDocumentID holds the default value on creation for the "document_id" field.
 	DefaultDocumentID func() uuid.UUID
 	// DefaultID holds the default value on creation for the "id" field.
