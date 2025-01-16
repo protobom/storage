@@ -223,6 +223,34 @@ var (
 			},
 		},
 	}
+	// IdentifiersEntriesColumns holds the columns for the "identifiers_entries" table.
+	IdentifiersEntriesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID, Unique: true},
+		{Name: "type", Type: field.TypeEnum, Enums: []string{"UNKNOWN_IDENTIFIER_TYPE", "PURL", "CPE22", "CPE23", "GITOID"}},
+		{Name: "value", Type: field.TypeString},
+		{Name: "document_id", Type: field.TypeUUID, Nullable: true},
+	}
+	// IdentifiersEntriesTable holds the schema information for the "identifiers_entries" table.
+	IdentifiersEntriesTable = &schema.Table{
+		Name:       "identifiers_entries",
+		Columns:    IdentifiersEntriesColumns,
+		PrimaryKey: []*schema.Column{IdentifiersEntriesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "identifiers_entries_documents_document",
+				Columns:    []*schema.Column{IdentifiersEntriesColumns[3]},
+				RefColumns: []*schema.Column{DocumentsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "idx_identifiers",
+				Unique:  true,
+				Columns: []*schema.Column{IdentifiersEntriesColumns[1], IdentifiersEntriesColumns[2]},
+			},
+		},
+	}
 	// MetadataColumns holds the columns for the "metadata" table.
 	MetadataColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID, Unique: true},
@@ -280,7 +308,6 @@ var (
 		{Name: "valid_until_date", Type: field.TypeTime},
 		{Name: "attribution", Type: field.TypeJSON},
 		{Name: "file_types", Type: field.TypeJSON},
-		{Name: "identifiers", Type: field.TypeJSON, Nullable: true},
 		{Name: "document_id", Type: field.TypeUUID, Nullable: true},
 	}
 	// NodesTable holds the schema information for the "nodes" table.
@@ -291,7 +318,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "nodes_documents_document",
-				Columns:    []*schema.Column{NodesColumns[24]},
+				Columns:    []*schema.Column{NodesColumns[23]},
 				RefColumns: []*schema.Column{DocumentsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
@@ -616,6 +643,31 @@ var (
 			},
 		},
 	}
+	// NodeIdentifiersColumns holds the columns for the "node_identifiers" table.
+	NodeIdentifiersColumns = []*schema.Column{
+		{Name: "node_id", Type: field.TypeUUID},
+		{Name: "identifier_entry_id", Type: field.TypeUUID},
+	}
+	// NodeIdentifiersTable holds the schema information for the "node_identifiers" table.
+	NodeIdentifiersTable = &schema.Table{
+		Name:       "node_identifiers",
+		Columns:    NodeIdentifiersColumns,
+		PrimaryKey: []*schema.Column{NodeIdentifiersColumns[0], NodeIdentifiersColumns[1]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "node_identifiers_node_id",
+				Columns:    []*schema.Column{NodeIdentifiersColumns[0]},
+				RefColumns: []*schema.Column{NodesColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "node_identifiers_identifier_entry_id",
+				Columns:    []*schema.Column{NodeIdentifiersColumns[1]},
+				RefColumns: []*schema.Column{IdentifiersEntriesColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+	}
 	// NodeListEdgesColumns holds the columns for the "node_list_edges" table.
 	NodeListEdgesColumns = []*schema.Column{
 		{Name: "node_list_id", Type: field.TypeUUID},
@@ -674,6 +726,7 @@ var (
 		EdgeTypesTable,
 		ExternalReferencesTable,
 		HashesEntriesTable,
+		IdentifiersEntriesTable,
 		MetadataTable,
 		NodesTable,
 		NodeListsTable,
@@ -685,6 +738,7 @@ var (
 		ExtRefHashesTable,
 		NodeExternalReferencesTable,
 		NodeHashesTable,
+		NodeIdentifiersTable,
 		NodeListEdgesTable,
 		NodeListNodesTable,
 	}
@@ -705,6 +759,8 @@ func init() {
 	ExternalReferencesTable.Annotation = &entsql.Annotation{}
 	HashesEntriesTable.ForeignKeys[0].RefTable = DocumentsTable
 	HashesEntriesTable.Annotation = &entsql.Annotation{}
+	IdentifiersEntriesTable.ForeignKeys[0].RefTable = DocumentsTable
+	IdentifiersEntriesTable.Annotation = &entsql.Annotation{}
 	MetadataTable.ForeignKeys[0].RefTable = DocumentsTable
 	NodesTable.ForeignKeys[0].RefTable = DocumentsTable
 	NodesTable.Annotation = &entsql.Annotation{}
@@ -736,6 +792,9 @@ func init() {
 	NodeHashesTable.ForeignKeys[0].RefTable = NodesTable
 	NodeHashesTable.ForeignKeys[1].RefTable = HashesEntriesTable
 	NodeHashesTable.Annotation = &entsql.Annotation{}
+	NodeIdentifiersTable.ForeignKeys[0].RefTable = NodesTable
+	NodeIdentifiersTable.ForeignKeys[1].RefTable = IdentifiersEntriesTable
+	NodeIdentifiersTable.Annotation = &entsql.Annotation{}
 	NodeListEdgesTable.ForeignKeys[0].RefTable = NodeListsTable
 	NodeListEdgesTable.ForeignKeys[1].RefTable = EdgeTypesTable
 	NodeListEdgesTable.Annotation = &entsql.Annotation{}

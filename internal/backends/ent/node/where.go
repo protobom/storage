@@ -1262,16 +1262,6 @@ func ValidUntilDateLTE(v time.Time) predicate.Node {
 	return predicate.Node(sql.FieldLTE(FieldValidUntilDate, v))
 }
 
-// IdentifiersIsNil applies the IsNil predicate on the "identifiers" field.
-func IdentifiersIsNil() predicate.Node {
-	return predicate.Node(sql.FieldIsNull(FieldIdentifiers))
-}
-
-// IdentifiersNotNil applies the NotNil predicate on the "identifiers" field.
-func IdentifiersNotNil() predicate.Node {
-	return predicate.Node(sql.FieldNotNull(FieldIdentifiers))
-}
-
 // HasDocument applies the HasEdge predicate on the "document" edge.
 func HasDocument() predicate.Node {
 	return predicate.Node(func(s *sql.Selector) {
@@ -1471,6 +1461,29 @@ func HasHashes() predicate.Node {
 func HasHashesWith(preds ...predicate.HashesEntry) predicate.Node {
 	return predicate.Node(func(s *sql.Selector) {
 		step := newHashesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasIdentifiers applies the HasEdge predicate on the "identifiers" edge.
+func HasIdentifiers() predicate.Node {
+	return predicate.Node(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, IdentifiersTable, IdentifiersPrimaryKey...),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasIdentifiersWith applies the HasEdge predicate on the "identifiers" edge with a given conditions (other predicates).
+func HasIdentifiersWith(preds ...predicate.IdentifiersEntry) predicate.Node {
+	return predicate.Node(func(s *sql.Selector) {
+		step := newIdentifiersStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

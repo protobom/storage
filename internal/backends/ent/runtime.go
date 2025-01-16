@@ -15,6 +15,7 @@ import (
 	"github.com/protobom/storage/internal/backends/ent/edgetype"
 	"github.com/protobom/storage/internal/backends/ent/externalreference"
 	"github.com/protobom/storage/internal/backends/ent/hashesentry"
+	"github.com/protobom/storage/internal/backends/ent/identifiersentry"
 	"github.com/protobom/storage/internal/backends/ent/metadata"
 	"github.com/protobom/storage/internal/backends/ent/node"
 	"github.com/protobom/storage/internal/backends/ent/nodelist"
@@ -112,6 +113,21 @@ func init() {
 	hashesentryDescID := hashesentryMixinFields1[0].Descriptor()
 	// hashesentry.DefaultID holds the default value on creation for the id field.
 	hashesentry.DefaultID = hashesentryDescID.Default.(func() uuid.UUID)
+	identifiersentryMixin := schema.IdentifiersEntry{}.Mixin()
+	identifiersentryMixinFields0 := identifiersentryMixin[0].Fields()
+	_ = identifiersentryMixinFields0
+	identifiersentryMixinFields1 := identifiersentryMixin[1].Fields()
+	_ = identifiersentryMixinFields1
+	identifiersentryFields := schema.IdentifiersEntry{}.Fields()
+	_ = identifiersentryFields
+	// identifiersentryDescDocumentID is the schema descriptor for document_id field.
+	identifiersentryDescDocumentID := identifiersentryMixinFields0[0].Descriptor()
+	// identifiersentry.DefaultDocumentID holds the default value on creation for the document_id field.
+	identifiersentry.DefaultDocumentID = identifiersentryDescDocumentID.Default.(func() uuid.UUID)
+	// identifiersentryDescID is the schema descriptor for id field.
+	identifiersentryDescID := identifiersentryMixinFields1[0].Descriptor()
+	// identifiersentry.DefaultID holds the default value on creation for the id field.
+	identifiersentry.DefaultID = identifiersentryDescID.Default.(func() uuid.UUID)
 	metadataMixin := schema.Metadata{}.Mixin()
 	metadataMixinFields1 := metadataMixin[1].Fields()
 	_ = metadataMixinFields1

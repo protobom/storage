@@ -23,6 +23,7 @@ import (
 	"github.com/protobom/storage/internal/backends/ent/edgetype"
 	"github.com/protobom/storage/internal/backends/ent/externalreference"
 	"github.com/protobom/storage/internal/backends/ent/hashesentry"
+	"github.com/protobom/storage/internal/backends/ent/identifiersentry"
 	"github.com/protobom/storage/internal/backends/ent/node"
 	"github.com/protobom/storage/internal/backends/ent/purpose"
 )
@@ -263,6 +264,35 @@ func (backend *Backend) saveHashes(hashes map[int32]string, opts ...func(*ent.Ha
 	}
 }
 
+func (backend *Backend) saveIdentifiers(idents map[int32]string, opts ...func(*ent.IdentifiersEntryCreate)) TxFunc {
+	return func(tx *ent.Tx) error {
+		builders := []*ent.IdentifiersEntryCreate{}
+
+		for key, value := range idents {
+			identType := sbom.SoftwareIdentifierType(key)
+
+			identEntry := tx.IdentifiersEntry.Create().
+				SetType(identifiersentry.Type(identType.String())).
+				SetValue(value)
+
+			for _, fn := range opts {
+				fn(identEntry)
+			}
+
+			builders = append(builders, identEntry)
+		}
+
+		if err := tx.IdentifiersEntry.CreateBulk(builders...).
+			OnConflict().
+			Ignore().
+			Exec(backend.ctx); err != nil && !ent.IsConstraintError(err) {
+			return fmt.Errorf("saving identifiers: %w", err)
+		}
+
+		return nil
+	}
+}
+
 func (backend *Backend) saveMetadata(metadata *sbom.Metadata) TxFunc {
 	mdUUID, err := GenerateUUID(metadata)
 	if err != nil {
@@ -364,7 +394,6 @@ func (backend *Backend) saveNodes(nodes []*sbom.Node) TxFunc { //nolint:funlen,g
 				SetLicenseComments(srcNode.GetLicenseComments()).
 				SetLicenseConcluded(srcNode.GetLicenseConcluded()).
 				SetLicenses(srcNode.GetLicenses()).
-				SetIdentifiers(srcNode.GetIdentifiers()).
 				SetName(srcNode.GetName()).
 				SetReleaseDate(srcNode.GetReleaseDate().AsTime()).
 				SetSourceInfo(srcNode.GetSourceInfo()).
@@ -386,6 +415,9 @@ func (backend *Backend) saveNodes(nodes []*sbom.Node) TxFunc { //nolint:funlen,g
 				),
 				backend.saveHashes(srcNode.GetHashes(),
 					func(hec *ent.HashesEntryCreate) { hec.AddNodeIDs(nodeID) },
+				),
+				backend.saveIdentifiers(srcNode.GetIdentifiers(),
+					func(iec *ent.IdentifiersEntryCreate) { iec.AddNodeIDs(nodeID) },
 				),
 				backend.savePersons(srcNode.GetOriginators()),
 				backend.savePersons(srcNode.GetSuppliers()),

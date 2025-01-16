@@ -23,6 +23,7 @@ import (
 	"github.com/protobom/storage/internal/backends/ent/edgetype"
 	"github.com/protobom/storage/internal/backends/ent/externalreference"
 	"github.com/protobom/storage/internal/backends/ent/hashesentry"
+	"github.com/protobom/storage/internal/backends/ent/identifiersentry"
 	"github.com/protobom/storage/internal/backends/ent/metadata"
 	"github.com/protobom/storage/internal/backends/ent/node"
 	"github.com/protobom/storage/internal/backends/ent/nodelist"
@@ -97,6 +98,7 @@ func checkColumn(table, column string) error {
 			edgetype.Table:          edgetype.ValidColumn,
 			externalreference.Table: externalreference.ValidColumn,
 			hashesentry.Table:       hashesentry.ValidColumn,
+			identifiersentry.Table:  identifiersentry.ValidColumn,
 			metadata.Table:          metadata.ValidColumn,
 			node.Table:              node.ValidColumn,
 			nodelist.Table:          nodelist.ValidColumn,

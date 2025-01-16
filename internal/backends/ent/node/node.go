@@ -66,8 +66,6 @@ const (
 	FieldAttribution = "attribution"
 	// FieldFileTypes holds the string denoting the file_types field in the database.
 	FieldFileTypes = "file_types"
-	// FieldIdentifiers holds the string denoting the identifiers field in the database.
-	FieldIdentifiers = "identifiers"
 	// EdgeDocument holds the string denoting the document edge name in mutations.
 	EdgeDocument = "document"
 	// EdgeAnnotations holds the string denoting the annotations edge name in mutations.
@@ -86,6 +84,8 @@ const (
 	EdgeNodes = "nodes"
 	// EdgeHashes holds the string denoting the hashes edge name in mutations.
 	EdgeHashes = "hashes"
+	// EdgeIdentifiers holds the string denoting the identifiers edge name in mutations.
+	EdgeIdentifiers = "identifiers"
 	// EdgeProperties holds the string denoting the properties edge name in mutations.
 	EdgeProperties = "properties"
 	// EdgeNodeLists holds the string denoting the node_lists edge name in mutations.
@@ -143,6 +143,11 @@ const (
 	// HashesInverseTable is the table name for the HashesEntry entity.
 	// It exists in this package in order to avoid circular dependency with the "hashesentry" package.
 	HashesInverseTable = "hashes_entries"
+	// IdentifiersTable is the table that holds the identifiers relation/edge. The primary key declared below.
+	IdentifiersTable = "node_identifiers"
+	// IdentifiersInverseTable is the table name for the IdentifiersEntry entity.
+	// It exists in this package in order to avoid circular dependency with the "identifiersentry" package.
+	IdentifiersInverseTable = "identifiers_entries"
 	// PropertiesTable is the table that holds the properties relation/edge.
 	PropertiesTable = "properties"
 	// PropertiesInverseTable is the table name for the Property entity.
@@ -190,7 +195,6 @@ var Columns = []string{
 	FieldValidUntilDate,
 	FieldAttribution,
 	FieldFileTypes,
-	FieldIdentifiers,
 }
 
 var (
@@ -206,6 +210,9 @@ var (
 	// HashesPrimaryKey and HashesColumn2 are the table columns denoting the
 	// primary key for the hashes relation (M2M).
 	HashesPrimaryKey = []string{"node_id", "hash_entry_id"}
+	// IdentifiersPrimaryKey and IdentifiersColumn2 are the table columns denoting the
+	// primary key for the identifiers relation (M2M).
+	IdentifiersPrimaryKey = []string{"node_id", "identifier_entry_id"}
 	// NodeListsPrimaryKey and NodeListsColumn2 are the table columns denoting the
 	// primary key for the node_lists relation (M2M).
 	NodeListsPrimaryKey = []string{"node_list_id", "node_id"}
@@ -475,6 +482,20 @@ func ByHashes(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	}
 }
 
+// ByIdentifiersCount orders the results by identifiers count.
+func ByIdentifiersCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newIdentifiersStep(), opts...)
+	}
+}
+
+// ByIdentifiers orders the results by identifiers terms.
+func ByIdentifiers(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newIdentifiersStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
 // ByPropertiesCount orders the results by properties count.
 func ByPropertiesCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -577,6 +598,13 @@ func newHashesStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(HashesInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.M2M, false, HashesTable, HashesPrimaryKey...),
+	)
+}
+func newIdentifiersStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(IdentifiersInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2M, false, IdentifiersTable, IdentifiersPrimaryKey...),
 	)
 }
 func newPropertiesStep() *sqlgraph.Step {

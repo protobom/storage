@@ -24,6 +24,7 @@ import (
 	"github.com/protobom/storage/internal/backends/ent/edgetype"
 	"github.com/protobom/storage/internal/backends/ent/externalreference"
 	"github.com/protobom/storage/internal/backends/ent/hashesentry"
+	"github.com/protobom/storage/internal/backends/ent/identifiersentry"
 	"github.com/protobom/storage/internal/backends/ent/node"
 	"github.com/protobom/storage/internal/backends/ent/nodelist"
 	"github.com/protobom/storage/internal/backends/ent/person"
@@ -193,12 +194,6 @@ func (nc *NodeCreate) SetFileTypes(s []string) *NodeCreate {
 	return nc
 }
 
-// SetIdentifiers sets the "identifiers" field.
-func (nc *NodeCreate) SetIdentifiers(m map[int32]string) *NodeCreate {
-	nc.mutation.SetIdentifiers(m)
-	return nc
-}
-
 // SetID sets the "id" field.
 func (nc *NodeCreate) SetID(u uuid.UUID) *NodeCreate {
 	nc.mutation.SetID(u)
@@ -336,6 +331,21 @@ func (nc *NodeCreate) AddHashes(h ...*HashesEntry) *NodeCreate {
 		ids[i] = h[i].ID
 	}
 	return nc.AddHashIDs(ids...)
+}
+
+// AddIdentifierIDs adds the "identifiers" edge to the IdentifiersEntry entity by IDs.
+func (nc *NodeCreate) AddIdentifierIDs(ids ...uuid.UUID) *NodeCreate {
+	nc.mutation.AddIdentifierIDs(ids...)
+	return nc
+}
+
+// AddIdentifiers adds the "identifiers" edges to the IdentifiersEntry entity.
+func (nc *NodeCreate) AddIdentifiers(i ...*IdentifiersEntry) *NodeCreate {
+	ids := make([]uuid.UUID, len(i))
+	for j := range i {
+		ids[j] = i[j].ID
+	}
+	return nc.AddIdentifierIDs(ids...)
 }
 
 // AddPropertyIDs adds the "properties" edge to the Property entity by IDs.
@@ -627,10 +637,6 @@ func (nc *NodeCreate) createSpec() (*Node, *sqlgraph.CreateSpec) {
 		_spec.SetField(node.FieldFileTypes, field.TypeJSON, value)
 		_node.FileTypes = value
 	}
-	if value, ok := nc.mutation.Identifiers(); ok {
-		_spec.SetField(node.FieldIdentifiers, field.TypeJSON, value)
-		_node.Identifiers = value
-	}
 	if nodes := nc.mutation.DocumentIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -776,6 +782,22 @@ func (nc *NodeCreate) createSpec() (*Node, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(hashesentry.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := nc.mutation.IdentifiersIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   node.IdentifiersTable,
+			Columns: node.IdentifiersPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(identifiersentry.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -1129,24 +1151,6 @@ func (u *NodeUpsert) UpdateFileTypes() *NodeUpsert {
 	return u
 }
 
-// SetIdentifiers sets the "identifiers" field.
-func (u *NodeUpsert) SetIdentifiers(v map[int32]string) *NodeUpsert {
-	u.Set(node.FieldIdentifiers, v)
-	return u
-}
-
-// UpdateIdentifiers sets the "identifiers" field to the value that was provided on create.
-func (u *NodeUpsert) UpdateIdentifiers() *NodeUpsert {
-	u.SetExcluded(node.FieldIdentifiers)
-	return u
-}
-
-// ClearIdentifiers clears the value of the "identifiers" field.
-func (u *NodeUpsert) ClearIdentifiers() *NodeUpsert {
-	u.SetNull(node.FieldIdentifiers)
-	return u
-}
-
 // UpdateNewValues updates the mutable fields using the new values that were set on create except the ID field.
 // Using this option is equivalent to using:
 //
@@ -1488,27 +1492,6 @@ func (u *NodeUpsertOne) SetFileTypes(v []string) *NodeUpsertOne {
 func (u *NodeUpsertOne) UpdateFileTypes() *NodeUpsertOne {
 	return u.Update(func(s *NodeUpsert) {
 		s.UpdateFileTypes()
-	})
-}
-
-// SetIdentifiers sets the "identifiers" field.
-func (u *NodeUpsertOne) SetIdentifiers(v map[int32]string) *NodeUpsertOne {
-	return u.Update(func(s *NodeUpsert) {
-		s.SetIdentifiers(v)
-	})
-}
-
-// UpdateIdentifiers sets the "identifiers" field to the value that was provided on create.
-func (u *NodeUpsertOne) UpdateIdentifiers() *NodeUpsertOne {
-	return u.Update(func(s *NodeUpsert) {
-		s.UpdateIdentifiers()
-	})
-}
-
-// ClearIdentifiers clears the value of the "identifiers" field.
-func (u *NodeUpsertOne) ClearIdentifiers() *NodeUpsertOne {
-	return u.Update(func(s *NodeUpsert) {
-		s.ClearIdentifiers()
 	})
 }
 
@@ -2020,27 +2003,6 @@ func (u *NodeUpsertBulk) SetFileTypes(v []string) *NodeUpsertBulk {
 func (u *NodeUpsertBulk) UpdateFileTypes() *NodeUpsertBulk {
 	return u.Update(func(s *NodeUpsert) {
 		s.UpdateFileTypes()
-	})
-}
-
-// SetIdentifiers sets the "identifiers" field.
-func (u *NodeUpsertBulk) SetIdentifiers(v map[int32]string) *NodeUpsertBulk {
-	return u.Update(func(s *NodeUpsert) {
-		s.SetIdentifiers(v)
-	})
-}
-
-// UpdateIdentifiers sets the "identifiers" field to the value that was provided on create.
-func (u *NodeUpsertBulk) UpdateIdentifiers() *NodeUpsertBulk {
-	return u.Update(func(s *NodeUpsert) {
-		s.UpdateIdentifiers()
-	})
-}
-
-// ClearIdentifiers clears the value of the "identifiers" field.
-func (u *NodeUpsertBulk) ClearIdentifiers() *NodeUpsertBulk {
-	return u.Update(func(s *NodeUpsert) {
-		s.ClearIdentifiers()
 	})
 }
 

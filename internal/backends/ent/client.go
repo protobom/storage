@@ -27,6 +27,7 @@ import (
 	"github.com/protobom/storage/internal/backends/ent/edgetype"
 	"github.com/protobom/storage/internal/backends/ent/externalreference"
 	"github.com/protobom/storage/internal/backends/ent/hashesentry"
+	"github.com/protobom/storage/internal/backends/ent/identifiersentry"
 	"github.com/protobom/storage/internal/backends/ent/metadata"
 	"github.com/protobom/storage/internal/backends/ent/node"
 	"github.com/protobom/storage/internal/backends/ent/nodelist"
@@ -56,6 +57,8 @@ type Client struct {
 	ExternalReference *ExternalReferenceClient
 	// HashesEntry is the client for interacting with the HashesEntry builders.
 	HashesEntry *HashesEntryClient
+	// IdentifiersEntry is the client for interacting with the IdentifiersEntry builders.
+	IdentifiersEntry *IdentifiersEntryClient
 	// Metadata is the client for interacting with the Metadata builders.
 	Metadata *MetadataClient
 	// Node is the client for interacting with the Node builders.
@@ -89,6 +92,7 @@ func (c *Client) init() {
 	c.EdgeType = NewEdgeTypeClient(c.config)
 	c.ExternalReference = NewExternalReferenceClient(c.config)
 	c.HashesEntry = NewHashesEntryClient(c.config)
+	c.IdentifiersEntry = NewIdentifiersEntryClient(c.config)
 	c.Metadata = NewMetadataClient(c.config)
 	c.Node = NewNodeClient(c.config)
 	c.NodeList = NewNodeListClient(c.config)
@@ -195,6 +199,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		EdgeType:          NewEdgeTypeClient(cfg),
 		ExternalReference: NewExternalReferenceClient(cfg),
 		HashesEntry:       NewHashesEntryClient(cfg),
+		IdentifiersEntry:  NewIdentifiersEntryClient(cfg),
 		Metadata:          NewMetadataClient(cfg),
 		Node:              NewNodeClient(cfg),
 		NodeList:          NewNodeListClient(cfg),
@@ -228,6 +233,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		EdgeType:          NewEdgeTypeClient(cfg),
 		ExternalReference: NewExternalReferenceClient(cfg),
 		HashesEntry:       NewHashesEntryClient(cfg),
+		IdentifiersEntry:  NewIdentifiersEntryClient(cfg),
 		Metadata:          NewMetadataClient(cfg),
 		Node:              NewNodeClient(cfg),
 		NodeList:          NewNodeListClient(cfg),
@@ -266,8 +272,8 @@ func (c *Client) Close() error {
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
 		c.Annotation, c.Document, c.DocumentType, c.EdgeType, c.ExternalReference,
-		c.HashesEntry, c.Metadata, c.Node, c.NodeList, c.Person, c.Property, c.Purpose,
-		c.SourceData, c.Tool,
+		c.HashesEntry, c.IdentifiersEntry, c.Metadata, c.Node, c.NodeList, c.Person,
+		c.Property, c.Purpose, c.SourceData, c.Tool,
 	} {
 		n.Use(hooks...)
 	}
@@ -278,8 +284,8 @@ func (c *Client) Use(hooks ...Hook) {
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
 		c.Annotation, c.Document, c.DocumentType, c.EdgeType, c.ExternalReference,
-		c.HashesEntry, c.Metadata, c.Node, c.NodeList, c.Person, c.Property, c.Purpose,
-		c.SourceData, c.Tool,
+		c.HashesEntry, c.IdentifiersEntry, c.Metadata, c.Node, c.NodeList, c.Person,
+		c.Property, c.Purpose, c.SourceData, c.Tool,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -300,6 +306,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.ExternalReference.mutate(ctx, m)
 	case *HashesEntryMutation:
 		return c.HashesEntry.mutate(ctx, m)
+	case *IdentifiersEntryMutation:
+		return c.IdentifiersEntry.mutate(ctx, m)
 	case *MetadataMutation:
 		return c.Metadata.mutate(ctx, m)
 	case *NodeMutation:
@@ -1375,6 +1383,171 @@ func (c *HashesEntryClient) mutate(ctx context.Context, m *HashesEntryMutation) 
 	}
 }
 
+// IdentifiersEntryClient is a client for the IdentifiersEntry schema.
+type IdentifiersEntryClient struct {
+	config
+}
+
+// NewIdentifiersEntryClient returns a client for the IdentifiersEntry from the given config.
+func NewIdentifiersEntryClient(c config) *IdentifiersEntryClient {
+	return &IdentifiersEntryClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `identifiersentry.Hooks(f(g(h())))`.
+func (c *IdentifiersEntryClient) Use(hooks ...Hook) {
+	c.hooks.IdentifiersEntry = append(c.hooks.IdentifiersEntry, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `identifiersentry.Intercept(f(g(h())))`.
+func (c *IdentifiersEntryClient) Intercept(interceptors ...Interceptor) {
+	c.inters.IdentifiersEntry = append(c.inters.IdentifiersEntry, interceptors...)
+}
+
+// Create returns a builder for creating a IdentifiersEntry entity.
+func (c *IdentifiersEntryClient) Create() *IdentifiersEntryCreate {
+	mutation := newIdentifiersEntryMutation(c.config, OpCreate)
+	return &IdentifiersEntryCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of IdentifiersEntry entities.
+func (c *IdentifiersEntryClient) CreateBulk(builders ...*IdentifiersEntryCreate) *IdentifiersEntryCreateBulk {
+	return &IdentifiersEntryCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *IdentifiersEntryClient) MapCreateBulk(slice any, setFunc func(*IdentifiersEntryCreate, int)) *IdentifiersEntryCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &IdentifiersEntryCreateBulk{err: fmt.Errorf("calling to IdentifiersEntryClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*IdentifiersEntryCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &IdentifiersEntryCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for IdentifiersEntry.
+func (c *IdentifiersEntryClient) Update() *IdentifiersEntryUpdate {
+	mutation := newIdentifiersEntryMutation(c.config, OpUpdate)
+	return &IdentifiersEntryUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *IdentifiersEntryClient) UpdateOne(ie *IdentifiersEntry) *IdentifiersEntryUpdateOne {
+	mutation := newIdentifiersEntryMutation(c.config, OpUpdateOne, withIdentifiersEntry(ie))
+	return &IdentifiersEntryUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *IdentifiersEntryClient) UpdateOneID(id uuid.UUID) *IdentifiersEntryUpdateOne {
+	mutation := newIdentifiersEntryMutation(c.config, OpUpdateOne, withIdentifiersEntryID(id))
+	return &IdentifiersEntryUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for IdentifiersEntry.
+func (c *IdentifiersEntryClient) Delete() *IdentifiersEntryDelete {
+	mutation := newIdentifiersEntryMutation(c.config, OpDelete)
+	return &IdentifiersEntryDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *IdentifiersEntryClient) DeleteOne(ie *IdentifiersEntry) *IdentifiersEntryDeleteOne {
+	return c.DeleteOneID(ie.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *IdentifiersEntryClient) DeleteOneID(id uuid.UUID) *IdentifiersEntryDeleteOne {
+	builder := c.Delete().Where(identifiersentry.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &IdentifiersEntryDeleteOne{builder}
+}
+
+// Query returns a query builder for IdentifiersEntry.
+func (c *IdentifiersEntryClient) Query() *IdentifiersEntryQuery {
+	return &IdentifiersEntryQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeIdentifiersEntry},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a IdentifiersEntry entity by its id.
+func (c *IdentifiersEntryClient) Get(ctx context.Context, id uuid.UUID) (*IdentifiersEntry, error) {
+	return c.Query().Where(identifiersentry.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *IdentifiersEntryClient) GetX(ctx context.Context, id uuid.UUID) *IdentifiersEntry {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryDocument queries the document edge of a IdentifiersEntry.
+func (c *IdentifiersEntryClient) QueryDocument(ie *IdentifiersEntry) *DocumentQuery {
+	query := (&DocumentClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := ie.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(identifiersentry.Table, identifiersentry.FieldID, id),
+			sqlgraph.To(document.Table, document.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, identifiersentry.DocumentTable, identifiersentry.DocumentColumn),
+		)
+		fromV = sqlgraph.Neighbors(ie.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryNodes queries the nodes edge of a IdentifiersEntry.
+func (c *IdentifiersEntryClient) QueryNodes(ie *IdentifiersEntry) *NodeQuery {
+	query := (&NodeClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := ie.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(identifiersentry.Table, identifiersentry.FieldID, id),
+			sqlgraph.To(node.Table, node.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, identifiersentry.NodesTable, identifiersentry.NodesPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(ie.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *IdentifiersEntryClient) Hooks() []Hook {
+	return c.hooks.IdentifiersEntry
+}
+
+// Interceptors returns the client interceptors.
+func (c *IdentifiersEntryClient) Interceptors() []Interceptor {
+	return c.inters.IdentifiersEntry
+}
+
+func (c *IdentifiersEntryClient) mutate(ctx context.Context, m *IdentifiersEntryMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&IdentifiersEntryCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&IdentifiersEntryUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&IdentifiersEntryUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&IdentifiersEntryDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown IdentifiersEntry mutation op: %q", m.Op())
+	}
+}
+
 // MetadataClient is a client for the Metadata schema.
 type MetadataClient struct {
 	config
@@ -1833,6 +2006,22 @@ func (c *NodeClient) QueryHashes(n *Node) *HashesEntryQuery {
 			sqlgraph.From(node.Table, node.FieldID, id),
 			sqlgraph.To(hashesentry.Table, hashesentry.FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, false, node.HashesTable, node.HashesPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(n.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryIdentifiers queries the identifiers edge of a Node.
+func (c *NodeClient) QueryIdentifiers(n *Node) *IdentifiersEntryQuery {
+	query := (&IdentifiersEntryClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := n.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(node.Table, node.FieldID, id),
+			sqlgraph.To(identifiersentry.Table, identifiersentry.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, node.IdentifiersTable, node.IdentifiersPrimaryKey...),
 		)
 		fromV = sqlgraph.Neighbors(n.driver.Dialect(), step)
 		return fromV, nil
@@ -2971,13 +3160,13 @@ func (c *ToolClient) mutate(ctx context.Context, m *ToolMutation) (Value, error)
 type (
 	hooks struct {
 		Annotation, Document, DocumentType, EdgeType, ExternalReference, HashesEntry,
-		Metadata, Node, NodeList, Person, Property, Purpose, SourceData,
-		Tool []ent.Hook
+		IdentifiersEntry, Metadata, Node, NodeList, Person, Property, Purpose,
+		SourceData, Tool []ent.Hook
 	}
 	inters struct {
 		Annotation, Document, DocumentType, EdgeType, ExternalReference, HashesEntry,
-		Metadata, Node, NodeList, Person, Property, Purpose, SourceData,
-		Tool []ent.Interceptor
+		IdentifiersEntry, Metadata, Node, NodeList, Person, Property, Purpose,
+		SourceData, Tool []ent.Interceptor
 	}
 )
 
