@@ -1125,7 +1125,7 @@ func (nu *NodeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			},
 		}
 		createE := &EdgeTypeCreate{config: nu.config, mutation: newEdgeTypeMutation(nu.config, OpCreate)}
-		createE.defaults()
+		_ = createE.defaults()
 		_, specE := createE.createSpec()
 		edge.Target.Fields = specE.Fields
 		if specE.ID.Value != nil {
@@ -1148,7 +1148,7 @@ func (nu *NodeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		createE := &EdgeTypeCreate{config: nu.config, mutation: newEdgeTypeMutation(nu.config, OpCreate)}
-		createE.defaults()
+		_ = createE.defaults()
 		_, specE := createE.createSpec()
 		edge.Target.Fields = specE.Fields
 		if specE.ID.Value != nil {
@@ -1171,7 +1171,7 @@ func (nu *NodeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		createE := &EdgeTypeCreate{config: nu.config, mutation: newEdgeTypeMutation(nu.config, OpCreate)}
-		createE.defaults()
+		_ = createE.defaults()
 		_, specE := createE.createSpec()
 		edge.Target.Fields = specE.Fields
 		if specE.ID.Value != nil {
@@ -2580,7 +2580,7 @@ func (nuo *NodeUpdateOne) sqlSave(ctx context.Context) (_node *Node, err error) 
 			},
 		}
 		createE := &EdgeTypeCreate{config: nuo.config, mutation: newEdgeTypeMutation(nuo.config, OpCreate)}
-		createE.defaults()
+		_ = createE.defaults()
 		_, specE := createE.createSpec()
 		edge.Target.Fields = specE.Fields
 		if specE.ID.Value != nil {
@@ -2603,7 +2603,7 @@ func (nuo *NodeUpdateOne) sqlSave(ctx context.Context) (_node *Node, err error) 
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		createE := &EdgeTypeCreate{config: nuo.config, mutation: newEdgeTypeMutation(nuo.config, OpCreate)}
-		createE.defaults()
+		_ = createE.defaults()
 		_, specE := createE.createSpec()
 		edge.Target.Fields = specE.Fields
 		if specE.ID.Value != nil {
@@ -2626,7 +2626,7 @@ func (nuo *NodeUpdateOne) sqlSave(ctx context.Context) (_node *Node, err error) 
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		createE := &EdgeTypeCreate{config: nuo.config, mutation: newEdgeTypeMutation(nuo.config, OpCreate)}
-		createE.defaults()
+		_ = createE.defaults()
 		_, specE := createE.createSpec()
 		edge.Target.Fields = specE.Fields
 		if specE.ID.Value != nil {

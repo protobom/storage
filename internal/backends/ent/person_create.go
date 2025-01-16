@@ -180,7 +180,9 @@ func (pc *PersonCreate) Mutation() *PersonMutation {
 
 // Save creates the Person in the database.
 func (pc *PersonCreate) Save(ctx context.Context) (*Person, error) {
-	pc.defaults()
+	if err := pc.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, pc.sqlSave, pc.mutation, pc.hooks)
 }
 
@@ -207,15 +209,22 @@ func (pc *PersonCreate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (pc *PersonCreate) defaults() {
+func (pc *PersonCreate) defaults() error {
 	if _, ok := pc.mutation.DocumentID(); !ok {
+		if person.DefaultDocumentID == nil {
+			return fmt.Errorf("ent: uninitialized person.DefaultDocumentID (forgotten import ent/runtime?)")
+		}
 		v := person.DefaultDocumentID()
 		pc.mutation.SetDocumentID(v)
 	}
 	if _, ok := pc.mutation.ID(); !ok {
+		if person.DefaultID == nil {
+			return fmt.Errorf("ent: uninitialized person.DefaultID (forgotten import ent/runtime?)")
+		}
 		v := person.DefaultID()
 		pc.mutation.SetID(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.

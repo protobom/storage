@@ -24,7 +24,6 @@ func (EdgeType) Mixin() []ent.Mixin {
 	return []ent.Mixin{
 		DocumentMixin{},
 		ProtoMessageMixin[*sbom.Edge]{},
-		UUIDMixin{},
 	}
 }
 

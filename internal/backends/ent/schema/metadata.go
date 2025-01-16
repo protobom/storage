@@ -22,7 +22,6 @@ type Metadata struct {
 func (Metadata) Mixin() []ent.Mixin {
 	return []ent.Mixin{
 		ProtoMessageMixin[*sbom.Metadata]{},
-		UUIDMixin{},
 	}
 }
 

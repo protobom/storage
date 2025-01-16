@@ -120,7 +120,9 @@ func (sdc *SourceDataCreate) Mutation() *SourceDataMutation {
 
 // Save creates the SourceData in the database.
 func (sdc *SourceDataCreate) Save(ctx context.Context) (*SourceData, error) {
-	sdc.defaults()
+	if err := sdc.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, sdc.sqlSave, sdc.mutation, sdc.hooks)
 }
 
@@ -147,15 +149,22 @@ func (sdc *SourceDataCreate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (sdc *SourceDataCreate) defaults() {
+func (sdc *SourceDataCreate) defaults() error {
 	if _, ok := sdc.mutation.DocumentID(); !ok {
+		if sourcedata.DefaultDocumentID == nil {
+			return fmt.Errorf("ent: uninitialized sourcedata.DefaultDocumentID (forgotten import ent/runtime?)")
+		}
 		v := sourcedata.DefaultDocumentID()
 		sdc.mutation.SetDocumentID(v)
 	}
 	if _, ok := sdc.mutation.ID(); !ok {
+		if sourcedata.DefaultID == nil {
+			return fmt.Errorf("ent: uninitialized sourcedata.DefaultID (forgotten import ent/runtime?)")
+		}
 		v := sourcedata.DefaultID()
 		sdc.mutation.SetID(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.

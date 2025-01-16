@@ -23,7 +23,6 @@ func (Property) Mixin() []ent.Mixin {
 	return []ent.Mixin{
 		DocumentMixin{},
 		ProtoMessageMixin[*sbom.Property]{},
-		UUIDMixin{},
 	}
 }
 

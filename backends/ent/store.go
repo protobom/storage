@@ -120,15 +120,9 @@ func (backend *Backend) saveAnnotations(annotations ...*ent.Annotation) TxFunc {
 func (backend *Backend) saveDocumentTypes(docTypes []*sbom.DocumentType) TxFunc {
 	return func(tx *ent.Tx) error {
 		for _, docType := range docTypes {
-			id, err := GenerateUUID(docType)
-			if err != nil {
-				return err
-			}
-
 			typeName := documenttype.Type(docType.GetType().String())
 
 			newDocType := tx.DocumentType.Create().
-				SetID(id).
 				SetProtoMessage(docType).
 				SetNillableType(&typeName).
 				SetNillableName(docType.Name).              //nolint:protogetter
@@ -154,14 +148,8 @@ func (backend *Backend) saveEdges(edges []*sbom.Edge) TxFunc { //nolint:gocognit
 		}
 
 		for _, edge := range edges {
-			edgeID, err := GenerateUUID(edge)
-			if err != nil {
-				return fmt.Errorf("generating UUID: %w", err)
-			}
-
 			for _, toID := range edge.GetTo() {
 				newEdgeType := tx.EdgeType.Create().
-					SetID(edgeID).
 					SetProtoMessage(edge).
 					SetType(edgetype.Type(edge.GetType().String())).
 					SetFromID(nativeIDMap[edge.GetFrom()]).
@@ -195,7 +183,6 @@ func (backend *Backend) saveExternalReferences(refs []*sbom.ExternalReference, o
 			}
 
 			newRef := tx.ExternalReference.Create().
-				SetID(extRefID).
 				SetProtoMessage(ref).
 				SetURL(ref.GetUrl()).
 				SetComment(ref.GetComment()).
@@ -296,14 +283,13 @@ func (backend *Backend) saveIdentifiers(idents map[int32]string, opts ...func(*e
 }
 
 func (backend *Backend) saveMetadata(metadata *sbom.Metadata) TxFunc {
-	mdUUID, err := GenerateUUID(metadata)
+	id, err := GenerateUUID(metadata)
 	if err != nil {
 		return nil
 	}
 
 	return func(tx *ent.Tx) error {
 		newMetadata := tx.Metadata.Create().
-			SetID(mdUUID).
 			SetNativeID(metadata.GetId()).
 			SetProtoMessage(metadata).
 			SetVersion(metadata.GetVersion()).
@@ -317,7 +303,7 @@ func (backend *Backend) saveMetadata(metadata *sbom.Metadata) TxFunc {
 			return fmt.Errorf("saving metadata: %w", err)
 		}
 
-		backend.ctx = context.WithValue(backend.ctx, metadataIDKey{}, mdUUID)
+		backend.ctx = context.WithValue(backend.ctx, metadataIDKey{}, id)
 
 		for _, fn := range []TxFunc{
 			backend.savePersons(metadata.GetAuthors()),
@@ -342,7 +328,6 @@ func (backend *Backend) saveNodeList(nodeList *sbom.NodeList) TxFunc {
 		}
 
 		newNodeList := tx.NodeList.Create().
-			SetID(id).
 			SetProtoMessage(nodeList).
 			SetRootElements(nodeList.GetRootElements())
 
@@ -383,7 +368,6 @@ func (backend *Backend) saveNodes(nodes []*sbom.Node) TxFunc { //nolint:funlen,g
 
 			backend.ctx = context.WithValue(backend.ctx, nodeIDKey{}, nodeID)
 			newNode := tx.Node.Create().
-				SetID(nodeID).
 				SetNativeID(srcNode.GetId()).
 				SetProtoMessage(srcNode).
 				SetAttribution(srcNode.GetAttribution()).
@@ -459,7 +443,6 @@ func (backend *Backend) savePersons(persons []*sbom.Person) TxFunc { //nolint:go
 			}
 
 			newPerson := tx.Person.Create().
-				SetID(id).
 				SetProtoMessage(person).
 				SetName(person.GetName()).
 				SetEmail(person.GetEmail()).
@@ -496,13 +479,7 @@ func (backend *Backend) saveProperties(properties []*sbom.Property, nodeID uuid.
 		builders := []*ent.PropertyCreate{}
 
 		for _, prop := range properties {
-			id, err := GenerateUUID(prop)
-			if err != nil {
-				return err
-			}
-
 			newProp := tx.Property.Create().
-				SetID(id).
 				SetProtoMessage(prop).
 				SetNodeID(nodeID).
 				SetName(prop.GetName()).
@@ -554,13 +531,7 @@ func (backend *Backend) savePurposes(purposes []sbom.Purpose, nodeID uuid.UUID) 
 
 func (backend *Backend) saveSourceData(sourceData *sbom.SourceData) TxFunc {
 	return func(tx *ent.Tx) error {
-		id, err := GenerateUUID(sourceData)
-		if err != nil {
-			return err
-		}
-
 		newSourceData := tx.SourceData.Create().
-			SetID(id).
 			SetProtoMessage(sourceData).
 			SetFormat(sourceData.GetFormat()).
 			SetHashes(sourceData.GetHashes()).
@@ -583,13 +554,7 @@ func (backend *Backend) saveTools(tools []*sbom.Tool) TxFunc {
 		builders := []*ent.ToolCreate{}
 
 		for _, tool := range tools {
-			id, err := GenerateUUID(tool)
-			if err != nil {
-				return err
-			}
-
 			newTool := tx.Tool.Create().
-				SetID(id).
 				SetProtoMessage(tool).
 				SetName(tool.GetName()).
 				SetVersion(tool.GetVersion()).

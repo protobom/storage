@@ -24,7 +24,6 @@ func (Node) Mixin() []ent.Mixin {
 	return []ent.Mixin{
 		DocumentMixin{},
 		ProtoMessageMixin[*sbom.Node]{},
-		UUIDMixin{},
 	}
 }
 

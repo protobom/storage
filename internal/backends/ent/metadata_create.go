@@ -163,7 +163,9 @@ func (mc *MetadataCreate) Mutation() *MetadataMutation {
 
 // Save creates the Metadata in the database.
 func (mc *MetadataCreate) Save(ctx context.Context) (*Metadata, error) {
-	mc.defaults()
+	if err := mc.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, mc.sqlSave, mc.mutation, mc.hooks)
 }
 
@@ -190,11 +192,15 @@ func (mc *MetadataCreate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (mc *MetadataCreate) defaults() {
+func (mc *MetadataCreate) defaults() error {
 	if _, ok := mc.mutation.ID(); !ok {
+		if metadata.DefaultID == nil {
+			return fmt.Errorf("ent: uninitialized metadata.DefaultID (forgotten import ent/runtime?)")
+		}
 		v := metadata.DefaultID()
 		mc.mutation.SetID(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.

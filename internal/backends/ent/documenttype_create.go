@@ -138,7 +138,9 @@ func (dtc *DocumentTypeCreate) Mutation() *DocumentTypeMutation {
 
 // Save creates the DocumentType in the database.
 func (dtc *DocumentTypeCreate) Save(ctx context.Context) (*DocumentType, error) {
-	dtc.defaults()
+	if err := dtc.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, dtc.sqlSave, dtc.mutation, dtc.hooks)
 }
 
@@ -165,15 +167,22 @@ func (dtc *DocumentTypeCreate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (dtc *DocumentTypeCreate) defaults() {
+func (dtc *DocumentTypeCreate) defaults() error {
 	if _, ok := dtc.mutation.DocumentID(); !ok {
+		if documenttype.DefaultDocumentID == nil {
+			return fmt.Errorf("ent: uninitialized documenttype.DefaultDocumentID (forgotten import ent/runtime?)")
+		}
 		v := documenttype.DefaultDocumentID()
 		dtc.mutation.SetDocumentID(v)
 	}
 	if _, ok := dtc.mutation.ID(); !ok {
+		if documenttype.DefaultID == nil {
+			return fmt.Errorf("ent: uninitialized documenttype.DefaultID (forgotten import ent/runtime?)")
+		}
 		v := documenttype.DefaultID()
 		dtc.mutation.SetID(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
