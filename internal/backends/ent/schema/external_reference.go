@@ -8,10 +8,9 @@ package schema
 
 import (
 	"entgo.io/ent"
+	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
-	"entgo.io/ent/schema/index"
-	"github.com/google/uuid"
 	"github.com/protobom/protobom/pkg/sbom"
 )
 
@@ -29,29 +28,19 @@ func (ExternalReference) Mixin() []ent.Mixin {
 
 func (ExternalReference) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("node_id", uuid.UUID{}).Optional(),
 		field.String("url"),
 		field.String("comment"),
 		field.String("authority").Optional(),
 		field.Enum("type").
 			Values(enumValues(new(sbom.ExternalReference_ExternalReferenceType))...),
-		field.JSON("hashes", map[int32]string{}).Optional(),
 	}
 }
 
 func (ExternalReference) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("node", Node.Type).
-			Ref("external_references").
-			Unique().
-			Field("node_id"),
-	}
-}
-
-func (ExternalReference) Indexes() []ent.Index {
-	return []ent.Index{
-		index.Fields("node_id", "url", "type").
-			Unique().
-			StorageKey("idx_external_references"),
+		edge.To("hashes", HashesEntry.Type).
+			StorageKey(edge.Table("ext_ref_hashes"), edge.Columns("ext_ref_id", "hash_entry_id")).
+			Annotations(entsql.OnDelete(entsql.Cascade)),
+		edge.From("nodes", Node.Type).Ref("external_references"),
 	}
 }

@@ -76,6 +76,14 @@ func (etc *EdgeTypeCreate) SetID(u uuid.UUID) *EdgeTypeCreate {
 	return etc
 }
 
+// SetNillableID sets the "id" field if the given value is not nil.
+func (etc *EdgeTypeCreate) SetNillableID(u *uuid.UUID) *EdgeTypeCreate {
+	if u != nil {
+		etc.SetID(*u)
+	}
+	return etc
+}
+
 // SetDocument sets the "document" edge to the Document entity.
 func (etc *EdgeTypeCreate) SetDocument(d *Document) *EdgeTypeCreate {
 	return etc.SetDocumentID(d.ID)
@@ -156,6 +164,10 @@ func (etc *EdgeTypeCreate) defaults() {
 	if _, ok := etc.mutation.DocumentID(); !ok {
 		v := edgetype.DefaultDocumentID()
 		etc.mutation.SetDocumentID(v)
+	}
+	if _, ok := etc.mutation.ID(); !ok {
+		v := edgetype.DefaultID()
+		etc.mutation.SetID(v)
 	}
 }
 

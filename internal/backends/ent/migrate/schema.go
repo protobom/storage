@@ -179,9 +179,7 @@ var (
 		{Name: "comment", Type: field.TypeString},
 		{Name: "authority", Type: field.TypeString, Nullable: true},
 		{Name: "type", Type: field.TypeEnum, Enums: []string{"UNKNOWN", "ATTESTATION", "BINARY", "BOM", "BOWER", "BUILD_META", "BUILD_SYSTEM", "CERTIFICATION_REPORT", "CHAT", "CODIFIED_INFRASTRUCTURE", "COMPONENT_ANALYSIS_REPORT", "CONFIGURATION", "DISTRIBUTION_INTAKE", "DOCUMENTATION", "DOWNLOAD", "DYNAMIC_ANALYSIS_REPORT", "EOL_NOTICE", "EVIDENCE", "EXPORT_CONTROL_ASSESSMENT", "FORMULATION", "FUNDING", "ISSUE_TRACKER", "LICENSE", "LOG", "MAILING_LIST", "MATURITY_REPORT", "MAVEN_CENTRAL", "METRICS", "MODEL_CARD", "NPM", "NUGET", "OTHER", "POAM", "PRIVACY_ASSESSMENT", "PRODUCT_METADATA", "PURCHASE_ORDER", "QUALITY_ASSESSMENT_REPORT", "QUALITY_METRICS", "RELEASE_HISTORY", "RELEASE_NOTES", "RISK_ASSESSMENT", "RUNTIME_ANALYSIS_REPORT", "SECURE_SOFTWARE_ATTESTATION", "SECURITY_ADVERSARY_MODEL", "SECURITY_ADVISORY", "SECURITY_CONTACT", "SECURITY_FIX", "SECURITY_OTHER", "SECURITY_PENTEST_REPORT", "SECURITY_POLICY", "SECURITY_SWID", "SECURITY_THREAT_MODEL", "SOCIAL", "SOURCE_ARTIFACT", "STATIC_ANALYSIS_REPORT", "SUPPORT", "VCS", "VULNERABILITY_ASSERTION", "VULNERABILITY_DISCLOSURE_REPORT", "VULNERABILITY_EXPLOITABILITY_ASSESSMENT", "WEBSITE"}},
-		{Name: "hashes", Type: field.TypeJSON, Nullable: true},
 		{Name: "document_id", Type: field.TypeUUID, Nullable: true},
-		{Name: "node_id", Type: field.TypeUUID, Nullable: true},
 	}
 	// ExternalReferencesTable holds the schema information for the "external_references" table.
 	ExternalReferencesTable = &schema.Table{
@@ -191,22 +189,37 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "external_references_documents_document",
-				Columns:    []*schema.Column{ExternalReferencesColumns[7]},
+				Columns:    []*schema.Column{ExternalReferencesColumns[6]},
 				RefColumns: []*schema.Column{DocumentsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
+		},
+	}
+	// HashesEntriesColumns holds the columns for the "hashes_entries" table.
+	HashesEntriesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID, Unique: true},
+		{Name: "hash_algorithm", Type: field.TypeEnum, Enums: []string{"UNKNOWN", "MD5", "SHA1", "SHA256", "SHA384", "SHA512", "SHA3_256", "SHA3_384", "SHA3_512", "BLAKE2B_256", "BLAKE2B_384", "BLAKE2B_512", "BLAKE3", "MD2", "ADLER32", "MD4", "MD6", "SHA224"}},
+		{Name: "hash_data", Type: field.TypeString},
+		{Name: "document_id", Type: field.TypeUUID, Nullable: true},
+	}
+	// HashesEntriesTable holds the schema information for the "hashes_entries" table.
+	HashesEntriesTable = &schema.Table{
+		Name:       "hashes_entries",
+		Columns:    HashesEntriesColumns,
+		PrimaryKey: []*schema.Column{HashesEntriesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:     "external_references_nodes_external_references",
-				Columns:    []*schema.Column{ExternalReferencesColumns[8]},
-				RefColumns: []*schema.Column{NodesColumns[0]},
+				Symbol:     "hashes_entries_documents_document",
+				Columns:    []*schema.Column{HashesEntriesColumns[3]},
+				RefColumns: []*schema.Column{DocumentsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "idx_external_references",
+				Name:    "idx_hashes",
 				Unique:  true,
-				Columns: []*schema.Column{ExternalReferencesColumns[8], ExternalReferencesColumns[2], ExternalReferencesColumns[5]},
+				Columns: []*schema.Column{HashesEntriesColumns[1], HashesEntriesColumns[2]},
 			},
 		},
 	}
@@ -267,7 +280,6 @@ var (
 		{Name: "valid_until_date", Type: field.TypeTime},
 		{Name: "attribution", Type: field.TypeJSON},
 		{Name: "file_types", Type: field.TypeJSON},
-		{Name: "hashes", Type: field.TypeJSON, Nullable: true},
 		{Name: "identifiers", Type: field.TypeJSON, Nullable: true},
 		{Name: "document_id", Type: field.TypeUUID, Nullable: true},
 	}
@@ -279,7 +291,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "nodes_documents_document",
-				Columns:    []*schema.Column{NodesColumns[25]},
+				Columns:    []*schema.Column{NodesColumns[24]},
 				RefColumns: []*schema.Column{DocumentsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
@@ -529,6 +541,81 @@ var (
 			},
 		},
 	}
+	// ExtRefHashesColumns holds the columns for the "ext_ref_hashes" table.
+	ExtRefHashesColumns = []*schema.Column{
+		{Name: "ext_ref_id", Type: field.TypeUUID},
+		{Name: "hash_entry_id", Type: field.TypeUUID},
+	}
+	// ExtRefHashesTable holds the schema information for the "ext_ref_hashes" table.
+	ExtRefHashesTable = &schema.Table{
+		Name:       "ext_ref_hashes",
+		Columns:    ExtRefHashesColumns,
+		PrimaryKey: []*schema.Column{ExtRefHashesColumns[0], ExtRefHashesColumns[1]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "ext_ref_hashes_ext_ref_id",
+				Columns:    []*schema.Column{ExtRefHashesColumns[0]},
+				RefColumns: []*schema.Column{ExternalReferencesColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "ext_ref_hashes_hash_entry_id",
+				Columns:    []*schema.Column{ExtRefHashesColumns[1]},
+				RefColumns: []*schema.Column{HashesEntriesColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+	}
+	// NodeExternalReferencesColumns holds the columns for the "node_external_references" table.
+	NodeExternalReferencesColumns = []*schema.Column{
+		{Name: "node_id", Type: field.TypeUUID},
+		{Name: "external_reference_id", Type: field.TypeUUID},
+	}
+	// NodeExternalReferencesTable holds the schema information for the "node_external_references" table.
+	NodeExternalReferencesTable = &schema.Table{
+		Name:       "node_external_references",
+		Columns:    NodeExternalReferencesColumns,
+		PrimaryKey: []*schema.Column{NodeExternalReferencesColumns[0], NodeExternalReferencesColumns[1]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "node_external_references_node_id",
+				Columns:    []*schema.Column{NodeExternalReferencesColumns[0]},
+				RefColumns: []*schema.Column{NodesColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "node_external_references_external_reference_id",
+				Columns:    []*schema.Column{NodeExternalReferencesColumns[1]},
+				RefColumns: []*schema.Column{ExternalReferencesColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+	}
+	// NodeHashesColumns holds the columns for the "node_hashes" table.
+	NodeHashesColumns = []*schema.Column{
+		{Name: "node_id", Type: field.TypeUUID},
+		{Name: "hash_entry_id", Type: field.TypeUUID},
+	}
+	// NodeHashesTable holds the schema information for the "node_hashes" table.
+	NodeHashesTable = &schema.Table{
+		Name:       "node_hashes",
+		Columns:    NodeHashesColumns,
+		PrimaryKey: []*schema.Column{NodeHashesColumns[0], NodeHashesColumns[1]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "node_hashes_node_id",
+				Columns:    []*schema.Column{NodeHashesColumns[0]},
+				RefColumns: []*schema.Column{NodesColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "node_hashes_hash_entry_id",
+				Columns:    []*schema.Column{NodeHashesColumns[1]},
+				RefColumns: []*schema.Column{HashesEntriesColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+	}
 	// NodeListEdgesColumns holds the columns for the "node_list_edges" table.
 	NodeListEdgesColumns = []*schema.Column{
 		{Name: "node_list_id", Type: field.TypeUUID},
@@ -586,6 +673,7 @@ var (
 		DocumentTypesTable,
 		EdgeTypesTable,
 		ExternalReferencesTable,
+		HashesEntriesTable,
 		MetadataTable,
 		NodesTable,
 		NodeListsTable,
@@ -594,6 +682,9 @@ var (
 		PurposesTable,
 		SourceDataTable,
 		ToolsTable,
+		ExtRefHashesTable,
+		NodeExternalReferencesTable,
+		NodeHashesTable,
 		NodeListEdgesTable,
 		NodeListNodesTable,
 	}
@@ -611,8 +702,9 @@ func init() {
 	EdgeTypesTable.ForeignKeys[2].RefTable = NodesTable
 	EdgeTypesTable.Annotation = &entsql.Annotation{}
 	ExternalReferencesTable.ForeignKeys[0].RefTable = DocumentsTable
-	ExternalReferencesTable.ForeignKeys[1].RefTable = NodesTable
 	ExternalReferencesTable.Annotation = &entsql.Annotation{}
+	HashesEntriesTable.ForeignKeys[0].RefTable = DocumentsTable
+	HashesEntriesTable.Annotation = &entsql.Annotation{}
 	MetadataTable.ForeignKeys[0].RefTable = DocumentsTable
 	NodesTable.ForeignKeys[0].RefTable = DocumentsTable
 	NodesTable.Annotation = &entsql.Annotation{}
@@ -635,6 +727,15 @@ func init() {
 	ToolsTable.ForeignKeys[0].RefTable = MetadataTable
 	ToolsTable.ForeignKeys[1].RefTable = DocumentsTable
 	ToolsTable.Annotation = &entsql.Annotation{}
+	ExtRefHashesTable.ForeignKeys[0].RefTable = ExternalReferencesTable
+	ExtRefHashesTable.ForeignKeys[1].RefTable = HashesEntriesTable
+	ExtRefHashesTable.Annotation = &entsql.Annotation{}
+	NodeExternalReferencesTable.ForeignKeys[0].RefTable = NodesTable
+	NodeExternalReferencesTable.ForeignKeys[1].RefTable = ExternalReferencesTable
+	NodeExternalReferencesTable.Annotation = &entsql.Annotation{}
+	NodeHashesTable.ForeignKeys[0].RefTable = NodesTable
+	NodeHashesTable.ForeignKeys[1].RefTable = HashesEntriesTable
+	NodeHashesTable.Annotation = &entsql.Annotation{}
 	NodeListEdgesTable.ForeignKeys[0].RefTable = NodeListsTable
 	NodeListEdgesTable.ForeignKeys[1].RefTable = EdgeTypesTable
 	NodeListEdgesTable.Annotation = &entsql.Annotation{}

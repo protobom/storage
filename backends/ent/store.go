@@ -22,6 +22,7 @@ import (
 	"github.com/protobom/storage/internal/backends/ent/documenttype"
 	"github.com/protobom/storage/internal/backends/ent/edgetype"
 	"github.com/protobom/storage/internal/backends/ent/externalreference"
+	"github.com/protobom/storage/internal/backends/ent/hashesentry"
 	"github.com/protobom/storage/internal/backends/ent/node"
 	"github.com/protobom/storage/internal/backends/ent/purpose"
 )
@@ -29,7 +30,6 @@ import (
 type (
 	contactOwnerIDKey      struct{}
 	documentIDKey          struct{}
-	externalReferenceIDKey struct{}
 	metadataIDKey          struct{}
 	nodeIDKey              struct{}
 	nodeListIDKey          struct{}
@@ -182,18 +182,19 @@ func (backend *Backend) saveEdges(edges []*sbom.Edge) TxFunc { //nolint:gocognit
 	}
 }
 
-func (backend *Backend) saveExternalReferences(refs []*sbom.ExternalReference, nodeID uuid.UUID) TxFunc {
+func (backend *Backend) saveExternalReferences(refs []*sbom.ExternalReference, opts ...func(*ent.ExternalReferenceCreate)) TxFunc { //nolint:gocognit,lll
 	return func(tx *ent.Tx) error {
+		builders := []*ent.ExternalReferenceCreate{}
+		fns := []TxFunc{}
+
 		for _, ref := range refs {
-			id, err := GenerateUUID(ref)
+			extRefID, err := GenerateUUID(ref)
 			if err != nil {
 				return err
 			}
 
 			newRef := tx.ExternalReference.Create().
-				SetID(id).
-				SetHashes(ref.GetHashes()).
-				SetNodeID(nodeID).
+				SetID(extRefID).
 				SetProtoMessage(ref).
 				SetURL(ref.GetUrl()).
 				SetComment(ref.GetComment()).
@@ -202,11 +203,60 @@ func (backend *Backend) saveExternalReferences(refs []*sbom.ExternalReference, n
 
 			setDocumentID(backend.ctx, newRef)
 
-			if err := newRef.OnConflict().Ignore().Exec(backend.ctx); err != nil && !ent.IsConstraintError(err) {
-				return fmt.Errorf("saving external reference: %w", err)
+			for _, fn := range opts {
+				fn(newRef)
 			}
 
-			backend.ctx = context.WithValue(backend.ctx, externalReferenceIDKey{}, id)
+			builders = append(builders, newRef)
+
+			fns = append(fns, backend.saveHashes(ref.GetHashes(),
+				func(hec *ent.HashesEntryCreate) { hec.AddExternalReferenceIDs(extRefID) },
+			))
+		}
+
+		err := tx.ExternalReference.CreateBulk(builders...).
+			OnConflict().
+			Ignore().
+			Exec(backend.ctx)
+		if err != nil && !ent.IsConstraintError(err) {
+			return fmt.Errorf("saving external references: %w", err)
+		}
+
+		for _, fn := range fns {
+			if err := fn(tx); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	}
+}
+
+func (backend *Backend) saveHashes(hashes map[int32]string, opts ...func(*ent.HashesEntryCreate)) TxFunc {
+	return func(tx *ent.Tx) error {
+		builders := []*ent.HashesEntryCreate{}
+
+		for key, value := range hashes {
+			alg := sbom.HashAlgorithm(key)
+
+			hashesEntry := tx.HashesEntry.Create().
+				SetHashAlgorithm(hashesentry.HashAlgorithm(alg.String())).
+				SetHashData(value)
+
+			setDocumentID(backend.ctx, hashesEntry)
+
+			for _, fn := range opts {
+				fn(hashesEntry)
+			}
+
+			builders = append(builders, hashesEntry)
+		}
+
+		if err := tx.HashesEntry.CreateBulk(builders...).
+			OnConflict().
+			Ignore().
+			Exec(backend.ctx); err != nil && !ent.IsConstraintError(err) {
+			return fmt.Errorf("saving hashes: %w", err)
 		}
 
 		return nil
@@ -311,7 +361,6 @@ func (backend *Backend) saveNodes(nodes []*sbom.Node) TxFunc { //nolint:funlen,g
 				SetDescription(srcNode.GetDescription()).
 				SetFileName(srcNode.GetFileName()).
 				SetFileTypes(srcNode.GetFileTypes()).
-				SetHashes(srcNode.GetHashes()).
 				SetLicenseComments(srcNode.GetLicenseComments()).
 				SetLicenseConcluded(srcNode.GetLicenseConcluded()).
 				SetLicenses(srcNode.GetLicenses()).
@@ -332,7 +381,12 @@ func (backend *Backend) saveNodes(nodes []*sbom.Node) TxFunc { //nolint:funlen,g
 			builders = append(builders, newNode)
 
 			fns = append(fns,
-				backend.saveExternalReferences(srcNode.GetExternalReferences(), nodeID),
+				backend.saveExternalReferences(srcNode.GetExternalReferences(),
+					func(erc *ent.ExternalReferenceCreate) { erc.AddNodeIDs(nodeID) },
+				),
+				backend.saveHashes(srcNode.GetHashes(),
+					func(hec *ent.HashesEntryCreate) { hec.AddNodeIDs(nodeID) },
+				),
 				backend.savePersons(srcNode.GetOriginators()),
 				backend.savePersons(srcNode.GetSuppliers()),
 				backend.saveProperties(srcNode.GetProperties(), nodeID),

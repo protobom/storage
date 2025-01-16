@@ -73,6 +73,7 @@ func (UUIDMixin) Fields() []ent.Field {
 		field.UUID("id", uuid.UUID{}).
 			Unique().
 			Immutable().
+			Default(func() uuid.UUID { return uuid.Must(uuid.NewV7()) }).
 			Annotations(schema.Comment("Unique identifier field")),
 	}
 }

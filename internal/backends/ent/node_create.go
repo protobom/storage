@@ -23,6 +23,7 @@ import (
 	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/edgetype"
 	"github.com/protobom/storage/internal/backends/ent/externalreference"
+	"github.com/protobom/storage/internal/backends/ent/hashesentry"
 	"github.com/protobom/storage/internal/backends/ent/node"
 	"github.com/protobom/storage/internal/backends/ent/nodelist"
 	"github.com/protobom/storage/internal/backends/ent/person"
@@ -192,12 +193,6 @@ func (nc *NodeCreate) SetFileTypes(s []string) *NodeCreate {
 	return nc
 }
 
-// SetHashes sets the "hashes" field.
-func (nc *NodeCreate) SetHashes(m map[int32]string) *NodeCreate {
-	nc.mutation.SetHashes(m)
-	return nc
-}
-
 // SetIdentifiers sets the "identifiers" field.
 func (nc *NodeCreate) SetIdentifiers(m map[int32]string) *NodeCreate {
 	nc.mutation.SetIdentifiers(m)
@@ -210,9 +205,32 @@ func (nc *NodeCreate) SetID(u uuid.UUID) *NodeCreate {
 	return nc
 }
 
+// SetNillableID sets the "id" field if the given value is not nil.
+func (nc *NodeCreate) SetNillableID(u *uuid.UUID) *NodeCreate {
+	if u != nil {
+		nc.SetID(*u)
+	}
+	return nc
+}
+
 // SetDocument sets the "document" edge to the Document entity.
 func (nc *NodeCreate) SetDocument(d *Document) *NodeCreate {
 	return nc.SetDocumentID(d.ID)
+}
+
+// AddAnnotationIDs adds the "annotations" edge to the Annotation entity by IDs.
+func (nc *NodeCreate) AddAnnotationIDs(ids ...int) *NodeCreate {
+	nc.mutation.AddAnnotationIDs(ids...)
+	return nc
+}
+
+// AddAnnotations adds the "annotations" edges to the Annotation entity.
+func (nc *NodeCreate) AddAnnotations(a ...*Annotation) *NodeCreate {
+	ids := make([]int, len(a))
+	for i := range a {
+		ids[i] = a[i].ID
+	}
+	return nc.AddAnnotationIDs(ids...)
 }
 
 // AddSupplierIDs adds the "suppliers" edge to the Person entity by IDs.
@@ -305,6 +323,21 @@ func (nc *NodeCreate) AddNodes(n ...*Node) *NodeCreate {
 	return nc.AddNodeIDs(ids...)
 }
 
+// AddHashIDs adds the "hashes" edge to the HashesEntry entity by IDs.
+func (nc *NodeCreate) AddHashIDs(ids ...uuid.UUID) *NodeCreate {
+	nc.mutation.AddHashIDs(ids...)
+	return nc
+}
+
+// AddHashes adds the "hashes" edges to the HashesEntry entity.
+func (nc *NodeCreate) AddHashes(h ...*HashesEntry) *NodeCreate {
+	ids := make([]uuid.UUID, len(h))
+	for i := range h {
+		ids[i] = h[i].ID
+	}
+	return nc.AddHashIDs(ids...)
+}
+
 // AddPropertyIDs adds the "properties" edge to the Property entity by IDs.
 func (nc *NodeCreate) AddPropertyIDs(ids ...uuid.UUID) *NodeCreate {
 	nc.mutation.AddPropertyIDs(ids...)
@@ -333,21 +366,6 @@ func (nc *NodeCreate) AddNodeLists(n ...*NodeList) *NodeCreate {
 		ids[i] = n[i].ID
 	}
 	return nc.AddNodeListIDs(ids...)
-}
-
-// AddAnnotationIDs adds the "annotations" edge to the Annotation entity by IDs.
-func (nc *NodeCreate) AddAnnotationIDs(ids ...int) *NodeCreate {
-	nc.mutation.AddAnnotationIDs(ids...)
-	return nc
-}
-
-// AddAnnotations adds the "annotations" edges to the Annotation entity.
-func (nc *NodeCreate) AddAnnotations(a ...*Annotation) *NodeCreate {
-	ids := make([]int, len(a))
-	for i := range a {
-		ids[i] = a[i].ID
-	}
-	return nc.AddAnnotationIDs(ids...)
 }
 
 // AddEdgeTypeIDs adds the "edge_types" edge to the EdgeType entity by IDs.
@@ -403,6 +421,10 @@ func (nc *NodeCreate) defaults() {
 	if _, ok := nc.mutation.DocumentID(); !ok {
 		v := node.DefaultDocumentID()
 		nc.mutation.SetDocumentID(v)
+	}
+	if _, ok := nc.mutation.ID(); !ok {
+		v := node.DefaultID()
+		nc.mutation.SetID(v)
 	}
 }
 
@@ -605,10 +627,6 @@ func (nc *NodeCreate) createSpec() (*Node, *sqlgraph.CreateSpec) {
 		_spec.SetField(node.FieldFileTypes, field.TypeJSON, value)
 		_node.FileTypes = value
 	}
-	if value, ok := nc.mutation.Hashes(); ok {
-		_spec.SetField(node.FieldHashes, field.TypeJSON, value)
-		_node.Hashes = value
-	}
 	if value, ok := nc.mutation.Identifiers(); ok {
 		_spec.SetField(node.FieldIdentifiers, field.TypeJSON, value)
 		_node.Identifiers = value
@@ -628,6 +646,22 @@ func (nc *NodeCreate) createSpec() (*Node, *sqlgraph.CreateSpec) {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.DocumentID = nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := nc.mutation.AnnotationsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   node.AnnotationsTable,
+			Columns: []string{node.AnnotationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(annotation.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := nc.mutation.SuppliersIDs(); len(nodes) > 0 {
@@ -664,10 +698,10 @@ func (nc *NodeCreate) createSpec() (*Node, *sqlgraph.CreateSpec) {
 	}
 	if nodes := nc.mutation.ExternalReferencesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   node.ExternalReferencesTable,
-			Columns: []string{node.ExternalReferencesColumn},
+			Columns: node.ExternalReferencesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(externalreference.FieldID, field.TypeUUID),
@@ -712,6 +746,9 @@ func (nc *NodeCreate) createSpec() (*Node, *sqlgraph.CreateSpec) {
 		createE.defaults()
 		_, specE := createE.createSpec()
 		edge.Target.Fields = specE.Fields
+		if specE.ID.Value != nil {
+			edge.Target.Fields = append(edge.Target.Fields, specE.ID)
+		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := nc.mutation.NodesIDs(); len(nodes) > 0 {
@@ -723,6 +760,22 @@ func (nc *NodeCreate) createSpec() (*Node, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := nc.mutation.HashesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   node.HashesTable,
+			Columns: node.HashesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(hashesentry.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -755,22 +808,6 @@ func (nc *NodeCreate) createSpec() (*Node, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(nodelist.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges = append(_spec.Edges, edge)
-	}
-	if nodes := nc.mutation.AnnotationsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   node.AnnotationsTable,
-			Columns: []string{node.AnnotationsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(annotation.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {
@@ -1089,24 +1126,6 @@ func (u *NodeUpsert) SetFileTypes(v []string) *NodeUpsert {
 // UpdateFileTypes sets the "file_types" field to the value that was provided on create.
 func (u *NodeUpsert) UpdateFileTypes() *NodeUpsert {
 	u.SetExcluded(node.FieldFileTypes)
-	return u
-}
-
-// SetHashes sets the "hashes" field.
-func (u *NodeUpsert) SetHashes(v map[int32]string) *NodeUpsert {
-	u.Set(node.FieldHashes, v)
-	return u
-}
-
-// UpdateHashes sets the "hashes" field to the value that was provided on create.
-func (u *NodeUpsert) UpdateHashes() *NodeUpsert {
-	u.SetExcluded(node.FieldHashes)
-	return u
-}
-
-// ClearHashes clears the value of the "hashes" field.
-func (u *NodeUpsert) ClearHashes() *NodeUpsert {
-	u.SetNull(node.FieldHashes)
 	return u
 }
 
@@ -1469,27 +1488,6 @@ func (u *NodeUpsertOne) SetFileTypes(v []string) *NodeUpsertOne {
 func (u *NodeUpsertOne) UpdateFileTypes() *NodeUpsertOne {
 	return u.Update(func(s *NodeUpsert) {
 		s.UpdateFileTypes()
-	})
-}
-
-// SetHashes sets the "hashes" field.
-func (u *NodeUpsertOne) SetHashes(v map[int32]string) *NodeUpsertOne {
-	return u.Update(func(s *NodeUpsert) {
-		s.SetHashes(v)
-	})
-}
-
-// UpdateHashes sets the "hashes" field to the value that was provided on create.
-func (u *NodeUpsertOne) UpdateHashes() *NodeUpsertOne {
-	return u.Update(func(s *NodeUpsert) {
-		s.UpdateHashes()
-	})
-}
-
-// ClearHashes clears the value of the "hashes" field.
-func (u *NodeUpsertOne) ClearHashes() *NodeUpsertOne {
-	return u.Update(func(s *NodeUpsert) {
-		s.ClearHashes()
 	})
 }
 
@@ -2022,27 +2020,6 @@ func (u *NodeUpsertBulk) SetFileTypes(v []string) *NodeUpsertBulk {
 func (u *NodeUpsertBulk) UpdateFileTypes() *NodeUpsertBulk {
 	return u.Update(func(s *NodeUpsert) {
 		s.UpdateFileTypes()
-	})
-}
-
-// SetHashes sets the "hashes" field.
-func (u *NodeUpsertBulk) SetHashes(v map[int32]string) *NodeUpsertBulk {
-	return u.Update(func(s *NodeUpsert) {
-		s.SetHashes(v)
-	})
-}
-
-// UpdateHashes sets the "hashes" field to the value that was provided on create.
-func (u *NodeUpsertBulk) UpdateHashes() *NodeUpsertBulk {
-	return u.Update(func(s *NodeUpsert) {
-		s.UpdateHashes()
-	})
-}
-
-// ClearHashes clears the value of the "hashes" field.
-func (u *NodeUpsertBulk) ClearHashes() *NodeUpsertBulk {
-	return u.Update(func(s *NodeUpsert) {
-		s.ClearHashes()
 	})
 }
 

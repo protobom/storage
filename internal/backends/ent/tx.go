@@ -29,6 +29,8 @@ type Tx struct {
 	EdgeType *EdgeTypeClient
 	// ExternalReference is the client for interacting with the ExternalReference builders.
 	ExternalReference *ExternalReferenceClient
+	// HashesEntry is the client for interacting with the HashesEntry builders.
+	HashesEntry *HashesEntryClient
 	// Metadata is the client for interacting with the Metadata builders.
 	Metadata *MetadataClient
 	// Node is the client for interacting with the Node builders.
@@ -181,6 +183,7 @@ func (tx *Tx) init() {
 	tx.DocumentType = NewDocumentTypeClient(tx.config)
 	tx.EdgeType = NewEdgeTypeClient(tx.config)
 	tx.ExternalReference = NewExternalReferenceClient(tx.config)
+	tx.HashesEntry = NewHashesEntryClient(tx.config)
 	tx.Metadata = NewMetadataClient(tx.config)
 	tx.Node = NewNodeClient(tx.config)
 	tx.NodeList = NewNodeListClient(tx.config)

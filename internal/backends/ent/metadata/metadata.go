@@ -10,6 +10,7 @@ package metadata
 import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"github.com/google/uuid"
 )
 
 const (
@@ -105,6 +106,8 @@ func ValidColumn(column string) bool {
 var (
 	// NativeIDValidator is a validator for the "native_id" field. It is called by the builders before save.
 	NativeIDValidator func(string) error
+	// DefaultID holds the default value on creation for the "id" field.
+	DefaultID func() uuid.UUID
 )
 
 // OrderOption defines the ordering options for the Metadata queries.

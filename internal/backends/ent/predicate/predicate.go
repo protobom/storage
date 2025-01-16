@@ -26,6 +26,9 @@ type EdgeType func(*sql.Selector)
 // ExternalReference is the predicate function for externalreference builders.
 type ExternalReference func(*sql.Selector)
 
+// HashesEntry is the predicate function for hashesentry builders.
+type HashesEntry func(*sql.Selector)
+
 // Metadata is the predicate function for metadata builders.
 type Metadata func(*sql.Selector)
 

@@ -113,6 +113,14 @@ func (dtc *DocumentTypeCreate) SetID(u uuid.UUID) *DocumentTypeCreate {
 	return dtc
 }
 
+// SetNillableID sets the "id" field if the given value is not nil.
+func (dtc *DocumentTypeCreate) SetNillableID(u *uuid.UUID) *DocumentTypeCreate {
+	if u != nil {
+		dtc.SetID(*u)
+	}
+	return dtc
+}
+
 // SetDocument sets the "document" edge to the Document entity.
 func (dtc *DocumentTypeCreate) SetDocument(d *Document) *DocumentTypeCreate {
 	return dtc.SetDocumentID(d.ID)
@@ -161,6 +169,10 @@ func (dtc *DocumentTypeCreate) defaults() {
 	if _, ok := dtc.mutation.DocumentID(); !ok {
 		v := documenttype.DefaultDocumentID()
 		dtc.mutation.SetDocumentID(v)
+	}
+	if _, ok := dtc.mutation.ID(); !ok {
+		v := documenttype.DefaultID()
+		dtc.mutation.SetID(v)
 	}
 }
 

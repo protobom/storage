@@ -24,8 +24,6 @@ const (
 	FieldDocumentID = "document_id"
 	// FieldProtoMessage holds the string denoting the proto_message field in the database.
 	FieldProtoMessage = "proto_message"
-	// FieldNodeID holds the string denoting the node_id field in the database.
-	FieldNodeID = "node_id"
 	// FieldURL holds the string denoting the url field in the database.
 	FieldURL = "url"
 	// FieldComment holds the string denoting the comment field in the database.
@@ -34,12 +32,12 @@ const (
 	FieldAuthority = "authority"
 	// FieldType holds the string denoting the type field in the database.
 	FieldType = "type"
-	// FieldHashes holds the string denoting the hashes field in the database.
-	FieldHashes = "hashes"
 	// EdgeDocument holds the string denoting the document edge name in mutations.
 	EdgeDocument = "document"
-	// EdgeNode holds the string denoting the node edge name in mutations.
-	EdgeNode = "node"
+	// EdgeHashes holds the string denoting the hashes edge name in mutations.
+	EdgeHashes = "hashes"
+	// EdgeNodes holds the string denoting the nodes edge name in mutations.
+	EdgeNodes = "nodes"
 	// Table holds the table name of the externalreference in the database.
 	Table = "external_references"
 	// DocumentTable is the table that holds the document relation/edge.
@@ -49,13 +47,16 @@ const (
 	DocumentInverseTable = "documents"
 	// DocumentColumn is the table column denoting the document relation/edge.
 	DocumentColumn = "document_id"
-	// NodeTable is the table that holds the node relation/edge.
-	NodeTable = "external_references"
-	// NodeInverseTable is the table name for the Node entity.
+	// HashesTable is the table that holds the hashes relation/edge. The primary key declared below.
+	HashesTable = "ext_ref_hashes"
+	// HashesInverseTable is the table name for the HashesEntry entity.
+	// It exists in this package in order to avoid circular dependency with the "hashesentry" package.
+	HashesInverseTable = "hashes_entries"
+	// NodesTable is the table that holds the nodes relation/edge. The primary key declared below.
+	NodesTable = "node_external_references"
+	// NodesInverseTable is the table name for the Node entity.
 	// It exists in this package in order to avoid circular dependency with the "node" package.
-	NodeInverseTable = "nodes"
-	// NodeColumn is the table column denoting the node relation/edge.
-	NodeColumn = "node_id"
+	NodesInverseTable = "nodes"
 )
 
 // Columns holds all SQL columns for externalreference fields.
@@ -63,13 +64,20 @@ var Columns = []string{
 	FieldID,
 	FieldDocumentID,
 	FieldProtoMessage,
-	FieldNodeID,
 	FieldURL,
 	FieldComment,
 	FieldAuthority,
 	FieldType,
-	FieldHashes,
 }
+
+var (
+	// HashesPrimaryKey and HashesColumn2 are the table columns denoting the
+	// primary key for the hashes relation (M2M).
+	HashesPrimaryKey = []string{"ext_ref_id", "hash_entry_id"}
+	// NodesPrimaryKey and NodesColumn2 are the table columns denoting the
+	// primary key for the nodes relation (M2M).
+	NodesPrimaryKey = []string{"node_id", "external_reference_id"}
+)
 
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {
@@ -84,6 +92,8 @@ func ValidColumn(column string) bool {
 var (
 	// DefaultDocumentID holds the default value on creation for the "document_id" field.
 	DefaultDocumentID func() uuid.UUID
+	// DefaultID holds the default value on creation for the "id" field.
+	DefaultID func() uuid.UUID
 )
 
 // Type defines the type for the "type" enum field.
@@ -181,11 +191,6 @@ func ByDocumentID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDocumentID, opts...).ToFunc()
 }
 
-// ByNodeID orders the results by the node_id field.
-func ByNodeID(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldNodeID, opts...).ToFunc()
-}
-
 // ByURL orders the results by the url field.
 func ByURL(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldURL, opts...).ToFunc()
@@ -213,10 +218,31 @@ func ByDocumentField(field string, opts ...sql.OrderTermOption) OrderOption {
 	}
 }
 
-// ByNodeField orders the results by node field.
-func ByNodeField(field string, opts ...sql.OrderTermOption) OrderOption {
+// ByHashesCount orders the results by hashes count.
+func ByHashesCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newNodeStep(), sql.OrderByField(field, opts...))
+		sqlgraph.OrderByNeighborsCount(s, newHashesStep(), opts...)
+	}
+}
+
+// ByHashes orders the results by hashes terms.
+func ByHashes(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newHashesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByNodesCount orders the results by nodes count.
+func ByNodesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newNodesStep(), opts...)
+	}
+}
+
+// ByNodes orders the results by nodes terms.
+func ByNodes(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newNodesStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
 func newDocumentStep() *sqlgraph.Step {
@@ -226,10 +252,17 @@ func newDocumentStep() *sqlgraph.Step {
 		sqlgraph.Edge(sqlgraph.M2O, false, DocumentTable, DocumentColumn),
 	)
 }
-func newNodeStep() *sqlgraph.Step {
+func newHashesStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(NodeInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.M2O, true, NodeTable, NodeColumn),
+		sqlgraph.To(HashesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2M, false, HashesTable, HashesPrimaryKey...),
+	)
+}
+func newNodesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(NodesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2M, true, NodesTable, NodesPrimaryKey...),
 	)
 }

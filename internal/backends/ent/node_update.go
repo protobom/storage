@@ -21,6 +21,7 @@ import (
 	"github.com/protobom/storage/internal/backends/ent/annotation"
 	"github.com/protobom/storage/internal/backends/ent/edgetype"
 	"github.com/protobom/storage/internal/backends/ent/externalreference"
+	"github.com/protobom/storage/internal/backends/ent/hashesentry"
 	"github.com/protobom/storage/internal/backends/ent/node"
 	"github.com/protobom/storage/internal/backends/ent/nodelist"
 	"github.com/protobom/storage/internal/backends/ent/person"
@@ -322,18 +323,6 @@ func (nu *NodeUpdate) AppendFileTypes(s []string) *NodeUpdate {
 	return nu
 }
 
-// SetHashes sets the "hashes" field.
-func (nu *NodeUpdate) SetHashes(m map[int32]string) *NodeUpdate {
-	nu.mutation.SetHashes(m)
-	return nu
-}
-
-// ClearHashes clears the value of the "hashes" field.
-func (nu *NodeUpdate) ClearHashes() *NodeUpdate {
-	nu.mutation.ClearHashes()
-	return nu
-}
-
 // SetIdentifiers sets the "identifiers" field.
 func (nu *NodeUpdate) SetIdentifiers(m map[int32]string) *NodeUpdate {
 	nu.mutation.SetIdentifiers(m)
@@ -344,6 +333,21 @@ func (nu *NodeUpdate) SetIdentifiers(m map[int32]string) *NodeUpdate {
 func (nu *NodeUpdate) ClearIdentifiers() *NodeUpdate {
 	nu.mutation.ClearIdentifiers()
 	return nu
+}
+
+// AddAnnotationIDs adds the "annotations" edge to the Annotation entity by IDs.
+func (nu *NodeUpdate) AddAnnotationIDs(ids ...int) *NodeUpdate {
+	nu.mutation.AddAnnotationIDs(ids...)
+	return nu
+}
+
+// AddAnnotations adds the "annotations" edges to the Annotation entity.
+func (nu *NodeUpdate) AddAnnotations(a ...*Annotation) *NodeUpdate {
+	ids := make([]int, len(a))
+	for i := range a {
+		ids[i] = a[i].ID
+	}
+	return nu.AddAnnotationIDs(ids...)
 }
 
 // AddSupplierIDs adds the "suppliers" edge to the Person entity by IDs.
@@ -436,6 +440,21 @@ func (nu *NodeUpdate) AddNodes(n ...*Node) *NodeUpdate {
 	return nu.AddNodeIDs(ids...)
 }
 
+// AddHashIDs adds the "hashes" edge to the HashesEntry entity by IDs.
+func (nu *NodeUpdate) AddHashIDs(ids ...uuid.UUID) *NodeUpdate {
+	nu.mutation.AddHashIDs(ids...)
+	return nu
+}
+
+// AddHashes adds the "hashes" edges to the HashesEntry entity.
+func (nu *NodeUpdate) AddHashes(h ...*HashesEntry) *NodeUpdate {
+	ids := make([]uuid.UUID, len(h))
+	for i := range h {
+		ids[i] = h[i].ID
+	}
+	return nu.AddHashIDs(ids...)
+}
+
 // AddPropertyIDs adds the "properties" edge to the Property entity by IDs.
 func (nu *NodeUpdate) AddPropertyIDs(ids ...uuid.UUID) *NodeUpdate {
 	nu.mutation.AddPropertyIDs(ids...)
@@ -466,21 +485,6 @@ func (nu *NodeUpdate) AddNodeLists(n ...*NodeList) *NodeUpdate {
 	return nu.AddNodeListIDs(ids...)
 }
 
-// AddAnnotationIDs adds the "annotations" edge to the Annotation entity by IDs.
-func (nu *NodeUpdate) AddAnnotationIDs(ids ...int) *NodeUpdate {
-	nu.mutation.AddAnnotationIDs(ids...)
-	return nu
-}
-
-// AddAnnotations adds the "annotations" edges to the Annotation entity.
-func (nu *NodeUpdate) AddAnnotations(a ...*Annotation) *NodeUpdate {
-	ids := make([]int, len(a))
-	for i := range a {
-		ids[i] = a[i].ID
-	}
-	return nu.AddAnnotationIDs(ids...)
-}
-
 // AddEdgeTypeIDs adds the "edge_types" edge to the EdgeType entity by IDs.
 func (nu *NodeUpdate) AddEdgeTypeIDs(ids ...uuid.UUID) *NodeUpdate {
 	nu.mutation.AddEdgeTypeIDs(ids...)
@@ -499,6 +503,27 @@ func (nu *NodeUpdate) AddEdgeTypes(e ...*EdgeType) *NodeUpdate {
 // Mutation returns the NodeMutation object of the builder.
 func (nu *NodeUpdate) Mutation() *NodeMutation {
 	return nu.mutation
+}
+
+// ClearAnnotations clears all "annotations" edges to the Annotation entity.
+func (nu *NodeUpdate) ClearAnnotations() *NodeUpdate {
+	nu.mutation.ClearAnnotations()
+	return nu
+}
+
+// RemoveAnnotationIDs removes the "annotations" edge to Annotation entities by IDs.
+func (nu *NodeUpdate) RemoveAnnotationIDs(ids ...int) *NodeUpdate {
+	nu.mutation.RemoveAnnotationIDs(ids...)
+	return nu
+}
+
+// RemoveAnnotations removes "annotations" edges to Annotation entities.
+func (nu *NodeUpdate) RemoveAnnotations(a ...*Annotation) *NodeUpdate {
+	ids := make([]int, len(a))
+	for i := range a {
+		ids[i] = a[i].ID
+	}
+	return nu.RemoveAnnotationIDs(ids...)
 }
 
 // ClearSuppliers clears all "suppliers" edges to the Person entity.
@@ -627,6 +652,27 @@ func (nu *NodeUpdate) RemoveNodes(n ...*Node) *NodeUpdate {
 	return nu.RemoveNodeIDs(ids...)
 }
 
+// ClearHashes clears all "hashes" edges to the HashesEntry entity.
+func (nu *NodeUpdate) ClearHashes() *NodeUpdate {
+	nu.mutation.ClearHashes()
+	return nu
+}
+
+// RemoveHashIDs removes the "hashes" edge to HashesEntry entities by IDs.
+func (nu *NodeUpdate) RemoveHashIDs(ids ...uuid.UUID) *NodeUpdate {
+	nu.mutation.RemoveHashIDs(ids...)
+	return nu
+}
+
+// RemoveHashes removes "hashes" edges to HashesEntry entities.
+func (nu *NodeUpdate) RemoveHashes(h ...*HashesEntry) *NodeUpdate {
+	ids := make([]uuid.UUID, len(h))
+	for i := range h {
+		ids[i] = h[i].ID
+	}
+	return nu.RemoveHashIDs(ids...)
+}
+
 // ClearProperties clears all "properties" edges to the Property entity.
 func (nu *NodeUpdate) ClearProperties() *NodeUpdate {
 	nu.mutation.ClearProperties()
@@ -667,27 +713,6 @@ func (nu *NodeUpdate) RemoveNodeLists(n ...*NodeList) *NodeUpdate {
 		ids[i] = n[i].ID
 	}
 	return nu.RemoveNodeListIDs(ids...)
-}
-
-// ClearAnnotations clears all "annotations" edges to the Annotation entity.
-func (nu *NodeUpdate) ClearAnnotations() *NodeUpdate {
-	nu.mutation.ClearAnnotations()
-	return nu
-}
-
-// RemoveAnnotationIDs removes the "annotations" edge to Annotation entities by IDs.
-func (nu *NodeUpdate) RemoveAnnotationIDs(ids ...int) *NodeUpdate {
-	nu.mutation.RemoveAnnotationIDs(ids...)
-	return nu
-}
-
-// RemoveAnnotations removes "annotations" edges to Annotation entities.
-func (nu *NodeUpdate) RemoveAnnotations(a ...*Annotation) *NodeUpdate {
-	ids := make([]int, len(a))
-	for i := range a {
-		ids[i] = a[i].ID
-	}
-	return nu.RemoveAnnotationIDs(ids...)
 }
 
 // ClearEdgeTypes clears all "edge_types" edges to the EdgeType entity.
@@ -838,17 +863,56 @@ func (nu *NodeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			sqljson.Append(u, node.FieldFileTypes, value)
 		})
 	}
-	if value, ok := nu.mutation.Hashes(); ok {
-		_spec.SetField(node.FieldHashes, field.TypeJSON, value)
-	}
-	if nu.mutation.HashesCleared() {
-		_spec.ClearField(node.FieldHashes, field.TypeJSON)
-	}
 	if value, ok := nu.mutation.Identifiers(); ok {
 		_spec.SetField(node.FieldIdentifiers, field.TypeJSON, value)
 	}
 	if nu.mutation.IdentifiersCleared() {
 		_spec.ClearField(node.FieldIdentifiers, field.TypeJSON)
+	}
+	if nu.mutation.AnnotationsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   node.AnnotationsTable,
+			Columns: []string{node.AnnotationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(annotation.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := nu.mutation.RemovedAnnotationsIDs(); len(nodes) > 0 && !nu.mutation.AnnotationsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   node.AnnotationsTable,
+			Columns: []string{node.AnnotationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(annotation.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := nu.mutation.AnnotationsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   node.AnnotationsTable,
+			Columns: []string{node.AnnotationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(annotation.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if nu.mutation.SuppliersCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -942,10 +1006,10 @@ func (nu *NodeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if nu.mutation.ExternalReferencesCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   node.ExternalReferencesTable,
-			Columns: []string{node.ExternalReferencesColumn},
+			Columns: node.ExternalReferencesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(externalreference.FieldID, field.TypeUUID),
@@ -955,10 +1019,10 @@ func (nu *NodeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if nodes := nu.mutation.RemovedExternalReferencesIDs(); len(nodes) > 0 && !nu.mutation.ExternalReferencesCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   node.ExternalReferencesTable,
-			Columns: []string{node.ExternalReferencesColumn},
+			Columns: node.ExternalReferencesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(externalreference.FieldID, field.TypeUUID),
@@ -971,10 +1035,10 @@ func (nu *NodeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if nodes := nu.mutation.ExternalReferencesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   node.ExternalReferencesTable,
-			Columns: []string{node.ExternalReferencesColumn},
+			Columns: node.ExternalReferencesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(externalreference.FieldID, field.TypeUUID),
@@ -1045,6 +1109,9 @@ func (nu *NodeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		createE.defaults()
 		_, specE := createE.createSpec()
 		edge.Target.Fields = specE.Fields
+		if specE.ID.Value != nil {
+			edge.Target.Fields = append(edge.Target.Fields, specE.ID)
+		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
 	if nodes := nu.mutation.RemovedToNodesIDs(); len(nodes) > 0 && !nu.mutation.ToNodesCleared() {
@@ -1065,6 +1132,9 @@ func (nu *NodeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		createE.defaults()
 		_, specE := createE.createSpec()
 		edge.Target.Fields = specE.Fields
+		if specE.ID.Value != nil {
+			edge.Target.Fields = append(edge.Target.Fields, specE.ID)
+		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
 	if nodes := nu.mutation.ToNodesIDs(); len(nodes) > 0 {
@@ -1085,6 +1155,9 @@ func (nu *NodeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		createE.defaults()
 		_, specE := createE.createSpec()
 		edge.Target.Fields = specE.Fields
+		if specE.ID.Value != nil {
+			edge.Target.Fields = append(edge.Target.Fields, specE.ID)
+		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if nu.mutation.NodesCleared() {
@@ -1125,6 +1198,51 @@ func (nu *NodeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if nu.mutation.HashesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   node.HashesTable,
+			Columns: node.HashesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(hashesentry.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := nu.mutation.RemovedHashesIDs(); len(nodes) > 0 && !nu.mutation.HashesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   node.HashesTable,
+			Columns: node.HashesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(hashesentry.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := nu.mutation.HashesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   node.HashesTable,
+			Columns: node.HashesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(hashesentry.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -1215,51 +1333,6 @@ func (nu *NodeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(nodelist.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if nu.mutation.AnnotationsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   node.AnnotationsTable,
-			Columns: []string{node.AnnotationsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(annotation.FieldID, field.TypeInt),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := nu.mutation.RemovedAnnotationsIDs(); len(nodes) > 0 && !nu.mutation.AnnotationsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   node.AnnotationsTable,
-			Columns: []string{node.AnnotationsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(annotation.FieldID, field.TypeInt),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := nu.mutation.AnnotationsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   node.AnnotationsTable,
-			Columns: []string{node.AnnotationsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(annotation.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {
@@ -1612,18 +1685,6 @@ func (nuo *NodeUpdateOne) AppendFileTypes(s []string) *NodeUpdateOne {
 	return nuo
 }
 
-// SetHashes sets the "hashes" field.
-func (nuo *NodeUpdateOne) SetHashes(m map[int32]string) *NodeUpdateOne {
-	nuo.mutation.SetHashes(m)
-	return nuo
-}
-
-// ClearHashes clears the value of the "hashes" field.
-func (nuo *NodeUpdateOne) ClearHashes() *NodeUpdateOne {
-	nuo.mutation.ClearHashes()
-	return nuo
-}
-
 // SetIdentifiers sets the "identifiers" field.
 func (nuo *NodeUpdateOne) SetIdentifiers(m map[int32]string) *NodeUpdateOne {
 	nuo.mutation.SetIdentifiers(m)
@@ -1634,6 +1695,21 @@ func (nuo *NodeUpdateOne) SetIdentifiers(m map[int32]string) *NodeUpdateOne {
 func (nuo *NodeUpdateOne) ClearIdentifiers() *NodeUpdateOne {
 	nuo.mutation.ClearIdentifiers()
 	return nuo
+}
+
+// AddAnnotationIDs adds the "annotations" edge to the Annotation entity by IDs.
+func (nuo *NodeUpdateOne) AddAnnotationIDs(ids ...int) *NodeUpdateOne {
+	nuo.mutation.AddAnnotationIDs(ids...)
+	return nuo
+}
+
+// AddAnnotations adds the "annotations" edges to the Annotation entity.
+func (nuo *NodeUpdateOne) AddAnnotations(a ...*Annotation) *NodeUpdateOne {
+	ids := make([]int, len(a))
+	for i := range a {
+		ids[i] = a[i].ID
+	}
+	return nuo.AddAnnotationIDs(ids...)
 }
 
 // AddSupplierIDs adds the "suppliers" edge to the Person entity by IDs.
@@ -1726,6 +1802,21 @@ func (nuo *NodeUpdateOne) AddNodes(n ...*Node) *NodeUpdateOne {
 	return nuo.AddNodeIDs(ids...)
 }
 
+// AddHashIDs adds the "hashes" edge to the HashesEntry entity by IDs.
+func (nuo *NodeUpdateOne) AddHashIDs(ids ...uuid.UUID) *NodeUpdateOne {
+	nuo.mutation.AddHashIDs(ids...)
+	return nuo
+}
+
+// AddHashes adds the "hashes" edges to the HashesEntry entity.
+func (nuo *NodeUpdateOne) AddHashes(h ...*HashesEntry) *NodeUpdateOne {
+	ids := make([]uuid.UUID, len(h))
+	for i := range h {
+		ids[i] = h[i].ID
+	}
+	return nuo.AddHashIDs(ids...)
+}
+
 // AddPropertyIDs adds the "properties" edge to the Property entity by IDs.
 func (nuo *NodeUpdateOne) AddPropertyIDs(ids ...uuid.UUID) *NodeUpdateOne {
 	nuo.mutation.AddPropertyIDs(ids...)
@@ -1756,21 +1847,6 @@ func (nuo *NodeUpdateOne) AddNodeLists(n ...*NodeList) *NodeUpdateOne {
 	return nuo.AddNodeListIDs(ids...)
 }
 
-// AddAnnotationIDs adds the "annotations" edge to the Annotation entity by IDs.
-func (nuo *NodeUpdateOne) AddAnnotationIDs(ids ...int) *NodeUpdateOne {
-	nuo.mutation.AddAnnotationIDs(ids...)
-	return nuo
-}
-
-// AddAnnotations adds the "annotations" edges to the Annotation entity.
-func (nuo *NodeUpdateOne) AddAnnotations(a ...*Annotation) *NodeUpdateOne {
-	ids := make([]int, len(a))
-	for i := range a {
-		ids[i] = a[i].ID
-	}
-	return nuo.AddAnnotationIDs(ids...)
-}
-
 // AddEdgeTypeIDs adds the "edge_types" edge to the EdgeType entity by IDs.
 func (nuo *NodeUpdateOne) AddEdgeTypeIDs(ids ...uuid.UUID) *NodeUpdateOne {
 	nuo.mutation.AddEdgeTypeIDs(ids...)
@@ -1789,6 +1865,27 @@ func (nuo *NodeUpdateOne) AddEdgeTypes(e ...*EdgeType) *NodeUpdateOne {
 // Mutation returns the NodeMutation object of the builder.
 func (nuo *NodeUpdateOne) Mutation() *NodeMutation {
 	return nuo.mutation
+}
+
+// ClearAnnotations clears all "annotations" edges to the Annotation entity.
+func (nuo *NodeUpdateOne) ClearAnnotations() *NodeUpdateOne {
+	nuo.mutation.ClearAnnotations()
+	return nuo
+}
+
+// RemoveAnnotationIDs removes the "annotations" edge to Annotation entities by IDs.
+func (nuo *NodeUpdateOne) RemoveAnnotationIDs(ids ...int) *NodeUpdateOne {
+	nuo.mutation.RemoveAnnotationIDs(ids...)
+	return nuo
+}
+
+// RemoveAnnotations removes "annotations" edges to Annotation entities.
+func (nuo *NodeUpdateOne) RemoveAnnotations(a ...*Annotation) *NodeUpdateOne {
+	ids := make([]int, len(a))
+	for i := range a {
+		ids[i] = a[i].ID
+	}
+	return nuo.RemoveAnnotationIDs(ids...)
 }
 
 // ClearSuppliers clears all "suppliers" edges to the Person entity.
@@ -1917,6 +2014,27 @@ func (nuo *NodeUpdateOne) RemoveNodes(n ...*Node) *NodeUpdateOne {
 	return nuo.RemoveNodeIDs(ids...)
 }
 
+// ClearHashes clears all "hashes" edges to the HashesEntry entity.
+func (nuo *NodeUpdateOne) ClearHashes() *NodeUpdateOne {
+	nuo.mutation.ClearHashes()
+	return nuo
+}
+
+// RemoveHashIDs removes the "hashes" edge to HashesEntry entities by IDs.
+func (nuo *NodeUpdateOne) RemoveHashIDs(ids ...uuid.UUID) *NodeUpdateOne {
+	nuo.mutation.RemoveHashIDs(ids...)
+	return nuo
+}
+
+// RemoveHashes removes "hashes" edges to HashesEntry entities.
+func (nuo *NodeUpdateOne) RemoveHashes(h ...*HashesEntry) *NodeUpdateOne {
+	ids := make([]uuid.UUID, len(h))
+	for i := range h {
+		ids[i] = h[i].ID
+	}
+	return nuo.RemoveHashIDs(ids...)
+}
+
 // ClearProperties clears all "properties" edges to the Property entity.
 func (nuo *NodeUpdateOne) ClearProperties() *NodeUpdateOne {
 	nuo.mutation.ClearProperties()
@@ -1957,27 +2075,6 @@ func (nuo *NodeUpdateOne) RemoveNodeLists(n ...*NodeList) *NodeUpdateOne {
 		ids[i] = n[i].ID
 	}
 	return nuo.RemoveNodeListIDs(ids...)
-}
-
-// ClearAnnotations clears all "annotations" edges to the Annotation entity.
-func (nuo *NodeUpdateOne) ClearAnnotations() *NodeUpdateOne {
-	nuo.mutation.ClearAnnotations()
-	return nuo
-}
-
-// RemoveAnnotationIDs removes the "annotations" edge to Annotation entities by IDs.
-func (nuo *NodeUpdateOne) RemoveAnnotationIDs(ids ...int) *NodeUpdateOne {
-	nuo.mutation.RemoveAnnotationIDs(ids...)
-	return nuo
-}
-
-// RemoveAnnotations removes "annotations" edges to Annotation entities.
-func (nuo *NodeUpdateOne) RemoveAnnotations(a ...*Annotation) *NodeUpdateOne {
-	ids := make([]int, len(a))
-	for i := range a {
-		ids[i] = a[i].ID
-	}
-	return nuo.RemoveAnnotationIDs(ids...)
 }
 
 // ClearEdgeTypes clears all "edge_types" edges to the EdgeType entity.
@@ -2158,17 +2255,56 @@ func (nuo *NodeUpdateOne) sqlSave(ctx context.Context) (_node *Node, err error) 
 			sqljson.Append(u, node.FieldFileTypes, value)
 		})
 	}
-	if value, ok := nuo.mutation.Hashes(); ok {
-		_spec.SetField(node.FieldHashes, field.TypeJSON, value)
-	}
-	if nuo.mutation.HashesCleared() {
-		_spec.ClearField(node.FieldHashes, field.TypeJSON)
-	}
 	if value, ok := nuo.mutation.Identifiers(); ok {
 		_spec.SetField(node.FieldIdentifiers, field.TypeJSON, value)
 	}
 	if nuo.mutation.IdentifiersCleared() {
 		_spec.ClearField(node.FieldIdentifiers, field.TypeJSON)
+	}
+	if nuo.mutation.AnnotationsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   node.AnnotationsTable,
+			Columns: []string{node.AnnotationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(annotation.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := nuo.mutation.RemovedAnnotationsIDs(); len(nodes) > 0 && !nuo.mutation.AnnotationsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   node.AnnotationsTable,
+			Columns: []string{node.AnnotationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(annotation.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := nuo.mutation.AnnotationsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   node.AnnotationsTable,
+			Columns: []string{node.AnnotationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(annotation.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if nuo.mutation.SuppliersCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -2262,10 +2398,10 @@ func (nuo *NodeUpdateOne) sqlSave(ctx context.Context) (_node *Node, err error) 
 	}
 	if nuo.mutation.ExternalReferencesCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   node.ExternalReferencesTable,
-			Columns: []string{node.ExternalReferencesColumn},
+			Columns: node.ExternalReferencesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(externalreference.FieldID, field.TypeUUID),
@@ -2275,10 +2411,10 @@ func (nuo *NodeUpdateOne) sqlSave(ctx context.Context) (_node *Node, err error) 
 	}
 	if nodes := nuo.mutation.RemovedExternalReferencesIDs(); len(nodes) > 0 && !nuo.mutation.ExternalReferencesCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   node.ExternalReferencesTable,
-			Columns: []string{node.ExternalReferencesColumn},
+			Columns: node.ExternalReferencesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(externalreference.FieldID, field.TypeUUID),
@@ -2291,10 +2427,10 @@ func (nuo *NodeUpdateOne) sqlSave(ctx context.Context) (_node *Node, err error) 
 	}
 	if nodes := nuo.mutation.ExternalReferencesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   node.ExternalReferencesTable,
-			Columns: []string{node.ExternalReferencesColumn},
+			Columns: node.ExternalReferencesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(externalreference.FieldID, field.TypeUUID),
@@ -2365,6 +2501,9 @@ func (nuo *NodeUpdateOne) sqlSave(ctx context.Context) (_node *Node, err error) 
 		createE.defaults()
 		_, specE := createE.createSpec()
 		edge.Target.Fields = specE.Fields
+		if specE.ID.Value != nil {
+			edge.Target.Fields = append(edge.Target.Fields, specE.ID)
+		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
 	if nodes := nuo.mutation.RemovedToNodesIDs(); len(nodes) > 0 && !nuo.mutation.ToNodesCleared() {
@@ -2385,6 +2524,9 @@ func (nuo *NodeUpdateOne) sqlSave(ctx context.Context) (_node *Node, err error) 
 		createE.defaults()
 		_, specE := createE.createSpec()
 		edge.Target.Fields = specE.Fields
+		if specE.ID.Value != nil {
+			edge.Target.Fields = append(edge.Target.Fields, specE.ID)
+		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
 	if nodes := nuo.mutation.ToNodesIDs(); len(nodes) > 0 {
@@ -2405,6 +2547,9 @@ func (nuo *NodeUpdateOne) sqlSave(ctx context.Context) (_node *Node, err error) 
 		createE.defaults()
 		_, specE := createE.createSpec()
 		edge.Target.Fields = specE.Fields
+		if specE.ID.Value != nil {
+			edge.Target.Fields = append(edge.Target.Fields, specE.ID)
+		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if nuo.mutation.NodesCleared() {
@@ -2445,6 +2590,51 @@ func (nuo *NodeUpdateOne) sqlSave(ctx context.Context) (_node *Node, err error) 
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if nuo.mutation.HashesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   node.HashesTable,
+			Columns: node.HashesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(hashesentry.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := nuo.mutation.RemovedHashesIDs(); len(nodes) > 0 && !nuo.mutation.HashesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   node.HashesTable,
+			Columns: node.HashesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(hashesentry.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := nuo.mutation.HashesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   node.HashesTable,
+			Columns: node.HashesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(hashesentry.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -2535,51 +2725,6 @@ func (nuo *NodeUpdateOne) sqlSave(ctx context.Context) (_node *Node, err error) 
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(nodelist.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if nuo.mutation.AnnotationsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   node.AnnotationsTable,
-			Columns: []string{node.AnnotationsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(annotation.FieldID, field.TypeInt),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := nuo.mutation.RemovedAnnotationsIDs(); len(nodes) > 0 && !nuo.mutation.AnnotationsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   node.AnnotationsTable,
-			Columns: []string{node.AnnotationsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(annotation.FieldID, field.TypeInt),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := nuo.mutation.AnnotationsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   node.AnnotationsTable,
-			Columns: []string{node.AnnotationsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(annotation.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {
