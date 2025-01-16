@@ -34,11 +34,11 @@ type MetadataQuery struct {
 	order             []metadata.OrderOption
 	inters            []Interceptor
 	predicates        []predicate.Metadata
+	withDocument      *DocumentQuery
 	withTools         *ToolQuery
 	withAuthors       *PersonQuery
 	withDocumentTypes *DocumentTypeQuery
 	withSourceData    *SourceDataQuery
-	withDocument      *DocumentQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -73,6 +73,28 @@ func (mq *MetadataQuery) Unique(unique bool) *MetadataQuery {
 func (mq *MetadataQuery) Order(o ...metadata.OrderOption) *MetadataQuery {
 	mq.order = append(mq.order, o...)
 	return mq
+}
+
+// QueryDocument chains the current query on the "document" edge.
+func (mq *MetadataQuery) QueryDocument() *DocumentQuery {
+	query := (&DocumentClient{config: mq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := mq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := mq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(metadata.Table, metadata.FieldID, selector),
+			sqlgraph.To(document.Table, document.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, metadata.DocumentTable, metadata.DocumentColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(mq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
 }
 
 // QueryTools chains the current query on the "tools" edge.
@@ -156,28 +178,6 @@ func (mq *MetadataQuery) QuerySourceData() *SourceDataQuery {
 			sqlgraph.From(metadata.Table, metadata.FieldID, selector),
 			sqlgraph.To(sourcedata.Table, sourcedata.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, metadata.SourceDataTable, metadata.SourceDataColumn),
-		)
-		fromU = sqlgraph.SetNeighbors(mq.driver.Dialect(), step)
-		return fromU, nil
-	}
-	return query
-}
-
-// QueryDocument chains the current query on the "document" edge.
-func (mq *MetadataQuery) QueryDocument() *DocumentQuery {
-	query := (&DocumentClient{config: mq.config}).Query()
-	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := mq.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		selector := mq.sqlQuery(ctx)
-		if err := selector.Err(); err != nil {
-			return nil, err
-		}
-		step := sqlgraph.NewStep(
-			sqlgraph.From(metadata.Table, metadata.FieldID, selector),
-			sqlgraph.To(document.Table, document.FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, true, metadata.DocumentTable, metadata.DocumentColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(mq.driver.Dialect(), step)
 		return fromU, nil
@@ -377,15 +377,26 @@ func (mq *MetadataQuery) Clone() *MetadataQuery {
 		order:             append([]metadata.OrderOption{}, mq.order...),
 		inters:            append([]Interceptor{}, mq.inters...),
 		predicates:        append([]predicate.Metadata{}, mq.predicates...),
+		withDocument:      mq.withDocument.Clone(),
 		withTools:         mq.withTools.Clone(),
 		withAuthors:       mq.withAuthors.Clone(),
 		withDocumentTypes: mq.withDocumentTypes.Clone(),
 		withSourceData:    mq.withSourceData.Clone(),
-		withDocument:      mq.withDocument.Clone(),
 		// clone intermediate query.
 		sql:  mq.sql.Clone(),
 		path: mq.path,
 	}
+}
+
+// WithDocument tells the query-builder to eager-load the nodes that are connected to
+// the "document" edge. The optional arguments are used to configure the query builder of the edge.
+func (mq *MetadataQuery) WithDocument(opts ...func(*DocumentQuery)) *MetadataQuery {
+	query := (&DocumentClient{config: mq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	mq.withDocument = query
+	return mq
 }
 
 // WithTools tells the query-builder to eager-load the nodes that are connected to
@@ -429,17 +440,6 @@ func (mq *MetadataQuery) WithSourceData(opts ...func(*SourceDataQuery)) *Metadat
 		opt(query)
 	}
 	mq.withSourceData = query
-	return mq
-}
-
-// WithDocument tells the query-builder to eager-load the nodes that are connected to
-// the "document" edge. The optional arguments are used to configure the query builder of the edge.
-func (mq *MetadataQuery) WithDocument(opts ...func(*DocumentQuery)) *MetadataQuery {
-	query := (&DocumentClient{config: mq.config}).Query()
-	for _, opt := range opts {
-		opt(query)
-	}
-	mq.withDocument = query
 	return mq
 }
 
@@ -522,11 +522,11 @@ func (mq *MetadataQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Met
 		nodes       = []*Metadata{}
 		_spec       = mq.querySpec()
 		loadedTypes = [5]bool{
+			mq.withDocument != nil,
 			mq.withTools != nil,
 			mq.withAuthors != nil,
 			mq.withDocumentTypes != nil,
 			mq.withSourceData != nil,
-			mq.withDocument != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -546,6 +546,12 @@ func (mq *MetadataQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Met
 	}
 	if len(nodes) == 0 {
 		return nodes, nil
+	}
+	if query := mq.withDocument; query != nil {
+		if err := mq.loadDocument(ctx, query, nodes, nil,
+			func(n *Metadata, e *Document) { n.Edges.Document = e }); err != nil {
+			return nil, err
+		}
 	}
 	if query := mq.withTools; query != nil {
 		if err := mq.loadTools(ctx, query, nodes,
@@ -575,15 +581,36 @@ func (mq *MetadataQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Met
 			return nil, err
 		}
 	}
-	if query := mq.withDocument; query != nil {
-		if err := mq.loadDocument(ctx, query, nodes, nil,
-			func(n *Metadata, e *Document) { n.Edges.Document = e }); err != nil {
-			return nil, err
-		}
-	}
 	return nodes, nil
 }
 
+func (mq *MetadataQuery) loadDocument(ctx context.Context, query *DocumentQuery, nodes []*Metadata, init func(*Metadata), assign func(*Metadata, *Document)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*Metadata)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(document.FieldMetadataID)
+	}
+	query.Where(predicate.Document(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(metadata.DocumentColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.MetadataID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "metadata_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
 func (mq *MetadataQuery) loadTools(ctx context.Context, query *ToolQuery, nodes []*Metadata, init func(*Metadata), assign func(*Metadata, *Tool)) error {
 	fks := make([]driver.Value, 0, len(nodes))
 	nodeids := make(map[uuid.UUID]*Metadata)
@@ -705,35 +732,6 @@ func (mq *MetadataQuery) loadSourceData(ctx context.Context, query *SourceDataQu
 	}
 	return nil
 }
-func (mq *MetadataQuery) loadDocument(ctx context.Context, query *DocumentQuery, nodes []*Metadata, init func(*Metadata), assign func(*Metadata, *Document)) error {
-	ids := make([]uuid.UUID, 0, len(nodes))
-	nodeids := make(map[uuid.UUID][]*Metadata)
-	for i := range nodes {
-		fk := nodes[i].DocumentID
-		if _, ok := nodeids[fk]; !ok {
-			ids = append(ids, fk)
-		}
-		nodeids[fk] = append(nodeids[fk], nodes[i])
-	}
-	if len(ids) == 0 {
-		return nil
-	}
-	query.Where(document.IDIn(ids...))
-	neighbors, err := query.All(ctx)
-	if err != nil {
-		return err
-	}
-	for _, n := range neighbors {
-		nodes, ok := nodeids[n.ID]
-		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "document_id" returned %v`, n.ID)
-		}
-		for i := range nodes {
-			assign(nodes[i], n)
-		}
-	}
-	return nil
-}
 
 func (mq *MetadataQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := mq.querySpec()
@@ -759,9 +757,6 @@ func (mq *MetadataQuery) querySpec() *sqlgraph.QuerySpec {
 			if fields[i] != metadata.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
-		}
-		if mq.withDocument != nil {
-			_spec.Node.AddColumnOnce(metadata.FieldDocumentID)
 		}
 	}
 	if ps := mq.predicates; len(ps) > 0 {

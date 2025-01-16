@@ -19,15 +19,14 @@ type Annotation struct {
 	ent.Schema
 }
 
-func (Annotation) Mixin() []ent.Mixin {
-	return []ent.Mixin{
-		DocumentMixin{},
-	}
-}
-
 func (Annotation) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("node_id", uuid.UUID{}).Optional().Nillable(),
+		field.UUID("document_id", uuid.UUID{}).
+			Optional().
+			Nillable(),
+		field.UUID("node_id", uuid.UUID{}).
+			Optional().
+			Nillable(),
 		field.String("name"),
 		field.String("value"),
 		field.Bool("is_unique").Default(false),
@@ -36,6 +35,10 @@ func (Annotation) Fields() []ent.Field {
 
 func (Annotation) Edges() []ent.Edge {
 	return []ent.Edge{
+		edge.From("document", Document.Type).
+			Ref("annotations").
+			Unique().
+			Field("document_id"),
 		edge.From("node", Node.Type).
 			Ref("annotations").
 			Unique().
@@ -45,6 +48,10 @@ func (Annotation) Edges() []ent.Edge {
 
 func (Annotation) Indexes() []ent.Index {
 	return []ent.Index{
+		index.Fields("node_id").
+			StorageKey("idx_annotations_node_id"),
+		index.Fields("document_id").
+			StorageKey("idx_annotations_document_id"),
 		index.Fields("node_id", "name", "value").
 			Unique().
 			Annotations(entsql.IndexWhere("node_id IS NOT NULL AND TRIM(node_id) != ''")).

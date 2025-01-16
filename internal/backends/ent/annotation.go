@@ -25,7 +25,7 @@ type Annotation struct {
 	// ID of the ent.
 	ID int `json:"id,omitempty"`
 	// DocumentID holds the value of the "document_id" field.
-	DocumentID uuid.UUID `json:"document_id,omitempty"`
+	DocumentID *uuid.UUID `json:"document_id,omitempty"`
 	// NodeID holds the value of the "node_id" field.
 	NodeID *uuid.UUID `json:"node_id,omitempty"`
 	// Name holds the value of the "name" field.
@@ -78,7 +78,7 @@ func (*Annotation) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case annotation.FieldNodeID:
+		case annotation.FieldDocumentID, annotation.FieldNodeID:
 			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
 		case annotation.FieldIsUnique:
 			values[i] = new(sql.NullBool)
@@ -86,8 +86,6 @@ func (*Annotation) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullInt64)
 		case annotation.FieldName, annotation.FieldValue:
 			values[i] = new(sql.NullString)
-		case annotation.FieldDocumentID:
-			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -110,10 +108,11 @@ func (a *Annotation) assignValues(columns []string, values []any) error {
 			}
 			a.ID = int(value.Int64)
 		case annotation.FieldDocumentID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullScanner); !ok {
 				return fmt.Errorf("unexpected type %T for field document_id", values[i])
-			} else if value != nil {
-				a.DocumentID = *value
+			} else if value.Valid {
+				a.DocumentID = new(uuid.UUID)
+				*a.DocumentID = *value.S.(*uuid.UUID)
 			}
 		case annotation.FieldNodeID:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
@@ -186,8 +185,10 @@ func (a *Annotation) String() string {
 	var builder strings.Builder
 	builder.WriteString("Annotation(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", a.ID))
-	builder.WriteString("document_id=")
-	builder.WriteString(fmt.Sprintf("%v", a.DocumentID))
+	if v := a.DocumentID; v != nil {
+		builder.WriteString("document_id=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
 	builder.WriteString(", ")
 	if v := a.NodeID; v != nil {
 		builder.WriteString("node_id=")

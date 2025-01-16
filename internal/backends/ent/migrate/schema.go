@@ -30,7 +30,7 @@ var (
 		PrimaryKey: []*schema.Column{AnnotationsColumns[0]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:     "annotations_documents_document",
+				Symbol:     "annotations_documents_annotations",
 				Columns:    []*schema.Column{AnnotationsColumns[4]},
 				RefColumns: []*schema.Column{DocumentsColumns[0]},
 				OnDelete:   schema.Cascade,
@@ -43,6 +43,16 @@ var (
 			},
 		},
 		Indexes: []*schema.Index{
+			{
+				Name:    "idx_annotations_node_id",
+				Unique:  false,
+				Columns: []*schema.Column{AnnotationsColumns[5]},
+			},
+			{
+				Name:    "idx_annotations_document_id",
+				Unique:  false,
+				Columns: []*schema.Column{AnnotationsColumns[4]},
+			},
 			{
 				Name:    "idx_node_annotations",
 				Unique:  true,
@@ -80,12 +90,28 @@ var (
 	// DocumentsColumns holds the columns for the "documents" table.
 	DocumentsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID, Unique: true},
+		{Name: "metadata_id", Type: field.TypeUUID, Unique: true, Nullable: true},
+		{Name: "node_list_id", Type: field.TypeUUID, Unique: true, Nullable: true},
 	}
 	// DocumentsTable holds the schema information for the "documents" table.
 	DocumentsTable = &schema.Table{
 		Name:       "documents",
 		Columns:    DocumentsColumns,
 		PrimaryKey: []*schema.Column{DocumentsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "documents_metadata_document",
+				Columns:    []*schema.Column{DocumentsColumns[1]},
+				RefColumns: []*schema.Column{MetadataColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "documents_node_lists_document",
+				Columns:    []*schema.Column{DocumentsColumns[2]},
+				RefColumns: []*schema.Column{NodeListsColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
 	}
 	// DocumentTypesColumns holds the columns for the "document_types" table.
 	DocumentTypesColumns = []*schema.Column{
@@ -260,21 +286,12 @@ var (
 		{Name: "name", Type: field.TypeString},
 		{Name: "date", Type: field.TypeTime},
 		{Name: "comment", Type: field.TypeString},
-		{Name: "document_id", Type: field.TypeUUID, Unique: true},
 	}
 	// MetadataTable holds the schema information for the "metadata" table.
 	MetadataTable = &schema.Table{
 		Name:       "metadata",
 		Columns:    MetadataColumns,
 		PrimaryKey: []*schema.Column{MetadataColumns[0]},
-		ForeignKeys: []*schema.ForeignKey{
-			{
-				Symbol:     "metadata_documents_metadata",
-				Columns:    []*schema.Column{MetadataColumns[7]},
-				RefColumns: []*schema.Column{DocumentsColumns[0]},
-				OnDelete:   schema.NoAction,
-			},
-		},
 		Indexes: []*schema.Index{
 			{
 				Name:    "idx_metadata",
@@ -336,21 +353,12 @@ var (
 		{Name: "id", Type: field.TypeUUID, Unique: true},
 		{Name: "proto_message", Type: field.TypeBytes},
 		{Name: "root_elements", Type: field.TypeJSON},
-		{Name: "document_id", Type: field.TypeUUID, Unique: true},
 	}
 	// NodeListsTable holds the schema information for the "node_lists" table.
 	NodeListsTable = &schema.Table{
 		Name:       "node_lists",
 		Columns:    NodeListsColumns,
 		PrimaryKey: []*schema.Column{NodeListsColumns[0]},
-		ForeignKeys: []*schema.ForeignKey{
-			{
-				Symbol:     "node_lists_documents_node_list",
-				Columns:    []*schema.Column{NodeListsColumns[3]},
-				RefColumns: []*schema.Column{DocumentsColumns[0]},
-				OnDelete:   schema.NoAction,
-			},
-		},
 	}
 	// PersonsColumns holds the columns for the "persons" table.
 	PersonsColumns = []*schema.Column{
@@ -747,7 +755,8 @@ var (
 func init() {
 	AnnotationsTable.ForeignKeys[0].RefTable = DocumentsTable
 	AnnotationsTable.ForeignKeys[1].RefTable = NodesTable
-	AnnotationsTable.Annotation = &entsql.Annotation{}
+	DocumentsTable.ForeignKeys[0].RefTable = MetadataTable
+	DocumentsTable.ForeignKeys[1].RefTable = NodeListsTable
 	DocumentTypesTable.ForeignKeys[0].RefTable = DocumentsTable
 	DocumentTypesTable.ForeignKeys[1].RefTable = MetadataTable
 	DocumentTypesTable.Annotation = &entsql.Annotation{}
@@ -761,10 +770,8 @@ func init() {
 	HashesEntriesTable.Annotation = &entsql.Annotation{}
 	IdentifiersEntriesTable.ForeignKeys[0].RefTable = DocumentsTable
 	IdentifiersEntriesTable.Annotation = &entsql.Annotation{}
-	MetadataTable.ForeignKeys[0].RefTable = DocumentsTable
 	NodesTable.ForeignKeys[0].RefTable = DocumentsTable
 	NodesTable.Annotation = &entsql.Annotation{}
-	NodeListsTable.ForeignKeys[0].RefTable = DocumentsTable
 	PersonsTable.ForeignKeys[0].RefTable = MetadataTable
 	PersonsTable.ForeignKeys[1].RefTable = NodesTable
 	PersonsTable.ForeignKeys[2].RefTable = NodesTable

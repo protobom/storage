@@ -17,6 +17,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
 	"github.com/protobom/storage/internal/backends/ent/annotation"
+	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/node"
 	"github.com/protobom/storage/internal/backends/ent/predicate"
 )
@@ -31,6 +32,26 @@ type AnnotationUpdate struct {
 // Where appends a list predicates to the AnnotationUpdate builder.
 func (au *AnnotationUpdate) Where(ps ...predicate.Annotation) *AnnotationUpdate {
 	au.mutation.Where(ps...)
+	return au
+}
+
+// SetDocumentID sets the "document_id" field.
+func (au *AnnotationUpdate) SetDocumentID(u uuid.UUID) *AnnotationUpdate {
+	au.mutation.SetDocumentID(u)
+	return au
+}
+
+// SetNillableDocumentID sets the "document_id" field if the given value is not nil.
+func (au *AnnotationUpdate) SetNillableDocumentID(u *uuid.UUID) *AnnotationUpdate {
+	if u != nil {
+		au.SetDocumentID(*u)
+	}
+	return au
+}
+
+// ClearDocumentID clears the value of the "document_id" field.
+func (au *AnnotationUpdate) ClearDocumentID() *AnnotationUpdate {
+	au.mutation.ClearDocumentID()
 	return au
 }
 
@@ -96,6 +117,11 @@ func (au *AnnotationUpdate) SetNillableIsUnique(b *bool) *AnnotationUpdate {
 	return au
 }
 
+// SetDocument sets the "document" edge to the Document entity.
+func (au *AnnotationUpdate) SetDocument(d *Document) *AnnotationUpdate {
+	return au.SetDocumentID(d.ID)
+}
+
 // SetNode sets the "node" edge to the Node entity.
 func (au *AnnotationUpdate) SetNode(n *Node) *AnnotationUpdate {
 	return au.SetNodeID(n.ID)
@@ -104,6 +130,12 @@ func (au *AnnotationUpdate) SetNode(n *Node) *AnnotationUpdate {
 // Mutation returns the AnnotationMutation object of the builder.
 func (au *AnnotationUpdate) Mutation() *AnnotationMutation {
 	return au.mutation
+}
+
+// ClearDocument clears the "document" edge to the Document entity.
+func (au *AnnotationUpdate) ClearDocument() *AnnotationUpdate {
+	au.mutation.ClearDocument()
+	return au
 }
 
 // ClearNode clears the "node" edge to the Node entity.
@@ -157,6 +189,35 @@ func (au *AnnotationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := au.mutation.IsUnique(); ok {
 		_spec.SetField(annotation.FieldIsUnique, field.TypeBool, value)
 	}
+	if au.mutation.DocumentCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   annotation.DocumentTable,
+			Columns: []string{annotation.DocumentColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(document.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := au.mutation.DocumentIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   annotation.DocumentTable,
+			Columns: []string{annotation.DocumentColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(document.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if au.mutation.NodeCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -204,6 +265,26 @@ type AnnotationUpdateOne struct {
 	fields   []string
 	hooks    []Hook
 	mutation *AnnotationMutation
+}
+
+// SetDocumentID sets the "document_id" field.
+func (auo *AnnotationUpdateOne) SetDocumentID(u uuid.UUID) *AnnotationUpdateOne {
+	auo.mutation.SetDocumentID(u)
+	return auo
+}
+
+// SetNillableDocumentID sets the "document_id" field if the given value is not nil.
+func (auo *AnnotationUpdateOne) SetNillableDocumentID(u *uuid.UUID) *AnnotationUpdateOne {
+	if u != nil {
+		auo.SetDocumentID(*u)
+	}
+	return auo
+}
+
+// ClearDocumentID clears the value of the "document_id" field.
+func (auo *AnnotationUpdateOne) ClearDocumentID() *AnnotationUpdateOne {
+	auo.mutation.ClearDocumentID()
+	return auo
 }
 
 // SetNodeID sets the "node_id" field.
@@ -268,6 +349,11 @@ func (auo *AnnotationUpdateOne) SetNillableIsUnique(b *bool) *AnnotationUpdateOn
 	return auo
 }
 
+// SetDocument sets the "document" edge to the Document entity.
+func (auo *AnnotationUpdateOne) SetDocument(d *Document) *AnnotationUpdateOne {
+	return auo.SetDocumentID(d.ID)
+}
+
 // SetNode sets the "node" edge to the Node entity.
 func (auo *AnnotationUpdateOne) SetNode(n *Node) *AnnotationUpdateOne {
 	return auo.SetNodeID(n.ID)
@@ -276,6 +362,12 @@ func (auo *AnnotationUpdateOne) SetNode(n *Node) *AnnotationUpdateOne {
 // Mutation returns the AnnotationMutation object of the builder.
 func (auo *AnnotationUpdateOne) Mutation() *AnnotationMutation {
 	return auo.mutation
+}
+
+// ClearDocument clears the "document" edge to the Document entity.
+func (auo *AnnotationUpdateOne) ClearDocument() *AnnotationUpdateOne {
+	auo.mutation.ClearDocument()
+	return auo
 }
 
 // ClearNode clears the "node" edge to the Node entity.
@@ -358,6 +450,35 @@ func (auo *AnnotationUpdateOne) sqlSave(ctx context.Context) (_node *Annotation,
 	}
 	if value, ok := auo.mutation.IsUnique(); ok {
 		_spec.SetField(annotation.FieldIsUnique, field.TypeBool, value)
+	}
+	if auo.mutation.DocumentCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   annotation.DocumentTable,
+			Columns: []string{annotation.DocumentColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(document.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := auo.mutation.DocumentIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   annotation.DocumentTable,
+			Columns: []string{annotation.DocumentColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(document.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if auo.mutation.NodeCleared() {
 		edge := &sqlgraph.EdgeSpec{

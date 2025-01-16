@@ -196,7 +196,7 @@ func (m *AnnotationMutation) DocumentID() (r uuid.UUID, exists bool) {
 // OldDocumentID returns the old "document_id" field's value of the Annotation entity.
 // If the Annotation object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *AnnotationMutation) OldDocumentID(ctx context.Context) (v uuid.UUID, err error) {
+func (m *AnnotationMutation) OldDocumentID(ctx context.Context) (v *uuid.UUID, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldDocumentID is only allowed on UpdateOne operations")
 	}
@@ -748,17 +748,20 @@ func (m *AnnotationMutation) ResetEdge(name string) error {
 // DocumentMutation represents an operation that mutates the Document nodes in the graph.
 type DocumentMutation struct {
 	config
-	op               Op
-	typ              string
-	id               *uuid.UUID
-	clearedFields    map[string]struct{}
-	metadata         *uuid.UUID
-	clearedmetadata  bool
-	node_list        *uuid.UUID
-	clearednode_list bool
-	done             bool
-	oldValue         func(context.Context) (*Document, error)
-	predicates       []predicate.Document
+	op                 Op
+	typ                string
+	id                 *uuid.UUID
+	clearedFields      map[string]struct{}
+	annotations        map[int]struct{}
+	removedannotations map[int]struct{}
+	clearedannotations bool
+	metadata           *uuid.UUID
+	clearedmetadata    bool
+	node_list          *uuid.UUID
+	clearednode_list   bool
+	done               bool
+	oldValue           func(context.Context) (*Document, error)
+	predicates         []predicate.Document
 }
 
 var _ ent.Mutation = (*DocumentMutation)(nil)
@@ -865,27 +868,167 @@ func (m *DocumentMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
 	}
 }
 
-// SetMetadataID sets the "metadata" edge to the Metadata entity by id.
-func (m *DocumentMutation) SetMetadataID(id uuid.UUID) {
-	m.metadata = &id
+// SetMetadataID sets the "metadata_id" field.
+func (m *DocumentMutation) SetMetadataID(u uuid.UUID) {
+	m.metadata = &u
+}
+
+// MetadataID returns the value of the "metadata_id" field in the mutation.
+func (m *DocumentMutation) MetadataID() (r uuid.UUID, exists bool) {
+	v := m.metadata
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldMetadataID returns the old "metadata_id" field's value of the Document entity.
+// If the Document object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DocumentMutation) OldMetadataID(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldMetadataID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldMetadataID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldMetadataID: %w", err)
+	}
+	return oldValue.MetadataID, nil
+}
+
+// ClearMetadataID clears the value of the "metadata_id" field.
+func (m *DocumentMutation) ClearMetadataID() {
+	m.metadata = nil
+	m.clearedFields[document.FieldMetadataID] = struct{}{}
+}
+
+// MetadataIDCleared returns if the "metadata_id" field was cleared in this mutation.
+func (m *DocumentMutation) MetadataIDCleared() bool {
+	_, ok := m.clearedFields[document.FieldMetadataID]
+	return ok
+}
+
+// ResetMetadataID resets all changes to the "metadata_id" field.
+func (m *DocumentMutation) ResetMetadataID() {
+	m.metadata = nil
+	delete(m.clearedFields, document.FieldMetadataID)
+}
+
+// SetNodeListID sets the "node_list_id" field.
+func (m *DocumentMutation) SetNodeListID(u uuid.UUID) {
+	m.node_list = &u
+}
+
+// NodeListID returns the value of the "node_list_id" field in the mutation.
+func (m *DocumentMutation) NodeListID() (r uuid.UUID, exists bool) {
+	v := m.node_list
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldNodeListID returns the old "node_list_id" field's value of the Document entity.
+// If the Document object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DocumentMutation) OldNodeListID(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldNodeListID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldNodeListID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldNodeListID: %w", err)
+	}
+	return oldValue.NodeListID, nil
+}
+
+// ClearNodeListID clears the value of the "node_list_id" field.
+func (m *DocumentMutation) ClearNodeListID() {
+	m.node_list = nil
+	m.clearedFields[document.FieldNodeListID] = struct{}{}
+}
+
+// NodeListIDCleared returns if the "node_list_id" field was cleared in this mutation.
+func (m *DocumentMutation) NodeListIDCleared() bool {
+	_, ok := m.clearedFields[document.FieldNodeListID]
+	return ok
+}
+
+// ResetNodeListID resets all changes to the "node_list_id" field.
+func (m *DocumentMutation) ResetNodeListID() {
+	m.node_list = nil
+	delete(m.clearedFields, document.FieldNodeListID)
+}
+
+// AddAnnotationIDs adds the "annotations" edge to the Annotation entity by ids.
+func (m *DocumentMutation) AddAnnotationIDs(ids ...int) {
+	if m.annotations == nil {
+		m.annotations = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.annotations[ids[i]] = struct{}{}
+	}
+}
+
+// ClearAnnotations clears the "annotations" edge to the Annotation entity.
+func (m *DocumentMutation) ClearAnnotations() {
+	m.clearedannotations = true
+}
+
+// AnnotationsCleared reports if the "annotations" edge to the Annotation entity was cleared.
+func (m *DocumentMutation) AnnotationsCleared() bool {
+	return m.clearedannotations
+}
+
+// RemoveAnnotationIDs removes the "annotations" edge to the Annotation entity by IDs.
+func (m *DocumentMutation) RemoveAnnotationIDs(ids ...int) {
+	if m.removedannotations == nil {
+		m.removedannotations = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.annotations, ids[i])
+		m.removedannotations[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedAnnotations returns the removed IDs of the "annotations" edge to the Annotation entity.
+func (m *DocumentMutation) RemovedAnnotationsIDs() (ids []int) {
+	for id := range m.removedannotations {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// AnnotationsIDs returns the "annotations" edge IDs in the mutation.
+func (m *DocumentMutation) AnnotationsIDs() (ids []int) {
+	for id := range m.annotations {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetAnnotations resets all changes to the "annotations" edge.
+func (m *DocumentMutation) ResetAnnotations() {
+	m.annotations = nil
+	m.clearedannotations = false
+	m.removedannotations = nil
 }
 
 // ClearMetadata clears the "metadata" edge to the Metadata entity.
 func (m *DocumentMutation) ClearMetadata() {
 	m.clearedmetadata = true
+	m.clearedFields[document.FieldMetadataID] = struct{}{}
 }
 
 // MetadataCleared reports if the "metadata" edge to the Metadata entity was cleared.
 func (m *DocumentMutation) MetadataCleared() bool {
-	return m.clearedmetadata
-}
-
-// MetadataID returns the "metadata" edge ID in the mutation.
-func (m *DocumentMutation) MetadataID() (id uuid.UUID, exists bool) {
-	if m.metadata != nil {
-		return *m.metadata, true
-	}
-	return
+	return m.MetadataIDCleared() || m.clearedmetadata
 }
 
 // MetadataIDs returns the "metadata" edge IDs in the mutation.
@@ -904,27 +1047,15 @@ func (m *DocumentMutation) ResetMetadata() {
 	m.clearedmetadata = false
 }
 
-// SetNodeListID sets the "node_list" edge to the NodeList entity by id.
-func (m *DocumentMutation) SetNodeListID(id uuid.UUID) {
-	m.node_list = &id
-}
-
 // ClearNodeList clears the "node_list" edge to the NodeList entity.
 func (m *DocumentMutation) ClearNodeList() {
 	m.clearednode_list = true
+	m.clearedFields[document.FieldNodeListID] = struct{}{}
 }
 
 // NodeListCleared reports if the "node_list" edge to the NodeList entity was cleared.
 func (m *DocumentMutation) NodeListCleared() bool {
-	return m.clearednode_list
-}
-
-// NodeListID returns the "node_list" edge ID in the mutation.
-func (m *DocumentMutation) NodeListID() (id uuid.UUID, exists bool) {
-	if m.node_list != nil {
-		return *m.node_list, true
-	}
-	return
+	return m.NodeListIDCleared() || m.clearednode_list
 }
 
 // NodeListIDs returns the "node_list" edge IDs in the mutation.
@@ -977,7 +1108,13 @@ func (m *DocumentMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *DocumentMutation) Fields() []string {
-	fields := make([]string, 0, 0)
+	fields := make([]string, 0, 2)
+	if m.metadata != nil {
+		fields = append(fields, document.FieldMetadataID)
+	}
+	if m.node_list != nil {
+		fields = append(fields, document.FieldNodeListID)
+	}
 	return fields
 }
 
@@ -985,6 +1122,12 @@ func (m *DocumentMutation) Fields() []string {
 // return value indicates that this field was not set, or was not defined in the
 // schema.
 func (m *DocumentMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case document.FieldMetadataID:
+		return m.MetadataID()
+	case document.FieldNodeListID:
+		return m.NodeListID()
+	}
 	return nil, false
 }
 
@@ -992,6 +1135,12 @@ func (m *DocumentMutation) Field(name string) (ent.Value, bool) {
 // returned if the mutation operation is not UpdateOne, or the query to the
 // database failed.
 func (m *DocumentMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case document.FieldMetadataID:
+		return m.OldMetadataID(ctx)
+	case document.FieldNodeListID:
+		return m.OldNodeListID(ctx)
+	}
 	return nil, fmt.Errorf("unknown Document field %s", name)
 }
 
@@ -1000,6 +1149,20 @@ func (m *DocumentMutation) OldField(ctx context.Context, name string) (ent.Value
 // type.
 func (m *DocumentMutation) SetField(name string, value ent.Value) error {
 	switch name {
+	case document.FieldMetadataID:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetMetadataID(v)
+		return nil
+	case document.FieldNodeListID:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetNodeListID(v)
+		return nil
 	}
 	return fmt.Errorf("unknown Document field %s", name)
 }
@@ -1021,13 +1184,22 @@ func (m *DocumentMutation) AddedField(name string) (ent.Value, bool) {
 // the field is not defined in the schema, or if the type mismatched the field
 // type.
 func (m *DocumentMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
 	return fmt.Errorf("unknown Document numeric field %s", name)
 }
 
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *DocumentMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(document.FieldMetadataID) {
+		fields = append(fields, document.FieldMetadataID)
+	}
+	if m.FieldCleared(document.FieldNodeListID) {
+		fields = append(fields, document.FieldNodeListID)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -1040,18 +1212,37 @@ func (m *DocumentMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *DocumentMutation) ClearField(name string) error {
+	switch name {
+	case document.FieldMetadataID:
+		m.ClearMetadataID()
+		return nil
+	case document.FieldNodeListID:
+		m.ClearNodeListID()
+		return nil
+	}
 	return fmt.Errorf("unknown Document nullable field %s", name)
 }
 
 // ResetField resets all changes in the mutation for the field with the given name.
 // It returns an error if the field is not defined in the schema.
 func (m *DocumentMutation) ResetField(name string) error {
+	switch name {
+	case document.FieldMetadataID:
+		m.ResetMetadataID()
+		return nil
+	case document.FieldNodeListID:
+		m.ResetNodeListID()
+		return nil
+	}
 	return fmt.Errorf("unknown Document field %s", name)
 }
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *DocumentMutation) AddedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
+	if m.annotations != nil {
+		edges = append(edges, document.EdgeAnnotations)
+	}
 	if m.metadata != nil {
 		edges = append(edges, document.EdgeMetadata)
 	}
@@ -1065,6 +1256,12 @@ func (m *DocumentMutation) AddedEdges() []string {
 // name in this mutation.
 func (m *DocumentMutation) AddedIDs(name string) []ent.Value {
 	switch name {
+	case document.EdgeAnnotations:
+		ids := make([]ent.Value, 0, len(m.annotations))
+		for id := range m.annotations {
+			ids = append(ids, id)
+		}
+		return ids
 	case document.EdgeMetadata:
 		if id := m.metadata; id != nil {
 			return []ent.Value{*id}
@@ -1079,19 +1276,33 @@ func (m *DocumentMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *DocumentMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
+	if m.removedannotations != nil {
+		edges = append(edges, document.EdgeAnnotations)
+	}
 	return edges
 }
 
 // RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
 // the given name in this mutation.
 func (m *DocumentMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case document.EdgeAnnotations:
+		ids := make([]ent.Value, 0, len(m.removedannotations))
+		for id := range m.removedannotations {
+			ids = append(ids, id)
+		}
+		return ids
+	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *DocumentMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
+	if m.clearedannotations {
+		edges = append(edges, document.EdgeAnnotations)
+	}
 	if m.clearedmetadata {
 		edges = append(edges, document.EdgeMetadata)
 	}
@@ -1105,6 +1316,8 @@ func (m *DocumentMutation) ClearedEdges() []string {
 // was cleared in this mutation.
 func (m *DocumentMutation) EdgeCleared(name string) bool {
 	switch name {
+	case document.EdgeAnnotations:
+		return m.clearedannotations
 	case document.EdgeMetadata:
 		return m.clearedmetadata
 	case document.EdgeNodeList:
@@ -1131,6 +1344,9 @@ func (m *DocumentMutation) ClearEdge(name string) error {
 // It returns an error if the edge is not defined in the schema.
 func (m *DocumentMutation) ResetEdge(name string) error {
 	switch name {
+	case document.EdgeAnnotations:
+		m.ResetAnnotations()
+		return nil
 	case document.EdgeMetadata:
 		m.ResetMetadata()
 		return nil
@@ -4931,6 +5147,8 @@ type MetadataMutation struct {
 	date                  *time.Time
 	comment               *string
 	clearedFields         map[string]struct{}
+	document              *uuid.UUID
+	cleareddocument       bool
 	tools                 map[uuid.UUID]struct{}
 	removedtools          map[uuid.UUID]struct{}
 	clearedtools          bool
@@ -4943,8 +5161,6 @@ type MetadataMutation struct {
 	source_data           map[uuid.UUID]struct{}
 	removedsource_data    map[uuid.UUID]struct{}
 	clearedsource_data    bool
-	document              *uuid.UUID
-	cleareddocument       bool
 	done                  bool
 	oldValue              func(context.Context) (*Metadata, error)
 	predicates            []predicate.Metadata
@@ -5088,42 +5304,6 @@ func (m *MetadataMutation) OldProtoMessage(ctx context.Context) (v *sbom.Metadat
 // ResetProtoMessage resets all changes to the "proto_message" field.
 func (m *MetadataMutation) ResetProtoMessage() {
 	m.proto_message = nil
-}
-
-// SetDocumentID sets the "document_id" field.
-func (m *MetadataMutation) SetDocumentID(u uuid.UUID) {
-	m.document = &u
-}
-
-// DocumentID returns the value of the "document_id" field in the mutation.
-func (m *MetadataMutation) DocumentID() (r uuid.UUID, exists bool) {
-	v := m.document
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldDocumentID returns the old "document_id" field's value of the Metadata entity.
-// If the Metadata object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *MetadataMutation) OldDocumentID(ctx context.Context) (v uuid.UUID, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldDocumentID is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldDocumentID requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldDocumentID: %w", err)
-	}
-	return oldValue.DocumentID, nil
-}
-
-// ResetDocumentID resets all changes to the "document_id" field.
-func (m *MetadataMutation) ResetDocumentID() {
-	m.document = nil
 }
 
 // SetNativeID sets the "native_id" field.
@@ -5304,6 +5484,45 @@ func (m *MetadataMutation) OldComment(ctx context.Context) (v string, err error)
 // ResetComment resets all changes to the "comment" field.
 func (m *MetadataMutation) ResetComment() {
 	m.comment = nil
+}
+
+// SetDocumentID sets the "document" edge to the Document entity by id.
+func (m *MetadataMutation) SetDocumentID(id uuid.UUID) {
+	m.document = &id
+}
+
+// ClearDocument clears the "document" edge to the Document entity.
+func (m *MetadataMutation) ClearDocument() {
+	m.cleareddocument = true
+}
+
+// DocumentCleared reports if the "document" edge to the Document entity was cleared.
+func (m *MetadataMutation) DocumentCleared() bool {
+	return m.cleareddocument
+}
+
+// DocumentID returns the "document" edge ID in the mutation.
+func (m *MetadataMutation) DocumentID() (id uuid.UUID, exists bool) {
+	if m.document != nil {
+		return *m.document, true
+	}
+	return
+}
+
+// DocumentIDs returns the "document" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// DocumentID instead. It exists only for internal usage by the builders.
+func (m *MetadataMutation) DocumentIDs() (ids []uuid.UUID) {
+	if id := m.document; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetDocument resets all changes to the "document" edge.
+func (m *MetadataMutation) ResetDocument() {
+	m.document = nil
+	m.cleareddocument = false
 }
 
 // AddToolIDs adds the "tools" edge to the Tool entity by ids.
@@ -5522,33 +5741,6 @@ func (m *MetadataMutation) ResetSourceData() {
 	m.removedsource_data = nil
 }
 
-// ClearDocument clears the "document" edge to the Document entity.
-func (m *MetadataMutation) ClearDocument() {
-	m.cleareddocument = true
-	m.clearedFields[metadata.FieldDocumentID] = struct{}{}
-}
-
-// DocumentCleared reports if the "document" edge to the Document entity was cleared.
-func (m *MetadataMutation) DocumentCleared() bool {
-	return m.cleareddocument
-}
-
-// DocumentIDs returns the "document" edge IDs in the mutation.
-// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
-// DocumentID instead. It exists only for internal usage by the builders.
-func (m *MetadataMutation) DocumentIDs() (ids []uuid.UUID) {
-	if id := m.document; id != nil {
-		ids = append(ids, *id)
-	}
-	return
-}
-
-// ResetDocument resets all changes to the "document" edge.
-func (m *MetadataMutation) ResetDocument() {
-	m.document = nil
-	m.cleareddocument = false
-}
-
 // Where appends a list predicates to the MetadataMutation builder.
 func (m *MetadataMutation) Where(ps ...predicate.Metadata) {
 	m.predicates = append(m.predicates, ps...)
@@ -5583,12 +5775,9 @@ func (m *MetadataMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *MetadataMutation) Fields() []string {
-	fields := make([]string, 0, 7)
+	fields := make([]string, 0, 6)
 	if m.proto_message != nil {
 		fields = append(fields, metadata.FieldProtoMessage)
-	}
-	if m.document != nil {
-		fields = append(fields, metadata.FieldDocumentID)
 	}
 	if m.native_id != nil {
 		fields = append(fields, metadata.FieldNativeID)
@@ -5615,8 +5804,6 @@ func (m *MetadataMutation) Field(name string) (ent.Value, bool) {
 	switch name {
 	case metadata.FieldProtoMessage:
 		return m.ProtoMessage()
-	case metadata.FieldDocumentID:
-		return m.DocumentID()
 	case metadata.FieldNativeID:
 		return m.NativeID()
 	case metadata.FieldVersion:
@@ -5638,8 +5825,6 @@ func (m *MetadataMutation) OldField(ctx context.Context, name string) (ent.Value
 	switch name {
 	case metadata.FieldProtoMessage:
 		return m.OldProtoMessage(ctx)
-	case metadata.FieldDocumentID:
-		return m.OldDocumentID(ctx)
 	case metadata.FieldNativeID:
 		return m.OldNativeID(ctx)
 	case metadata.FieldVersion:
@@ -5665,13 +5850,6 @@ func (m *MetadataMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetProtoMessage(v)
-		return nil
-	case metadata.FieldDocumentID:
-		v, ok := value.(uuid.UUID)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetDocumentID(v)
 		return nil
 	case metadata.FieldNativeID:
 		v, ok := value.(string)
@@ -5760,9 +5938,6 @@ func (m *MetadataMutation) ResetField(name string) error {
 	case metadata.FieldProtoMessage:
 		m.ResetProtoMessage()
 		return nil
-	case metadata.FieldDocumentID:
-		m.ResetDocumentID()
-		return nil
 	case metadata.FieldNativeID:
 		m.ResetNativeID()
 		return nil
@@ -5785,6 +5960,9 @@ func (m *MetadataMutation) ResetField(name string) error {
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *MetadataMutation) AddedEdges() []string {
 	edges := make([]string, 0, 5)
+	if m.document != nil {
+		edges = append(edges, metadata.EdgeDocument)
+	}
 	if m.tools != nil {
 		edges = append(edges, metadata.EdgeTools)
 	}
@@ -5797,9 +5975,6 @@ func (m *MetadataMutation) AddedEdges() []string {
 	if m.source_data != nil {
 		edges = append(edges, metadata.EdgeSourceData)
 	}
-	if m.document != nil {
-		edges = append(edges, metadata.EdgeDocument)
-	}
 	return edges
 }
 
@@ -5807,6 +5982,10 @@ func (m *MetadataMutation) AddedEdges() []string {
 // name in this mutation.
 func (m *MetadataMutation) AddedIDs(name string) []ent.Value {
 	switch name {
+	case metadata.EdgeDocument:
+		if id := m.document; id != nil {
+			return []ent.Value{*id}
+		}
 	case metadata.EdgeTools:
 		ids := make([]ent.Value, 0, len(m.tools))
 		for id := range m.tools {
@@ -5831,10 +6010,6 @@ func (m *MetadataMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
-	case metadata.EdgeDocument:
-		if id := m.document; id != nil {
-			return []ent.Value{*id}
-		}
 	}
 	return nil
 }
@@ -5892,6 +6067,9 @@ func (m *MetadataMutation) RemovedIDs(name string) []ent.Value {
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *MetadataMutation) ClearedEdges() []string {
 	edges := make([]string, 0, 5)
+	if m.cleareddocument {
+		edges = append(edges, metadata.EdgeDocument)
+	}
 	if m.clearedtools {
 		edges = append(edges, metadata.EdgeTools)
 	}
@@ -5904,9 +6082,6 @@ func (m *MetadataMutation) ClearedEdges() []string {
 	if m.clearedsource_data {
 		edges = append(edges, metadata.EdgeSourceData)
 	}
-	if m.cleareddocument {
-		edges = append(edges, metadata.EdgeDocument)
-	}
 	return edges
 }
 
@@ -5914,6 +6089,8 @@ func (m *MetadataMutation) ClearedEdges() []string {
 // was cleared in this mutation.
 func (m *MetadataMutation) EdgeCleared(name string) bool {
 	switch name {
+	case metadata.EdgeDocument:
+		return m.cleareddocument
 	case metadata.EdgeTools:
 		return m.clearedtools
 	case metadata.EdgeAuthors:
@@ -5922,8 +6099,6 @@ func (m *MetadataMutation) EdgeCleared(name string) bool {
 		return m.cleareddocument_types
 	case metadata.EdgeSourceData:
 		return m.clearedsource_data
-	case metadata.EdgeDocument:
-		return m.cleareddocument
 	}
 	return false
 }
@@ -5943,6 +6118,9 @@ func (m *MetadataMutation) ClearEdge(name string) error {
 // It returns an error if the edge is not defined in the schema.
 func (m *MetadataMutation) ResetEdge(name string) error {
 	switch name {
+	case metadata.EdgeDocument:
+		m.ResetDocument()
+		return nil
 	case metadata.EdgeTools:
 		m.ResetTools()
 		return nil
@@ -5954,9 +6132,6 @@ func (m *MetadataMutation) ResetEdge(name string) error {
 		return nil
 	case metadata.EdgeSourceData:
 		m.ResetSourceData()
-		return nil
-	case metadata.EdgeDocument:
-		m.ResetDocument()
 		return nil
 	}
 	return fmt.Errorf("unknown Metadata edge %s", name)
@@ -8633,14 +8808,14 @@ type NodeListMutation struct {
 	root_elements       *[]string
 	appendroot_elements []string
 	clearedFields       map[string]struct{}
+	document            *uuid.UUID
+	cleareddocument     bool
 	edge_types          map[uuid.UUID]struct{}
 	removededge_types   map[uuid.UUID]struct{}
 	clearededge_types   bool
 	nodes               map[uuid.UUID]struct{}
 	removednodes        map[uuid.UUID]struct{}
 	clearednodes        bool
-	document            *uuid.UUID
-	cleareddocument     bool
 	done                bool
 	oldValue            func(context.Context) (*NodeList, error)
 	predicates          []predicate.NodeList
@@ -8786,42 +8961,6 @@ func (m *NodeListMutation) ResetProtoMessage() {
 	m.proto_message = nil
 }
 
-// SetDocumentID sets the "document_id" field.
-func (m *NodeListMutation) SetDocumentID(u uuid.UUID) {
-	m.document = &u
-}
-
-// DocumentID returns the value of the "document_id" field in the mutation.
-func (m *NodeListMutation) DocumentID() (r uuid.UUID, exists bool) {
-	v := m.document
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldDocumentID returns the old "document_id" field's value of the NodeList entity.
-// If the NodeList object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *NodeListMutation) OldDocumentID(ctx context.Context) (v uuid.UUID, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldDocumentID is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldDocumentID requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldDocumentID: %w", err)
-	}
-	return oldValue.DocumentID, nil
-}
-
-// ResetDocumentID resets all changes to the "document_id" field.
-func (m *NodeListMutation) ResetDocumentID() {
-	m.document = nil
-}
-
 // SetRootElements sets the "root_elements" field.
 func (m *NodeListMutation) SetRootElements(s []string) {
 	m.root_elements = &s
@@ -8871,6 +9010,45 @@ func (m *NodeListMutation) AppendedRootElements() ([]string, bool) {
 func (m *NodeListMutation) ResetRootElements() {
 	m.root_elements = nil
 	m.appendroot_elements = nil
+}
+
+// SetDocumentID sets the "document" edge to the Document entity by id.
+func (m *NodeListMutation) SetDocumentID(id uuid.UUID) {
+	m.document = &id
+}
+
+// ClearDocument clears the "document" edge to the Document entity.
+func (m *NodeListMutation) ClearDocument() {
+	m.cleareddocument = true
+}
+
+// DocumentCleared reports if the "document" edge to the Document entity was cleared.
+func (m *NodeListMutation) DocumentCleared() bool {
+	return m.cleareddocument
+}
+
+// DocumentID returns the "document" edge ID in the mutation.
+func (m *NodeListMutation) DocumentID() (id uuid.UUID, exists bool) {
+	if m.document != nil {
+		return *m.document, true
+	}
+	return
+}
+
+// DocumentIDs returns the "document" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// DocumentID instead. It exists only for internal usage by the builders.
+func (m *NodeListMutation) DocumentIDs() (ids []uuid.UUID) {
+	if id := m.document; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetDocument resets all changes to the "document" edge.
+func (m *NodeListMutation) ResetDocument() {
+	m.document = nil
+	m.cleareddocument = false
 }
 
 // AddEdgeTypeIDs adds the "edge_types" edge to the EdgeType entity by ids.
@@ -8981,33 +9159,6 @@ func (m *NodeListMutation) ResetNodes() {
 	m.removednodes = nil
 }
 
-// ClearDocument clears the "document" edge to the Document entity.
-func (m *NodeListMutation) ClearDocument() {
-	m.cleareddocument = true
-	m.clearedFields[nodelist.FieldDocumentID] = struct{}{}
-}
-
-// DocumentCleared reports if the "document" edge to the Document entity was cleared.
-func (m *NodeListMutation) DocumentCleared() bool {
-	return m.cleareddocument
-}
-
-// DocumentIDs returns the "document" edge IDs in the mutation.
-// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
-// DocumentID instead. It exists only for internal usage by the builders.
-func (m *NodeListMutation) DocumentIDs() (ids []uuid.UUID) {
-	if id := m.document; id != nil {
-		ids = append(ids, *id)
-	}
-	return
-}
-
-// ResetDocument resets all changes to the "document" edge.
-func (m *NodeListMutation) ResetDocument() {
-	m.document = nil
-	m.cleareddocument = false
-}
-
 // Where appends a list predicates to the NodeListMutation builder.
 func (m *NodeListMutation) Where(ps ...predicate.NodeList) {
 	m.predicates = append(m.predicates, ps...)
@@ -9042,12 +9193,9 @@ func (m *NodeListMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *NodeListMutation) Fields() []string {
-	fields := make([]string, 0, 3)
+	fields := make([]string, 0, 2)
 	if m.proto_message != nil {
 		fields = append(fields, nodelist.FieldProtoMessage)
-	}
-	if m.document != nil {
-		fields = append(fields, nodelist.FieldDocumentID)
 	}
 	if m.root_elements != nil {
 		fields = append(fields, nodelist.FieldRootElements)
@@ -9062,8 +9210,6 @@ func (m *NodeListMutation) Field(name string) (ent.Value, bool) {
 	switch name {
 	case nodelist.FieldProtoMessage:
 		return m.ProtoMessage()
-	case nodelist.FieldDocumentID:
-		return m.DocumentID()
 	case nodelist.FieldRootElements:
 		return m.RootElements()
 	}
@@ -9077,8 +9223,6 @@ func (m *NodeListMutation) OldField(ctx context.Context, name string) (ent.Value
 	switch name {
 	case nodelist.FieldProtoMessage:
 		return m.OldProtoMessage(ctx)
-	case nodelist.FieldDocumentID:
-		return m.OldDocumentID(ctx)
 	case nodelist.FieldRootElements:
 		return m.OldRootElements(ctx)
 	}
@@ -9096,13 +9240,6 @@ func (m *NodeListMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetProtoMessage(v)
-		return nil
-	case nodelist.FieldDocumentID:
-		v, ok := value.(uuid.UUID)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetDocumentID(v)
 		return nil
 	case nodelist.FieldRootElements:
 		v, ok := value.([]string)
@@ -9163,9 +9300,6 @@ func (m *NodeListMutation) ResetField(name string) error {
 	case nodelist.FieldProtoMessage:
 		m.ResetProtoMessage()
 		return nil
-	case nodelist.FieldDocumentID:
-		m.ResetDocumentID()
-		return nil
 	case nodelist.FieldRootElements:
 		m.ResetRootElements()
 		return nil
@@ -9176,14 +9310,14 @@ func (m *NodeListMutation) ResetField(name string) error {
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *NodeListMutation) AddedEdges() []string {
 	edges := make([]string, 0, 3)
+	if m.document != nil {
+		edges = append(edges, nodelist.EdgeDocument)
+	}
 	if m.edge_types != nil {
 		edges = append(edges, nodelist.EdgeEdgeTypes)
 	}
 	if m.nodes != nil {
 		edges = append(edges, nodelist.EdgeNodes)
-	}
-	if m.document != nil {
-		edges = append(edges, nodelist.EdgeDocument)
 	}
 	return edges
 }
@@ -9192,6 +9326,10 @@ func (m *NodeListMutation) AddedEdges() []string {
 // name in this mutation.
 func (m *NodeListMutation) AddedIDs(name string) []ent.Value {
 	switch name {
+	case nodelist.EdgeDocument:
+		if id := m.document; id != nil {
+			return []ent.Value{*id}
+		}
 	case nodelist.EdgeEdgeTypes:
 		ids := make([]ent.Value, 0, len(m.edge_types))
 		for id := range m.edge_types {
@@ -9204,10 +9342,6 @@ func (m *NodeListMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
-	case nodelist.EdgeDocument:
-		if id := m.document; id != nil {
-			return []ent.Value{*id}
-		}
 	}
 	return nil
 }
@@ -9247,14 +9381,14 @@ func (m *NodeListMutation) RemovedIDs(name string) []ent.Value {
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *NodeListMutation) ClearedEdges() []string {
 	edges := make([]string, 0, 3)
+	if m.cleareddocument {
+		edges = append(edges, nodelist.EdgeDocument)
+	}
 	if m.clearededge_types {
 		edges = append(edges, nodelist.EdgeEdgeTypes)
 	}
 	if m.clearednodes {
 		edges = append(edges, nodelist.EdgeNodes)
-	}
-	if m.cleareddocument {
-		edges = append(edges, nodelist.EdgeDocument)
 	}
 	return edges
 }
@@ -9263,12 +9397,12 @@ func (m *NodeListMutation) ClearedEdges() []string {
 // was cleared in this mutation.
 func (m *NodeListMutation) EdgeCleared(name string) bool {
 	switch name {
+	case nodelist.EdgeDocument:
+		return m.cleareddocument
 	case nodelist.EdgeEdgeTypes:
 		return m.clearededge_types
 	case nodelist.EdgeNodes:
 		return m.clearednodes
-	case nodelist.EdgeDocument:
-		return m.cleareddocument
 	}
 	return false
 }
@@ -9288,14 +9422,14 @@ func (m *NodeListMutation) ClearEdge(name string) error {
 // It returns an error if the edge is not defined in the schema.
 func (m *NodeListMutation) ResetEdge(name string) error {
 	switch name {
+	case nodelist.EdgeDocument:
+		m.ResetDocument()
+		return nil
 	case nodelist.EdgeEdgeTypes:
 		m.ResetEdgeTypes()
 		return nil
 	case nodelist.EdgeNodes:
 		m.ResetNodes()
-		return nil
-	case nodelist.EdgeDocument:
-		m.ResetDocument()
 		return nil
 	}
 	return fmt.Errorf("unknown NodeList edge %s", name)
