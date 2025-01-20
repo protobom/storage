@@ -29,7 +29,7 @@ type Metadata struct {
 	// ProtoMessage holds the value of the "proto_message" field.
 	ProtoMessage *sbom.Metadata `json:"-"`
 	// NativeID holds the value of the "native_id" field.
-	NativeID string `json:"native_id,omitempty"`
+	NativeID string `json:"id"`
 	// Version holds the value of the "version" field.
 	Version string `json:"version,omitempty"`
 	// Name holds the value of the "name" field.

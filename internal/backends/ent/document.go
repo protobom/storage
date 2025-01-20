@@ -38,7 +38,7 @@ type Document struct {
 // DocumentEdges holds the relations/edges for other nodes in the graph.
 type DocumentEdges struct {
 	// Annotations holds the value of the annotations edge.
-	Annotations []*Annotation `json:"annotations,omitempty"`
+	Annotations []*Annotation `json:"-"`
 	// Metadata holds the value of the metadata edge.
 	Metadata *Metadata `json:"-"`
 	// NodeList holds the value of the node_list edge.

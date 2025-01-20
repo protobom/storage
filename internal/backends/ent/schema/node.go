@@ -29,7 +29,10 @@ func (Node) Mixin() []ent.Mixin {
 
 func (Node) Fields() []ent.Field {
 	return []ent.Field{
-		field.String("native_id").NotEmpty().Immutable(),
+		field.String("native_id").
+			NotEmpty().
+			Immutable().
+			StructTag(`json:"id"`),
 		field.UUID("node_list_id", uuid.UUID{}).Optional(),
 		field.Enum("type").Values("PACKAGE", "FILE"),
 		field.String("name"),
@@ -56,6 +59,7 @@ func (Node) Fields() []ent.Field {
 func (Node) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("annotations", Annotation.Type).
+			StructTag(`json:"-"`).
 			Annotations(entsql.OnDelete(entsql.Cascade)),
 		edge.To("suppliers", Person.Type).
 			Annotations(entsql.OnDelete(entsql.Cascade)),

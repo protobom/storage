@@ -27,7 +27,10 @@ func (Metadata) Mixin() []ent.Mixin {
 
 func (Metadata) Fields() []ent.Field {
 	return []ent.Field{
-		field.String("native_id").NotEmpty().Immutable(),
+		field.String("native_id").
+			NotEmpty().
+			Immutable().
+			StructTag(`json:"id"`),
 		field.String("version"),
 		field.String("name"),
 		field.Time("date"),

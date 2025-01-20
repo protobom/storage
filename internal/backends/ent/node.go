@@ -31,7 +31,7 @@ type Node struct {
 	// ProtoMessage holds the value of the "proto_message" field.
 	ProtoMessage *sbom.Node `json:"-"`
 	// NativeID holds the value of the "native_id" field.
-	NativeID string `json:"native_id,omitempty"`
+	NativeID string `json:"id"`
 	// NodeListID holds the value of the "node_list_id" field.
 	NodeListID uuid.UUID `json:"node_list_id,omitempty"`
 	// Type holds the value of the "type" field.
@@ -83,7 +83,7 @@ type NodeEdges struct {
 	// Document holds the value of the document edge.
 	Document *Document `json:"document,omitempty"`
 	// Annotations holds the value of the annotations edge.
-	Annotations []*Annotation `json:"annotations,omitempty"`
+	Annotations []*Annotation `json:"-"`
 	// Suppliers holds the value of the suppliers edge.
 	Suppliers []*Person `json:"suppliers,omitempty"`
 	// Originators holds the value of the originators edge.

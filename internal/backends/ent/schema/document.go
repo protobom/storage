@@ -42,6 +42,7 @@ func (Document) Edges() []ent.Edge {
 
 	return []ent.Edge{
 		edge.To("annotations", Annotation.Type).
+			StructTag(`json:"-"`).
 			Annotations(entsql.OnDelete(entsql.Cascade)),
 		edge.From("metadata", Metadata.Type).
 			Ref(edgeRef).
