@@ -377,7 +377,7 @@ func (dq *DocumentQuery) WithNodeList(opts ...func(*NodeListQuery)) *DocumentQue
 // Example:
 //
 //	var v []struct {
-//		MetadataID uuid.UUID `json:"metadata_id,omitempty"`
+//		MetadataID uuid.UUID `json:"-"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
@@ -400,7 +400,7 @@ func (dq *DocumentQuery) GroupBy(field string, fields ...string) *DocumentGroupB
 // Example:
 //
 //	var v []struct {
-//		MetadataID uuid.UUID `json:"metadata_id,omitempty"`
+//		MetadataID uuid.UUID `json:"-"`
 //	}
 //
 //	client.Document.Query().

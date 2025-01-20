@@ -340,7 +340,7 @@ func (sdq *SourceDataQuery) WithMetadata(opts ...func(*MetadataQuery)) *SourceDa
 // Example:
 //
 //	var v []struct {
-//		DocumentID uuid.UUID `json:"document_id,omitempty"`
+//		DocumentID uuid.UUID `json:"-"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
@@ -363,7 +363,7 @@ func (sdq *SourceDataQuery) GroupBy(field string, fields ...string) *SourceDataG
 // Example:
 //
 //	var v []struct {
-//		DocumentID uuid.UUID `json:"document_id,omitempty"`
+//		DocumentID uuid.UUID `json:"-"`
 //	}
 //
 //	client.SourceData.Query().

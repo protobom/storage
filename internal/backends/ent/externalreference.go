@@ -8,6 +8,7 @@
 package ent
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -23,11 +24,11 @@ import (
 type ExternalReference struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID uuid.UUID `json:"id,omitempty"`
+	ID uuid.UUID `json:"-"`
 	// DocumentID holds the value of the "document_id" field.
-	DocumentID uuid.UUID `json:"document_id,omitempty"`
+	DocumentID uuid.UUID `json:"-"`
 	// ProtoMessage holds the value of the "proto_message" field.
-	ProtoMessage *sbom.ExternalReference `json:"proto_message,omitempty"`
+	ProtoMessage *sbom.ExternalReference `json:"-"`
 	// URL holds the value of the "url" field.
 	URL string `json:"url,omitempty"`
 	// Comment holds the value of the "comment" field.
@@ -38,7 +39,7 @@ type ExternalReference struct {
 	Type externalreference.Type `json:"type,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the ExternalReferenceQuery when eager-loading is set.
-	Edges        ExternalReferenceEdges `json:"edges"`
+	Edges        ExternalReferenceEdges `json:"-"`
 	selectValues sql.SelectValues
 }
 
@@ -49,7 +50,7 @@ type ExternalReferenceEdges struct {
 	// Hashes holds the value of the hashes edge.
 	Hashes []*HashesEntry `json:"hashes,omitempty"`
 	// Nodes holds the value of the nodes edge.
-	Nodes []*Node `json:"nodes,omitempty"`
+	Nodes []*Node `json:"-"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [3]bool
@@ -224,6 +225,18 @@ func (er *ExternalReference) String() string {
 	builder.WriteString(fmt.Sprintf("%v", er.Type))
 	builder.WriteByte(')')
 	return builder.String()
+}
+
+// MarshalJSON implements the json.Marshaler interface.
+func (er *ExternalReference) MarshalJSON() ([]byte, error) {
+	type Alias ExternalReference
+	return json.Marshal(&struct {
+		*Alias
+		ExternalReferenceEdges
+	}{
+		Alias:                  (*Alias)(er),
+		ExternalReferenceEdges: er.Edges,
+	})
 }
 
 // ExternalReferences is a parsable slice of ExternalReference.

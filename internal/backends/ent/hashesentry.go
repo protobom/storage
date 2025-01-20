@@ -8,6 +8,7 @@
 package ent
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -22,16 +23,16 @@ import (
 type HashesEntry struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID uuid.UUID `json:"id,omitempty"`
+	ID uuid.UUID `json:"-"`
 	// DocumentID holds the value of the "document_id" field.
-	DocumentID uuid.UUID `json:"document_id,omitempty"`
+	DocumentID uuid.UUID `json:"-"`
 	// HashAlgorithm holds the value of the "hash_algorithm" field.
 	HashAlgorithm hashesentry.HashAlgorithm `json:"hash_algorithm,omitempty"`
 	// HashData holds the value of the "hash_data" field.
 	HashData string `json:"hash_data,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the HashesEntryQuery when eager-loading is set.
-	Edges        HashesEntryEdges `json:"edges"`
+	Edges        HashesEntryEdges `json:"-"`
 	selectValues sql.SelectValues
 }
 
@@ -40,9 +41,9 @@ type HashesEntryEdges struct {
 	// Document holds the value of the document edge.
 	Document *Document `json:"document,omitempty"`
 	// ExternalReferences holds the value of the external_references edge.
-	ExternalReferences []*ExternalReference `json:"external_references,omitempty"`
+	ExternalReferences []*ExternalReference `json:"-"`
 	// Nodes holds the value of the nodes edge.
-	Nodes []*Node `json:"nodes,omitempty"`
+	Nodes []*Node `json:"-"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [3]bool
@@ -186,6 +187,18 @@ func (he *HashesEntry) String() string {
 	builder.WriteString(he.HashData)
 	builder.WriteByte(')')
 	return builder.String()
+}
+
+// MarshalJSON implements the json.Marshaler interface.
+func (he *HashesEntry) MarshalJSON() ([]byte, error) {
+	type Alias HashesEntry
+	return json.Marshal(&struct {
+		*Alias
+		HashesEntryEdges
+	}{
+		Alias:            (*Alias)(he),
+		HashesEntryEdges: he.Edges,
+	})
 }
 
 // HashesEntries is a parsable slice of HashesEntry.

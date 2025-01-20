@@ -377,7 +377,7 @@ func (heq *HashesEntryQuery) WithNodes(opts ...func(*NodeQuery)) *HashesEntryQue
 // Example:
 //
 //	var v []struct {
-//		DocumentID uuid.UUID `json:"document_id,omitempty"`
+//		DocumentID uuid.UUID `json:"-"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
@@ -400,7 +400,7 @@ func (heq *HashesEntryQuery) GroupBy(field string, fields ...string) *HashesEntr
 // Example:
 //
 //	var v []struct {
-//		DocumentID uuid.UUID `json:"document_id,omitempty"`
+//		DocumentID uuid.UUID `json:"-"`
 //	}
 //
 //	client.HashesEntry.Query().

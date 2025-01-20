@@ -25,11 +25,11 @@ import (
 type Node struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID uuid.UUID `json:"id,omitempty"`
+	ID uuid.UUID `json:"-"`
 	// DocumentID holds the value of the "document_id" field.
-	DocumentID uuid.UUID `json:"document_id,omitempty"`
+	DocumentID uuid.UUID `json:"-"`
 	// ProtoMessage holds the value of the "proto_message" field.
-	ProtoMessage *sbom.Node `json:"proto_message,omitempty"`
+	ProtoMessage *sbom.Node `json:"-"`
 	// NativeID holds the value of the "native_id" field.
 	NativeID string `json:"native_id,omitempty"`
 	// NodeListID holds the value of the "node_list_id" field.
@@ -74,7 +74,7 @@ type Node struct {
 	FileTypes []string `json:"file_types,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the NodeQuery when eager-loading is set.
-	Edges        NodeEdges `json:"edges"`
+	Edges        NodeEdges `json:"-"`
 	selectValues sql.SelectValues
 }
 
@@ -93,7 +93,7 @@ type NodeEdges struct {
 	// PrimaryPurpose holds the value of the primary_purpose edge.
 	PrimaryPurpose []*Purpose `json:"primary_purpose,omitempty"`
 	// ToNodes holds the value of the to_nodes edge.
-	ToNodes []*Node `json:"to_nodes,omitempty"`
+	ToNodes []*Node `json:"-"`
 	// Nodes holds the value of the nodes edge.
 	Nodes []*Node `json:"nodes,omitempty"`
 	// Hashes holds the value of the hashes edge.
@@ -103,9 +103,9 @@ type NodeEdges struct {
 	// Properties holds the value of the properties edge.
 	Properties []*Property `json:"properties,omitempty"`
 	// NodeLists holds the value of the node_lists edge.
-	NodeLists []*NodeList `json:"node_lists,omitempty"`
+	NodeLists []*NodeList `json:"-"`
 	// EdgeTypes holds the value of the edge_types edge.
-	EdgeTypes []*EdgeType `json:"edge_types,omitempty"`
+	EdgeTypes []*EdgeType `json:"-"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [13]bool
@@ -583,6 +583,18 @@ func (n *Node) String() string {
 	builder.WriteString(fmt.Sprintf("%v", n.FileTypes))
 	builder.WriteByte(')')
 	return builder.String()
+}
+
+// MarshalJSON implements the json.Marshaler interface.
+func (n *Node) MarshalJSON() ([]byte, error) {
+	type Alias Node
+	return json.Marshal(&struct {
+		*Alias
+		NodeEdges
+	}{
+		Alias:     (*Alias)(n),
+		NodeEdges: n.Edges,
+	})
 }
 
 // Nodes is a parsable slice of Node.

@@ -8,6 +8,7 @@
 package ent
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -24,20 +25,20 @@ import (
 type EdgeType struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID uuid.UUID `json:"id,omitempty"`
+	ID uuid.UUID `json:"-"`
 	// DocumentID holds the value of the "document_id" field.
-	DocumentID uuid.UUID `json:"document_id,omitempty"`
+	DocumentID uuid.UUID `json:"-"`
 	// ProtoMessage holds the value of the "proto_message" field.
-	ProtoMessage *sbom.Edge `json:"proto_message,omitempty"`
+	ProtoMessage *sbom.Edge `json:"-"`
 	// Type holds the value of the "type" field.
 	Type edgetype.Type `json:"type,omitempty"`
 	// NodeID holds the value of the "node_id" field.
-	NodeID uuid.UUID `json:"node_id,omitempty"`
+	NodeID uuid.UUID `json:"-"`
 	// ToNodeID holds the value of the "to_node_id" field.
-	ToNodeID uuid.UUID `json:"to_node_id,omitempty"`
+	ToNodeID uuid.UUID `json:"-"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the EdgeTypeQuery when eager-loading is set.
-	Edges        EdgeTypeEdges `json:"edges"`
+	Edges        EdgeTypeEdges `json:"-"`
 	selectValues sql.SelectValues
 }
 
@@ -50,7 +51,7 @@ type EdgeTypeEdges struct {
 	// To holds the value of the to edge.
 	To *Node `json:"to,omitempty"`
 	// NodeLists holds the value of the node_lists edge.
-	NodeLists []*NodeList `json:"node_lists,omitempty"`
+	NodeLists []*NodeList `json:"-"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [4]bool
@@ -234,6 +235,18 @@ func (et *EdgeType) String() string {
 	builder.WriteString(fmt.Sprintf("%v", et.ToNodeID))
 	builder.WriteByte(')')
 	return builder.String()
+}
+
+// MarshalJSON implements the json.Marshaler interface.
+func (et *EdgeType) MarshalJSON() ([]byte, error) {
+	type Alias EdgeType
+	return json.Marshal(&struct {
+		*Alias
+		EdgeTypeEdges
+	}{
+		Alias:         (*Alias)(et),
+		EdgeTypeEdges: et.Edges,
+	})
 }
 
 // EdgeTypes is a parsable slice of EdgeType.

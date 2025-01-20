@@ -412,7 +412,7 @@ func (etq *EdgeTypeQuery) WithNodeLists(opts ...func(*NodeListQuery)) *EdgeTypeQ
 // Example:
 //
 //	var v []struct {
-//		DocumentID uuid.UUID `json:"document_id,omitempty"`
+//		DocumentID uuid.UUID `json:"-"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
@@ -435,7 +435,7 @@ func (etq *EdgeTypeQuery) GroupBy(field string, fields ...string) *EdgeTypeGroup
 // Example:
 //
 //	var v []struct {
-//		DocumentID uuid.UUID `json:"document_id,omitempty"`
+//		DocumentID uuid.UUID `json:"-"`
 //	}
 //
 //	client.EdgeType.Query().

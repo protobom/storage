@@ -25,13 +25,13 @@ import (
 type SourceData struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID uuid.UUID `json:"id,omitempty"`
+	ID uuid.UUID `json:"-"`
 	// DocumentID holds the value of the "document_id" field.
-	DocumentID uuid.UUID `json:"document_id,omitempty"`
+	DocumentID uuid.UUID `json:"-"`
 	// ProtoMessage holds the value of the "proto_message" field.
-	ProtoMessage *sbom.SourceData `json:"proto_message,omitempty"`
+	ProtoMessage *sbom.SourceData `json:"-"`
 	// MetadataID holds the value of the "metadata_id" field.
-	MetadataID uuid.UUID `json:"metadata_id,omitempty"`
+	MetadataID uuid.UUID `json:"-"`
 	// Format holds the value of the "format" field.
 	Format string `json:"format,omitempty"`
 	// Size holds the value of the "size" field.
@@ -42,7 +42,7 @@ type SourceData struct {
 	Hashes map[int32]string `json:"hashes,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the SourceDataQuery when eager-loading is set.
-	Edges        SourceDataEdges `json:"edges"`
+	Edges        SourceDataEdges `json:"-"`
 	selectValues sql.SelectValues
 }
 
@@ -51,7 +51,7 @@ type SourceDataEdges struct {
 	// Document holds the value of the document edge.
 	Document *Document `json:"document,omitempty"`
 	// Metadata holds the value of the metadata edge.
-	Metadata *Metadata `json:"metadata,omitempty"`
+	Metadata *Metadata `json:"-"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [2]bool
@@ -232,6 +232,18 @@ func (sd *SourceData) String() string {
 	builder.WriteString(fmt.Sprintf("%v", sd.Hashes))
 	builder.WriteByte(')')
 	return builder.String()
+}
+
+// MarshalJSON implements the json.Marshaler interface.
+func (sd *SourceData) MarshalJSON() ([]byte, error) {
+	type Alias SourceData
+	return json.Marshal(&struct {
+		*Alias
+		SourceDataEdges
+	}{
+		Alias:           (*Alias)(sd),
+		SourceDataEdges: sd.Edges,
+	})
 }
 
 // SourceDataSlice is a parsable slice of SourceData.

@@ -8,6 +8,7 @@
 package ent
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -23,14 +24,14 @@ import (
 type Document struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID uuid.UUID `json:"id,omitempty"`
+	ID uuid.UUID `json:"-"`
 	// MetadataID holds the value of the "metadata_id" field.
-	MetadataID uuid.UUID `json:"metadata_id,omitempty"`
+	MetadataID uuid.UUID `json:"-"`
 	// NodeListID holds the value of the "node_list_id" field.
-	NodeListID uuid.UUID `json:"node_list_id,omitempty"`
+	NodeListID uuid.UUID `json:"-"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the DocumentQuery when eager-loading is set.
-	Edges        DocumentEdges `json:"edges"`
+	Edges        DocumentEdges `json:"-"`
 	selectValues sql.SelectValues
 }
 
@@ -39,9 +40,9 @@ type DocumentEdges struct {
 	// Annotations holds the value of the annotations edge.
 	Annotations []*Annotation `json:"annotations,omitempty"`
 	// Metadata holds the value of the metadata edge.
-	Metadata *Metadata `json:"metadata,omitempty"`
+	Metadata *Metadata `json:"-"`
 	// NodeList holds the value of the node_list edge.
-	NodeList *NodeList `json:"node_list,omitempty"`
+	NodeList *NodeList `json:"-"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [3]bool
@@ -176,6 +177,18 @@ func (d *Document) String() string {
 	builder.WriteString(fmt.Sprintf("%v", d.NodeListID))
 	builder.WriteByte(')')
 	return builder.String()
+}
+
+// MarshalJSON implements the json.Marshaler interface.
+func (d *Document) MarshalJSON() ([]byte, error) {
+	type Alias Document
+	return json.Marshal(&struct {
+		*Alias
+		DocumentEdges
+	}{
+		Alias:         (*Alias)(d),
+		DocumentEdges: d.Edges,
+	})
 }
 
 // Documents is a parsable slice of Document.

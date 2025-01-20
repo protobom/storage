@@ -377,7 +377,7 @@ func (erq *ExternalReferenceQuery) WithNodes(opts ...func(*NodeQuery)) *External
 // Example:
 //
 //	var v []struct {
-//		DocumentID uuid.UUID `json:"document_id,omitempty"`
+//		DocumentID uuid.UUID `json:"-"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
@@ -400,7 +400,7 @@ func (erq *ExternalReferenceQuery) GroupBy(field string, fields ...string) *Exte
 // Example:
 //
 //	var v []struct {
-//		DocumentID uuid.UUID `json:"document_id,omitempty"`
+//		DocumentID uuid.UUID `json:"-"`
 //	}
 //
 //	client.ExternalReference.Query().

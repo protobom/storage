@@ -448,7 +448,7 @@ func (pq *PersonQuery) WithNode(opts ...func(*NodeQuery)) *PersonQuery {
 // Example:
 //
 //	var v []struct {
-//		DocumentID uuid.UUID `json:"document_id,omitempty"`
+//		DocumentID uuid.UUID `json:"-"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
@@ -471,7 +471,7 @@ func (pq *PersonQuery) GroupBy(field string, fields ...string) *PersonGroupBy {
 // Example:
 //
 //	var v []struct {
-//		DocumentID uuid.UUID `json:"document_id,omitempty"`
+//		DocumentID uuid.UUID `json:"-"`
 //	}
 //
 //	client.Person.Query().

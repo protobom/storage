@@ -8,6 +8,7 @@
 package ent
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -25,9 +26,9 @@ type Annotation struct {
 	// ID of the ent.
 	ID int `json:"id,omitempty"`
 	// DocumentID holds the value of the "document_id" field.
-	DocumentID *uuid.UUID `json:"document_id,omitempty"`
+	DocumentID *uuid.UUID `json:"-"`
 	// NodeID holds the value of the "node_id" field.
-	NodeID *uuid.UUID `json:"node_id,omitempty"`
+	NodeID *uuid.UUID `json:"-"`
 	// Name holds the value of the "name" field.
 	Name string `json:"name,omitempty"`
 	// Value holds the value of the "value" field.
@@ -36,16 +37,16 @@ type Annotation struct {
 	IsUnique bool `json:"is_unique,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the AnnotationQuery when eager-loading is set.
-	Edges        AnnotationEdges `json:"edges"`
+	Edges        AnnotationEdges `json:"-"`
 	selectValues sql.SelectValues
 }
 
 // AnnotationEdges holds the relations/edges for other nodes in the graph.
 type AnnotationEdges struct {
 	// Document holds the value of the document edge.
-	Document *Document `json:"document,omitempty"`
+	Document *Document `json:"-"`
 	// Node holds the value of the node edge.
-	Node *Node `json:"node,omitempty"`
+	Node *Node `json:"-"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [2]bool
@@ -205,6 +206,18 @@ func (a *Annotation) String() string {
 	builder.WriteString(fmt.Sprintf("%v", a.IsUnique))
 	builder.WriteByte(')')
 	return builder.String()
+}
+
+// MarshalJSON implements the json.Marshaler interface.
+func (a *Annotation) MarshalJSON() ([]byte, error) {
+	type Alias Annotation
+	return json.Marshal(&struct {
+		*Alias
+		AnnotationEdges
+	}{
+		Alias:           (*Alias)(a),
+		AnnotationEdges: a.Edges,
+	})
 }
 
 // Annotations is a parsable slice of Annotation.

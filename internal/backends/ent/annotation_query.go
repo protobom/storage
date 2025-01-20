@@ -340,7 +340,7 @@ func (aq *AnnotationQuery) WithNode(opts ...func(*NodeQuery)) *AnnotationQuery {
 // Example:
 //
 //	var v []struct {
-//		DocumentID uuid.UUID `json:"document_id,omitempty"`
+//		DocumentID uuid.UUID `json:"-"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
@@ -363,7 +363,7 @@ func (aq *AnnotationQuery) GroupBy(field string, fields ...string) *AnnotationGr
 // Example:
 //
 //	var v []struct {
-//		DocumentID uuid.UUID `json:"document_id,omitempty"`
+//		DocumentID uuid.UUID `json:"-"`
 //	}
 //
 //	client.Annotation.Query().
