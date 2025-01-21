@@ -449,7 +449,7 @@ func (mq *MetadataQuery) WithSourceData(opts ...func(*SourceDataQuery)) *Metadat
 // Example:
 //
 //	var v []struct {
-//		ProtoMessage *sbom.Metadata `json:"proto_message,omitempty"`
+//		ProtoMessage *sbom.Metadata `json:"-"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
@@ -472,7 +472,7 @@ func (mq *MetadataQuery) GroupBy(field string, fields ...string) *MetadataGroupB
 // Example:
 //
 //	var v []struct {
-//		ProtoMessage *sbom.Metadata `json:"proto_message,omitempty"`
+//		ProtoMessage *sbom.Metadata `json:"-"`
 //	}
 //
 //	client.Metadata.Query().

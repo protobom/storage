@@ -8,6 +8,7 @@
 package ent
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -24,11 +25,11 @@ import (
 type Metadata struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID uuid.UUID `json:"id,omitempty"`
+	ID uuid.UUID `json:"-"`
 	// ProtoMessage holds the value of the "proto_message" field.
-	ProtoMessage *sbom.Metadata `json:"proto_message,omitempty"`
+	ProtoMessage *sbom.Metadata `json:"-"`
 	// NativeID holds the value of the "native_id" field.
-	NativeID string `json:"native_id,omitempty"`
+	NativeID string `json:"id"`
 	// Version holds the value of the "version" field.
 	Version string `json:"version,omitempty"`
 	// Name holds the value of the "name" field.
@@ -39,7 +40,7 @@ type Metadata struct {
 	Comment string `json:"comment,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the MetadataQuery when eager-loading is set.
-	Edges        MetadataEdges `json:"edges"`
+	Edges        MetadataEdges `json:"-"`
 	selectValues sql.SelectValues
 }
 
@@ -259,6 +260,18 @@ func (m *Metadata) String() string {
 	builder.WriteString(m.Comment)
 	builder.WriteByte(')')
 	return builder.String()
+}
+
+// MarshalJSON implements the json.Marshaler interface.
+func (m *Metadata) MarshalJSON() ([]byte, error) {
+	type Alias Metadata
+	return json.Marshal(&struct {
+		*Alias
+		MetadataEdges
+	}{
+		Alias:         (*Alias)(m),
+		MetadataEdges: m.Edges,
+	})
 }
 
 // MetadataSlice is a parsable slice of Metadata.

@@ -8,6 +8,7 @@
 package ent
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -22,16 +23,16 @@ import (
 type IdentifiersEntry struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID uuid.UUID `json:"id,omitempty"`
+	ID uuid.UUID `json:"-"`
 	// DocumentID holds the value of the "document_id" field.
-	DocumentID uuid.UUID `json:"document_id,omitempty"`
+	DocumentID uuid.UUID `json:"-"`
 	// Type holds the value of the "type" field.
 	Type identifiersentry.Type `json:"type,omitempty"`
 	// Value holds the value of the "value" field.
 	Value string `json:"value,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the IdentifiersEntryQuery when eager-loading is set.
-	Edges        IdentifiersEntryEdges `json:"edges"`
+	Edges        IdentifiersEntryEdges `json:"-"`
 	selectValues sql.SelectValues
 }
 
@@ -40,7 +41,7 @@ type IdentifiersEntryEdges struct {
 	// Document holds the value of the document edge.
 	Document *Document `json:"document,omitempty"`
 	// Nodes holds the value of the nodes edge.
-	Nodes []*Node `json:"nodes,omitempty"`
+	Nodes []*Node `json:"-"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [2]bool
@@ -170,6 +171,18 @@ func (ie *IdentifiersEntry) String() string {
 	builder.WriteString(ie.Value)
 	builder.WriteByte(')')
 	return builder.String()
+}
+
+// MarshalJSON implements the json.Marshaler interface.
+func (ie *IdentifiersEntry) MarshalJSON() ([]byte, error) {
+	type Alias IdentifiersEntry
+	return json.Marshal(&struct {
+		*Alias
+		IdentifiersEntryEdges
+	}{
+		Alias:                 (*Alias)(ie),
+		IdentifiersEntryEdges: ie.Edges,
+	})
 }
 
 // IdentifiersEntries is a parsable slice of IdentifiersEntry.

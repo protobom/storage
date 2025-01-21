@@ -8,6 +8,7 @@
 package ent
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -25,15 +26,15 @@ import (
 type Person struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID uuid.UUID `json:"id,omitempty"`
+	ID uuid.UUID `json:"-"`
 	// DocumentID holds the value of the "document_id" field.
-	DocumentID uuid.UUID `json:"document_id,omitempty"`
+	DocumentID uuid.UUID `json:"-"`
 	// ProtoMessage holds the value of the "proto_message" field.
-	ProtoMessage *sbom.Person `json:"proto_message,omitempty"`
+	ProtoMessage *sbom.Person `json:"-"`
 	// MetadataID holds the value of the "metadata_id" field.
-	MetadataID uuid.UUID `json:"metadata_id,omitempty"`
+	MetadataID uuid.UUID `json:"-"`
 	// NodeID holds the value of the "node_id" field.
-	NodeID uuid.UUID `json:"node_id,omitempty"`
+	NodeID uuid.UUID `json:"-"`
 	// Name holds the value of the "name" field.
 	Name string `json:"name,omitempty"`
 	// IsOrg holds the value of the "is_org" field.
@@ -46,7 +47,7 @@ type Person struct {
 	Phone string `json:"phone,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the PersonQuery when eager-loading is set.
-	Edges           PersonEdges `json:"edges"`
+	Edges           PersonEdges `json:"-"`
 	node_suppliers  *uuid.UUID
 	person_contacts *uuid.UUID
 	selectValues    sql.SelectValues
@@ -57,13 +58,13 @@ type PersonEdges struct {
 	// Document holds the value of the document edge.
 	Document *Document `json:"document,omitempty"`
 	// ContactOwner holds the value of the contact_owner edge.
-	ContactOwner *Person `json:"contact_owner,omitempty"`
+	ContactOwner *Person `json:"-"`
 	// Contacts holds the value of the contacts edge.
 	Contacts []*Person `json:"contacts,omitempty"`
 	// Metadata holds the value of the metadata edge.
-	Metadata *Metadata `json:"metadata,omitempty"`
+	Metadata *Metadata `json:"-"`
 	// Node holds the value of the node edge.
-	Node *Node `json:"node,omitempty"`
+	Node *Node `json:"-"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [5]bool
@@ -319,6 +320,18 @@ func (pe *Person) String() string {
 	builder.WriteString(pe.Phone)
 	builder.WriteByte(')')
 	return builder.String()
+}
+
+// MarshalJSON implements the json.Marshaler interface.
+func (pe *Person) MarshalJSON() ([]byte, error) {
+	type Alias Person
+	return json.Marshal(&struct {
+		*Alias
+		PersonEdges
+	}{
+		Alias:       (*Alias)(pe),
+		PersonEdges: pe.Edges,
+	})
 }
 
 // Persons is a parsable slice of Person.

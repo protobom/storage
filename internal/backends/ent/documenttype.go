@@ -8,6 +8,7 @@
 package ent
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -24,13 +25,13 @@ import (
 type DocumentType struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID uuid.UUID `json:"id,omitempty"`
+	ID uuid.UUID `json:"-"`
 	// DocumentID holds the value of the "document_id" field.
-	DocumentID uuid.UUID `json:"document_id,omitempty"`
+	DocumentID uuid.UUID `json:"-"`
 	// ProtoMessage holds the value of the "proto_message" field.
-	ProtoMessage *sbom.DocumentType `json:"proto_message,omitempty"`
+	ProtoMessage *sbom.DocumentType `json:"-"`
 	// MetadataID holds the value of the "metadata_id" field.
-	MetadataID uuid.UUID `json:"metadata_id,omitempty"`
+	MetadataID uuid.UUID `json:"-"`
 	// Type holds the value of the "type" field.
 	Type *documenttype.Type `json:"type,omitempty"`
 	// Name holds the value of the "name" field.
@@ -39,7 +40,7 @@ type DocumentType struct {
 	Description *string `json:"description,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the DocumentTypeQuery when eager-loading is set.
-	Edges        DocumentTypeEdges `json:"edges"`
+	Edges        DocumentTypeEdges `json:"-"`
 	selectValues sql.SelectValues
 }
 
@@ -48,7 +49,7 @@ type DocumentTypeEdges struct {
 	// Document holds the value of the document edge.
 	Document *Document `json:"document,omitempty"`
 	// Metadata holds the value of the metadata edge.
-	Metadata *Metadata `json:"metadata,omitempty"`
+	Metadata *Metadata `json:"-"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [2]bool
@@ -220,6 +221,18 @@ func (dt *DocumentType) String() string {
 	}
 	builder.WriteByte(')')
 	return builder.String()
+}
+
+// MarshalJSON implements the json.Marshaler interface.
+func (dt *DocumentType) MarshalJSON() ([]byte, error) {
+	type Alias DocumentType
+	return json.Marshal(&struct {
+		*Alias
+		DocumentTypeEdges
+	}{
+		Alias:             (*Alias)(dt),
+		DocumentTypeEdges: dt.Edges,
+	})
 }
 
 // DocumentTypes is a parsable slice of DocumentType.

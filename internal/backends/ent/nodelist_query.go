@@ -377,7 +377,7 @@ func (nlq *NodeListQuery) WithNodes(opts ...func(*NodeQuery)) *NodeListQuery {
 // Example:
 //
 //	var v []struct {
-//		ProtoMessage *sbom.NodeList `json:"proto_message,omitempty"`
+//		ProtoMessage *sbom.NodeList `json:"-"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
@@ -400,7 +400,7 @@ func (nlq *NodeListQuery) GroupBy(field string, fields ...string) *NodeListGroup
 // Example:
 //
 //	var v []struct {
-//		ProtoMessage *sbom.NodeList `json:"proto_message,omitempty"`
+//		ProtoMessage *sbom.NodeList `json:"-"`
 //	}
 //
 //	client.NodeList.Query().

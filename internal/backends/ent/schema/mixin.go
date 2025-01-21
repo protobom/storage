@@ -77,7 +77,8 @@ func (pmm ProtoMessageMixin[T]) Fields() []ent.Field {
 			GoType(goType).
 			Nillable().
 			Unique().
-			Immutable(),
+			Immutable().
+			StructTag(`json:"-"`),
 	)
 }
 
@@ -92,8 +93,9 @@ func (UUIDMixin) Fields() []ent.Field {
 		field.UUID("id", uuid.UUID{}).
 			Unique().
 			Immutable().
-			Default(func() uuid.UUID { return uuid.Must(uuid.NewV7()) }).
-			Annotations(schema.Comment("Unique identifier field")),
+			StructTag(`json:"-"`).
+			Annotations(schema.Comment("Unique identifier field")).
+			Default(func() uuid.UUID { return uuid.Must(uuid.NewV7()) }),
 	}
 }
 

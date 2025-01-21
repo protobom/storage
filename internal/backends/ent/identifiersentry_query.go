@@ -341,7 +341,7 @@ func (ieq *IdentifiersEntryQuery) WithNodes(opts ...func(*NodeQuery)) *Identifie
 // Example:
 //
 //	var v []struct {
-//		DocumentID uuid.UUID `json:"document_id,omitempty"`
+//		DocumentID uuid.UUID `json:"-"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
@@ -364,7 +364,7 @@ func (ieq *IdentifiersEntryQuery) GroupBy(field string, fields ...string) *Ident
 // Example:
 //
 //	var v []struct {
-//		DocumentID uuid.UUID `json:"document_id,omitempty"`
+//		DocumentID uuid.UUID `json:"-"`
 //	}
 //
 //	client.IdentifiersEntry.Query().

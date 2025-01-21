@@ -8,6 +8,7 @@
 package ent
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -24,13 +25,13 @@ import (
 type Tool struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID uuid.UUID `json:"id,omitempty"`
+	ID uuid.UUID `json:"-"`
 	// DocumentID holds the value of the "document_id" field.
-	DocumentID uuid.UUID `json:"document_id,omitempty"`
+	DocumentID uuid.UUID `json:"-"`
 	// ProtoMessage holds the value of the "proto_message" field.
-	ProtoMessage *sbom.Tool `json:"proto_message,omitempty"`
+	ProtoMessage *sbom.Tool `json:"-"`
 	// MetadataID holds the value of the "metadata_id" field.
-	MetadataID uuid.UUID `json:"metadata_id,omitempty"`
+	MetadataID uuid.UUID `json:"-"`
 	// Name holds the value of the "name" field.
 	Name string `json:"name,omitempty"`
 	// Version holds the value of the "version" field.
@@ -39,7 +40,7 @@ type Tool struct {
 	Vendor string `json:"vendor,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the ToolQuery when eager-loading is set.
-	Edges        ToolEdges `json:"edges"`
+	Edges        ToolEdges `json:"-"`
 	selectValues sql.SelectValues
 }
 
@@ -48,7 +49,7 @@ type ToolEdges struct {
 	// Document holds the value of the document edge.
 	Document *Document `json:"document,omitempty"`
 	// Metadata holds the value of the metadata edge.
-	Metadata *Metadata `json:"metadata,omitempty"`
+	Metadata *Metadata `json:"-"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [2]bool
@@ -211,6 +212,18 @@ func (t *Tool) String() string {
 	builder.WriteString(t.Vendor)
 	builder.WriteByte(')')
 	return builder.String()
+}
+
+// MarshalJSON implements the json.Marshaler interface.
+func (t *Tool) MarshalJSON() ([]byte, error) {
+	type Alias Tool
+	return json.Marshal(&struct {
+		*Alias
+		ToolEdges
+	}{
+		Alias:     (*Alias)(t),
+		ToolEdges: t.Edges,
+	})
 }
 
 // Tools is a parsable slice of Tool.

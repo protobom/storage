@@ -8,6 +8,7 @@
 package ent
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -25,14 +26,14 @@ type Purpose struct {
 	// ID of the ent.
 	ID int `json:"id,omitempty"`
 	// DocumentID holds the value of the "document_id" field.
-	DocumentID uuid.UUID `json:"document_id,omitempty"`
+	DocumentID uuid.UUID `json:"-"`
 	// NodeID holds the value of the "node_id" field.
-	NodeID uuid.UUID `json:"node_id,omitempty"`
+	NodeID uuid.UUID `json:"-"`
 	// PrimaryPurpose holds the value of the "primary_purpose" field.
 	PrimaryPurpose purpose.PrimaryPurpose `json:"primary_purpose,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the PurposeQuery when eager-loading is set.
-	Edges        PurposeEdges `json:"edges"`
+	Edges        PurposeEdges `json:"-"`
 	selectValues sql.SelectValues
 }
 
@@ -41,7 +42,7 @@ type PurposeEdges struct {
 	// Document holds the value of the document edge.
 	Document *Document `json:"document,omitempty"`
 	// Node holds the value of the node edge.
-	Node *Node `json:"node,omitempty"`
+	Node *Node `json:"-"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [2]bool
@@ -175,6 +176,18 @@ func (pu *Purpose) String() string {
 	builder.WriteString(fmt.Sprintf("%v", pu.PrimaryPurpose))
 	builder.WriteByte(')')
 	return builder.String()
+}
+
+// MarshalJSON implements the json.Marshaler interface.
+func (pu *Purpose) MarshalJSON() ([]byte, error) {
+	type Alias Purpose
+	return json.Marshal(&struct {
+		*Alias
+		PurposeEdges
+	}{
+		Alias:        (*Alias)(pu),
+		PurposeEdges: pu.Edges,
+	})
 }
 
 // Purposes is a parsable slice of Purpose.

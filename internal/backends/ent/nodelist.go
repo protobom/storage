@@ -24,14 +24,14 @@ import (
 type NodeList struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID uuid.UUID `json:"id,omitempty"`
+	ID uuid.UUID `json:"-"`
 	// ProtoMessage holds the value of the "proto_message" field.
-	ProtoMessage *sbom.NodeList `json:"proto_message,omitempty"`
+	ProtoMessage *sbom.NodeList `json:"-"`
 	// RootElements holds the value of the "root_elements" field.
 	RootElements []string `json:"root_elements,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the NodeListQuery when eager-loading is set.
-	Edges        NodeListEdges `json:"edges"`
+	Edges        NodeListEdges `json:"-"`
 	selectValues sql.SelectValues
 }
 
@@ -183,6 +183,18 @@ func (nl *NodeList) String() string {
 	builder.WriteString(fmt.Sprintf("%v", nl.RootElements))
 	builder.WriteByte(')')
 	return builder.String()
+}
+
+// MarshalJSON implements the json.Marshaler interface.
+func (nl *NodeList) MarshalJSON() ([]byte, error) {
+	type Alias NodeList
+	return json.Marshal(&struct {
+		*Alias
+		NodeListEdges
+	}{
+		Alias:         (*Alias)(nl),
+		NodeListEdges: nl.Edges,
+	})
 }
 
 // NodeLists is a parsable slice of NodeList.

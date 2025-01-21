@@ -8,6 +8,7 @@
 package ent
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -24,20 +25,20 @@ import (
 type Property struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID uuid.UUID `json:"id,omitempty"`
+	ID uuid.UUID `json:"-"`
 	// DocumentID holds the value of the "document_id" field.
-	DocumentID uuid.UUID `json:"document_id,omitempty"`
+	DocumentID uuid.UUID `json:"-"`
 	// ProtoMessage holds the value of the "proto_message" field.
-	ProtoMessage *sbom.Property `json:"proto_message,omitempty"`
+	ProtoMessage *sbom.Property `json:"-"`
 	// NodeID holds the value of the "node_id" field.
-	NodeID uuid.UUID `json:"node_id,omitempty"`
+	NodeID uuid.UUID `json:"-"`
 	// Name holds the value of the "name" field.
 	Name string `json:"name,omitempty"`
 	// Data holds the value of the "data" field.
 	Data string `json:"data,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the PropertyQuery when eager-loading is set.
-	Edges        PropertyEdges `json:"edges"`
+	Edges        PropertyEdges `json:"-"`
 	selectValues sql.SelectValues
 }
 
@@ -46,7 +47,7 @@ type PropertyEdges struct {
 	// Document holds the value of the document edge.
 	Document *Document `json:"document,omitempty"`
 	// Node holds the value of the node edge.
-	Node *Node `json:"node,omitempty"`
+	Node *Node `json:"-"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [2]bool
@@ -200,6 +201,18 @@ func (pr *Property) String() string {
 	builder.WriteString(pr.Data)
 	builder.WriteByte(')')
 	return builder.String()
+}
+
+// MarshalJSON implements the json.Marshaler interface.
+func (pr *Property) MarshalJSON() ([]byte, error) {
+	type Alias Property
+	return json.Marshal(&struct {
+		*Alias
+		PropertyEdges
+	}{
+		Alias:         (*Alias)(pr),
+		PropertyEdges: pr.Edges,
+	})
 }
 
 // Properties is a parsable slice of Property.
