@@ -48,7 +48,8 @@ func (EdgeType) Edges() []ent.Edge {
 			Annotations(entsql.OnDelete(entsql.Cascade)).
 			Field("to_node_id"),
 		edge.From("node_lists", NodeList.Type).
-			Ref("edge_types"),
+			Ref("edge_types").
+			Required(),
 	}
 }
 

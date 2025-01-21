@@ -28,7 +28,7 @@ func (Tool) Mixin() []ent.Mixin {
 
 func (Tool) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("metadata_id", uuid.UUID{}).Optional(),
+		field.UUID("metadata_id", uuid.UUID{}),
 		field.String("name"),
 		field.String("version"),
 		field.String("vendor"),
@@ -39,6 +39,7 @@ func (Tool) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("metadata", Metadata.Type).
 			Ref("tools").
+			Required().
 			Unique().
 			Field("metadata_id"),
 	}

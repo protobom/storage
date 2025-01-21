@@ -48,12 +48,6 @@ func (pu *PurposeUpdate) SetNillableNodeID(u *uuid.UUID) *PurposeUpdate {
 	return pu
 }
 
-// ClearNodeID clears the value of the "node_id" field.
-func (pu *PurposeUpdate) ClearNodeID() *PurposeUpdate {
-	pu.mutation.ClearNodeID()
-	return pu
-}
-
 // SetPrimaryPurpose sets the "primary_purpose" field.
 func (pu *PurposeUpdate) SetPrimaryPurpose(pp purpose.PrimaryPurpose) *PurposeUpdate {
 	pu.mutation.SetPrimaryPurpose(pp)
@@ -117,6 +111,9 @@ func (pu *PurposeUpdate) check() error {
 		if err := purpose.PrimaryPurposeValidator(v); err != nil {
 			return &ValidationError{Name: "primary_purpose", err: fmt.Errorf(`ent: validator failed for field "Purpose.primary_purpose": %w`, err)}
 		}
+	}
+	if pu.mutation.NodeCleared() && len(pu.mutation.NodeIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "Purpose.node"`)
 	}
 	return nil
 }
@@ -199,12 +196,6 @@ func (puo *PurposeUpdateOne) SetNillableNodeID(u *uuid.UUID) *PurposeUpdateOne {
 	return puo
 }
 
-// ClearNodeID clears the value of the "node_id" field.
-func (puo *PurposeUpdateOne) ClearNodeID() *PurposeUpdateOne {
-	puo.mutation.ClearNodeID()
-	return puo
-}
-
 // SetPrimaryPurpose sets the "primary_purpose" field.
 func (puo *PurposeUpdateOne) SetPrimaryPurpose(pp purpose.PrimaryPurpose) *PurposeUpdateOne {
 	puo.mutation.SetPrimaryPurpose(pp)
@@ -281,6 +272,9 @@ func (puo *PurposeUpdateOne) check() error {
 		if err := purpose.PrimaryPurposeValidator(v); err != nil {
 			return &ValidationError{Name: "primary_purpose", err: fmt.Errorf(`ent: validator failed for field "Purpose.primary_purpose": %w`, err)}
 		}
+	}
+	if puo.mutation.NodeCleared() && len(puo.mutation.NodeIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "Purpose.node"`)
 	}
 	return nil
 }

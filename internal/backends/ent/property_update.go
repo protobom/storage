@@ -48,12 +48,6 @@ func (pu *PropertyUpdate) SetNillableNodeID(u *uuid.UUID) *PropertyUpdate {
 	return pu
 }
 
-// ClearNodeID clears the value of the "node_id" field.
-func (pu *PropertyUpdate) ClearNodeID() *PropertyUpdate {
-	pu.mutation.ClearNodeID()
-	return pu
-}
-
 // SetName sets the "name" field.
 func (pu *PropertyUpdate) SetName(s string) *PropertyUpdate {
 	pu.mutation.SetName(s)
@@ -125,7 +119,18 @@ func (pu *PropertyUpdate) ExecX(ctx context.Context) {
 	}
 }
 
+// check runs all checks and user-defined validators on the builder.
+func (pu *PropertyUpdate) check() error {
+	if pu.mutation.NodeCleared() && len(pu.mutation.NodeIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "Property.node"`)
+	}
+	return nil
+}
+
 func (pu *PropertyUpdate) sqlSave(ctx context.Context) (n int, err error) {
+	if err := pu.check(); err != nil {
+		return n, err
+	}
 	_spec := sqlgraph.NewUpdateSpec(property.Table, property.Columns, sqlgraph.NewFieldSpec(property.FieldID, field.TypeUUID))
 	if ps := pu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
@@ -200,12 +205,6 @@ func (puo *PropertyUpdateOne) SetNillableNodeID(u *uuid.UUID) *PropertyUpdateOne
 	if u != nil {
 		puo.SetNodeID(*u)
 	}
-	return puo
-}
-
-// ClearNodeID clears the value of the "node_id" field.
-func (puo *PropertyUpdateOne) ClearNodeID() *PropertyUpdateOne {
-	puo.mutation.ClearNodeID()
 	return puo
 }
 
@@ -293,7 +292,18 @@ func (puo *PropertyUpdateOne) ExecX(ctx context.Context) {
 	}
 }
 
+// check runs all checks and user-defined validators on the builder.
+func (puo *PropertyUpdateOne) check() error {
+	if puo.mutation.NodeCleared() && len(puo.mutation.NodeIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "Property.node"`)
+	}
+	return nil
+}
+
 func (puo *PropertyUpdateOne) sqlSave(ctx context.Context) (_node *Property, err error) {
+	if err := puo.check(); err != nil {
+		return _node, err
+	}
 	_spec := sqlgraph.NewUpdateSpec(property.Table, property.Columns, sqlgraph.NewFieldSpec(property.FieldID, field.TypeUUID))
 	id, ok := puo.mutation.ID()
 	if !ok {

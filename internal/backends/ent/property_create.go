@@ -57,14 +57,6 @@ func (pc *PropertyCreate) SetNodeID(u uuid.UUID) *PropertyCreate {
 	return pc
 }
 
-// SetNillableNodeID sets the "node_id" field if the given value is not nil.
-func (pc *PropertyCreate) SetNillableNodeID(u *uuid.UUID) *PropertyCreate {
-	if u != nil {
-		pc.SetNodeID(*u)
-	}
-	return pc
-}
-
 // SetName sets the "name" field.
 func (pc *PropertyCreate) SetName(s string) *PropertyCreate {
 	pc.mutation.SetName(s)
@@ -160,11 +152,17 @@ func (pc *PropertyCreate) check() error {
 	if _, ok := pc.mutation.ProtoMessage(); !ok {
 		return &ValidationError{Name: "proto_message", err: errors.New(`ent: missing required field "Property.proto_message"`)}
 	}
+	if _, ok := pc.mutation.NodeID(); !ok {
+		return &ValidationError{Name: "node_id", err: errors.New(`ent: missing required field "Property.node_id"`)}
+	}
 	if _, ok := pc.mutation.Name(); !ok {
 		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "Property.name"`)}
 	}
 	if _, ok := pc.mutation.Data(); !ok {
 		return &ValidationError{Name: "data", err: errors.New(`ent: missing required field "Property.data"`)}
+	}
+	if len(pc.mutation.NodeIDs()) == 0 {
+		return &ValidationError{Name: "node", err: errors.New(`ent: missing required edge "Property.node"`)}
 	}
 	return nil
 }
@@ -312,12 +310,6 @@ func (u *PropertyUpsert) UpdateNodeID() *PropertyUpsert {
 	return u
 }
 
-// ClearNodeID clears the value of the "node_id" field.
-func (u *PropertyUpsert) ClearNodeID() *PropertyUpsert {
-	u.SetNull(property.FieldNodeID)
-	return u
-}
-
 // SetName sets the "name" field.
 func (u *PropertyUpsert) SetName(v string) *PropertyUpsert {
 	u.Set(property.FieldName, v)
@@ -407,13 +399,6 @@ func (u *PropertyUpsertOne) SetNodeID(v uuid.UUID) *PropertyUpsertOne {
 func (u *PropertyUpsertOne) UpdateNodeID() *PropertyUpsertOne {
 	return u.Update(func(s *PropertyUpsert) {
 		s.UpdateNodeID()
-	})
-}
-
-// ClearNodeID clears the value of the "node_id" field.
-func (u *PropertyUpsertOne) ClearNodeID() *PropertyUpsertOne {
-	return u.Update(func(s *PropertyUpsert) {
-		s.ClearNodeID()
 	})
 }
 
@@ -677,13 +662,6 @@ func (u *PropertyUpsertBulk) SetNodeID(v uuid.UUID) *PropertyUpsertBulk {
 func (u *PropertyUpsertBulk) UpdateNodeID() *PropertyUpsertBulk {
 	return u.Update(func(s *PropertyUpsert) {
 		s.UpdateNodeID()
-	})
-}
-
-// ClearNodeID clears the value of the "node_id" field.
-func (u *PropertyUpsertBulk) ClearNodeID() *PropertyUpsertBulk {
-	return u.Update(func(s *PropertyUpsert) {
-		s.ClearNodeID()
 	})
 }
 

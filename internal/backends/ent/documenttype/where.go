@@ -175,16 +175,6 @@ func MetadataIDNotIn(vs ...uuid.UUID) predicate.DocumentType {
 	return predicate.DocumentType(sql.FieldNotIn(FieldMetadataID, vs...))
 }
 
-// MetadataIDIsNil applies the IsNil predicate on the "metadata_id" field.
-func MetadataIDIsNil() predicate.DocumentType {
-	return predicate.DocumentType(sql.FieldIsNull(FieldMetadataID))
-}
-
-// MetadataIDNotNil applies the NotNil predicate on the "metadata_id" field.
-func MetadataIDNotNil() predicate.DocumentType {
-	return predicate.DocumentType(sql.FieldNotNull(FieldMetadataID))
-}
-
 // TypeEQ applies the EQ predicate on the "type" field.
 func TypeEQ(v Type) predicate.DocumentType {
 	return predicate.DocumentType(sql.FieldEQ(FieldType, v))

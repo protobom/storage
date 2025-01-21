@@ -7,17 +7,25 @@
 package schema
 
 import (
+	"context"
+	"errors"
+
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
 	"github.com/google/uuid"
+
+	entint "github.com/protobom/storage/internal/backends/ent"
+	"github.com/protobom/storage/internal/backends/ent/hook"
 )
 
 type Annotation struct {
 	ent.Schema
 }
+
+var errInvalidAnnotation = errors.New("either document_id or node_id (exclusive) must be set")
 
 func (Annotation) Fields() []ent.Field {
 	return []ent.Field{
@@ -46,6 +54,12 @@ func (Annotation) Edges() []ent.Edge {
 	}
 }
 
+func (Annotation) Hooks() []ent.Hook {
+	return []ent.Hook{
+		hook.On(annotationHook, ent.OpCreate|ent.OpUpdate|ent.OpUpdateOne),
+	}
+}
+
 func (Annotation) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Fields("node_id").
@@ -69,4 +83,20 @@ func (Annotation) Indexes() []ent.Index {
 			Annotations(entsql.IndexWhere("document_id IS NOT NULL AND TRIM(document_id) != '' AND is_unique")).
 			StorageKey("idx_document_unique_annotations"),
 	}
+}
+
+func annotationHook(next ent.Mutator) ent.Mutator {
+	return hook.AnnotationFunc(
+		func(ctx context.Context, mutation *entint.AnnotationMutation) (entint.Value, error) {
+			_, docExists := mutation.DocumentID()
+			_, nodeExists := mutation.NodeID()
+
+			// Fail validation if both document_id and node_id are set, or neither are.
+			if docExists == nodeExists {
+				return nil, errInvalidAnnotation
+			}
+
+			return next.Mutate(ctx, mutation)
+		},
+	)
 }

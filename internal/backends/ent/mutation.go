@@ -1597,22 +1597,9 @@ func (m *DocumentTypeMutation) OldMetadataID(ctx context.Context) (v uuid.UUID, 
 	return oldValue.MetadataID, nil
 }
 
-// ClearMetadataID clears the value of the "metadata_id" field.
-func (m *DocumentTypeMutation) ClearMetadataID() {
-	m.metadata = nil
-	m.clearedFields[documenttype.FieldMetadataID] = struct{}{}
-}
-
-// MetadataIDCleared returns if the "metadata_id" field was cleared in this mutation.
-func (m *DocumentTypeMutation) MetadataIDCleared() bool {
-	_, ok := m.clearedFields[documenttype.FieldMetadataID]
-	return ok
-}
-
 // ResetMetadataID resets all changes to the "metadata_id" field.
 func (m *DocumentTypeMutation) ResetMetadataID() {
 	m.metadata = nil
-	delete(m.clearedFields, documenttype.FieldMetadataID)
 }
 
 // SetType sets the "type" field.
@@ -1797,7 +1784,7 @@ func (m *DocumentTypeMutation) ClearMetadata() {
 
 // MetadataCleared reports if the "metadata" edge to the Metadata entity was cleared.
 func (m *DocumentTypeMutation) MetadataCleared() bool {
-	return m.MetadataIDCleared() || m.clearedmetadata
+	return m.clearedmetadata
 }
 
 // MetadataIDs returns the "metadata" edge IDs in the mutation.
@@ -1994,9 +1981,6 @@ func (m *DocumentTypeMutation) ClearedFields() []string {
 	if m.FieldCleared(documenttype.FieldDocumentID) {
 		fields = append(fields, documenttype.FieldDocumentID)
 	}
-	if m.FieldCleared(documenttype.FieldMetadataID) {
-		fields = append(fields, documenttype.FieldMetadataID)
-	}
 	if m.FieldCleared(documenttype.FieldType) {
 		fields = append(fields, documenttype.FieldType)
 	}
@@ -2022,9 +2006,6 @@ func (m *DocumentTypeMutation) ClearField(name string) error {
 	switch name {
 	case documenttype.FieldDocumentID:
 		m.ClearDocumentID()
-		return nil
-	case documenttype.FieldMetadataID:
-		m.ClearMetadataID()
 		return nil
 	case documenttype.FieldType:
 		m.ClearType()
@@ -10788,22 +10769,9 @@ func (m *PropertyMutation) OldNodeID(ctx context.Context) (v uuid.UUID, err erro
 	return oldValue.NodeID, nil
 }
 
-// ClearNodeID clears the value of the "node_id" field.
-func (m *PropertyMutation) ClearNodeID() {
-	m.node = nil
-	m.clearedFields[property.FieldNodeID] = struct{}{}
-}
-
-// NodeIDCleared returns if the "node_id" field was cleared in this mutation.
-func (m *PropertyMutation) NodeIDCleared() bool {
-	_, ok := m.clearedFields[property.FieldNodeID]
-	return ok
-}
-
 // ResetNodeID resets all changes to the "node_id" field.
 func (m *PropertyMutation) ResetNodeID() {
 	m.node = nil
-	delete(m.clearedFields, property.FieldNodeID)
 }
 
 // SetName sets the "name" field.
@@ -10913,7 +10881,7 @@ func (m *PropertyMutation) ClearNode() {
 
 // NodeCleared reports if the "node" edge to the Node entity was cleared.
 func (m *PropertyMutation) NodeCleared() bool {
-	return m.NodeIDCleared() || m.clearednode
+	return m.clearednode
 }
 
 // NodeIDs returns the "node" edge IDs in the mutation.
@@ -11096,9 +11064,6 @@ func (m *PropertyMutation) ClearedFields() []string {
 	if m.FieldCleared(property.FieldDocumentID) {
 		fields = append(fields, property.FieldDocumentID)
 	}
-	if m.FieldCleared(property.FieldNodeID) {
-		fields = append(fields, property.FieldNodeID)
-	}
 	return fields
 }
 
@@ -11115,9 +11080,6 @@ func (m *PropertyMutation) ClearField(name string) error {
 	switch name {
 	case property.FieldDocumentID:
 		m.ClearDocumentID()
-		return nil
-	case property.FieldNodeID:
-		m.ClearNodeID()
 		return nil
 	}
 	return fmt.Errorf("unknown Property nullable field %s", name)
@@ -11433,22 +11395,9 @@ func (m *PurposeMutation) OldNodeID(ctx context.Context) (v uuid.UUID, err error
 	return oldValue.NodeID, nil
 }
 
-// ClearNodeID clears the value of the "node_id" field.
-func (m *PurposeMutation) ClearNodeID() {
-	m.node = nil
-	m.clearedFields[purpose.FieldNodeID] = struct{}{}
-}
-
-// NodeIDCleared returns if the "node_id" field was cleared in this mutation.
-func (m *PurposeMutation) NodeIDCleared() bool {
-	_, ok := m.clearedFields[purpose.FieldNodeID]
-	return ok
-}
-
 // ResetNodeID resets all changes to the "node_id" field.
 func (m *PurposeMutation) ResetNodeID() {
 	m.node = nil
-	delete(m.clearedFields, purpose.FieldNodeID)
 }
 
 // SetPrimaryPurpose sets the "primary_purpose" field.
@@ -11522,7 +11471,7 @@ func (m *PurposeMutation) ClearNode() {
 
 // NodeCleared reports if the "node" edge to the Node entity was cleared.
 func (m *PurposeMutation) NodeCleared() bool {
-	return m.NodeIDCleared() || m.clearednode
+	return m.clearednode
 }
 
 // NodeIDs returns the "node" edge IDs in the mutation.
@@ -11677,9 +11626,6 @@ func (m *PurposeMutation) ClearedFields() []string {
 	if m.FieldCleared(purpose.FieldDocumentID) {
 		fields = append(fields, purpose.FieldDocumentID)
 	}
-	if m.FieldCleared(purpose.FieldNodeID) {
-		fields = append(fields, purpose.FieldNodeID)
-	}
 	return fields
 }
 
@@ -11696,9 +11642,6 @@ func (m *PurposeMutation) ClearField(name string) error {
 	switch name {
 	case purpose.FieldDocumentID:
 		m.ClearDocumentID()
-		return nil
-	case purpose.FieldNodeID:
-		m.ClearNodeID()
 		return nil
 	}
 	return fmt.Errorf("unknown Purpose nullable field %s", name)
@@ -12905,22 +12848,9 @@ func (m *ToolMutation) OldMetadataID(ctx context.Context) (v uuid.UUID, err erro
 	return oldValue.MetadataID, nil
 }
 
-// ClearMetadataID clears the value of the "metadata_id" field.
-func (m *ToolMutation) ClearMetadataID() {
-	m.metadata = nil
-	m.clearedFields[tool.FieldMetadataID] = struct{}{}
-}
-
-// MetadataIDCleared returns if the "metadata_id" field was cleared in this mutation.
-func (m *ToolMutation) MetadataIDCleared() bool {
-	_, ok := m.clearedFields[tool.FieldMetadataID]
-	return ok
-}
-
 // ResetMetadataID resets all changes to the "metadata_id" field.
 func (m *ToolMutation) ResetMetadataID() {
 	m.metadata = nil
-	delete(m.clearedFields, tool.FieldMetadataID)
 }
 
 // SetName sets the "name" field.
@@ -13066,7 +12996,7 @@ func (m *ToolMutation) ClearMetadata() {
 
 // MetadataCleared reports if the "metadata" edge to the Metadata entity was cleared.
 func (m *ToolMutation) MetadataCleared() bool {
-	return m.MetadataIDCleared() || m.clearedmetadata
+	return m.clearedmetadata
 }
 
 // MetadataIDs returns the "metadata" edge IDs in the mutation.
@@ -13263,9 +13193,6 @@ func (m *ToolMutation) ClearedFields() []string {
 	if m.FieldCleared(tool.FieldDocumentID) {
 		fields = append(fields, tool.FieldDocumentID)
 	}
-	if m.FieldCleared(tool.FieldMetadataID) {
-		fields = append(fields, tool.FieldMetadataID)
-	}
 	return fields
 }
 
@@ -13282,9 +13209,6 @@ func (m *ToolMutation) ClearField(name string) error {
 	switch name {
 	case tool.FieldDocumentID:
 		m.ClearDocumentID()
-		return nil
-	case tool.FieldMetadataID:
-		m.ClearMetadataID()
 		return nil
 	}
 	return fmt.Errorf("unknown Tool nullable field %s", name)

@@ -27,7 +27,7 @@ func (Purpose) Mixin() []ent.Mixin {
 
 func (Purpose) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("node_id", uuid.UUID{}).Optional(),
+		field.UUID("node_id", uuid.UUID{}),
 		field.Enum("primary_purpose").Values(enumValues(new(sbom.Purpose))...),
 	}
 }
@@ -36,6 +36,7 @@ func (Purpose) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("node", Node.Type).
 			Ref("primary_purpose").
+			Required().
 			Unique().
 			Field("node_id"),
 	}

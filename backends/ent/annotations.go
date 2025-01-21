@@ -65,19 +65,10 @@ func (backend *Backend) AddAnnotationToNodes(name, value string, nodeIDs ...stri
 	}
 
 	for idx := range nodes {
-		documentID, err := nodes[idx].
-			QueryNodeLists().
-			QueryDocument().
-			OnlyID(backend.ctx)
-		if err != nil {
-			return fmt.Errorf("querying node edges for document ID: %w", err)
-		}
-
 		data = append(data, &ent.Annotation{
-			DocumentID: &documentID,
-			NodeID:     &nodes[idx].ID,
-			Name:       name,
-			Value:      value,
+			NodeID: &nodes[idx].ID,
+			Name:   name,
+			Value:  value,
 		})
 	}
 

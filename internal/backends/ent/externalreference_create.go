@@ -206,6 +206,9 @@ func (erc *ExternalReferenceCreate) check() error {
 			return &ValidationError{Name: "type", err: fmt.Errorf(`ent: validator failed for field "ExternalReference.type": %w`, err)}
 		}
 	}
+	if len(erc.mutation.NodesIDs()) == 0 {
+		return &ValidationError{Name: "nodes", err: errors.New(`ent: missing required edge "ExternalReference.nodes"`)}
+	}
 	return nil
 }
 

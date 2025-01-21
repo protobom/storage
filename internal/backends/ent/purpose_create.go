@@ -49,14 +49,6 @@ func (pc *PurposeCreate) SetNodeID(u uuid.UUID) *PurposeCreate {
 	return pc
 }
 
-// SetNillableNodeID sets the "node_id" field if the given value is not nil.
-func (pc *PurposeCreate) SetNillableNodeID(u *uuid.UUID) *PurposeCreate {
-	if u != nil {
-		pc.SetNodeID(*u)
-	}
-	return pc
-}
-
 // SetPrimaryPurpose sets the "primary_purpose" field.
 func (pc *PurposeCreate) SetPrimaryPurpose(pp purpose.PrimaryPurpose) *PurposeCreate {
 	pc.mutation.SetPrimaryPurpose(pp)
@@ -116,6 +108,9 @@ func (pc *PurposeCreate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (pc *PurposeCreate) check() error {
+	if _, ok := pc.mutation.NodeID(); !ok {
+		return &ValidationError{Name: "node_id", err: errors.New(`ent: missing required field "Purpose.node_id"`)}
+	}
 	if _, ok := pc.mutation.PrimaryPurpose(); !ok {
 		return &ValidationError{Name: "primary_purpose", err: errors.New(`ent: missing required field "Purpose.primary_purpose"`)}
 	}
@@ -123,6 +118,9 @@ func (pc *PurposeCreate) check() error {
 		if err := purpose.PrimaryPurposeValidator(v); err != nil {
 			return &ValidationError{Name: "primary_purpose", err: fmt.Errorf(`ent: validator failed for field "Purpose.primary_purpose": %w`, err)}
 		}
+	}
+	if len(pc.mutation.NodeIDs()) == 0 {
+		return &ValidationError{Name: "node", err: errors.New(`ent: missing required edge "Purpose.node"`)}
 	}
 	return nil
 }
@@ -253,12 +251,6 @@ func (u *PurposeUpsert) UpdateNodeID() *PurposeUpsert {
 	return u
 }
 
-// ClearNodeID clears the value of the "node_id" field.
-func (u *PurposeUpsert) ClearNodeID() *PurposeUpsert {
-	u.SetNull(purpose.FieldNodeID)
-	return u
-}
-
 // SetPrimaryPurpose sets the "primary_purpose" field.
 func (u *PurposeUpsert) SetPrimaryPurpose(v purpose.PrimaryPurpose) *PurposeUpsert {
 	u.Set(purpose.FieldPrimaryPurpose, v)
@@ -327,13 +319,6 @@ func (u *PurposeUpsertOne) SetNodeID(v uuid.UUID) *PurposeUpsertOne {
 func (u *PurposeUpsertOne) UpdateNodeID() *PurposeUpsertOne {
 	return u.Update(func(s *PurposeUpsert) {
 		s.UpdateNodeID()
-	})
-}
-
-// ClearNodeID clears the value of the "node_id" field.
-func (u *PurposeUpsertOne) ClearNodeID() *PurposeUpsertOne {
-	return u.Update(func(s *PurposeUpsert) {
-		s.ClearNodeID()
 	})
 }
 
@@ -573,13 +558,6 @@ func (u *PurposeUpsertBulk) SetNodeID(v uuid.UUID) *PurposeUpsertBulk {
 func (u *PurposeUpsertBulk) UpdateNodeID() *PurposeUpsertBulk {
 	return u.Update(func(s *PurposeUpsert) {
 		s.UpdateNodeID()
-	})
-}
-
-// ClearNodeID clears the value of the "node_id" field.
-func (u *PurposeUpsertBulk) ClearNodeID() *PurposeUpsertBulk {
-	return u.Update(func(s *PurposeUpsert) {
-		s.ClearNodeID()
 	})
 }
 

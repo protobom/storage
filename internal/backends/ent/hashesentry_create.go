@@ -113,7 +113,9 @@ func (hec *HashesEntryCreate) Mutation() *HashesEntryMutation {
 
 // Save creates the HashesEntry in the database.
 func (hec *HashesEntryCreate) Save(ctx context.Context) (*HashesEntry, error) {
-	hec.defaults()
+	if err := hec.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, hec.sqlSave, hec.mutation, hec.hooks)
 }
 
@@ -140,15 +142,22 @@ func (hec *HashesEntryCreate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (hec *HashesEntryCreate) defaults() {
+func (hec *HashesEntryCreate) defaults() error {
 	if _, ok := hec.mutation.DocumentID(); !ok {
+		if hashesentry.DefaultDocumentID == nil {
+			return fmt.Errorf("ent: uninitialized hashesentry.DefaultDocumentID (forgotten import ent/runtime?)")
+		}
 		v := hashesentry.DefaultDocumentID()
 		hec.mutation.SetDocumentID(v)
 	}
 	if _, ok := hec.mutation.ID(); !ok {
+		if hashesentry.DefaultID == nil {
+			return fmt.Errorf("ent: uninitialized hashesentry.DefaultID (forgotten import ent/runtime?)")
+		}
 		v := hashesentry.DefaultID()
 		hec.mutation.SetID(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.

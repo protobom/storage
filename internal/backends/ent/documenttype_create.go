@@ -57,14 +57,6 @@ func (dtc *DocumentTypeCreate) SetMetadataID(u uuid.UUID) *DocumentTypeCreate {
 	return dtc
 }
 
-// SetNillableMetadataID sets the "metadata_id" field if the given value is not nil.
-func (dtc *DocumentTypeCreate) SetNillableMetadataID(u *uuid.UUID) *DocumentTypeCreate {
-	if u != nil {
-		dtc.SetMetadataID(*u)
-	}
-	return dtc
-}
-
 // SetType sets the "type" field.
 func (dtc *DocumentTypeCreate) SetType(d documenttype.Type) *DocumentTypeCreate {
 	dtc.mutation.SetType(d)
@@ -190,10 +182,16 @@ func (dtc *DocumentTypeCreate) check() error {
 	if _, ok := dtc.mutation.ProtoMessage(); !ok {
 		return &ValidationError{Name: "proto_message", err: errors.New(`ent: missing required field "DocumentType.proto_message"`)}
 	}
+	if _, ok := dtc.mutation.MetadataID(); !ok {
+		return &ValidationError{Name: "metadata_id", err: errors.New(`ent: missing required field "DocumentType.metadata_id"`)}
+	}
 	if v, ok := dtc.mutation.GetType(); ok {
 		if err := documenttype.TypeValidator(v); err != nil {
 			return &ValidationError{Name: "type", err: fmt.Errorf(`ent: validator failed for field "DocumentType.type": %w`, err)}
 		}
+	}
+	if len(dtc.mutation.MetadataIDs()) == 0 {
+		return &ValidationError{Name: "metadata", err: errors.New(`ent: missing required edge "DocumentType.metadata"`)}
 	}
 	return nil
 }
@@ -345,12 +343,6 @@ func (u *DocumentTypeUpsert) UpdateMetadataID() *DocumentTypeUpsert {
 	return u
 }
 
-// ClearMetadataID clears the value of the "metadata_id" field.
-func (u *DocumentTypeUpsert) ClearMetadataID() *DocumentTypeUpsert {
-	u.SetNull(documenttype.FieldMetadataID)
-	return u
-}
-
 // SetType sets the "type" field.
 func (u *DocumentTypeUpsert) SetType(v documenttype.Type) *DocumentTypeUpsert {
 	u.Set(documenttype.FieldType, v)
@@ -470,13 +462,6 @@ func (u *DocumentTypeUpsertOne) SetMetadataID(v uuid.UUID) *DocumentTypeUpsertOn
 func (u *DocumentTypeUpsertOne) UpdateMetadataID() *DocumentTypeUpsertOne {
 	return u.Update(func(s *DocumentTypeUpsert) {
 		s.UpdateMetadataID()
-	})
-}
-
-// ClearMetadataID clears the value of the "metadata_id" field.
-func (u *DocumentTypeUpsertOne) ClearMetadataID() *DocumentTypeUpsertOne {
-	return u.Update(func(s *DocumentTypeUpsert) {
-		s.ClearMetadataID()
 	})
 }
 
@@ -775,13 +760,6 @@ func (u *DocumentTypeUpsertBulk) SetMetadataID(v uuid.UUID) *DocumentTypeUpsertB
 func (u *DocumentTypeUpsertBulk) UpdateMetadataID() *DocumentTypeUpsertBulk {
 	return u.Update(func(s *DocumentTypeUpsert) {
 		s.UpdateMetadataID()
-	})
-}
-
-// ClearMetadataID clears the value of the "metadata_id" field.
-func (u *DocumentTypeUpsertBulk) ClearMetadataID() *DocumentTypeUpsertBulk {
-	return u.Update(func(s *DocumentTypeUpsert) {
-		s.ClearMetadataID()
 	})
 }
 
