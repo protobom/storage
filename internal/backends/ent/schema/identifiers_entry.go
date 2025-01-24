@@ -11,6 +11,8 @@ import (
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
 	"github.com/protobom/protobom/pkg/sbom"
+
+	"github.com/protobom/storage/internal/backends/ent/schema/mixin"
 )
 
 type IdentifiersEntry struct {
@@ -19,8 +21,7 @@ type IdentifiersEntry struct {
 
 func (IdentifiersEntry) Mixin() []ent.Mixin {
 	return []ent.Mixin{
-		DocumentMixin{},
-		UUIDMixin{},
+		mixin.UUID{},
 	}
 }
 
@@ -33,6 +34,10 @@ func (IdentifiersEntry) Fields() []ent.Field {
 
 func (IdentifiersEntry) Edges() []ent.Edge {
 	return []ent.Edge{
+		edge.From("documents", Document.Type).
+			Ref("identifiers").
+			Required().
+			Immutable(),
 		edge.From("nodes", Node.Type).
 			Ref("identifiers").
 			Required(),

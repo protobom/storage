@@ -34,20 +34,6 @@ func (tu *ToolUpdate) Where(ps ...predicate.Tool) *ToolUpdate {
 	return tu
 }
 
-// SetMetadataID sets the "metadata_id" field.
-func (tu *ToolUpdate) SetMetadataID(u uuid.UUID) *ToolUpdate {
-	tu.mutation.SetMetadataID(u)
-	return tu
-}
-
-// SetNillableMetadataID sets the "metadata_id" field if the given value is not nil.
-func (tu *ToolUpdate) SetNillableMetadataID(u *uuid.UUID) *ToolUpdate {
-	if u != nil {
-		tu.SetMetadataID(*u)
-	}
-	return tu
-}
-
 // SetName sets the "name" field.
 func (tu *ToolUpdate) SetName(s string) *ToolUpdate {
 	tu.mutation.SetName(s)
@@ -90,9 +76,19 @@ func (tu *ToolUpdate) SetNillableVendor(s *string) *ToolUpdate {
 	return tu
 }
 
-// SetMetadata sets the "metadata" edge to the Metadata entity.
-func (tu *ToolUpdate) SetMetadata(m *Metadata) *ToolUpdate {
-	return tu.SetMetadataID(m.ID)
+// AddMetadatumIDs adds the "metadata" edge to the Metadata entity by IDs.
+func (tu *ToolUpdate) AddMetadatumIDs(ids ...uuid.UUID) *ToolUpdate {
+	tu.mutation.AddMetadatumIDs(ids...)
+	return tu
+}
+
+// AddMetadata adds the "metadata" edges to the Metadata entity.
+func (tu *ToolUpdate) AddMetadata(m ...*Metadata) *ToolUpdate {
+	ids := make([]uuid.UUID, len(m))
+	for i := range m {
+		ids[i] = m[i].ID
+	}
+	return tu.AddMetadatumIDs(ids...)
 }
 
 // Mutation returns the ToolMutation object of the builder.
@@ -100,10 +96,25 @@ func (tu *ToolUpdate) Mutation() *ToolMutation {
 	return tu.mutation
 }
 
-// ClearMetadata clears the "metadata" edge to the Metadata entity.
+// ClearMetadata clears all "metadata" edges to the Metadata entity.
 func (tu *ToolUpdate) ClearMetadata() *ToolUpdate {
 	tu.mutation.ClearMetadata()
 	return tu
+}
+
+// RemoveMetadatumIDs removes the "metadata" edge to Metadata entities by IDs.
+func (tu *ToolUpdate) RemoveMetadatumIDs(ids ...uuid.UUID) *ToolUpdate {
+	tu.mutation.RemoveMetadatumIDs(ids...)
+	return tu
+}
+
+// RemoveMetadata removes "metadata" edges to Metadata entities.
+func (tu *ToolUpdate) RemoveMetadata(m ...*Metadata) *ToolUpdate {
+	ids := make([]uuid.UUID, len(m))
+	for i := range m {
+		ids[i] = m[i].ID
+	}
+	return tu.RemoveMetadatumIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -133,18 +144,7 @@ func (tu *ToolUpdate) ExecX(ctx context.Context) {
 	}
 }
 
-// check runs all checks and user-defined validators on the builder.
-func (tu *ToolUpdate) check() error {
-	if tu.mutation.MetadataCleared() && len(tu.mutation.MetadataIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "Tool.metadata"`)
-	}
-	return nil
-}
-
 func (tu *ToolUpdate) sqlSave(ctx context.Context) (n int, err error) {
-	if err := tu.check(); err != nil {
-		return n, err
-	}
 	_spec := sqlgraph.NewUpdateSpec(tool.Table, tool.Columns, sqlgraph.NewFieldSpec(tool.FieldID, field.TypeUUID))
 	if ps := tu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
@@ -164,10 +164,10 @@ func (tu *ToolUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if tu.mutation.MetadataCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.M2M,
 			Inverse: true,
 			Table:   tool.MetadataTable,
-			Columns: []string{tool.MetadataColumn},
+			Columns: tool.MetadataPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(metadata.FieldID, field.TypeUUID),
@@ -175,12 +175,28 @@ func (tu *ToolUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := tu.mutation.MetadataIDs(); len(nodes) > 0 {
+	if nodes := tu.mutation.RemovedMetadataIDs(); len(nodes) > 0 && !tu.mutation.MetadataCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.M2M,
 			Inverse: true,
 			Table:   tool.MetadataTable,
-			Columns: []string{tool.MetadataColumn},
+			Columns: tool.MetadataPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(metadata.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := tu.mutation.MetadataIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   tool.MetadataTable,
+			Columns: tool.MetadataPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(metadata.FieldID, field.TypeUUID),
@@ -209,20 +225,6 @@ type ToolUpdateOne struct {
 	fields   []string
 	hooks    []Hook
 	mutation *ToolMutation
-}
-
-// SetMetadataID sets the "metadata_id" field.
-func (tuo *ToolUpdateOne) SetMetadataID(u uuid.UUID) *ToolUpdateOne {
-	tuo.mutation.SetMetadataID(u)
-	return tuo
-}
-
-// SetNillableMetadataID sets the "metadata_id" field if the given value is not nil.
-func (tuo *ToolUpdateOne) SetNillableMetadataID(u *uuid.UUID) *ToolUpdateOne {
-	if u != nil {
-		tuo.SetMetadataID(*u)
-	}
-	return tuo
 }
 
 // SetName sets the "name" field.
@@ -267,9 +269,19 @@ func (tuo *ToolUpdateOne) SetNillableVendor(s *string) *ToolUpdateOne {
 	return tuo
 }
 
-// SetMetadata sets the "metadata" edge to the Metadata entity.
-func (tuo *ToolUpdateOne) SetMetadata(m *Metadata) *ToolUpdateOne {
-	return tuo.SetMetadataID(m.ID)
+// AddMetadatumIDs adds the "metadata" edge to the Metadata entity by IDs.
+func (tuo *ToolUpdateOne) AddMetadatumIDs(ids ...uuid.UUID) *ToolUpdateOne {
+	tuo.mutation.AddMetadatumIDs(ids...)
+	return tuo
+}
+
+// AddMetadata adds the "metadata" edges to the Metadata entity.
+func (tuo *ToolUpdateOne) AddMetadata(m ...*Metadata) *ToolUpdateOne {
+	ids := make([]uuid.UUID, len(m))
+	for i := range m {
+		ids[i] = m[i].ID
+	}
+	return tuo.AddMetadatumIDs(ids...)
 }
 
 // Mutation returns the ToolMutation object of the builder.
@@ -277,10 +289,25 @@ func (tuo *ToolUpdateOne) Mutation() *ToolMutation {
 	return tuo.mutation
 }
 
-// ClearMetadata clears the "metadata" edge to the Metadata entity.
+// ClearMetadata clears all "metadata" edges to the Metadata entity.
 func (tuo *ToolUpdateOne) ClearMetadata() *ToolUpdateOne {
 	tuo.mutation.ClearMetadata()
 	return tuo
+}
+
+// RemoveMetadatumIDs removes the "metadata" edge to Metadata entities by IDs.
+func (tuo *ToolUpdateOne) RemoveMetadatumIDs(ids ...uuid.UUID) *ToolUpdateOne {
+	tuo.mutation.RemoveMetadatumIDs(ids...)
+	return tuo
+}
+
+// RemoveMetadata removes "metadata" edges to Metadata entities.
+func (tuo *ToolUpdateOne) RemoveMetadata(m ...*Metadata) *ToolUpdateOne {
+	ids := make([]uuid.UUID, len(m))
+	for i := range m {
+		ids[i] = m[i].ID
+	}
+	return tuo.RemoveMetadatumIDs(ids...)
 }
 
 // Where appends a list predicates to the ToolUpdate builder.
@@ -323,18 +350,7 @@ func (tuo *ToolUpdateOne) ExecX(ctx context.Context) {
 	}
 }
 
-// check runs all checks and user-defined validators on the builder.
-func (tuo *ToolUpdateOne) check() error {
-	if tuo.mutation.MetadataCleared() && len(tuo.mutation.MetadataIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "Tool.metadata"`)
-	}
-	return nil
-}
-
 func (tuo *ToolUpdateOne) sqlSave(ctx context.Context) (_node *Tool, err error) {
-	if err := tuo.check(); err != nil {
-		return _node, err
-	}
 	_spec := sqlgraph.NewUpdateSpec(tool.Table, tool.Columns, sqlgraph.NewFieldSpec(tool.FieldID, field.TypeUUID))
 	id, ok := tuo.mutation.ID()
 	if !ok {
@@ -371,10 +387,10 @@ func (tuo *ToolUpdateOne) sqlSave(ctx context.Context) (_node *Tool, err error) 
 	}
 	if tuo.mutation.MetadataCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.M2M,
 			Inverse: true,
 			Table:   tool.MetadataTable,
-			Columns: []string{tool.MetadataColumn},
+			Columns: tool.MetadataPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(metadata.FieldID, field.TypeUUID),
@@ -382,12 +398,28 @@ func (tuo *ToolUpdateOne) sqlSave(ctx context.Context) (_node *Tool, err error) 
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := tuo.mutation.MetadataIDs(); len(nodes) > 0 {
+	if nodes := tuo.mutation.RemovedMetadataIDs(); len(nodes) > 0 && !tuo.mutation.MetadataCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.M2M,
 			Inverse: true,
 			Table:   tool.MetadataTable,
-			Columns: []string{tool.MetadataColumn},
+			Columns: tool.MetadataPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(metadata.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := tuo.mutation.MetadataIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   tool.MetadataTable,
+			Columns: tool.MetadataPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(metadata.FieldID, field.TypeUUID),

@@ -60,24 +60,9 @@ func IDLTE(id uuid.UUID) predicate.Person {
 	return predicate.Person(sql.FieldLTE(FieldID, id))
 }
 
-// DocumentID applies equality check predicate on the "document_id" field. It's identical to DocumentIDEQ.
-func DocumentID(v uuid.UUID) predicate.Person {
-	return predicate.Person(sql.FieldEQ(FieldDocumentID, v))
-}
-
 // ProtoMessage applies equality check predicate on the "proto_message" field. It's identical to ProtoMessageEQ.
 func ProtoMessage(v *sbom.Person) predicate.Person {
 	return predicate.Person(sql.FieldEQ(FieldProtoMessage, v))
-}
-
-// MetadataID applies equality check predicate on the "metadata_id" field. It's identical to MetadataIDEQ.
-func MetadataID(v uuid.UUID) predicate.Person {
-	return predicate.Person(sql.FieldEQ(FieldMetadataID, v))
-}
-
-// NodeID applies equality check predicate on the "node_id" field. It's identical to NodeIDEQ.
-func NodeID(v uuid.UUID) predicate.Person {
-	return predicate.Person(sql.FieldEQ(FieldNodeID, v))
 }
 
 // Name applies equality check predicate on the "name" field. It's identical to NameEQ.
@@ -103,36 +88,6 @@ func URL(v string) predicate.Person {
 // Phone applies equality check predicate on the "phone" field. It's identical to PhoneEQ.
 func Phone(v string) predicate.Person {
 	return predicate.Person(sql.FieldEQ(FieldPhone, v))
-}
-
-// DocumentIDEQ applies the EQ predicate on the "document_id" field.
-func DocumentIDEQ(v uuid.UUID) predicate.Person {
-	return predicate.Person(sql.FieldEQ(FieldDocumentID, v))
-}
-
-// DocumentIDNEQ applies the NEQ predicate on the "document_id" field.
-func DocumentIDNEQ(v uuid.UUID) predicate.Person {
-	return predicate.Person(sql.FieldNEQ(FieldDocumentID, v))
-}
-
-// DocumentIDIn applies the In predicate on the "document_id" field.
-func DocumentIDIn(vs ...uuid.UUID) predicate.Person {
-	return predicate.Person(sql.FieldIn(FieldDocumentID, vs...))
-}
-
-// DocumentIDNotIn applies the NotIn predicate on the "document_id" field.
-func DocumentIDNotIn(vs ...uuid.UUID) predicate.Person {
-	return predicate.Person(sql.FieldNotIn(FieldDocumentID, vs...))
-}
-
-// DocumentIDIsNil applies the IsNil predicate on the "document_id" field.
-func DocumentIDIsNil() predicate.Person {
-	return predicate.Person(sql.FieldIsNull(FieldDocumentID))
-}
-
-// DocumentIDNotNil applies the NotNil predicate on the "document_id" field.
-func DocumentIDNotNil() predicate.Person {
-	return predicate.Person(sql.FieldNotNull(FieldDocumentID))
 }
 
 // ProtoMessageEQ applies the EQ predicate on the "proto_message" field.
@@ -173,66 +128,6 @@ func ProtoMessageLT(v *sbom.Person) predicate.Person {
 // ProtoMessageLTE applies the LTE predicate on the "proto_message" field.
 func ProtoMessageLTE(v *sbom.Person) predicate.Person {
 	return predicate.Person(sql.FieldLTE(FieldProtoMessage, v))
-}
-
-// MetadataIDEQ applies the EQ predicate on the "metadata_id" field.
-func MetadataIDEQ(v uuid.UUID) predicate.Person {
-	return predicate.Person(sql.FieldEQ(FieldMetadataID, v))
-}
-
-// MetadataIDNEQ applies the NEQ predicate on the "metadata_id" field.
-func MetadataIDNEQ(v uuid.UUID) predicate.Person {
-	return predicate.Person(sql.FieldNEQ(FieldMetadataID, v))
-}
-
-// MetadataIDIn applies the In predicate on the "metadata_id" field.
-func MetadataIDIn(vs ...uuid.UUID) predicate.Person {
-	return predicate.Person(sql.FieldIn(FieldMetadataID, vs...))
-}
-
-// MetadataIDNotIn applies the NotIn predicate on the "metadata_id" field.
-func MetadataIDNotIn(vs ...uuid.UUID) predicate.Person {
-	return predicate.Person(sql.FieldNotIn(FieldMetadataID, vs...))
-}
-
-// MetadataIDIsNil applies the IsNil predicate on the "metadata_id" field.
-func MetadataIDIsNil() predicate.Person {
-	return predicate.Person(sql.FieldIsNull(FieldMetadataID))
-}
-
-// MetadataIDNotNil applies the NotNil predicate on the "metadata_id" field.
-func MetadataIDNotNil() predicate.Person {
-	return predicate.Person(sql.FieldNotNull(FieldMetadataID))
-}
-
-// NodeIDEQ applies the EQ predicate on the "node_id" field.
-func NodeIDEQ(v uuid.UUID) predicate.Person {
-	return predicate.Person(sql.FieldEQ(FieldNodeID, v))
-}
-
-// NodeIDNEQ applies the NEQ predicate on the "node_id" field.
-func NodeIDNEQ(v uuid.UUID) predicate.Person {
-	return predicate.Person(sql.FieldNEQ(FieldNodeID, v))
-}
-
-// NodeIDIn applies the In predicate on the "node_id" field.
-func NodeIDIn(vs ...uuid.UUID) predicate.Person {
-	return predicate.Person(sql.FieldIn(FieldNodeID, vs...))
-}
-
-// NodeIDNotIn applies the NotIn predicate on the "node_id" field.
-func NodeIDNotIn(vs ...uuid.UUID) predicate.Person {
-	return predicate.Person(sql.FieldNotIn(FieldNodeID, vs...))
-}
-
-// NodeIDIsNil applies the IsNil predicate on the "node_id" field.
-func NodeIDIsNil() predicate.Person {
-	return predicate.Person(sql.FieldIsNull(FieldNodeID))
-}
-
-// NodeIDNotNil applies the NotNil predicate on the "node_id" field.
-func NodeIDNotNil() predicate.Person {
-	return predicate.Person(sql.FieldNotNull(FieldNodeID))
 }
 
 // NameEQ applies the EQ predicate on the "name" field.
@@ -505,35 +400,12 @@ func PhoneContainsFold(v string) predicate.Person {
 	return predicate.Person(sql.FieldContainsFold(FieldPhone, v))
 }
 
-// HasDocument applies the HasEdge predicate on the "document" edge.
-func HasDocument() predicate.Person {
-	return predicate.Person(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, DocumentTable, DocumentColumn),
-		)
-		sqlgraph.HasNeighbors(s, step)
-	})
-}
-
-// HasDocumentWith applies the HasEdge predicate on the "document" edge with a given conditions (other predicates).
-func HasDocumentWith(preds ...predicate.Document) predicate.Person {
-	return predicate.Person(func(s *sql.Selector) {
-		step := newDocumentStep()
-		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
-			for _, p := range preds {
-				p(s)
-			}
-		})
-	})
-}
-
 // HasContactOwner applies the HasEdge predicate on the "contact_owner" edge.
 func HasContactOwner() predicate.Person {
 	return predicate.Person(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, ContactOwnerTable, ContactOwnerColumn),
+			sqlgraph.Edge(sqlgraph.M2M, true, ContactOwnerTable, ContactOwnerPrimaryKey...),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
@@ -556,7 +428,7 @@ func HasContacts() predicate.Person {
 	return predicate.Person(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, ContactsTable, ContactsColumn),
+			sqlgraph.Edge(sqlgraph.M2M, false, ContactsTable, ContactsPrimaryKey...),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
@@ -574,12 +446,35 @@ func HasContactsWith(preds ...predicate.Person) predicate.Person {
 	})
 }
 
+// HasDocuments applies the HasEdge predicate on the "documents" edge.
+func HasDocuments() predicate.Person {
+	return predicate.Person(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, DocumentsTable, DocumentsPrimaryKey...),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasDocumentsWith applies the HasEdge predicate on the "documents" edge with a given conditions (other predicates).
+func HasDocumentsWith(preds ...predicate.Document) predicate.Person {
+	return predicate.Person(func(s *sql.Selector) {
+		step := newDocumentsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // HasMetadata applies the HasEdge predicate on the "metadata" edge.
 func HasMetadata() predicate.Person {
 	return predicate.Person(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, MetadataTable, MetadataColumn),
+			sqlgraph.Edge(sqlgraph.M2M, true, MetadataTable, MetadataPrimaryKey...),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
@@ -597,21 +492,44 @@ func HasMetadataWith(preds ...predicate.Metadata) predicate.Person {
 	})
 }
 
-// HasNode applies the HasEdge predicate on the "node" edge.
-func HasNode() predicate.Person {
+// HasOriginatorNodes applies the HasEdge predicate on the "originator_nodes" edge.
+func HasOriginatorNodes() predicate.Person {
 	return predicate.Person(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, NodeTable, NodeColumn),
+			sqlgraph.Edge(sqlgraph.M2M, true, OriginatorNodesTable, OriginatorNodesPrimaryKey...),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
 }
 
-// HasNodeWith applies the HasEdge predicate on the "node" edge with a given conditions (other predicates).
-func HasNodeWith(preds ...predicate.Node) predicate.Person {
+// HasOriginatorNodesWith applies the HasEdge predicate on the "originator_nodes" edge with a given conditions (other predicates).
+func HasOriginatorNodesWith(preds ...predicate.Node) predicate.Person {
 	return predicate.Person(func(s *sql.Selector) {
-		step := newNodeStep()
+		step := newOriginatorNodesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasSupplierNodes applies the HasEdge predicate on the "supplier_nodes" edge.
+func HasSupplierNodes() predicate.Person {
+	return predicate.Person(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, SupplierNodesTable, SupplierNodesPrimaryKey...),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasSupplierNodesWith applies the HasEdge predicate on the "supplier_nodes" edge with a given conditions (other predicates).
+func HasSupplierNodesWith(preds ...predicate.Node) predicate.Person {
+	return predicate.Person(func(s *sql.Selector) {
+		step := newSupplierNodesStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

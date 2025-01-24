@@ -17,7 +17,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"github.com/google/uuid"
 	"github.com/protobom/protobom/pkg/sbom"
-	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/node"
 )
 
@@ -26,14 +25,10 @@ type Node struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID uuid.UUID `json:"-"`
-	// DocumentID holds the value of the "document_id" field.
-	DocumentID uuid.UUID `json:"-"`
 	// ProtoMessage holds the value of the "proto_message" field.
 	ProtoMessage *sbom.Node `json:"-"`
 	// NativeID holds the value of the "native_id" field.
 	NativeID string `json:"id"`
-	// NodeListID holds the value of the "node_list_id" field.
-	NodeListID uuid.UUID `json:"node_list_id,omitempty"`
 	// Type holds the value of the "type" field.
 	Type node.Type `json:"type,omitempty"`
 	// Name holds the value of the "name" field.
@@ -80,8 +75,6 @@ type Node struct {
 
 // NodeEdges holds the relations/edges for other nodes in the graph.
 type NodeEdges struct {
-	// Document holds the value of the document edge.
-	Document *Document `json:"document,omitempty"`
 	// Annotations holds the value of the annotations edge.
 	Annotations []*Annotation `json:"-"`
 	// Suppliers holds the value of the suppliers edge.
@@ -102,6 +95,8 @@ type NodeEdges struct {
 	Identifiers []*IdentifiersEntry `json:"identifiers,omitempty"`
 	// Properties holds the value of the properties edge.
 	Properties []*Property `json:"properties,omitempty"`
+	// Documents holds the value of the documents edge.
+	Documents []*Document `json:"-"`
 	// NodeLists holds the value of the node_lists edge.
 	NodeLists []*NodeList `json:"-"`
 	// EdgeTypes holds the value of the edge_types edge.
@@ -111,21 +106,10 @@ type NodeEdges struct {
 	loadedTypes [13]bool
 }
 
-// DocumentOrErr returns the Document value or an error if the edge
-// was not loaded in eager-loading, or loaded but was not found.
-func (e NodeEdges) DocumentOrErr() (*Document, error) {
-	if e.Document != nil {
-		return e.Document, nil
-	} else if e.loadedTypes[0] {
-		return nil, &NotFoundError{label: document.Label}
-	}
-	return nil, &NotLoadedError{edge: "document"}
-}
-
 // AnnotationsOrErr returns the Annotations value or an error if the edge
 // was not loaded in eager-loading.
 func (e NodeEdges) AnnotationsOrErr() ([]*Annotation, error) {
-	if e.loadedTypes[1] {
+	if e.loadedTypes[0] {
 		return e.Annotations, nil
 	}
 	return nil, &NotLoadedError{edge: "annotations"}
@@ -134,7 +118,7 @@ func (e NodeEdges) AnnotationsOrErr() ([]*Annotation, error) {
 // SuppliersOrErr returns the Suppliers value or an error if the edge
 // was not loaded in eager-loading.
 func (e NodeEdges) SuppliersOrErr() ([]*Person, error) {
-	if e.loadedTypes[2] {
+	if e.loadedTypes[1] {
 		return e.Suppliers, nil
 	}
 	return nil, &NotLoadedError{edge: "suppliers"}
@@ -143,7 +127,7 @@ func (e NodeEdges) SuppliersOrErr() ([]*Person, error) {
 // OriginatorsOrErr returns the Originators value or an error if the edge
 // was not loaded in eager-loading.
 func (e NodeEdges) OriginatorsOrErr() ([]*Person, error) {
-	if e.loadedTypes[3] {
+	if e.loadedTypes[2] {
 		return e.Originators, nil
 	}
 	return nil, &NotLoadedError{edge: "originators"}
@@ -152,7 +136,7 @@ func (e NodeEdges) OriginatorsOrErr() ([]*Person, error) {
 // ExternalReferencesOrErr returns the ExternalReferences value or an error if the edge
 // was not loaded in eager-loading.
 func (e NodeEdges) ExternalReferencesOrErr() ([]*ExternalReference, error) {
-	if e.loadedTypes[4] {
+	if e.loadedTypes[3] {
 		return e.ExternalReferences, nil
 	}
 	return nil, &NotLoadedError{edge: "external_references"}
@@ -161,7 +145,7 @@ func (e NodeEdges) ExternalReferencesOrErr() ([]*ExternalReference, error) {
 // PrimaryPurposeOrErr returns the PrimaryPurpose value or an error if the edge
 // was not loaded in eager-loading.
 func (e NodeEdges) PrimaryPurposeOrErr() ([]*Purpose, error) {
-	if e.loadedTypes[5] {
+	if e.loadedTypes[4] {
 		return e.PrimaryPurpose, nil
 	}
 	return nil, &NotLoadedError{edge: "primary_purpose"}
@@ -170,7 +154,7 @@ func (e NodeEdges) PrimaryPurposeOrErr() ([]*Purpose, error) {
 // ToNodesOrErr returns the ToNodes value or an error if the edge
 // was not loaded in eager-loading.
 func (e NodeEdges) ToNodesOrErr() ([]*Node, error) {
-	if e.loadedTypes[6] {
+	if e.loadedTypes[5] {
 		return e.ToNodes, nil
 	}
 	return nil, &NotLoadedError{edge: "to_nodes"}
@@ -179,7 +163,7 @@ func (e NodeEdges) ToNodesOrErr() ([]*Node, error) {
 // NodesOrErr returns the Nodes value or an error if the edge
 // was not loaded in eager-loading.
 func (e NodeEdges) NodesOrErr() ([]*Node, error) {
-	if e.loadedTypes[7] {
+	if e.loadedTypes[6] {
 		return e.Nodes, nil
 	}
 	return nil, &NotLoadedError{edge: "nodes"}
@@ -188,7 +172,7 @@ func (e NodeEdges) NodesOrErr() ([]*Node, error) {
 // HashesOrErr returns the Hashes value or an error if the edge
 // was not loaded in eager-loading.
 func (e NodeEdges) HashesOrErr() ([]*HashesEntry, error) {
-	if e.loadedTypes[8] {
+	if e.loadedTypes[7] {
 		return e.Hashes, nil
 	}
 	return nil, &NotLoadedError{edge: "hashes"}
@@ -197,7 +181,7 @@ func (e NodeEdges) HashesOrErr() ([]*HashesEntry, error) {
 // IdentifiersOrErr returns the Identifiers value or an error if the edge
 // was not loaded in eager-loading.
 func (e NodeEdges) IdentifiersOrErr() ([]*IdentifiersEntry, error) {
-	if e.loadedTypes[9] {
+	if e.loadedTypes[8] {
 		return e.Identifiers, nil
 	}
 	return nil, &NotLoadedError{edge: "identifiers"}
@@ -206,10 +190,19 @@ func (e NodeEdges) IdentifiersOrErr() ([]*IdentifiersEntry, error) {
 // PropertiesOrErr returns the Properties value or an error if the edge
 // was not loaded in eager-loading.
 func (e NodeEdges) PropertiesOrErr() ([]*Property, error) {
-	if e.loadedTypes[10] {
+	if e.loadedTypes[9] {
 		return e.Properties, nil
 	}
 	return nil, &NotLoadedError{edge: "properties"}
+}
+
+// DocumentsOrErr returns the Documents value or an error if the edge
+// was not loaded in eager-loading.
+func (e NodeEdges) DocumentsOrErr() ([]*Document, error) {
+	if e.loadedTypes[10] {
+		return e.Documents, nil
+	}
+	return nil, &NotLoadedError{edge: "documents"}
 }
 
 // NodeListsOrErr returns the NodeLists value or an error if the edge
@@ -243,7 +236,7 @@ func (*Node) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullString)
 		case node.FieldReleaseDate, node.FieldBuildDate, node.FieldValidUntilDate:
 			values[i] = new(sql.NullTime)
-		case node.FieldID, node.FieldDocumentID, node.FieldNodeListID:
+		case node.FieldID:
 			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -266,12 +259,6 @@ func (n *Node) assignValues(columns []string, values []any) error {
 			} else if value != nil {
 				n.ID = *value
 			}
-		case node.FieldDocumentID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
-				return fmt.Errorf("unexpected type %T for field document_id", values[i])
-			} else if value != nil {
-				n.DocumentID = *value
-			}
 		case node.FieldProtoMessage:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
 				return fmt.Errorf("unexpected type %T for field proto_message", values[i])
@@ -283,12 +270,6 @@ func (n *Node) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field native_id", values[i])
 			} else if value.Valid {
 				n.NativeID = value.String
-			}
-		case node.FieldNodeListID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
-				return fmt.Errorf("unexpected type %T for field node_list_id", values[i])
-			} else if value != nil {
-				n.NodeListID = *value
 			}
 		case node.FieldType:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -423,11 +404,6 @@ func (n *Node) Value(name string) (ent.Value, error) {
 	return n.selectValues.Get(name)
 }
 
-// QueryDocument queries the "document" edge of the Node entity.
-func (n *Node) QueryDocument() *DocumentQuery {
-	return NewNodeClient(n.config).QueryDocument(n)
-}
-
 // QueryAnnotations queries the "annotations" edge of the Node entity.
 func (n *Node) QueryAnnotations() *AnnotationQuery {
 	return NewNodeClient(n.config).QueryAnnotations(n)
@@ -478,6 +454,11 @@ func (n *Node) QueryProperties() *PropertyQuery {
 	return NewNodeClient(n.config).QueryProperties(n)
 }
 
+// QueryDocuments queries the "documents" edge of the Node entity.
+func (n *Node) QueryDocuments() *DocumentQuery {
+	return NewNodeClient(n.config).QueryDocuments(n)
+}
+
 // QueryNodeLists queries the "node_lists" edge of the Node entity.
 func (n *Node) QueryNodeLists() *NodeListQuery {
 	return NewNodeClient(n.config).QueryNodeLists(n)
@@ -511,9 +492,6 @@ func (n *Node) String() string {
 	var builder strings.Builder
 	builder.WriteString("Node(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", n.ID))
-	builder.WriteString("document_id=")
-	builder.WriteString(fmt.Sprintf("%v", n.DocumentID))
-	builder.WriteString(", ")
 	if v := n.ProtoMessage; v != nil {
 		builder.WriteString("proto_message=")
 		builder.WriteString(fmt.Sprintf("%v", *v))
@@ -521,9 +499,6 @@ func (n *Node) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("native_id=")
 	builder.WriteString(n.NativeID)
-	builder.WriteString(", ")
-	builder.WriteString("node_list_id=")
-	builder.WriteString(fmt.Sprintf("%v", n.NodeListID))
 	builder.WriteString(", ")
 	builder.WriteString("type=")
 	builder.WriteString(fmt.Sprintf("%v", n.Type))

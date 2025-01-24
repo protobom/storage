@@ -60,11 +60,6 @@ func IDLTE(id uuid.UUID) predicate.EdgeType {
 	return predicate.EdgeType(sql.FieldLTE(FieldID, id))
 }
 
-// DocumentID applies equality check predicate on the "document_id" field. It's identical to DocumentIDEQ.
-func DocumentID(v uuid.UUID) predicate.EdgeType {
-	return predicate.EdgeType(sql.FieldEQ(FieldDocumentID, v))
-}
-
 // ProtoMessage applies equality check predicate on the "proto_message" field. It's identical to ProtoMessageEQ.
 func ProtoMessage(v *sbom.Edge) predicate.EdgeType {
 	return predicate.EdgeType(sql.FieldEQ(FieldProtoMessage, v))
@@ -78,36 +73,6 @@ func NodeID(v uuid.UUID) predicate.EdgeType {
 // ToNodeID applies equality check predicate on the "to_node_id" field. It's identical to ToNodeIDEQ.
 func ToNodeID(v uuid.UUID) predicate.EdgeType {
 	return predicate.EdgeType(sql.FieldEQ(FieldToNodeID, v))
-}
-
-// DocumentIDEQ applies the EQ predicate on the "document_id" field.
-func DocumentIDEQ(v uuid.UUID) predicate.EdgeType {
-	return predicate.EdgeType(sql.FieldEQ(FieldDocumentID, v))
-}
-
-// DocumentIDNEQ applies the NEQ predicate on the "document_id" field.
-func DocumentIDNEQ(v uuid.UUID) predicate.EdgeType {
-	return predicate.EdgeType(sql.FieldNEQ(FieldDocumentID, v))
-}
-
-// DocumentIDIn applies the In predicate on the "document_id" field.
-func DocumentIDIn(vs ...uuid.UUID) predicate.EdgeType {
-	return predicate.EdgeType(sql.FieldIn(FieldDocumentID, vs...))
-}
-
-// DocumentIDNotIn applies the NotIn predicate on the "document_id" field.
-func DocumentIDNotIn(vs ...uuid.UUID) predicate.EdgeType {
-	return predicate.EdgeType(sql.FieldNotIn(FieldDocumentID, vs...))
-}
-
-// DocumentIDIsNil applies the IsNil predicate on the "document_id" field.
-func DocumentIDIsNil() predicate.EdgeType {
-	return predicate.EdgeType(sql.FieldIsNull(FieldDocumentID))
-}
-
-// DocumentIDNotNil applies the NotNil predicate on the "document_id" field.
-func DocumentIDNotNil() predicate.EdgeType {
-	return predicate.EdgeType(sql.FieldNotNull(FieldDocumentID))
 }
 
 // ProtoMessageEQ applies the EQ predicate on the "proto_message" field.
@@ -210,29 +175,6 @@ func ToNodeIDNotIn(vs ...uuid.UUID) predicate.EdgeType {
 	return predicate.EdgeType(sql.FieldNotIn(FieldToNodeID, vs...))
 }
 
-// HasDocument applies the HasEdge predicate on the "document" edge.
-func HasDocument() predicate.EdgeType {
-	return predicate.EdgeType(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, DocumentTable, DocumentColumn),
-		)
-		sqlgraph.HasNeighbors(s, step)
-	})
-}
-
-// HasDocumentWith applies the HasEdge predicate on the "document" edge with a given conditions (other predicates).
-func HasDocumentWith(preds ...predicate.Document) predicate.EdgeType {
-	return predicate.EdgeType(func(s *sql.Selector) {
-		step := newDocumentStep()
-		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
-			for _, p := range preds {
-				p(s)
-			}
-		})
-	})
-}
-
 // HasFrom applies the HasEdge predicate on the "from" edge.
 func HasFrom() predicate.EdgeType {
 	return predicate.EdgeType(func(s *sql.Selector) {
@@ -271,6 +213,29 @@ func HasTo() predicate.EdgeType {
 func HasToWith(preds ...predicate.Node) predicate.EdgeType {
 	return predicate.EdgeType(func(s *sql.Selector) {
 		step := newToStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasDocuments applies the HasEdge predicate on the "documents" edge.
+func HasDocuments() predicate.EdgeType {
+	return predicate.EdgeType(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, DocumentsTable, DocumentsPrimaryKey...),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasDocumentsWith applies the HasEdge predicate on the "documents" edge with a given conditions (other predicates).
+func HasDocumentsWith(preds ...predicate.Document) predicate.EdgeType {
+	return predicate.EdgeType(func(s *sql.Selector) {
+		step := newDocumentsStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

@@ -17,8 +17,8 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"github.com/google/uuid"
 	"github.com/protobom/protobom/pkg/sbom"
-	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/metadata"
+	"github.com/protobom/storage/internal/backends/ent/sourcedata"
 )
 
 // Metadata is the model entity for the Metadata schema.
@@ -28,6 +28,8 @@ type Metadata struct {
 	ID uuid.UUID `json:"-"`
 	// ProtoMessage holds the value of the "proto_message" field.
 	ProtoMessage *sbom.Metadata `json:"-"`
+	// SourceDataID holds the value of the "source_data_id" field.
+	SourceDataID uuid.UUID `json:"-"`
 	// NativeID holds the value of the "native_id" field.
 	NativeID string `json:"id"`
 	// Version holds the value of the "version" field.
@@ -46,8 +48,6 @@ type Metadata struct {
 
 // MetadataEdges holds the relations/edges for other nodes in the graph.
 type MetadataEdges struct {
-	// Document holds the value of the document edge.
-	Document *Document `json:"document,omitempty"`
 	// Tools holds the value of the tools edge.
 	Tools []*Tool `json:"tools,omitempty"`
 	// Authors holds the value of the authors edge.
@@ -55,27 +55,18 @@ type MetadataEdges struct {
 	// DocumentTypes holds the value of the document_types edge.
 	DocumentTypes []*DocumentType `json:"document_types,omitempty"`
 	// SourceData holds the value of the source_data edge.
-	SourceData []*SourceData `json:"source_data,omitempty"`
+	SourceData *SourceData `json:"source_data,omitempty"`
+	// Documents holds the value of the documents edge.
+	Documents []*Document `json:"-"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [5]bool
 }
 
-// DocumentOrErr returns the Document value or an error if the edge
-// was not loaded in eager-loading, or loaded but was not found.
-func (e MetadataEdges) DocumentOrErr() (*Document, error) {
-	if e.Document != nil {
-		return e.Document, nil
-	} else if e.loadedTypes[0] {
-		return nil, &NotFoundError{label: document.Label}
-	}
-	return nil, &NotLoadedError{edge: "document"}
-}
-
 // ToolsOrErr returns the Tools value or an error if the edge
 // was not loaded in eager-loading.
 func (e MetadataEdges) ToolsOrErr() ([]*Tool, error) {
-	if e.loadedTypes[1] {
+	if e.loadedTypes[0] {
 		return e.Tools, nil
 	}
 	return nil, &NotLoadedError{edge: "tools"}
@@ -84,7 +75,7 @@ func (e MetadataEdges) ToolsOrErr() ([]*Tool, error) {
 // AuthorsOrErr returns the Authors value or an error if the edge
 // was not loaded in eager-loading.
 func (e MetadataEdges) AuthorsOrErr() ([]*Person, error) {
-	if e.loadedTypes[2] {
+	if e.loadedTypes[1] {
 		return e.Authors, nil
 	}
 	return nil, &NotLoadedError{edge: "authors"}
@@ -93,19 +84,30 @@ func (e MetadataEdges) AuthorsOrErr() ([]*Person, error) {
 // DocumentTypesOrErr returns the DocumentTypes value or an error if the edge
 // was not loaded in eager-loading.
 func (e MetadataEdges) DocumentTypesOrErr() ([]*DocumentType, error) {
-	if e.loadedTypes[3] {
+	if e.loadedTypes[2] {
 		return e.DocumentTypes, nil
 	}
 	return nil, &NotLoadedError{edge: "document_types"}
 }
 
 // SourceDataOrErr returns the SourceData value or an error if the edge
-// was not loaded in eager-loading.
-func (e MetadataEdges) SourceDataOrErr() ([]*SourceData, error) {
-	if e.loadedTypes[4] {
+// was not loaded in eager-loading, or loaded but was not found.
+func (e MetadataEdges) SourceDataOrErr() (*SourceData, error) {
+	if e.SourceData != nil {
 		return e.SourceData, nil
+	} else if e.loadedTypes[3] {
+		return nil, &NotFoundError{label: sourcedata.Label}
 	}
 	return nil, &NotLoadedError{edge: "source_data"}
+}
+
+// DocumentsOrErr returns the Documents value or an error if the edge
+// was not loaded in eager-loading.
+func (e MetadataEdges) DocumentsOrErr() ([]*Document, error) {
+	if e.loadedTypes[4] {
+		return e.Documents, nil
+	}
+	return nil, &NotLoadedError{edge: "documents"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -119,7 +121,7 @@ func (*Metadata) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullString)
 		case metadata.FieldDate:
 			values[i] = new(sql.NullTime)
-		case metadata.FieldID:
+		case metadata.FieldID, metadata.FieldSourceDataID:
 			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -147,6 +149,12 @@ func (m *Metadata) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field proto_message", values[i])
 			} else if value.Valid {
 				m.ProtoMessage = value.S.(*sbom.Metadata)
+			}
+		case metadata.FieldSourceDataID:
+			if value, ok := values[i].(*uuid.UUID); !ok {
+				return fmt.Errorf("unexpected type %T for field source_data_id", values[i])
+			} else if value != nil {
+				m.SourceDataID = *value
 			}
 		case metadata.FieldNativeID:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -191,11 +199,6 @@ func (m *Metadata) Value(name string) (ent.Value, error) {
 	return m.selectValues.Get(name)
 }
 
-// QueryDocument queries the "document" edge of the Metadata entity.
-func (m *Metadata) QueryDocument() *DocumentQuery {
-	return NewMetadataClient(m.config).QueryDocument(m)
-}
-
 // QueryTools queries the "tools" edge of the Metadata entity.
 func (m *Metadata) QueryTools() *ToolQuery {
 	return NewMetadataClient(m.config).QueryTools(m)
@@ -214,6 +217,11 @@ func (m *Metadata) QueryDocumentTypes() *DocumentTypeQuery {
 // QuerySourceData queries the "source_data" edge of the Metadata entity.
 func (m *Metadata) QuerySourceData() *SourceDataQuery {
 	return NewMetadataClient(m.config).QuerySourceData(m)
+}
+
+// QueryDocuments queries the "documents" edge of the Metadata entity.
+func (m *Metadata) QueryDocuments() *DocumentQuery {
+	return NewMetadataClient(m.config).QueryDocuments(m)
 }
 
 // Update returns a builder for updating this Metadata.
@@ -243,6 +251,9 @@ func (m *Metadata) String() string {
 		builder.WriteString("proto_message=")
 		builder.WriteString(fmt.Sprintf("%v", *v))
 	}
+	builder.WriteString(", ")
+	builder.WriteString("source_data_id=")
+	builder.WriteString(fmt.Sprintf("%v", m.SourceDataID))
 	builder.WriteString(", ")
 	builder.WriteString("native_id=")
 	builder.WriteString(m.NativeID)

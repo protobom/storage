@@ -40,20 +40,6 @@ type NodeCreate struct {
 	conflict []sql.ConflictOption
 }
 
-// SetDocumentID sets the "document_id" field.
-func (nc *NodeCreate) SetDocumentID(u uuid.UUID) *NodeCreate {
-	nc.mutation.SetDocumentID(u)
-	return nc
-}
-
-// SetNillableDocumentID sets the "document_id" field if the given value is not nil.
-func (nc *NodeCreate) SetNillableDocumentID(u *uuid.UUID) *NodeCreate {
-	if u != nil {
-		nc.SetDocumentID(*u)
-	}
-	return nc
-}
-
 // SetProtoMessage sets the "proto_message" field.
 func (nc *NodeCreate) SetProtoMessage(s *sbom.Node) *NodeCreate {
 	nc.mutation.SetProtoMessage(s)
@@ -63,20 +49,6 @@ func (nc *NodeCreate) SetProtoMessage(s *sbom.Node) *NodeCreate {
 // SetNativeID sets the "native_id" field.
 func (nc *NodeCreate) SetNativeID(s string) *NodeCreate {
 	nc.mutation.SetNativeID(s)
-	return nc
-}
-
-// SetNodeListID sets the "node_list_id" field.
-func (nc *NodeCreate) SetNodeListID(u uuid.UUID) *NodeCreate {
-	nc.mutation.SetNodeListID(u)
-	return nc
-}
-
-// SetNillableNodeListID sets the "node_list_id" field if the given value is not nil.
-func (nc *NodeCreate) SetNillableNodeListID(u *uuid.UUID) *NodeCreate {
-	if u != nil {
-		nc.SetNodeListID(*u)
-	}
 	return nc
 }
 
@@ -206,11 +178,6 @@ func (nc *NodeCreate) SetNillableID(u *uuid.UUID) *NodeCreate {
 		nc.SetID(*u)
 	}
 	return nc
-}
-
-// SetDocument sets the "document" edge to the Document entity.
-func (nc *NodeCreate) SetDocument(d *Document) *NodeCreate {
-	return nc.SetDocumentID(d.ID)
 }
 
 // AddAnnotationIDs adds the "annotations" edge to the Annotation entity by IDs.
@@ -363,6 +330,21 @@ func (nc *NodeCreate) AddProperties(p ...*Property) *NodeCreate {
 	return nc.AddPropertyIDs(ids...)
 }
 
+// AddDocumentIDs adds the "documents" edge to the Document entity by IDs.
+func (nc *NodeCreate) AddDocumentIDs(ids ...uuid.UUID) *NodeCreate {
+	nc.mutation.AddDocumentIDs(ids...)
+	return nc
+}
+
+// AddDocuments adds the "documents" edges to the Document entity.
+func (nc *NodeCreate) AddDocuments(d ...*Document) *NodeCreate {
+	ids := make([]uuid.UUID, len(d))
+	for i := range d {
+		ids[i] = d[i].ID
+	}
+	return nc.AddDocumentIDs(ids...)
+}
+
 // AddNodeListIDs adds the "node_lists" edge to the NodeList entity by IDs.
 func (nc *NodeCreate) AddNodeListIDs(ids ...uuid.UUID) *NodeCreate {
 	nc.mutation.AddNodeListIDs(ids...)
@@ -430,13 +412,6 @@ func (nc *NodeCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (nc *NodeCreate) defaults() error {
-	if _, ok := nc.mutation.DocumentID(); !ok {
-		if node.DefaultDocumentID == nil {
-			return fmt.Errorf("ent: uninitialized node.DefaultDocumentID (forgotten import ent/runtime?)")
-		}
-		v := node.DefaultDocumentID()
-		nc.mutation.SetDocumentID(v)
-	}
 	if _, ok := nc.mutation.ID(); !ok {
 		if node.DefaultID == nil {
 			return fmt.Errorf("ent: uninitialized node.DefaultID (forgotten import ent/runtime?)")
@@ -522,6 +497,9 @@ func (nc *NodeCreate) check() error {
 	if _, ok := nc.mutation.FileTypes(); !ok {
 		return &ValidationError{Name: "file_types", err: errors.New(`ent: missing required field "Node.file_types"`)}
 	}
+	if len(nc.mutation.DocumentsIDs()) == 0 {
+		return &ValidationError{Name: "documents", err: errors.New(`ent: missing required edge "Node.documents"`)}
+	}
 	if len(nc.mutation.NodeListsIDs()) == 0 {
 		return &ValidationError{Name: "node_lists", err: errors.New(`ent: missing required edge "Node.node_lists"`)}
 	}
@@ -568,10 +546,6 @@ func (nc *NodeCreate) createSpec() (*Node, *sqlgraph.CreateSpec) {
 	if value, ok := nc.mutation.NativeID(); ok {
 		_spec.SetField(node.FieldNativeID, field.TypeString, value)
 		_node.NativeID = value
-	}
-	if value, ok := nc.mutation.NodeListID(); ok {
-		_spec.SetField(node.FieldNodeListID, field.TypeUUID, value)
-		_node.NodeListID = value
 	}
 	if value, ok := nc.mutation.GetType(); ok {
 		_spec.SetField(node.FieldType, field.TypeEnum, value)
@@ -649,23 +623,6 @@ func (nc *NodeCreate) createSpec() (*Node, *sqlgraph.CreateSpec) {
 		_spec.SetField(node.FieldFileTypes, field.TypeJSON, value)
 		_node.FileTypes = value
 	}
-	if nodes := nc.mutation.DocumentIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: false,
-			Table:   node.DocumentTable,
-			Columns: []string{node.DocumentColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(document.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_node.DocumentID = nodes[0]
-		_spec.Edges = append(_spec.Edges, edge)
-	}
 	if nodes := nc.mutation.AnnotationsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
@@ -684,10 +641,10 @@ func (nc *NodeCreate) createSpec() (*Node, *sqlgraph.CreateSpec) {
 	}
 	if nodes := nc.mutation.SuppliersIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   node.SuppliersTable,
-			Columns: []string{node.SuppliersColumn},
+			Columns: node.SuppliersPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
@@ -700,10 +657,10 @@ func (nc *NodeCreate) createSpec() (*Node, *sqlgraph.CreateSpec) {
 	}
 	if nodes := nc.mutation.OriginatorsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   node.OriginatorsTable,
-			Columns: []string{node.OriginatorsColumn},
+			Columns: node.OriginatorsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
@@ -732,10 +689,10 @@ func (nc *NodeCreate) createSpec() (*Node, *sqlgraph.CreateSpec) {
 	}
 	if nodes := nc.mutation.PrimaryPurposeIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   node.PrimaryPurposeTable,
-			Columns: []string{node.PrimaryPurposeColumn},
+			Columns: node.PrimaryPurposePrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(purpose.FieldID, field.TypeInt),
@@ -819,13 +776,29 @@ func (nc *NodeCreate) createSpec() (*Node, *sqlgraph.CreateSpec) {
 	}
 	if nodes := nc.mutation.PropertiesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   node.PropertiesTable,
-			Columns: []string{node.PropertiesColumn},
+			Columns: node.PropertiesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(property.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := nc.mutation.DocumentsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   node.DocumentsTable,
+			Columns: node.DocumentsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(document.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -872,7 +845,7 @@ func (nc *NodeCreate) createSpec() (*Node, *sqlgraph.CreateSpec) {
 // of the `INSERT` statement. For example:
 //
 //	client.Node.Create().
-//		SetDocumentID(v).
+//		SetProtoMessage(v).
 //		OnConflict(
 //			// Update the row with the new values
 //			// the was proposed for insertion.
@@ -881,7 +854,7 @@ func (nc *NodeCreate) createSpec() (*Node, *sqlgraph.CreateSpec) {
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.NodeUpsert) {
-//			SetDocumentID(v+v).
+//			SetProtoMessage(v+v).
 //		}).
 //		Exec(ctx)
 func (nc *NodeCreate) OnConflict(opts ...sql.ConflictOption) *NodeUpsertOne {
@@ -916,24 +889,6 @@ type (
 		*sql.UpdateSet
 	}
 )
-
-// SetNodeListID sets the "node_list_id" field.
-func (u *NodeUpsert) SetNodeListID(v uuid.UUID) *NodeUpsert {
-	u.Set(node.FieldNodeListID, v)
-	return u
-}
-
-// UpdateNodeListID sets the "node_list_id" field to the value that was provided on create.
-func (u *NodeUpsert) UpdateNodeListID() *NodeUpsert {
-	u.SetExcluded(node.FieldNodeListID)
-	return u
-}
-
-// ClearNodeListID clears the value of the "node_list_id" field.
-func (u *NodeUpsert) ClearNodeListID() *NodeUpsert {
-	u.SetNull(node.FieldNodeListID)
-	return u
-}
 
 // SetType sets the "type" field.
 func (u *NodeUpsert) SetType(v node.Type) *NodeUpsert {
@@ -1180,9 +1135,6 @@ func (u *NodeUpsertOne) UpdateNewValues() *NodeUpsertOne {
 		if _, exists := u.create.mutation.ID(); exists {
 			s.SetIgnore(node.FieldID)
 		}
-		if _, exists := u.create.mutation.DocumentID(); exists {
-			s.SetIgnore(node.FieldDocumentID)
-		}
 		if _, exists := u.create.mutation.ProtoMessage(); exists {
 			s.SetIgnore(node.FieldProtoMessage)
 		}
@@ -1218,27 +1170,6 @@ func (u *NodeUpsertOne) Update(set func(*NodeUpsert)) *NodeUpsertOne {
 		set(&NodeUpsert{UpdateSet: update})
 	}))
 	return u
-}
-
-// SetNodeListID sets the "node_list_id" field.
-func (u *NodeUpsertOne) SetNodeListID(v uuid.UUID) *NodeUpsertOne {
-	return u.Update(func(s *NodeUpsert) {
-		s.SetNodeListID(v)
-	})
-}
-
-// UpdateNodeListID sets the "node_list_id" field to the value that was provided on create.
-func (u *NodeUpsertOne) UpdateNodeListID() *NodeUpsertOne {
-	return u.Update(func(s *NodeUpsert) {
-		s.UpdateNodeListID()
-	})
-}
-
-// ClearNodeListID clears the value of the "node_list_id" field.
-func (u *NodeUpsertOne) ClearNodeListID() *NodeUpsertOne {
-	return u.Update(func(s *NodeUpsert) {
-		s.ClearNodeListID()
-	})
 }
 
 // SetType sets the "type" field.
@@ -1643,7 +1574,7 @@ func (ncb *NodeCreateBulk) ExecX(ctx context.Context) {
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.NodeUpsert) {
-//			SetDocumentID(v+v).
+//			SetProtoMessage(v+v).
 //		}).
 //		Exec(ctx)
 func (ncb *NodeCreateBulk) OnConflict(opts ...sql.ConflictOption) *NodeUpsertBulk {
@@ -1690,9 +1621,6 @@ func (u *NodeUpsertBulk) UpdateNewValues() *NodeUpsertBulk {
 			if _, exists := b.mutation.ID(); exists {
 				s.SetIgnore(node.FieldID)
 			}
-			if _, exists := b.mutation.DocumentID(); exists {
-				s.SetIgnore(node.FieldDocumentID)
-			}
 			if _, exists := b.mutation.ProtoMessage(); exists {
 				s.SetIgnore(node.FieldProtoMessage)
 			}
@@ -1729,27 +1657,6 @@ func (u *NodeUpsertBulk) Update(set func(*NodeUpsert)) *NodeUpsertBulk {
 		set(&NodeUpsert{UpdateSet: update})
 	}))
 	return u
-}
-
-// SetNodeListID sets the "node_list_id" field.
-func (u *NodeUpsertBulk) SetNodeListID(v uuid.UUID) *NodeUpsertBulk {
-	return u.Update(func(s *NodeUpsert) {
-		s.SetNodeListID(v)
-	})
-}
-
-// UpdateNodeListID sets the "node_list_id" field to the value that was provided on create.
-func (u *NodeUpsertBulk) UpdateNodeListID() *NodeUpsertBulk {
-	return u.Update(func(s *NodeUpsert) {
-		s.UpdateNodeListID()
-	})
-}
-
-// ClearNodeListID clears the value of the "node_list_id" field.
-func (u *NodeUpsertBulk) ClearNodeListID() *NodeUpsertBulk {
-	return u.Update(func(s *NodeUpsert) {
-		s.ClearNodeListID()
-	})
 }
 
 // SetType sets the "type" field.

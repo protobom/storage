@@ -90,8 +90,8 @@ var (
 	// DocumentsColumns holds the columns for the "documents" table.
 	DocumentsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID, Unique: true},
-		{Name: "metadata_id", Type: field.TypeUUID, Unique: true, Nullable: true},
-		{Name: "node_list_id", Type: field.TypeUUID, Unique: true, Nullable: true},
+		{Name: "metadata_id", Type: field.TypeUUID, Nullable: true},
+		{Name: "node_list_id", Type: field.TypeUUID, Nullable: true},
 	}
 	// DocumentsTable holds the schema information for the "documents" table.
 	DocumentsTable = &schema.Table{
@@ -100,16 +100,28 @@ var (
 		PrimaryKey: []*schema.Column{DocumentsColumns[0]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:     "documents_metadata_document",
+				Symbol:     "documents_metadata_metadata",
 				Columns:    []*schema.Column{DocumentsColumns[1]},
 				RefColumns: []*schema.Column{MetadataColumns[0]},
-				OnDelete:   schema.SetNull,
+				OnDelete:   schema.Cascade,
 			},
 			{
-				Symbol:     "documents_node_lists_document",
+				Symbol:     "documents_node_lists_node_list",
 				Columns:    []*schema.Column{DocumentsColumns[2]},
 				RefColumns: []*schema.Column{NodeListsColumns[0]},
-				OnDelete:   schema.SetNull,
+				OnDelete:   schema.Cascade,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "idx_documents_metadata_id",
+				Unique:  false,
+				Columns: []*schema.Column{DocumentsColumns[1]},
+			},
+			{
+				Name:    "idx_documents_node_list_id",
+				Unique:  false,
+				Columns: []*schema.Column{DocumentsColumns[2]},
 			},
 		},
 	}
@@ -120,33 +132,17 @@ var (
 		{Name: "type", Type: field.TypeEnum, Nullable: true, Enums: []string{"OTHER", "DESIGN", "SOURCE", "BUILD", "ANALYZED", "DEPLOYED", "RUNTIME", "DISCOVERY", "DECOMISSION"}},
 		{Name: "name", Type: field.TypeString, Nullable: true},
 		{Name: "description", Type: field.TypeString, Nullable: true},
-		{Name: "document_id", Type: field.TypeUUID, Nullable: true},
-		{Name: "metadata_id", Type: field.TypeUUID},
 	}
 	// DocumentTypesTable holds the schema information for the "document_types" table.
 	DocumentTypesTable = &schema.Table{
 		Name:       "document_types",
 		Columns:    DocumentTypesColumns,
 		PrimaryKey: []*schema.Column{DocumentTypesColumns[0]},
-		ForeignKeys: []*schema.ForeignKey{
-			{
-				Symbol:     "document_types_documents_document",
-				Columns:    []*schema.Column{DocumentTypesColumns[5]},
-				RefColumns: []*schema.Column{DocumentsColumns[0]},
-				OnDelete:   schema.Cascade,
-			},
-			{
-				Symbol:     "document_types_metadata_document_types",
-				Columns:    []*schema.Column{DocumentTypesColumns[6]},
-				RefColumns: []*schema.Column{MetadataColumns[0]},
-				OnDelete:   schema.Cascade,
-			},
-		},
 		Indexes: []*schema.Index{
 			{
 				Name:    "idx_document_types",
 				Unique:  true,
-				Columns: []*schema.Column{DocumentTypesColumns[6], DocumentTypesColumns[2], DocumentTypesColumns[3], DocumentTypesColumns[4]},
+				Columns: []*schema.Column{DocumentTypesColumns[2], DocumentTypesColumns[3], DocumentTypesColumns[4]},
 			},
 		},
 	}
@@ -155,7 +151,6 @@ var (
 		{Name: "id", Type: field.TypeUUID, Unique: true},
 		{Name: "proto_message", Type: field.TypeBytes, Unique: true},
 		{Name: "type", Type: field.TypeEnum, Enums: []string{"UNKNOWN", "amends", "ancestor", "buildDependency", "buildTool", "contains", "contained_by", "copy", "dataFile", "dependencyManifest", "dependsOn", "dependencyOf", "descendant", "describes", "describedBy", "devDependency", "devTool", "distributionArtifact", "documentation", "dynamicLink", "example", "expandedFromArchive", "fileAdded", "fileDeleted", "fileModified", "generates", "generatedFrom", "metafile", "optionalComponent", "optionalDependency", "other", "packages", "patch", "prerequisite", "prerequisiteFor", "providedDependency", "requirementFor", "runtimeDependency", "specificationFor", "staticLink", "test", "testCase", "testDependency", "testTool", "variant"}},
-		{Name: "document_id", Type: field.TypeUUID, Nullable: true},
 		{Name: "node_id", Type: field.TypeUUID},
 		{Name: "to_node_id", Type: field.TypeUUID},
 	}
@@ -166,20 +161,14 @@ var (
 		PrimaryKey: []*schema.Column{EdgeTypesColumns[0]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:     "edge_types_documents_document",
-				Columns:    []*schema.Column{EdgeTypesColumns[3]},
-				RefColumns: []*schema.Column{DocumentsColumns[0]},
-				OnDelete:   schema.Cascade,
-			},
-			{
 				Symbol:     "edge_types_nodes_from",
-				Columns:    []*schema.Column{EdgeTypesColumns[4]},
+				Columns:    []*schema.Column{EdgeTypesColumns[3]},
 				RefColumns: []*schema.Column{NodesColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "edge_types_nodes_to",
-				Columns:    []*schema.Column{EdgeTypesColumns[5]},
+				Columns:    []*schema.Column{EdgeTypesColumns[4]},
 				RefColumns: []*schema.Column{NodesColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
@@ -188,12 +177,12 @@ var (
 			{
 				Name:    "idx_edge_types",
 				Unique:  true,
-				Columns: []*schema.Column{EdgeTypesColumns[2], EdgeTypesColumns[4], EdgeTypesColumns[5]},
+				Columns: []*schema.Column{EdgeTypesColumns[2], EdgeTypesColumns[3], EdgeTypesColumns[4]},
 			},
 			{
 				Name:    "edgetype_node_id_to_node_id",
 				Unique:  true,
-				Columns: []*schema.Column{EdgeTypesColumns[4], EdgeTypesColumns[5]},
+				Columns: []*schema.Column{EdgeTypesColumns[3], EdgeTypesColumns[4]},
 			},
 		},
 	}
@@ -205,42 +194,24 @@ var (
 		{Name: "comment", Type: field.TypeString},
 		{Name: "authority", Type: field.TypeString, Nullable: true},
 		{Name: "type", Type: field.TypeEnum, Enums: []string{"UNKNOWN", "ATTESTATION", "BINARY", "BOM", "BOWER", "BUILD_META", "BUILD_SYSTEM", "CERTIFICATION_REPORT", "CHAT", "CODIFIED_INFRASTRUCTURE", "COMPONENT_ANALYSIS_REPORT", "CONFIGURATION", "DISTRIBUTION_INTAKE", "DOCUMENTATION", "DOWNLOAD", "DYNAMIC_ANALYSIS_REPORT", "EOL_NOTICE", "EVIDENCE", "EXPORT_CONTROL_ASSESSMENT", "FORMULATION", "FUNDING", "ISSUE_TRACKER", "LICENSE", "LOG", "MAILING_LIST", "MATURITY_REPORT", "MAVEN_CENTRAL", "METRICS", "MODEL_CARD", "NPM", "NUGET", "OTHER", "POAM", "PRIVACY_ASSESSMENT", "PRODUCT_METADATA", "PURCHASE_ORDER", "QUALITY_ASSESSMENT_REPORT", "QUALITY_METRICS", "RELEASE_HISTORY", "RELEASE_NOTES", "RISK_ASSESSMENT", "RUNTIME_ANALYSIS_REPORT", "SECURE_SOFTWARE_ATTESTATION", "SECURITY_ADVERSARY_MODEL", "SECURITY_ADVISORY", "SECURITY_CONTACT", "SECURITY_FIX", "SECURITY_OTHER", "SECURITY_PENTEST_REPORT", "SECURITY_POLICY", "SECURITY_SWID", "SECURITY_THREAT_MODEL", "SOCIAL", "SOURCE_ARTIFACT", "STATIC_ANALYSIS_REPORT", "SUPPORT", "VCS", "VULNERABILITY_ASSERTION", "VULNERABILITY_DISCLOSURE_REPORT", "VULNERABILITY_EXPLOITABILITY_ASSESSMENT", "WEBSITE"}},
-		{Name: "document_id", Type: field.TypeUUID, Nullable: true},
 	}
 	// ExternalReferencesTable holds the schema information for the "external_references" table.
 	ExternalReferencesTable = &schema.Table{
 		Name:       "external_references",
 		Columns:    ExternalReferencesColumns,
 		PrimaryKey: []*schema.Column{ExternalReferencesColumns[0]},
-		ForeignKeys: []*schema.ForeignKey{
-			{
-				Symbol:     "external_references_documents_document",
-				Columns:    []*schema.Column{ExternalReferencesColumns[6]},
-				RefColumns: []*schema.Column{DocumentsColumns[0]},
-				OnDelete:   schema.Cascade,
-			},
-		},
 	}
 	// HashesEntriesColumns holds the columns for the "hashes_entries" table.
 	HashesEntriesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID, Unique: true},
 		{Name: "hash_algorithm", Type: field.TypeEnum, Enums: []string{"UNKNOWN", "MD5", "SHA1", "SHA256", "SHA384", "SHA512", "SHA3_256", "SHA3_384", "SHA3_512", "BLAKE2B_256", "BLAKE2B_384", "BLAKE2B_512", "BLAKE3", "MD2", "ADLER32", "MD4", "MD6", "SHA224"}},
 		{Name: "hash_data", Type: field.TypeString},
-		{Name: "document_id", Type: field.TypeUUID, Nullable: true},
 	}
 	// HashesEntriesTable holds the schema information for the "hashes_entries" table.
 	HashesEntriesTable = &schema.Table{
 		Name:       "hashes_entries",
 		Columns:    HashesEntriesColumns,
 		PrimaryKey: []*schema.Column{HashesEntriesColumns[0]},
-		ForeignKeys: []*schema.ForeignKey{
-			{
-				Symbol:     "hashes_entries_documents_document",
-				Columns:    []*schema.Column{HashesEntriesColumns[3]},
-				RefColumns: []*schema.Column{DocumentsColumns[0]},
-				OnDelete:   schema.Cascade,
-			},
-		},
 		Indexes: []*schema.Index{
 			{
 				Name:    "idx_hashes",
@@ -254,21 +225,12 @@ var (
 		{Name: "id", Type: field.TypeUUID, Unique: true},
 		{Name: "type", Type: field.TypeEnum, Enums: []string{"UNKNOWN_IDENTIFIER_TYPE", "PURL", "CPE22", "CPE23", "GITOID"}},
 		{Name: "value", Type: field.TypeString},
-		{Name: "document_id", Type: field.TypeUUID, Nullable: true},
 	}
 	// IdentifiersEntriesTable holds the schema information for the "identifiers_entries" table.
 	IdentifiersEntriesTable = &schema.Table{
 		Name:       "identifiers_entries",
 		Columns:    IdentifiersEntriesColumns,
 		PrimaryKey: []*schema.Column{IdentifiersEntriesColumns[0]},
-		ForeignKeys: []*schema.ForeignKey{
-			{
-				Symbol:     "identifiers_entries_documents_document",
-				Columns:    []*schema.Column{IdentifiersEntriesColumns[3]},
-				RefColumns: []*schema.Column{DocumentsColumns[0]},
-				OnDelete:   schema.Cascade,
-			},
-		},
 		Indexes: []*schema.Index{
 			{
 				Name:    "idx_identifiers",
@@ -286,17 +248,19 @@ var (
 		{Name: "name", Type: field.TypeString},
 		{Name: "date", Type: field.TypeTime},
 		{Name: "comment", Type: field.TypeString},
+		{Name: "source_data_id", Type: field.TypeUUID, Nullable: true},
 	}
 	// MetadataTable holds the schema information for the "metadata" table.
 	MetadataTable = &schema.Table{
 		Name:       "metadata",
 		Columns:    MetadataColumns,
 		PrimaryKey: []*schema.Column{MetadataColumns[0]},
-		Indexes: []*schema.Index{
+		ForeignKeys: []*schema.ForeignKey{
 			{
-				Name:    "idx_metadata",
-				Unique:  true,
-				Columns: []*schema.Column{MetadataColumns[2], MetadataColumns[3], MetadataColumns[4]},
+				Symbol:     "metadata_source_data_source_data",
+				Columns:    []*schema.Column{MetadataColumns[7]},
+				RefColumns: []*schema.Column{SourceDataColumns[0]},
+				OnDelete:   schema.Cascade,
 			},
 		},
 	}
@@ -305,7 +269,6 @@ var (
 		{Name: "id", Type: field.TypeUUID, Unique: true},
 		{Name: "proto_message", Type: field.TypeBytes, Unique: true},
 		{Name: "native_id", Type: field.TypeString},
-		{Name: "node_list_id", Type: field.TypeUUID, Nullable: true},
 		{Name: "type", Type: field.TypeEnum, Enums: []string{"PACKAGE", "FILE"}},
 		{Name: "name", Type: field.TypeString},
 		{Name: "version", Type: field.TypeString},
@@ -325,28 +288,12 @@ var (
 		{Name: "valid_until_date", Type: field.TypeTime},
 		{Name: "attribution", Type: field.TypeJSON},
 		{Name: "file_types", Type: field.TypeJSON},
-		{Name: "document_id", Type: field.TypeUUID, Nullable: true},
 	}
 	// NodesTable holds the schema information for the "nodes" table.
 	NodesTable = &schema.Table{
 		Name:       "nodes",
 		Columns:    NodesColumns,
 		PrimaryKey: []*schema.Column{NodesColumns[0]},
-		ForeignKeys: []*schema.ForeignKey{
-			{
-				Symbol:     "nodes_documents_document",
-				Columns:    []*schema.Column{NodesColumns[23]},
-				RefColumns: []*schema.Column{DocumentsColumns[0]},
-				OnDelete:   schema.Cascade,
-			},
-		},
-		Indexes: []*schema.Index{
-			{
-				Name:    "idx_nodes",
-				Unique:  true,
-				Columns: []*schema.Column{NodesColumns[2], NodesColumns[3]},
-			},
-		},
 	}
 	// NodeListsColumns holds the columns for the "node_lists" table.
 	NodeListsColumns = []*schema.Column{
@@ -369,65 +316,17 @@ var (
 		{Name: "email", Type: field.TypeString},
 		{Name: "url", Type: field.TypeString},
 		{Name: "phone", Type: field.TypeString},
-		{Name: "metadata_id", Type: field.TypeUUID, Nullable: true},
-		{Name: "node_suppliers", Type: field.TypeUUID, Nullable: true},
-		{Name: "node_id", Type: field.TypeUUID, Nullable: true},
-		{Name: "document_id", Type: field.TypeUUID, Nullable: true},
-		{Name: "person_contacts", Type: field.TypeUUID, Nullable: true},
 	}
 	// PersonsTable holds the schema information for the "persons" table.
 	PersonsTable = &schema.Table{
 		Name:       "persons",
 		Columns:    PersonsColumns,
 		PrimaryKey: []*schema.Column{PersonsColumns[0]},
-		ForeignKeys: []*schema.ForeignKey{
-			{
-				Symbol:     "persons_metadata_authors",
-				Columns:    []*schema.Column{PersonsColumns[7]},
-				RefColumns: []*schema.Column{MetadataColumns[0]},
-				OnDelete:   schema.Cascade,
-			},
-			{
-				Symbol:     "persons_nodes_suppliers",
-				Columns:    []*schema.Column{PersonsColumns[8]},
-				RefColumns: []*schema.Column{NodesColumns[0]},
-				OnDelete:   schema.Cascade,
-			},
-			{
-				Symbol:     "persons_nodes_originators",
-				Columns:    []*schema.Column{PersonsColumns[9]},
-				RefColumns: []*schema.Column{NodesColumns[0]},
-				OnDelete:   schema.Cascade,
-			},
-			{
-				Symbol:     "persons_documents_document",
-				Columns:    []*schema.Column{PersonsColumns[10]},
-				RefColumns: []*schema.Column{DocumentsColumns[0]},
-				OnDelete:   schema.Cascade,
-			},
-			{
-				Symbol:     "persons_persons_contacts",
-				Columns:    []*schema.Column{PersonsColumns[11]},
-				RefColumns: []*schema.Column{PersonsColumns[0]},
-				OnDelete:   schema.Cascade,
-			},
-		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "idx_person_metadata_id",
+				Name:    "idx_persons",
 				Unique:  true,
-				Columns: []*schema.Column{PersonsColumns[7], PersonsColumns[2], PersonsColumns[3], PersonsColumns[4], PersonsColumns[5], PersonsColumns[6]},
-				Annotation: &entsql.IndexAnnotation{
-					Where: "metadata_id IS NOT NULL AND node_id IS NULL",
-				},
-			},
-			{
-				Name:    "idx_person_node_id",
-				Unique:  true,
-				Columns: []*schema.Column{PersonsColumns[9], PersonsColumns[2], PersonsColumns[3], PersonsColumns[4], PersonsColumns[5], PersonsColumns[6]},
-				Annotation: &entsql.IndexAnnotation{
-					Where: "metadata_id IS NULL AND node_id IS NOT NULL",
-				},
+				Columns: []*schema.Column{PersonsColumns[2], PersonsColumns[3], PersonsColumns[4], PersonsColumns[5], PersonsColumns[6]},
 			},
 		},
 	}
@@ -437,28 +336,12 @@ var (
 		{Name: "proto_message", Type: field.TypeBytes, Unique: true},
 		{Name: "name", Type: field.TypeString},
 		{Name: "data", Type: field.TypeString},
-		{Name: "node_id", Type: field.TypeUUID},
-		{Name: "document_id", Type: field.TypeUUID, Nullable: true},
 	}
 	// PropertiesTable holds the schema information for the "properties" table.
 	PropertiesTable = &schema.Table{
 		Name:       "properties",
 		Columns:    PropertiesColumns,
 		PrimaryKey: []*schema.Column{PropertiesColumns[0]},
-		ForeignKeys: []*schema.ForeignKey{
-			{
-				Symbol:     "properties_nodes_properties",
-				Columns:    []*schema.Column{PropertiesColumns[4]},
-				RefColumns: []*schema.Column{NodesColumns[0]},
-				OnDelete:   schema.Cascade,
-			},
-			{
-				Symbol:     "properties_documents_document",
-				Columns:    []*schema.Column{PropertiesColumns[5]},
-				RefColumns: []*schema.Column{DocumentsColumns[0]},
-				OnDelete:   schema.Cascade,
-			},
-		},
 		Indexes: []*schema.Index{
 			{
 				Name:    "idx_property",
@@ -471,35 +354,12 @@ var (
 	PurposesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "primary_purpose", Type: field.TypeEnum, Enums: []string{"UNKNOWN_PURPOSE", "APPLICATION", "ARCHIVE", "BOM", "CONFIGURATION", "CONTAINER", "DATA", "DEVICE", "DEVICE_DRIVER", "DOCUMENTATION", "EVIDENCE", "EXECUTABLE", "FILE", "FIRMWARE", "FRAMEWORK", "INSTALL", "LIBRARY", "MACHINE_LEARNING_MODEL", "MANIFEST", "MODEL", "MODULE", "OPERATING_SYSTEM", "OTHER", "PATCH", "PLATFORM", "REQUIREMENT", "SOURCE", "SPECIFICATION", "TEST"}},
-		{Name: "node_id", Type: field.TypeUUID},
-		{Name: "document_id", Type: field.TypeUUID, Nullable: true},
 	}
 	// PurposesTable holds the schema information for the "purposes" table.
 	PurposesTable = &schema.Table{
 		Name:       "purposes",
 		Columns:    PurposesColumns,
 		PrimaryKey: []*schema.Column{PurposesColumns[0]},
-		ForeignKeys: []*schema.ForeignKey{
-			{
-				Symbol:     "purposes_nodes_primary_purpose",
-				Columns:    []*schema.Column{PurposesColumns[2]},
-				RefColumns: []*schema.Column{NodesColumns[0]},
-				OnDelete:   schema.Cascade,
-			},
-			{
-				Symbol:     "purposes_documents_document",
-				Columns:    []*schema.Column{PurposesColumns[3]},
-				RefColumns: []*schema.Column{DocumentsColumns[0]},
-				OnDelete:   schema.Cascade,
-			},
-		},
-		Indexes: []*schema.Index{
-			{
-				Name:    "idx_purposes",
-				Unique:  true,
-				Columns: []*schema.Column{PurposesColumns[2], PurposesColumns[1]},
-			},
-		},
 	}
 	// SourceDataColumns holds the columns for the "source_data" table.
 	SourceDataColumns = []*schema.Column{
@@ -508,29 +368,12 @@ var (
 		{Name: "format", Type: field.TypeString},
 		{Name: "size", Type: field.TypeInt64},
 		{Name: "uri", Type: field.TypeString, Nullable: true},
-		{Name: "hashes", Type: field.TypeJSON, Nullable: true},
-		{Name: "metadata_id", Type: field.TypeUUID},
-		{Name: "document_id", Type: field.TypeUUID, Nullable: true},
 	}
 	// SourceDataTable holds the schema information for the "source_data" table.
 	SourceDataTable = &schema.Table{
 		Name:       "source_data",
 		Columns:    SourceDataColumns,
 		PrimaryKey: []*schema.Column{SourceDataColumns[0]},
-		ForeignKeys: []*schema.ForeignKey{
-			{
-				Symbol:     "source_data_metadata_source_data",
-				Columns:    []*schema.Column{SourceDataColumns[6]},
-				RefColumns: []*schema.Column{MetadataColumns[0]},
-				OnDelete:   schema.Cascade,
-			},
-			{
-				Symbol:     "source_data_documents_document",
-				Columns:    []*schema.Column{SourceDataColumns[7]},
-				RefColumns: []*schema.Column{DocumentsColumns[0]},
-				OnDelete:   schema.Cascade,
-			},
-		},
 		Indexes: []*schema.Index{
 			{
 				Name:    "idx_source_data",
@@ -546,33 +389,292 @@ var (
 		{Name: "name", Type: field.TypeString},
 		{Name: "version", Type: field.TypeString},
 		{Name: "vendor", Type: field.TypeString},
-		{Name: "metadata_id", Type: field.TypeUUID},
-		{Name: "document_id", Type: field.TypeUUID, Nullable: true},
 	}
 	// ToolsTable holds the schema information for the "tools" table.
 	ToolsTable = &schema.Table{
 		Name:       "tools",
 		Columns:    ToolsColumns,
 		PrimaryKey: []*schema.Column{ToolsColumns[0]},
-		ForeignKeys: []*schema.ForeignKey{
-			{
-				Symbol:     "tools_metadata_tools",
-				Columns:    []*schema.Column{ToolsColumns[5]},
-				RefColumns: []*schema.Column{MetadataColumns[0]},
-				OnDelete:   schema.Cascade,
-			},
-			{
-				Symbol:     "tools_documents_document",
-				Columns:    []*schema.Column{ToolsColumns[6]},
-				RefColumns: []*schema.Column{DocumentsColumns[0]},
-				OnDelete:   schema.Cascade,
-			},
-		},
 		Indexes: []*schema.Index{
 			{
 				Name:    "idx_tools",
 				Unique:  true,
-				Columns: []*schema.Column{ToolsColumns[5], ToolsColumns[2], ToolsColumns[3], ToolsColumns[4]},
+				Columns: []*schema.Column{ToolsColumns[2], ToolsColumns[3], ToolsColumns[4]},
+			},
+		},
+	}
+	// DocumentDocumentTypesColumns holds the columns for the "document_document_types" table.
+	DocumentDocumentTypesColumns = []*schema.Column{
+		{Name: "document_id", Type: field.TypeUUID},
+		{Name: "document_type_id", Type: field.TypeUUID},
+	}
+	// DocumentDocumentTypesTable holds the schema information for the "document_document_types" table.
+	DocumentDocumentTypesTable = &schema.Table{
+		Name:       "document_document_types",
+		Columns:    DocumentDocumentTypesColumns,
+		PrimaryKey: []*schema.Column{DocumentDocumentTypesColumns[0], DocumentDocumentTypesColumns[1]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "document_document_types_document_id",
+				Columns:    []*schema.Column{DocumentDocumentTypesColumns[0]},
+				RefColumns: []*schema.Column{DocumentsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "document_document_types_document_type_id",
+				Columns:    []*schema.Column{DocumentDocumentTypesColumns[1]},
+				RefColumns: []*schema.Column{DocumentTypesColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+	}
+	// DocumentEdgeTypesColumns holds the columns for the "document_edge_types" table.
+	DocumentEdgeTypesColumns = []*schema.Column{
+		{Name: "document_id", Type: field.TypeUUID},
+		{Name: "edge_type_id", Type: field.TypeUUID},
+	}
+	// DocumentEdgeTypesTable holds the schema information for the "document_edge_types" table.
+	DocumentEdgeTypesTable = &schema.Table{
+		Name:       "document_edge_types",
+		Columns:    DocumentEdgeTypesColumns,
+		PrimaryKey: []*schema.Column{DocumentEdgeTypesColumns[0], DocumentEdgeTypesColumns[1]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "document_edge_types_document_id",
+				Columns:    []*schema.Column{DocumentEdgeTypesColumns[0]},
+				RefColumns: []*schema.Column{DocumentsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "document_edge_types_edge_type_id",
+				Columns:    []*schema.Column{DocumentEdgeTypesColumns[1]},
+				RefColumns: []*schema.Column{EdgeTypesColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+	}
+	// DocumentExternalReferencesColumns holds the columns for the "document_external_references" table.
+	DocumentExternalReferencesColumns = []*schema.Column{
+		{Name: "document_id", Type: field.TypeUUID},
+		{Name: "external_reference_id", Type: field.TypeUUID},
+	}
+	// DocumentExternalReferencesTable holds the schema information for the "document_external_references" table.
+	DocumentExternalReferencesTable = &schema.Table{
+		Name:       "document_external_references",
+		Columns:    DocumentExternalReferencesColumns,
+		PrimaryKey: []*schema.Column{DocumentExternalReferencesColumns[0], DocumentExternalReferencesColumns[1]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "document_external_references_document_id",
+				Columns:    []*schema.Column{DocumentExternalReferencesColumns[0]},
+				RefColumns: []*schema.Column{DocumentsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "document_external_references_external_reference_id",
+				Columns:    []*schema.Column{DocumentExternalReferencesColumns[1]},
+				RefColumns: []*schema.Column{ExternalReferencesColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+	}
+	// DocumentHashesColumns holds the columns for the "document_hashes" table.
+	DocumentHashesColumns = []*schema.Column{
+		{Name: "document_id", Type: field.TypeUUID},
+		{Name: "hashes_entry_id", Type: field.TypeUUID},
+	}
+	// DocumentHashesTable holds the schema information for the "document_hashes" table.
+	DocumentHashesTable = &schema.Table{
+		Name:       "document_hashes",
+		Columns:    DocumentHashesColumns,
+		PrimaryKey: []*schema.Column{DocumentHashesColumns[0], DocumentHashesColumns[1]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "document_hashes_document_id",
+				Columns:    []*schema.Column{DocumentHashesColumns[0]},
+				RefColumns: []*schema.Column{DocumentsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "document_hashes_hashes_entry_id",
+				Columns:    []*schema.Column{DocumentHashesColumns[1]},
+				RefColumns: []*schema.Column{HashesEntriesColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+	}
+	// DocumentIdentifiersColumns holds the columns for the "document_identifiers" table.
+	DocumentIdentifiersColumns = []*schema.Column{
+		{Name: "document_id", Type: field.TypeUUID},
+		{Name: "identifiers_entry_id", Type: field.TypeUUID},
+	}
+	// DocumentIdentifiersTable holds the schema information for the "document_identifiers" table.
+	DocumentIdentifiersTable = &schema.Table{
+		Name:       "document_identifiers",
+		Columns:    DocumentIdentifiersColumns,
+		PrimaryKey: []*schema.Column{DocumentIdentifiersColumns[0], DocumentIdentifiersColumns[1]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "document_identifiers_document_id",
+				Columns:    []*schema.Column{DocumentIdentifiersColumns[0]},
+				RefColumns: []*schema.Column{DocumentsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "document_identifiers_identifiers_entry_id",
+				Columns:    []*schema.Column{DocumentIdentifiersColumns[1]},
+				RefColumns: []*schema.Column{IdentifiersEntriesColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+	}
+	// DocumentNodesColumns holds the columns for the "document_nodes" table.
+	DocumentNodesColumns = []*schema.Column{
+		{Name: "document_id", Type: field.TypeUUID},
+		{Name: "node_id", Type: field.TypeUUID},
+	}
+	// DocumentNodesTable holds the schema information for the "document_nodes" table.
+	DocumentNodesTable = &schema.Table{
+		Name:       "document_nodes",
+		Columns:    DocumentNodesColumns,
+		PrimaryKey: []*schema.Column{DocumentNodesColumns[0], DocumentNodesColumns[1]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "document_nodes_document_id",
+				Columns:    []*schema.Column{DocumentNodesColumns[0]},
+				RefColumns: []*schema.Column{DocumentsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "document_nodes_node_id",
+				Columns:    []*schema.Column{DocumentNodesColumns[1]},
+				RefColumns: []*schema.Column{NodesColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+	}
+	// DocumentPersonsColumns holds the columns for the "document_persons" table.
+	DocumentPersonsColumns = []*schema.Column{
+		{Name: "document_id", Type: field.TypeUUID},
+		{Name: "person_id", Type: field.TypeUUID},
+	}
+	// DocumentPersonsTable holds the schema information for the "document_persons" table.
+	DocumentPersonsTable = &schema.Table{
+		Name:       "document_persons",
+		Columns:    DocumentPersonsColumns,
+		PrimaryKey: []*schema.Column{DocumentPersonsColumns[0], DocumentPersonsColumns[1]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "document_persons_document_id",
+				Columns:    []*schema.Column{DocumentPersonsColumns[0]},
+				RefColumns: []*schema.Column{DocumentsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "document_persons_person_id",
+				Columns:    []*schema.Column{DocumentPersonsColumns[1]},
+				RefColumns: []*schema.Column{PersonsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+	}
+	// DocumentPropertiesColumns holds the columns for the "document_properties" table.
+	DocumentPropertiesColumns = []*schema.Column{
+		{Name: "document_id", Type: field.TypeUUID},
+		{Name: "property_id", Type: field.TypeUUID},
+	}
+	// DocumentPropertiesTable holds the schema information for the "document_properties" table.
+	DocumentPropertiesTable = &schema.Table{
+		Name:       "document_properties",
+		Columns:    DocumentPropertiesColumns,
+		PrimaryKey: []*schema.Column{DocumentPropertiesColumns[0], DocumentPropertiesColumns[1]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "document_properties_document_id",
+				Columns:    []*schema.Column{DocumentPropertiesColumns[0]},
+				RefColumns: []*schema.Column{DocumentsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "document_properties_property_id",
+				Columns:    []*schema.Column{DocumentPropertiesColumns[1]},
+				RefColumns: []*schema.Column{PropertiesColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+	}
+	// DocumentPurposesColumns holds the columns for the "document_purposes" table.
+	DocumentPurposesColumns = []*schema.Column{
+		{Name: "document_id", Type: field.TypeUUID},
+		{Name: "purpose_id", Type: field.TypeInt},
+	}
+	// DocumentPurposesTable holds the schema information for the "document_purposes" table.
+	DocumentPurposesTable = &schema.Table{
+		Name:       "document_purposes",
+		Columns:    DocumentPurposesColumns,
+		PrimaryKey: []*schema.Column{DocumentPurposesColumns[0], DocumentPurposesColumns[1]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "document_purposes_document_id",
+				Columns:    []*schema.Column{DocumentPurposesColumns[0]},
+				RefColumns: []*schema.Column{DocumentsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "document_purposes_purpose_id",
+				Columns:    []*schema.Column{DocumentPurposesColumns[1]},
+				RefColumns: []*schema.Column{PurposesColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+	}
+	// DocumentSourceDataColumns holds the columns for the "document_source_data" table.
+	DocumentSourceDataColumns = []*schema.Column{
+		{Name: "document_id", Type: field.TypeUUID},
+		{Name: "source_data_id", Type: field.TypeUUID},
+	}
+	// DocumentSourceDataTable holds the schema information for the "document_source_data" table.
+	DocumentSourceDataTable = &schema.Table{
+		Name:       "document_source_data",
+		Columns:    DocumentSourceDataColumns,
+		PrimaryKey: []*schema.Column{DocumentSourceDataColumns[0], DocumentSourceDataColumns[1]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "document_source_data_document_id",
+				Columns:    []*schema.Column{DocumentSourceDataColumns[0]},
+				RefColumns: []*schema.Column{DocumentsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "document_source_data_source_data_id",
+				Columns:    []*schema.Column{DocumentSourceDataColumns[1]},
+				RefColumns: []*schema.Column{SourceDataColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+	}
+	// DocumentToolsColumns holds the columns for the "document_tools" table.
+	DocumentToolsColumns = []*schema.Column{
+		{Name: "document_id", Type: field.TypeUUID},
+		{Name: "tool_id", Type: field.TypeUUID},
+	}
+	// DocumentToolsTable holds the schema information for the "document_tools" table.
+	DocumentToolsTable = &schema.Table{
+		Name:       "document_tools",
+		Columns:    DocumentToolsColumns,
+		PrimaryKey: []*schema.Column{DocumentToolsColumns[0], DocumentToolsColumns[1]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "document_tools_document_id",
+				Columns:    []*schema.Column{DocumentToolsColumns[0]},
+				RefColumns: []*schema.Column{DocumentsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "document_tools_tool_id",
+				Columns:    []*schema.Column{DocumentToolsColumns[1]},
+				RefColumns: []*schema.Column{ToolsColumns[0]},
+				OnDelete:   schema.Cascade,
 			},
 		},
 	}
@@ -601,6 +703,131 @@ var (
 			},
 		},
 	}
+	// MetadataToolsColumns holds the columns for the "metadata_tools" table.
+	MetadataToolsColumns = []*schema.Column{
+		{Name: "metadata_id", Type: field.TypeUUID},
+		{Name: "tool_id", Type: field.TypeUUID},
+	}
+	// MetadataToolsTable holds the schema information for the "metadata_tools" table.
+	MetadataToolsTable = &schema.Table{
+		Name:       "metadata_tools",
+		Columns:    MetadataToolsColumns,
+		PrimaryKey: []*schema.Column{MetadataToolsColumns[0], MetadataToolsColumns[1]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "metadata_tools_metadata_id",
+				Columns:    []*schema.Column{MetadataToolsColumns[0]},
+				RefColumns: []*schema.Column{MetadataColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "metadata_tools_tool_id",
+				Columns:    []*schema.Column{MetadataToolsColumns[1]},
+				RefColumns: []*schema.Column{ToolsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+	}
+	// MetadataAuthorsColumns holds the columns for the "metadata_authors" table.
+	MetadataAuthorsColumns = []*schema.Column{
+		{Name: "metadata_id", Type: field.TypeUUID},
+		{Name: "person_id", Type: field.TypeUUID},
+	}
+	// MetadataAuthorsTable holds the schema information for the "metadata_authors" table.
+	MetadataAuthorsTable = &schema.Table{
+		Name:       "metadata_authors",
+		Columns:    MetadataAuthorsColumns,
+		PrimaryKey: []*schema.Column{MetadataAuthorsColumns[0], MetadataAuthorsColumns[1]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "metadata_authors_metadata_id",
+				Columns:    []*schema.Column{MetadataAuthorsColumns[0]},
+				RefColumns: []*schema.Column{MetadataColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "metadata_authors_person_id",
+				Columns:    []*schema.Column{MetadataAuthorsColumns[1]},
+				RefColumns: []*schema.Column{PersonsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+	}
+	// MetadataDocumentTypesColumns holds the columns for the "metadata_document_types" table.
+	MetadataDocumentTypesColumns = []*schema.Column{
+		{Name: "metadata_id", Type: field.TypeUUID},
+		{Name: "document_type_id", Type: field.TypeUUID},
+	}
+	// MetadataDocumentTypesTable holds the schema information for the "metadata_document_types" table.
+	MetadataDocumentTypesTable = &schema.Table{
+		Name:       "metadata_document_types",
+		Columns:    MetadataDocumentTypesColumns,
+		PrimaryKey: []*schema.Column{MetadataDocumentTypesColumns[0], MetadataDocumentTypesColumns[1]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "metadata_document_types_metadata_id",
+				Columns:    []*schema.Column{MetadataDocumentTypesColumns[0]},
+				RefColumns: []*schema.Column{MetadataColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "metadata_document_types_document_type_id",
+				Columns:    []*schema.Column{MetadataDocumentTypesColumns[1]},
+				RefColumns: []*schema.Column{DocumentTypesColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+	}
+	// NodeSuppliersColumns holds the columns for the "node_suppliers" table.
+	NodeSuppliersColumns = []*schema.Column{
+		{Name: "node_id", Type: field.TypeUUID},
+		{Name: "person_id", Type: field.TypeUUID},
+	}
+	// NodeSuppliersTable holds the schema information for the "node_suppliers" table.
+	NodeSuppliersTable = &schema.Table{
+		Name:       "node_suppliers",
+		Columns:    NodeSuppliersColumns,
+		PrimaryKey: []*schema.Column{NodeSuppliersColumns[0], NodeSuppliersColumns[1]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "node_suppliers_node_id",
+				Columns:    []*schema.Column{NodeSuppliersColumns[0]},
+				RefColumns: []*schema.Column{NodesColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "node_suppliers_person_id",
+				Columns:    []*schema.Column{NodeSuppliersColumns[1]},
+				RefColumns: []*schema.Column{PersonsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+	}
+	// NodeOriginatorsColumns holds the columns for the "node_originators" table.
+	NodeOriginatorsColumns = []*schema.Column{
+		{Name: "node_id", Type: field.TypeUUID},
+		{Name: "person_id", Type: field.TypeUUID},
+	}
+	// NodeOriginatorsTable holds the schema information for the "node_originators" table.
+	NodeOriginatorsTable = &schema.Table{
+		Name:       "node_originators",
+		Columns:    NodeOriginatorsColumns,
+		PrimaryKey: []*schema.Column{NodeOriginatorsColumns[0], NodeOriginatorsColumns[1]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "node_originators_node_id",
+				Columns:    []*schema.Column{NodeOriginatorsColumns[0]},
+				RefColumns: []*schema.Column{NodesColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "node_originators_person_id",
+				Columns:    []*schema.Column{NodeOriginatorsColumns[1]},
+				RefColumns: []*schema.Column{PersonsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+	}
 	// NodeExternalReferencesColumns holds the columns for the "node_external_references" table.
 	NodeExternalReferencesColumns = []*schema.Column{
 		{Name: "node_id", Type: field.TypeUUID},
@@ -622,6 +849,31 @@ var (
 				Symbol:     "node_external_references_external_reference_id",
 				Columns:    []*schema.Column{NodeExternalReferencesColumns[1]},
 				RefColumns: []*schema.Column{ExternalReferencesColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+	}
+	// NodePrimaryPurposesColumns holds the columns for the "node_primary_purposes" table.
+	NodePrimaryPurposesColumns = []*schema.Column{
+		{Name: "node_id", Type: field.TypeUUID},
+		{Name: "purpose_id", Type: field.TypeInt},
+	}
+	// NodePrimaryPurposesTable holds the schema information for the "node_primary_purposes" table.
+	NodePrimaryPurposesTable = &schema.Table{
+		Name:       "node_primary_purposes",
+		Columns:    NodePrimaryPurposesColumns,
+		PrimaryKey: []*schema.Column{NodePrimaryPurposesColumns[0], NodePrimaryPurposesColumns[1]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "node_primary_purposes_node_id",
+				Columns:    []*schema.Column{NodePrimaryPurposesColumns[0]},
+				RefColumns: []*schema.Column{NodesColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "node_primary_purposes_purpose_id",
+				Columns:    []*schema.Column{NodePrimaryPurposesColumns[1]},
+				RefColumns: []*schema.Column{PurposesColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 		},
@@ -676,6 +928,31 @@ var (
 			},
 		},
 	}
+	// NodePropertiesColumns holds the columns for the "node_properties" table.
+	NodePropertiesColumns = []*schema.Column{
+		{Name: "node_id", Type: field.TypeUUID},
+		{Name: "property_id", Type: field.TypeUUID},
+	}
+	// NodePropertiesTable holds the schema information for the "node_properties" table.
+	NodePropertiesTable = &schema.Table{
+		Name:       "node_properties",
+		Columns:    NodePropertiesColumns,
+		PrimaryKey: []*schema.Column{NodePropertiesColumns[0], NodePropertiesColumns[1]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "node_properties_node_id",
+				Columns:    []*schema.Column{NodePropertiesColumns[0]},
+				RefColumns: []*schema.Column{NodesColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "node_properties_property_id",
+				Columns:    []*schema.Column{NodePropertiesColumns[1]},
+				RefColumns: []*schema.Column{PropertiesColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+	}
 	// NodeListEdgesColumns holds the columns for the "node_list_edges" table.
 	NodeListEdgesColumns = []*schema.Column{
 		{Name: "node_list_id", Type: field.TypeUUID},
@@ -726,6 +1003,56 @@ var (
 			},
 		},
 	}
+	// PersonContactsColumns holds the columns for the "person_contacts" table.
+	PersonContactsColumns = []*schema.Column{
+		{Name: "person_id", Type: field.TypeUUID},
+		{Name: "contact_owner_id", Type: field.TypeUUID},
+	}
+	// PersonContactsTable holds the schema information for the "person_contacts" table.
+	PersonContactsTable = &schema.Table{
+		Name:       "person_contacts",
+		Columns:    PersonContactsColumns,
+		PrimaryKey: []*schema.Column{PersonContactsColumns[0], PersonContactsColumns[1]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "person_contacts_person_id",
+				Columns:    []*schema.Column{PersonContactsColumns[0]},
+				RefColumns: []*schema.Column{PersonsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "person_contacts_contact_owner_id",
+				Columns:    []*schema.Column{PersonContactsColumns[1]},
+				RefColumns: []*schema.Column{PersonsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+	}
+	// SourceDataHashesColumns holds the columns for the "source_data_hashes" table.
+	SourceDataHashesColumns = []*schema.Column{
+		{Name: "source_data_id", Type: field.TypeUUID},
+		{Name: "hash_entry_id", Type: field.TypeUUID},
+	}
+	// SourceDataHashesTable holds the schema information for the "source_data_hashes" table.
+	SourceDataHashesTable = &schema.Table{
+		Name:       "source_data_hashes",
+		Columns:    SourceDataHashesColumns,
+		PrimaryKey: []*schema.Column{SourceDataHashesColumns[0], SourceDataHashesColumns[1]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "source_data_hashes_source_data_id",
+				Columns:    []*schema.Column{SourceDataHashesColumns[0]},
+				RefColumns: []*schema.Column{SourceDataColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "source_data_hashes_hash_entry_id",
+				Columns:    []*schema.Column{SourceDataHashesColumns[1]},
+				RefColumns: []*schema.Column{HashesEntriesColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
 		AnnotationsTable,
@@ -743,12 +1070,32 @@ var (
 		PurposesTable,
 		SourceDataTable,
 		ToolsTable,
+		DocumentDocumentTypesTable,
+		DocumentEdgeTypesTable,
+		DocumentExternalReferencesTable,
+		DocumentHashesTable,
+		DocumentIdentifiersTable,
+		DocumentNodesTable,
+		DocumentPersonsTable,
+		DocumentPropertiesTable,
+		DocumentPurposesTable,
+		DocumentSourceDataTable,
+		DocumentToolsTable,
 		ExtRefHashesTable,
+		MetadataToolsTable,
+		MetadataAuthorsTable,
+		MetadataDocumentTypesTable,
+		NodeSuppliersTable,
+		NodeOriginatorsTable,
 		NodeExternalReferencesTable,
+		NodePrimaryPurposesTable,
 		NodeHashesTable,
 		NodeIdentifiersTable,
+		NodePropertiesTable,
 		NodeListEdgesTable,
 		NodeListNodesTable,
+		PersonContactsTable,
+		SourceDataHashesTable,
 	}
 )
 
@@ -757,55 +1104,74 @@ func init() {
 	AnnotationsTable.ForeignKeys[1].RefTable = NodesTable
 	DocumentsTable.ForeignKeys[0].RefTable = MetadataTable
 	DocumentsTable.ForeignKeys[1].RefTable = NodeListsTable
-	DocumentTypesTable.ForeignKeys[0].RefTable = DocumentsTable
-	DocumentTypesTable.ForeignKeys[1].RefTable = MetadataTable
-	DocumentTypesTable.Annotation = &entsql.Annotation{}
-	EdgeTypesTable.ForeignKeys[0].RefTable = DocumentsTable
+	EdgeTypesTable.ForeignKeys[0].RefTable = NodesTable
 	EdgeTypesTable.ForeignKeys[1].RefTable = NodesTable
-	EdgeTypesTable.ForeignKeys[2].RefTable = NodesTable
-	EdgeTypesTable.Annotation = &entsql.Annotation{}
-	ExternalReferencesTable.ForeignKeys[0].RefTable = DocumentsTable
-	ExternalReferencesTable.Annotation = &entsql.Annotation{}
-	HashesEntriesTable.ForeignKeys[0].RefTable = DocumentsTable
-	HashesEntriesTable.Annotation = &entsql.Annotation{}
-	IdentifiersEntriesTable.ForeignKeys[0].RefTable = DocumentsTable
-	IdentifiersEntriesTable.Annotation = &entsql.Annotation{}
-	NodesTable.ForeignKeys[0].RefTable = DocumentsTable
-	NodesTable.Annotation = &entsql.Annotation{}
-	PersonsTable.ForeignKeys[0].RefTable = MetadataTable
-	PersonsTable.ForeignKeys[1].RefTable = NodesTable
-	PersonsTable.ForeignKeys[2].RefTable = NodesTable
-	PersonsTable.ForeignKeys[3].RefTable = DocumentsTable
-	PersonsTable.ForeignKeys[4].RefTable = PersonsTable
-	PersonsTable.Annotation = &entsql.Annotation{}
-	PropertiesTable.ForeignKeys[0].RefTable = NodesTable
-	PropertiesTable.ForeignKeys[1].RefTable = DocumentsTable
-	PropertiesTable.Annotation = &entsql.Annotation{}
-	PurposesTable.ForeignKeys[0].RefTable = NodesTable
-	PurposesTable.ForeignKeys[1].RefTable = DocumentsTable
-	PurposesTable.Annotation = &entsql.Annotation{}
-	SourceDataTable.ForeignKeys[0].RefTable = MetadataTable
-	SourceDataTable.ForeignKeys[1].RefTable = DocumentsTable
-	SourceDataTable.Annotation = &entsql.Annotation{}
-	ToolsTable.ForeignKeys[0].RefTable = MetadataTable
-	ToolsTable.ForeignKeys[1].RefTable = DocumentsTable
-	ToolsTable.Annotation = &entsql.Annotation{}
+	MetadataTable.ForeignKeys[0].RefTable = SourceDataTable
+	DocumentDocumentTypesTable.ForeignKeys[0].RefTable = DocumentsTable
+	DocumentDocumentTypesTable.ForeignKeys[1].RefTable = DocumentTypesTable
+	DocumentEdgeTypesTable.ForeignKeys[0].RefTable = DocumentsTable
+	DocumentEdgeTypesTable.ForeignKeys[1].RefTable = EdgeTypesTable
+	DocumentExternalReferencesTable.ForeignKeys[0].RefTable = DocumentsTable
+	DocumentExternalReferencesTable.ForeignKeys[1].RefTable = ExternalReferencesTable
+	DocumentHashesTable.ForeignKeys[0].RefTable = DocumentsTable
+	DocumentHashesTable.ForeignKeys[1].RefTable = HashesEntriesTable
+	DocumentIdentifiersTable.ForeignKeys[0].RefTable = DocumentsTable
+	DocumentIdentifiersTable.ForeignKeys[1].RefTable = IdentifiersEntriesTable
+	DocumentNodesTable.ForeignKeys[0].RefTable = DocumentsTable
+	DocumentNodesTable.ForeignKeys[1].RefTable = NodesTable
+	DocumentPersonsTable.ForeignKeys[0].RefTable = DocumentsTable
+	DocumentPersonsTable.ForeignKeys[1].RefTable = PersonsTable
+	DocumentPropertiesTable.ForeignKeys[0].RefTable = DocumentsTable
+	DocumentPropertiesTable.ForeignKeys[1].RefTable = PropertiesTable
+	DocumentPurposesTable.ForeignKeys[0].RefTable = DocumentsTable
+	DocumentPurposesTable.ForeignKeys[1].RefTable = PurposesTable
+	DocumentSourceDataTable.ForeignKeys[0].RefTable = DocumentsTable
+	DocumentSourceDataTable.ForeignKeys[1].RefTable = SourceDataTable
+	DocumentToolsTable.ForeignKeys[0].RefTable = DocumentsTable
+	DocumentToolsTable.ForeignKeys[1].RefTable = ToolsTable
 	ExtRefHashesTable.ForeignKeys[0].RefTable = ExternalReferencesTable
 	ExtRefHashesTable.ForeignKeys[1].RefTable = HashesEntriesTable
 	ExtRefHashesTable.Annotation = &entsql.Annotation{}
+	MetadataToolsTable.ForeignKeys[0].RefTable = MetadataTable
+	MetadataToolsTable.ForeignKeys[1].RefTable = ToolsTable
+	MetadataToolsTable.Annotation = &entsql.Annotation{}
+	MetadataAuthorsTable.ForeignKeys[0].RefTable = MetadataTable
+	MetadataAuthorsTable.ForeignKeys[1].RefTable = PersonsTable
+	MetadataAuthorsTable.Annotation = &entsql.Annotation{}
+	MetadataDocumentTypesTable.ForeignKeys[0].RefTable = MetadataTable
+	MetadataDocumentTypesTable.ForeignKeys[1].RefTable = DocumentTypesTable
+	MetadataDocumentTypesTable.Annotation = &entsql.Annotation{}
+	NodeSuppliersTable.ForeignKeys[0].RefTable = NodesTable
+	NodeSuppliersTable.ForeignKeys[1].RefTable = PersonsTable
+	NodeSuppliersTable.Annotation = &entsql.Annotation{}
+	NodeOriginatorsTable.ForeignKeys[0].RefTable = NodesTable
+	NodeOriginatorsTable.ForeignKeys[1].RefTable = PersonsTable
+	NodeOriginatorsTable.Annotation = &entsql.Annotation{}
 	NodeExternalReferencesTable.ForeignKeys[0].RefTable = NodesTable
 	NodeExternalReferencesTable.ForeignKeys[1].RefTable = ExternalReferencesTable
 	NodeExternalReferencesTable.Annotation = &entsql.Annotation{}
+	NodePrimaryPurposesTable.ForeignKeys[0].RefTable = NodesTable
+	NodePrimaryPurposesTable.ForeignKeys[1].RefTable = PurposesTable
+	NodePrimaryPurposesTable.Annotation = &entsql.Annotation{}
 	NodeHashesTable.ForeignKeys[0].RefTable = NodesTable
 	NodeHashesTable.ForeignKeys[1].RefTable = HashesEntriesTable
 	NodeHashesTable.Annotation = &entsql.Annotation{}
 	NodeIdentifiersTable.ForeignKeys[0].RefTable = NodesTable
 	NodeIdentifiersTable.ForeignKeys[1].RefTable = IdentifiersEntriesTable
 	NodeIdentifiersTable.Annotation = &entsql.Annotation{}
+	NodePropertiesTable.ForeignKeys[0].RefTable = NodesTable
+	NodePropertiesTable.ForeignKeys[1].RefTable = PropertiesTable
+	NodePropertiesTable.Annotation = &entsql.Annotation{}
 	NodeListEdgesTable.ForeignKeys[0].RefTable = NodeListsTable
 	NodeListEdgesTable.ForeignKeys[1].RefTable = EdgeTypesTable
 	NodeListEdgesTable.Annotation = &entsql.Annotation{}
 	NodeListNodesTable.ForeignKeys[0].RefTable = NodeListsTable
 	NodeListNodesTable.ForeignKeys[1].RefTable = NodesTable
 	NodeListNodesTable.Annotation = &entsql.Annotation{}
+	PersonContactsTable.ForeignKeys[0].RefTable = PersonsTable
+	PersonContactsTable.ForeignKeys[1].RefTable = PersonsTable
+	PersonContactsTable.Annotation = &entsql.Annotation{}
+	SourceDataHashesTable.ForeignKeys[0].RefTable = SourceDataTable
+	SourceDataHashesTable.ForeignKeys[1].RefTable = HashesEntriesTable
+	SourceDataHashesTable.Annotation = &entsql.Annotation{}
 }

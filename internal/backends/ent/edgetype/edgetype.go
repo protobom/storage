@@ -21,8 +21,6 @@ const (
 	Label = "edge_type"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
-	// FieldDocumentID holds the string denoting the document_id field in the database.
-	FieldDocumentID = "document_id"
 	// FieldProtoMessage holds the string denoting the proto_message field in the database.
 	FieldProtoMessage = "proto_message"
 	// FieldType holds the string denoting the type field in the database.
@@ -31,23 +29,16 @@ const (
 	FieldNodeID = "node_id"
 	// FieldToNodeID holds the string denoting the to_node_id field in the database.
 	FieldToNodeID = "to_node_id"
-	// EdgeDocument holds the string denoting the document edge name in mutations.
-	EdgeDocument = "document"
 	// EdgeFrom holds the string denoting the from edge name in mutations.
 	EdgeFrom = "from"
 	// EdgeTo holds the string denoting the to edge name in mutations.
 	EdgeTo = "to"
+	// EdgeDocuments holds the string denoting the documents edge name in mutations.
+	EdgeDocuments = "documents"
 	// EdgeNodeLists holds the string denoting the node_lists edge name in mutations.
 	EdgeNodeLists = "node_lists"
 	// Table holds the table name of the edgetype in the database.
 	Table = "edge_types"
-	// DocumentTable is the table that holds the document relation/edge.
-	DocumentTable = "edge_types"
-	// DocumentInverseTable is the table name for the Document entity.
-	// It exists in this package in order to avoid circular dependency with the "document" package.
-	DocumentInverseTable = "documents"
-	// DocumentColumn is the table column denoting the document relation/edge.
-	DocumentColumn = "document_id"
 	// FromTable is the table that holds the from relation/edge.
 	FromTable = "edge_types"
 	// FromInverseTable is the table name for the Node entity.
@@ -62,6 +53,11 @@ const (
 	ToInverseTable = "nodes"
 	// ToColumn is the table column denoting the to relation/edge.
 	ToColumn = "to_node_id"
+	// DocumentsTable is the table that holds the documents relation/edge. The primary key declared below.
+	DocumentsTable = "document_edge_types"
+	// DocumentsInverseTable is the table name for the Document entity.
+	// It exists in this package in order to avoid circular dependency with the "document" package.
+	DocumentsInverseTable = "documents"
 	// NodeListsTable is the table that holds the node_lists relation/edge. The primary key declared below.
 	NodeListsTable = "node_list_edges"
 	// NodeListsInverseTable is the table name for the NodeList entity.
@@ -72,7 +68,6 @@ const (
 // Columns holds all SQL columns for edgetype fields.
 var Columns = []string{
 	FieldID,
-	FieldDocumentID,
 	FieldProtoMessage,
 	FieldType,
 	FieldNodeID,
@@ -80,6 +75,9 @@ var Columns = []string{
 }
 
 var (
+	// DocumentsPrimaryKey and DocumentsColumn2 are the table columns denoting the
+	// primary key for the documents relation (M2M).
+	DocumentsPrimaryKey = []string{"document_id", "edge_type_id"}
 	// NodeListsPrimaryKey and NodeListsColumn2 are the table columns denoting the
 	// primary key for the node_lists relation (M2M).
 	NodeListsPrimaryKey = []string{"node_list_id", "edge_type_id"}
@@ -102,8 +100,6 @@ func ValidColumn(column string) bool {
 //	import _ "github.com/protobom/storage/internal/backends/ent/runtime"
 var (
 	Hooks [1]ent.Hook
-	// DefaultDocumentID holds the default value on creation for the "document_id" field.
-	DefaultDocumentID func() uuid.UUID
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() uuid.UUID
 )
@@ -182,11 +178,6 @@ func ByID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldID, opts...).ToFunc()
 }
 
-// ByDocumentID orders the results by the document_id field.
-func ByDocumentID(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldDocumentID, opts...).ToFunc()
-}
-
 // ByType orders the results by the type field.
 func ByType(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldType, opts...).ToFunc()
@@ -200,13 +191,6 @@ func ByNodeID(opts ...sql.OrderTermOption) OrderOption {
 // ByToNodeID orders the results by the to_node_id field.
 func ByToNodeID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldToNodeID, opts...).ToFunc()
-}
-
-// ByDocumentField orders the results by document field.
-func ByDocumentField(field string, opts ...sql.OrderTermOption) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newDocumentStep(), sql.OrderByField(field, opts...))
-	}
 }
 
 // ByFromField orders the results by from field.
@@ -223,6 +207,20 @@ func ByToField(field string, opts ...sql.OrderTermOption) OrderOption {
 	}
 }
 
+// ByDocumentsCount orders the results by documents count.
+func ByDocumentsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newDocumentsStep(), opts...)
+	}
+}
+
+// ByDocuments orders the results by documents terms.
+func ByDocuments(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newDocumentsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
 // ByNodeListsCount orders the results by node_lists count.
 func ByNodeListsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -236,13 +234,6 @@ func ByNodeLists(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newNodeListsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
-func newDocumentStep() *sqlgraph.Step {
-	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(DocumentInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.M2O, false, DocumentTable, DocumentColumn),
-	)
-}
 func newFromStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -255,6 +246,13 @@ func newToStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(ToInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.M2O, false, ToTable, ToColumn),
+	)
+}
+func newDocumentsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(DocumentsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2M, true, DocumentsTable, DocumentsPrimaryKey...),
 	)
 }
 func newNodeListsStep() *sqlgraph.Step {

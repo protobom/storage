@@ -9,7 +9,6 @@ package ent_test
 import (
 	"os"
 	"path/filepath"
-	"slices"
 	"testing"
 
 	"github.com/protobom/protobom/pkg/reader"
@@ -83,9 +82,7 @@ func (ss *storeSuite) TestBackend_Store() {
 		msg, err := proto.MarshalOptions{Deterministic: true}.Marshal(document)
 		ss.Require().NoError(err)
 
-		ss.True(slices.ContainsFunc(messages, func(b []byte) bool {
-			return slices.Equal(msg, b)
-		}))
+		ss.Contains(messages, msg)
 	}
 }
 

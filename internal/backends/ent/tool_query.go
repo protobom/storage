@@ -9,6 +9,7 @@ package ent
 
 import (
 	"context"
+	"database/sql/driver"
 	"fmt"
 	"math"
 
@@ -26,12 +27,12 @@ import (
 // ToolQuery is the builder for querying Tool entities.
 type ToolQuery struct {
 	config
-	ctx          *QueryContext
-	order        []tool.OrderOption
-	inters       []Interceptor
-	predicates   []predicate.Tool
-	withDocument *DocumentQuery
-	withMetadata *MetadataQuery
+	ctx           *QueryContext
+	order         []tool.OrderOption
+	inters        []Interceptor
+	predicates    []predicate.Tool
+	withDocuments *DocumentQuery
+	withMetadata  *MetadataQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -68,8 +69,8 @@ func (tq *ToolQuery) Order(o ...tool.OrderOption) *ToolQuery {
 	return tq
 }
 
-// QueryDocument chains the current query on the "document" edge.
-func (tq *ToolQuery) QueryDocument() *DocumentQuery {
+// QueryDocuments chains the current query on the "documents" edge.
+func (tq *ToolQuery) QueryDocuments() *DocumentQuery {
 	query := (&DocumentClient{config: tq.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := tq.prepareQuery(ctx); err != nil {
@@ -82,7 +83,7 @@ func (tq *ToolQuery) QueryDocument() *DocumentQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(tool.Table, tool.FieldID, selector),
 			sqlgraph.To(document.Table, document.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, tool.DocumentTable, tool.DocumentColumn),
+			sqlgraph.Edge(sqlgraph.M2M, true, tool.DocumentsTable, tool.DocumentsPrimaryKey...),
 		)
 		fromU = sqlgraph.SetNeighbors(tq.driver.Dialect(), step)
 		return fromU, nil
@@ -104,7 +105,7 @@ func (tq *ToolQuery) QueryMetadata() *MetadataQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(tool.Table, tool.FieldID, selector),
 			sqlgraph.To(metadata.Table, metadata.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, tool.MetadataTable, tool.MetadataColumn),
+			sqlgraph.Edge(sqlgraph.M2M, true, tool.MetadataTable, tool.MetadataPrimaryKey...),
 		)
 		fromU = sqlgraph.SetNeighbors(tq.driver.Dialect(), step)
 		return fromU, nil
@@ -299,27 +300,27 @@ func (tq *ToolQuery) Clone() *ToolQuery {
 		return nil
 	}
 	return &ToolQuery{
-		config:       tq.config,
-		ctx:          tq.ctx.Clone(),
-		order:        append([]tool.OrderOption{}, tq.order...),
-		inters:       append([]Interceptor{}, tq.inters...),
-		predicates:   append([]predicate.Tool{}, tq.predicates...),
-		withDocument: tq.withDocument.Clone(),
-		withMetadata: tq.withMetadata.Clone(),
+		config:        tq.config,
+		ctx:           tq.ctx.Clone(),
+		order:         append([]tool.OrderOption{}, tq.order...),
+		inters:        append([]Interceptor{}, tq.inters...),
+		predicates:    append([]predicate.Tool{}, tq.predicates...),
+		withDocuments: tq.withDocuments.Clone(),
+		withMetadata:  tq.withMetadata.Clone(),
 		// clone intermediate query.
 		sql:  tq.sql.Clone(),
 		path: tq.path,
 	}
 }
 
-// WithDocument tells the query-builder to eager-load the nodes that are connected to
-// the "document" edge. The optional arguments are used to configure the query builder of the edge.
-func (tq *ToolQuery) WithDocument(opts ...func(*DocumentQuery)) *ToolQuery {
+// WithDocuments tells the query-builder to eager-load the nodes that are connected to
+// the "documents" edge. The optional arguments are used to configure the query builder of the edge.
+func (tq *ToolQuery) WithDocuments(opts ...func(*DocumentQuery)) *ToolQuery {
 	query := (&DocumentClient{config: tq.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	tq.withDocument = query
+	tq.withDocuments = query
 	return tq
 }
 
@@ -340,12 +341,12 @@ func (tq *ToolQuery) WithMetadata(opts ...func(*MetadataQuery)) *ToolQuery {
 // Example:
 //
 //	var v []struct {
-//		DocumentID uuid.UUID `json:"-"`
+//		ProtoMessage *sbom.Tool `json:"-"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.Tool.Query().
-//		GroupBy(tool.FieldDocumentID).
+//		GroupBy(tool.FieldProtoMessage).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (tq *ToolQuery) GroupBy(field string, fields ...string) *ToolGroupBy {
@@ -363,11 +364,11 @@ func (tq *ToolQuery) GroupBy(field string, fields ...string) *ToolGroupBy {
 // Example:
 //
 //	var v []struct {
-//		DocumentID uuid.UUID `json:"-"`
+//		ProtoMessage *sbom.Tool `json:"-"`
 //	}
 //
 //	client.Tool.Query().
-//		Select(tool.FieldDocumentID).
+//		Select(tool.FieldProtoMessage).
 //		Scan(ctx, &v)
 func (tq *ToolQuery) Select(fields ...string) *ToolSelect {
 	tq.ctx.Fields = append(tq.ctx.Fields, fields...)
@@ -413,7 +414,7 @@ func (tq *ToolQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Tool, e
 		nodes       = []*Tool{}
 		_spec       = tq.querySpec()
 		loadedTypes = [2]bool{
-			tq.withDocument != nil,
+			tq.withDocuments != nil,
 			tq.withMetadata != nil,
 		}
 	)
@@ -435,75 +436,141 @@ func (tq *ToolQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Tool, e
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
-	if query := tq.withDocument; query != nil {
-		if err := tq.loadDocument(ctx, query, nodes, nil,
-			func(n *Tool, e *Document) { n.Edges.Document = e }); err != nil {
+	if query := tq.withDocuments; query != nil {
+		if err := tq.loadDocuments(ctx, query, nodes,
+			func(n *Tool) { n.Edges.Documents = []*Document{} },
+			func(n *Tool, e *Document) { n.Edges.Documents = append(n.Edges.Documents, e) }); err != nil {
 			return nil, err
 		}
 	}
 	if query := tq.withMetadata; query != nil {
-		if err := tq.loadMetadata(ctx, query, nodes, nil,
-			func(n *Tool, e *Metadata) { n.Edges.Metadata = e }); err != nil {
+		if err := tq.loadMetadata(ctx, query, nodes,
+			func(n *Tool) { n.Edges.Metadata = []*Metadata{} },
+			func(n *Tool, e *Metadata) { n.Edges.Metadata = append(n.Edges.Metadata, e) }); err != nil {
 			return nil, err
 		}
 	}
 	return nodes, nil
 }
 
-func (tq *ToolQuery) loadDocument(ctx context.Context, query *DocumentQuery, nodes []*Tool, init func(*Tool), assign func(*Tool, *Document)) error {
-	ids := make([]uuid.UUID, 0, len(nodes))
-	nodeids := make(map[uuid.UUID][]*Tool)
-	for i := range nodes {
-		fk := nodes[i].DocumentID
-		if _, ok := nodeids[fk]; !ok {
-			ids = append(ids, fk)
+func (tq *ToolQuery) loadDocuments(ctx context.Context, query *DocumentQuery, nodes []*Tool, init func(*Tool), assign func(*Tool, *Document)) error {
+	edgeIDs := make([]driver.Value, len(nodes))
+	byID := make(map[uuid.UUID]*Tool)
+	nids := make(map[uuid.UUID]map[*Tool]struct{})
+	for i, node := range nodes {
+		edgeIDs[i] = node.ID
+		byID[node.ID] = node
+		if init != nil {
+			init(node)
 		}
-		nodeids[fk] = append(nodeids[fk], nodes[i])
 	}
-	if len(ids) == 0 {
-		return nil
+	query.Where(func(s *sql.Selector) {
+		joinT := sql.Table(tool.DocumentsTable)
+		s.Join(joinT).On(s.C(document.FieldID), joinT.C(tool.DocumentsPrimaryKey[0]))
+		s.Where(sql.InValues(joinT.C(tool.DocumentsPrimaryKey[1]), edgeIDs...))
+		columns := s.SelectedColumns()
+		s.Select(joinT.C(tool.DocumentsPrimaryKey[1]))
+		s.AppendSelect(columns...)
+		s.SetDistinct(false)
+	})
+	if err := query.prepareQuery(ctx); err != nil {
+		return err
 	}
-	query.Where(document.IDIn(ids...))
-	neighbors, err := query.All(ctx)
+	qr := QuerierFunc(func(ctx context.Context, q Query) (Value, error) {
+		return query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
+			assign := spec.Assign
+			values := spec.ScanValues
+			spec.ScanValues = func(columns []string) ([]any, error) {
+				values, err := values(columns[1:])
+				if err != nil {
+					return nil, err
+				}
+				return append([]any{new(uuid.UUID)}, values...), nil
+			}
+			spec.Assign = func(columns []string, values []any) error {
+				outValue := *values[0].(*uuid.UUID)
+				inValue := *values[1].(*uuid.UUID)
+				if nids[inValue] == nil {
+					nids[inValue] = map[*Tool]struct{}{byID[outValue]: {}}
+					return assign(columns[1:], values[1:])
+				}
+				nids[inValue][byID[outValue]] = struct{}{}
+				return nil
+			}
+		})
+	})
+	neighbors, err := withInterceptors[[]*Document](ctx, query, qr, query.inters)
 	if err != nil {
 		return err
 	}
 	for _, n := range neighbors {
-		nodes, ok := nodeids[n.ID]
+		nodes, ok := nids[n.ID]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "document_id" returned %v`, n.ID)
+			return fmt.Errorf(`unexpected "documents" node returned %v`, n.ID)
 		}
-		for i := range nodes {
-			assign(nodes[i], n)
+		for kn := range nodes {
+			assign(kn, n)
 		}
 	}
 	return nil
 }
 func (tq *ToolQuery) loadMetadata(ctx context.Context, query *MetadataQuery, nodes []*Tool, init func(*Tool), assign func(*Tool, *Metadata)) error {
-	ids := make([]uuid.UUID, 0, len(nodes))
-	nodeids := make(map[uuid.UUID][]*Tool)
-	for i := range nodes {
-		fk := nodes[i].MetadataID
-		if _, ok := nodeids[fk]; !ok {
-			ids = append(ids, fk)
+	edgeIDs := make([]driver.Value, len(nodes))
+	byID := make(map[uuid.UUID]*Tool)
+	nids := make(map[uuid.UUID]map[*Tool]struct{})
+	for i, node := range nodes {
+		edgeIDs[i] = node.ID
+		byID[node.ID] = node
+		if init != nil {
+			init(node)
 		}
-		nodeids[fk] = append(nodeids[fk], nodes[i])
 	}
-	if len(ids) == 0 {
-		return nil
+	query.Where(func(s *sql.Selector) {
+		joinT := sql.Table(tool.MetadataTable)
+		s.Join(joinT).On(s.C(metadata.FieldID), joinT.C(tool.MetadataPrimaryKey[0]))
+		s.Where(sql.InValues(joinT.C(tool.MetadataPrimaryKey[1]), edgeIDs...))
+		columns := s.SelectedColumns()
+		s.Select(joinT.C(tool.MetadataPrimaryKey[1]))
+		s.AppendSelect(columns...)
+		s.SetDistinct(false)
+	})
+	if err := query.prepareQuery(ctx); err != nil {
+		return err
 	}
-	query.Where(metadata.IDIn(ids...))
-	neighbors, err := query.All(ctx)
+	qr := QuerierFunc(func(ctx context.Context, q Query) (Value, error) {
+		return query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
+			assign := spec.Assign
+			values := spec.ScanValues
+			spec.ScanValues = func(columns []string) ([]any, error) {
+				values, err := values(columns[1:])
+				if err != nil {
+					return nil, err
+				}
+				return append([]any{new(uuid.UUID)}, values...), nil
+			}
+			spec.Assign = func(columns []string, values []any) error {
+				outValue := *values[0].(*uuid.UUID)
+				inValue := *values[1].(*uuid.UUID)
+				if nids[inValue] == nil {
+					nids[inValue] = map[*Tool]struct{}{byID[outValue]: {}}
+					return assign(columns[1:], values[1:])
+				}
+				nids[inValue][byID[outValue]] = struct{}{}
+				return nil
+			}
+		})
+	})
+	neighbors, err := withInterceptors[[]*Metadata](ctx, query, qr, query.inters)
 	if err != nil {
 		return err
 	}
 	for _, n := range neighbors {
-		nodes, ok := nodeids[n.ID]
+		nodes, ok := nids[n.ID]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "metadata_id" returned %v`, n.ID)
+			return fmt.Errorf(`unexpected "metadata" node returned %v`, n.ID)
 		}
-		for i := range nodes {
-			assign(nodes[i], n)
+		for kn := range nodes {
+			assign(kn, n)
 		}
 	}
 	return nil
@@ -533,12 +600,6 @@ func (tq *ToolQuery) querySpec() *sqlgraph.QuerySpec {
 			if fields[i] != tool.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
-		}
-		if tq.withDocument != nil {
-			_spec.Node.AddColumnOnce(tool.FieldDocumentID)
-		}
-		if tq.withMetadata != nil {
-			_spec.Node.AddColumnOnce(tool.FieldMetadataID)
 		}
 	}
 	if ps := tq.predicates; len(ps) > 0 {

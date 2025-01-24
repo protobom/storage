@@ -19,47 +19,46 @@ const (
 	Label = "property"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
-	// FieldDocumentID holds the string denoting the document_id field in the database.
-	FieldDocumentID = "document_id"
 	// FieldProtoMessage holds the string denoting the proto_message field in the database.
 	FieldProtoMessage = "proto_message"
-	// FieldNodeID holds the string denoting the node_id field in the database.
-	FieldNodeID = "node_id"
 	// FieldName holds the string denoting the name field in the database.
 	FieldName = "name"
 	// FieldData holds the string denoting the data field in the database.
 	FieldData = "data"
-	// EdgeDocument holds the string denoting the document edge name in mutations.
-	EdgeDocument = "document"
-	// EdgeNode holds the string denoting the node edge name in mutations.
-	EdgeNode = "node"
+	// EdgeDocuments holds the string denoting the documents edge name in mutations.
+	EdgeDocuments = "documents"
+	// EdgeNodes holds the string denoting the nodes edge name in mutations.
+	EdgeNodes = "nodes"
 	// Table holds the table name of the property in the database.
 	Table = "properties"
-	// DocumentTable is the table that holds the document relation/edge.
-	DocumentTable = "properties"
-	// DocumentInverseTable is the table name for the Document entity.
+	// DocumentsTable is the table that holds the documents relation/edge. The primary key declared below.
+	DocumentsTable = "document_properties"
+	// DocumentsInverseTable is the table name for the Document entity.
 	// It exists in this package in order to avoid circular dependency with the "document" package.
-	DocumentInverseTable = "documents"
-	// DocumentColumn is the table column denoting the document relation/edge.
-	DocumentColumn = "document_id"
-	// NodeTable is the table that holds the node relation/edge.
-	NodeTable = "properties"
-	// NodeInverseTable is the table name for the Node entity.
+	DocumentsInverseTable = "documents"
+	// NodesTable is the table that holds the nodes relation/edge. The primary key declared below.
+	NodesTable = "node_properties"
+	// NodesInverseTable is the table name for the Node entity.
 	// It exists in this package in order to avoid circular dependency with the "node" package.
-	NodeInverseTable = "nodes"
-	// NodeColumn is the table column denoting the node relation/edge.
-	NodeColumn = "node_id"
+	NodesInverseTable = "nodes"
 )
 
 // Columns holds all SQL columns for property fields.
 var Columns = []string{
 	FieldID,
-	FieldDocumentID,
 	FieldProtoMessage,
-	FieldNodeID,
 	FieldName,
 	FieldData,
 }
+
+var (
+	// DocumentsPrimaryKey and DocumentsColumn2 are the table columns denoting the
+	// primary key for the documents relation (M2M).
+	DocumentsPrimaryKey = []string{"document_id", "property_id"}
+	// NodesPrimaryKey and NodesColumn2 are the table columns denoting the
+	// primary key for the nodes relation (M2M).
+	NodesPrimaryKey = []string{"node_id", "property_id"}
+)
 
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {
@@ -78,8 +77,6 @@ func ValidColumn(column string) bool {
 //	import _ "github.com/protobom/storage/internal/backends/ent/runtime"
 var (
 	Hooks [1]ent.Hook
-	// DefaultDocumentID holds the default value on creation for the "document_id" field.
-	DefaultDocumentID func() uuid.UUID
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() uuid.UUID
 )
@@ -92,16 +89,6 @@ func ByID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldID, opts...).ToFunc()
 }
 
-// ByDocumentID orders the results by the document_id field.
-func ByDocumentID(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldDocumentID, opts...).ToFunc()
-}
-
-// ByNodeID orders the results by the node_id field.
-func ByNodeID(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldNodeID, opts...).ToFunc()
-}
-
 // ByName orders the results by the name field.
 func ByName(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldName, opts...).ToFunc()
@@ -112,30 +99,44 @@ func ByData(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldData, opts...).ToFunc()
 }
 
-// ByDocumentField orders the results by document field.
-func ByDocumentField(field string, opts ...sql.OrderTermOption) OrderOption {
+// ByDocumentsCount orders the results by documents count.
+func ByDocumentsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newDocumentStep(), sql.OrderByField(field, opts...))
+		sqlgraph.OrderByNeighborsCount(s, newDocumentsStep(), opts...)
 	}
 }
 
-// ByNodeField orders the results by node field.
-func ByNodeField(field string, opts ...sql.OrderTermOption) OrderOption {
+// ByDocuments orders the results by documents terms.
+func ByDocuments(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newNodeStep(), sql.OrderByField(field, opts...))
+		sqlgraph.OrderByNeighborTerms(s, newDocumentsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
-func newDocumentStep() *sqlgraph.Step {
+
+// ByNodesCount orders the results by nodes count.
+func ByNodesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newNodesStep(), opts...)
+	}
+}
+
+// ByNodes orders the results by nodes terms.
+func ByNodes(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newNodesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+func newDocumentsStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(DocumentInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.M2O, false, DocumentTable, DocumentColumn),
+		sqlgraph.To(DocumentsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2M, true, DocumentsTable, DocumentsPrimaryKey...),
 	)
 }
-func newNodeStep() *sqlgraph.Step {
+func newNodesStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(NodeInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.M2O, true, NodeTable, NodeColumn),
+		sqlgraph.To(NodesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2M, true, NodesTable, NodesPrimaryKey...),
 	)
 }

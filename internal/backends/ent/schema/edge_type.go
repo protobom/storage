@@ -14,6 +14,8 @@ import (
 	"entgo.io/ent/schema/index"
 	"github.com/google/uuid"
 	"github.com/protobom/protobom/pkg/sbom"
+
+	"github.com/protobom/storage/internal/backends/ent/schema/mixin"
 )
 
 type EdgeType struct {
@@ -22,8 +24,7 @@ type EdgeType struct {
 
 func (EdgeType) Mixin() []ent.Mixin {
 	return []ent.Mixin{
-		DocumentMixin{},
-		ProtoMessageMixin[*sbom.Edge]{},
+		mixin.ProtoMessage[*sbom.Edge]{},
 	}
 }
 
@@ -47,9 +48,12 @@ func (EdgeType) Edges() []ent.Edge {
 			Unique().
 			Annotations(entsql.OnDelete(entsql.Cascade)).
 			Field("to_node_id"),
-		edge.From("node_lists", NodeList.Type).
+		edge.From("documents", Document.Type).
 			Ref("edge_types").
-			Required(),
+			Required().
+			Immutable(),
+		edge.From("node_lists", NodeList.Type).
+			Ref("edge_types"),
 	}
 }
 

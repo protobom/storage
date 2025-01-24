@@ -40,12 +40,34 @@ type DocumentEdges struct {
 	// Annotations holds the value of the annotations edge.
 	Annotations []*Annotation `json:"-"`
 	// Metadata holds the value of the metadata edge.
-	Metadata *Metadata `json:"-"`
+	Metadata *Metadata `json:"metadata,omitempty"`
 	// NodeList holds the value of the node_list edge.
-	NodeList *NodeList `json:"-"`
+	NodeList *NodeList `json:"node_list,omitempty"`
+	// DocumentTypes holds the value of the document_types edge.
+	DocumentTypes []*DocumentType `json:"document_types,omitempty"`
+	// EdgeTypes holds the value of the edge_types edge.
+	EdgeTypes []*EdgeType `json:"edge_types,omitempty"`
+	// ExternalReferences holds the value of the external_references edge.
+	ExternalReferences []*ExternalReference `json:"external_references,omitempty"`
+	// Hashes holds the value of the hashes edge.
+	Hashes []*HashesEntry `json:"hashes,omitempty"`
+	// Identifiers holds the value of the identifiers edge.
+	Identifiers []*IdentifiersEntry `json:"identifiers,omitempty"`
+	// Nodes holds the value of the nodes edge.
+	Nodes []*Node `json:"nodes,omitempty"`
+	// Persons holds the value of the persons edge.
+	Persons []*Person `json:"persons,omitempty"`
+	// Properties holds the value of the properties edge.
+	Properties []*Property `json:"properties,omitempty"`
+	// Purposes holds the value of the purposes edge.
+	Purposes []*Purpose `json:"purposes,omitempty"`
+	// SourceData holds the value of the source_data edge.
+	SourceData []*SourceData `json:"source_data,omitempty"`
+	// Tools holds the value of the tools edge.
+	Tools []*Tool `json:"tools,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [3]bool
+	loadedTypes [14]bool
 }
 
 // AnnotationsOrErr returns the Annotations value or an error if the edge
@@ -77,6 +99,105 @@ func (e DocumentEdges) NodeListOrErr() (*NodeList, error) {
 		return nil, &NotFoundError{label: nodelist.Label}
 	}
 	return nil, &NotLoadedError{edge: "node_list"}
+}
+
+// DocumentTypesOrErr returns the DocumentTypes value or an error if the edge
+// was not loaded in eager-loading.
+func (e DocumentEdges) DocumentTypesOrErr() ([]*DocumentType, error) {
+	if e.loadedTypes[3] {
+		return e.DocumentTypes, nil
+	}
+	return nil, &NotLoadedError{edge: "document_types"}
+}
+
+// EdgeTypesOrErr returns the EdgeTypes value or an error if the edge
+// was not loaded in eager-loading.
+func (e DocumentEdges) EdgeTypesOrErr() ([]*EdgeType, error) {
+	if e.loadedTypes[4] {
+		return e.EdgeTypes, nil
+	}
+	return nil, &NotLoadedError{edge: "edge_types"}
+}
+
+// ExternalReferencesOrErr returns the ExternalReferences value or an error if the edge
+// was not loaded in eager-loading.
+func (e DocumentEdges) ExternalReferencesOrErr() ([]*ExternalReference, error) {
+	if e.loadedTypes[5] {
+		return e.ExternalReferences, nil
+	}
+	return nil, &NotLoadedError{edge: "external_references"}
+}
+
+// HashesOrErr returns the Hashes value or an error if the edge
+// was not loaded in eager-loading.
+func (e DocumentEdges) HashesOrErr() ([]*HashesEntry, error) {
+	if e.loadedTypes[6] {
+		return e.Hashes, nil
+	}
+	return nil, &NotLoadedError{edge: "hashes"}
+}
+
+// IdentifiersOrErr returns the Identifiers value or an error if the edge
+// was not loaded in eager-loading.
+func (e DocumentEdges) IdentifiersOrErr() ([]*IdentifiersEntry, error) {
+	if e.loadedTypes[7] {
+		return e.Identifiers, nil
+	}
+	return nil, &NotLoadedError{edge: "identifiers"}
+}
+
+// NodesOrErr returns the Nodes value or an error if the edge
+// was not loaded in eager-loading.
+func (e DocumentEdges) NodesOrErr() ([]*Node, error) {
+	if e.loadedTypes[8] {
+		return e.Nodes, nil
+	}
+	return nil, &NotLoadedError{edge: "nodes"}
+}
+
+// PersonsOrErr returns the Persons value or an error if the edge
+// was not loaded in eager-loading.
+func (e DocumentEdges) PersonsOrErr() ([]*Person, error) {
+	if e.loadedTypes[9] {
+		return e.Persons, nil
+	}
+	return nil, &NotLoadedError{edge: "persons"}
+}
+
+// PropertiesOrErr returns the Properties value or an error if the edge
+// was not loaded in eager-loading.
+func (e DocumentEdges) PropertiesOrErr() ([]*Property, error) {
+	if e.loadedTypes[10] {
+		return e.Properties, nil
+	}
+	return nil, &NotLoadedError{edge: "properties"}
+}
+
+// PurposesOrErr returns the Purposes value or an error if the edge
+// was not loaded in eager-loading.
+func (e DocumentEdges) PurposesOrErr() ([]*Purpose, error) {
+	if e.loadedTypes[11] {
+		return e.Purposes, nil
+	}
+	return nil, &NotLoadedError{edge: "purposes"}
+}
+
+// SourceDataOrErr returns the SourceData value or an error if the edge
+// was not loaded in eager-loading.
+func (e DocumentEdges) SourceDataOrErr() ([]*SourceData, error) {
+	if e.loadedTypes[12] {
+		return e.SourceData, nil
+	}
+	return nil, &NotLoadedError{edge: "source_data"}
+}
+
+// ToolsOrErr returns the Tools value or an error if the edge
+// was not loaded in eager-loading.
+func (e DocumentEdges) ToolsOrErr() ([]*Tool, error) {
+	if e.loadedTypes[13] {
+		return e.Tools, nil
+	}
+	return nil, &NotLoadedError{edge: "tools"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -145,6 +266,61 @@ func (d *Document) QueryMetadata() *MetadataQuery {
 // QueryNodeList queries the "node_list" edge of the Document entity.
 func (d *Document) QueryNodeList() *NodeListQuery {
 	return NewDocumentClient(d.config).QueryNodeList(d)
+}
+
+// QueryDocumentTypes queries the "document_types" edge of the Document entity.
+func (d *Document) QueryDocumentTypes() *DocumentTypeQuery {
+	return NewDocumentClient(d.config).QueryDocumentTypes(d)
+}
+
+// QueryEdgeTypes queries the "edge_types" edge of the Document entity.
+func (d *Document) QueryEdgeTypes() *EdgeTypeQuery {
+	return NewDocumentClient(d.config).QueryEdgeTypes(d)
+}
+
+// QueryExternalReferences queries the "external_references" edge of the Document entity.
+func (d *Document) QueryExternalReferences() *ExternalReferenceQuery {
+	return NewDocumentClient(d.config).QueryExternalReferences(d)
+}
+
+// QueryHashes queries the "hashes" edge of the Document entity.
+func (d *Document) QueryHashes() *HashesEntryQuery {
+	return NewDocumentClient(d.config).QueryHashes(d)
+}
+
+// QueryIdentifiers queries the "identifiers" edge of the Document entity.
+func (d *Document) QueryIdentifiers() *IdentifiersEntryQuery {
+	return NewDocumentClient(d.config).QueryIdentifiers(d)
+}
+
+// QueryNodes queries the "nodes" edge of the Document entity.
+func (d *Document) QueryNodes() *NodeQuery {
+	return NewDocumentClient(d.config).QueryNodes(d)
+}
+
+// QueryPersons queries the "persons" edge of the Document entity.
+func (d *Document) QueryPersons() *PersonQuery {
+	return NewDocumentClient(d.config).QueryPersons(d)
+}
+
+// QueryProperties queries the "properties" edge of the Document entity.
+func (d *Document) QueryProperties() *PropertyQuery {
+	return NewDocumentClient(d.config).QueryProperties(d)
+}
+
+// QueryPurposes queries the "purposes" edge of the Document entity.
+func (d *Document) QueryPurposes() *PurposeQuery {
+	return NewDocumentClient(d.config).QueryPurposes(d)
+}
+
+// QuerySourceData queries the "source_data" edge of the Document entity.
+func (d *Document) QuerySourceData() *SourceDataQuery {
+	return NewDocumentClient(d.config).QuerySourceData(d)
+}
+
+// QueryTools queries the "tools" edge of the Document entity.
+func (d *Document) QueryTools() *ToolQuery {
+	return NewDocumentClient(d.config).QueryTools(d)
 }
 
 // Update returns a builder for updating this Document.

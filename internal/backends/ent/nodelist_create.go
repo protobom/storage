@@ -58,17 +58,6 @@ func (nlc *NodeListCreate) SetNillableID(u *uuid.UUID) *NodeListCreate {
 	return nlc
 }
 
-// SetDocumentID sets the "document" edge to the Document entity by ID.
-func (nlc *NodeListCreate) SetDocumentID(id uuid.UUID) *NodeListCreate {
-	nlc.mutation.SetDocumentID(id)
-	return nlc
-}
-
-// SetDocument sets the "document" edge to the Document entity.
-func (nlc *NodeListCreate) SetDocument(d *Document) *NodeListCreate {
-	return nlc.SetDocumentID(d.ID)
-}
-
 // AddEdgeTypeIDs adds the "edge_types" edge to the EdgeType entity by IDs.
 func (nlc *NodeListCreate) AddEdgeTypeIDs(ids ...uuid.UUID) *NodeListCreate {
 	nlc.mutation.AddEdgeTypeIDs(ids...)
@@ -97,6 +86,21 @@ func (nlc *NodeListCreate) AddNodes(n ...*Node) *NodeListCreate {
 		ids[i] = n[i].ID
 	}
 	return nlc.AddNodeIDs(ids...)
+}
+
+// AddDocumentIDs adds the "documents" edge to the Document entity by IDs.
+func (nlc *NodeListCreate) AddDocumentIDs(ids ...uuid.UUID) *NodeListCreate {
+	nlc.mutation.AddDocumentIDs(ids...)
+	return nlc
+}
+
+// AddDocuments adds the "documents" edges to the Document entity.
+func (nlc *NodeListCreate) AddDocuments(d ...*Document) *NodeListCreate {
+	ids := make([]uuid.UUID, len(d))
+	for i := range d {
+		ids[i] = d[i].ID
+	}
+	return nlc.AddDocumentIDs(ids...)
 }
 
 // Mutation returns the NodeListMutation object of the builder.
@@ -154,8 +158,8 @@ func (nlc *NodeListCreate) check() error {
 	if _, ok := nlc.mutation.RootElements(); !ok {
 		return &ValidationError{Name: "root_elements", err: errors.New(`ent: missing required field "NodeList.root_elements"`)}
 	}
-	if len(nlc.mutation.DocumentIDs()) == 0 {
-		return &ValidationError{Name: "document", err: errors.New(`ent: missing required edge "NodeList.document"`)}
+	if len(nlc.mutation.DocumentsIDs()) == 0 {
+		return &ValidationError{Name: "documents", err: errors.New(`ent: missing required edge "NodeList.documents"`)}
 	}
 	return nil
 }
@@ -201,22 +205,6 @@ func (nlc *NodeListCreate) createSpec() (*NodeList, *sqlgraph.CreateSpec) {
 		_spec.SetField(nodelist.FieldRootElements, field.TypeJSON, value)
 		_node.RootElements = value
 	}
-	if nodes := nlc.mutation.DocumentIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2O,
-			Inverse: false,
-			Table:   nodelist.DocumentTable,
-			Columns: []string{nodelist.DocumentColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(document.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges = append(_spec.Edges, edge)
-	}
 	if nodes := nlc.mutation.EdgeTypesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
@@ -242,6 +230,22 @@ func (nlc *NodeListCreate) createSpec() (*NodeList, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := nlc.mutation.DocumentsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   nodelist.DocumentsTable,
+			Columns: []string{nodelist.DocumentsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(document.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

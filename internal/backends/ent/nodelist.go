@@ -16,7 +16,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"github.com/google/uuid"
 	"github.com/protobom/protobom/pkg/sbom"
-	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/nodelist"
 )
 
@@ -37,32 +36,21 @@ type NodeList struct {
 
 // NodeListEdges holds the relations/edges for other nodes in the graph.
 type NodeListEdges struct {
-	// Document holds the value of the document edge.
-	Document *Document `json:"document,omitempty"`
 	// EdgeTypes holds the value of the edge_types edge.
 	EdgeTypes []*EdgeType `json:"edge_types,omitempty"`
 	// Nodes holds the value of the nodes edge.
 	Nodes []*Node `json:"nodes,omitempty"`
+	// Documents holds the value of the documents edge.
+	Documents []*Document `json:"-"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [3]bool
 }
 
-// DocumentOrErr returns the Document value or an error if the edge
-// was not loaded in eager-loading, or loaded but was not found.
-func (e NodeListEdges) DocumentOrErr() (*Document, error) {
-	if e.Document != nil {
-		return e.Document, nil
-	} else if e.loadedTypes[0] {
-		return nil, &NotFoundError{label: document.Label}
-	}
-	return nil, &NotLoadedError{edge: "document"}
-}
-
 // EdgeTypesOrErr returns the EdgeTypes value or an error if the edge
 // was not loaded in eager-loading.
 func (e NodeListEdges) EdgeTypesOrErr() ([]*EdgeType, error) {
-	if e.loadedTypes[1] {
+	if e.loadedTypes[0] {
 		return e.EdgeTypes, nil
 	}
 	return nil, &NotLoadedError{edge: "edge_types"}
@@ -71,10 +59,19 @@ func (e NodeListEdges) EdgeTypesOrErr() ([]*EdgeType, error) {
 // NodesOrErr returns the Nodes value or an error if the edge
 // was not loaded in eager-loading.
 func (e NodeListEdges) NodesOrErr() ([]*Node, error) {
-	if e.loadedTypes[2] {
+	if e.loadedTypes[1] {
 		return e.Nodes, nil
 	}
 	return nil, &NotLoadedError{edge: "nodes"}
+}
+
+// DocumentsOrErr returns the Documents value or an error if the edge
+// was not loaded in eager-loading.
+func (e NodeListEdges) DocumentsOrErr() ([]*Document, error) {
+	if e.loadedTypes[2] {
+		return e.Documents, nil
+	}
+	return nil, &NotLoadedError{edge: "documents"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -136,11 +133,6 @@ func (nl *NodeList) Value(name string) (ent.Value, error) {
 	return nl.selectValues.Get(name)
 }
 
-// QueryDocument queries the "document" edge of the NodeList entity.
-func (nl *NodeList) QueryDocument() *DocumentQuery {
-	return NewNodeListClient(nl.config).QueryDocument(nl)
-}
-
 // QueryEdgeTypes queries the "edge_types" edge of the NodeList entity.
 func (nl *NodeList) QueryEdgeTypes() *EdgeTypeQuery {
 	return NewNodeListClient(nl.config).QueryEdgeTypes(nl)
@@ -149,6 +141,11 @@ func (nl *NodeList) QueryEdgeTypes() *EdgeTypeQuery {
 // QueryNodes queries the "nodes" edge of the NodeList entity.
 func (nl *NodeList) QueryNodes() *NodeQuery {
 	return NewNodeListClient(nl.config).QueryNodes(nl)
+}
+
+// QueryDocuments queries the "documents" edge of the NodeList entity.
+func (nl *NodeList) QueryDocuments() *DocumentQuery {
+	return NewNodeListClient(nl.config).QueryDocuments(nl)
 }
 
 // Update returns a builder for updating this NodeList.

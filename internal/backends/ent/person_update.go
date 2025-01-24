@@ -35,46 +35,6 @@ func (pu *PersonUpdate) Where(ps ...predicate.Person) *PersonUpdate {
 	return pu
 }
 
-// SetMetadataID sets the "metadata_id" field.
-func (pu *PersonUpdate) SetMetadataID(u uuid.UUID) *PersonUpdate {
-	pu.mutation.SetMetadataID(u)
-	return pu
-}
-
-// SetNillableMetadataID sets the "metadata_id" field if the given value is not nil.
-func (pu *PersonUpdate) SetNillableMetadataID(u *uuid.UUID) *PersonUpdate {
-	if u != nil {
-		pu.SetMetadataID(*u)
-	}
-	return pu
-}
-
-// ClearMetadataID clears the value of the "metadata_id" field.
-func (pu *PersonUpdate) ClearMetadataID() *PersonUpdate {
-	pu.mutation.ClearMetadataID()
-	return pu
-}
-
-// SetNodeID sets the "node_id" field.
-func (pu *PersonUpdate) SetNodeID(u uuid.UUID) *PersonUpdate {
-	pu.mutation.SetNodeID(u)
-	return pu
-}
-
-// SetNillableNodeID sets the "node_id" field if the given value is not nil.
-func (pu *PersonUpdate) SetNillableNodeID(u *uuid.UUID) *PersonUpdate {
-	if u != nil {
-		pu.SetNodeID(*u)
-	}
-	return pu
-}
-
-// ClearNodeID clears the value of the "node_id" field.
-func (pu *PersonUpdate) ClearNodeID() *PersonUpdate {
-	pu.mutation.ClearNodeID()
-	return pu
-}
-
 // SetName sets the "name" field.
 func (pu *PersonUpdate) SetName(s string) *PersonUpdate {
 	pu.mutation.SetName(s)
@@ -145,23 +105,19 @@ func (pu *PersonUpdate) SetNillablePhone(s *string) *PersonUpdate {
 	return pu
 }
 
-// SetContactOwnerID sets the "contact_owner" edge to the Person entity by ID.
-func (pu *PersonUpdate) SetContactOwnerID(id uuid.UUID) *PersonUpdate {
-	pu.mutation.SetContactOwnerID(id)
+// AddContactOwnerIDs adds the "contact_owner" edge to the Person entity by IDs.
+func (pu *PersonUpdate) AddContactOwnerIDs(ids ...uuid.UUID) *PersonUpdate {
+	pu.mutation.AddContactOwnerIDs(ids...)
 	return pu
 }
 
-// SetNillableContactOwnerID sets the "contact_owner" edge to the Person entity by ID if the given value is not nil.
-func (pu *PersonUpdate) SetNillableContactOwnerID(id *uuid.UUID) *PersonUpdate {
-	if id != nil {
-		pu = pu.SetContactOwnerID(*id)
+// AddContactOwner adds the "contact_owner" edges to the Person entity.
+func (pu *PersonUpdate) AddContactOwner(p ...*Person) *PersonUpdate {
+	ids := make([]uuid.UUID, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
 	}
-	return pu
-}
-
-// SetContactOwner sets the "contact_owner" edge to the Person entity.
-func (pu *PersonUpdate) SetContactOwner(p *Person) *PersonUpdate {
-	return pu.SetContactOwnerID(p.ID)
+	return pu.AddContactOwnerIDs(ids...)
 }
 
 // AddContactIDs adds the "contacts" edge to the Person entity by IDs.
@@ -179,14 +135,49 @@ func (pu *PersonUpdate) AddContacts(p ...*Person) *PersonUpdate {
 	return pu.AddContactIDs(ids...)
 }
 
-// SetMetadata sets the "metadata" edge to the Metadata entity.
-func (pu *PersonUpdate) SetMetadata(m *Metadata) *PersonUpdate {
-	return pu.SetMetadataID(m.ID)
+// AddMetadatumIDs adds the "metadata" edge to the Metadata entity by IDs.
+func (pu *PersonUpdate) AddMetadatumIDs(ids ...uuid.UUID) *PersonUpdate {
+	pu.mutation.AddMetadatumIDs(ids...)
+	return pu
 }
 
-// SetNode sets the "node" edge to the Node entity.
-func (pu *PersonUpdate) SetNode(n *Node) *PersonUpdate {
-	return pu.SetNodeID(n.ID)
+// AddMetadata adds the "metadata" edges to the Metadata entity.
+func (pu *PersonUpdate) AddMetadata(m ...*Metadata) *PersonUpdate {
+	ids := make([]uuid.UUID, len(m))
+	for i := range m {
+		ids[i] = m[i].ID
+	}
+	return pu.AddMetadatumIDs(ids...)
+}
+
+// AddOriginatorNodeIDs adds the "originator_nodes" edge to the Node entity by IDs.
+func (pu *PersonUpdate) AddOriginatorNodeIDs(ids ...uuid.UUID) *PersonUpdate {
+	pu.mutation.AddOriginatorNodeIDs(ids...)
+	return pu
+}
+
+// AddOriginatorNodes adds the "originator_nodes" edges to the Node entity.
+func (pu *PersonUpdate) AddOriginatorNodes(n ...*Node) *PersonUpdate {
+	ids := make([]uuid.UUID, len(n))
+	for i := range n {
+		ids[i] = n[i].ID
+	}
+	return pu.AddOriginatorNodeIDs(ids...)
+}
+
+// AddSupplierNodeIDs adds the "supplier_nodes" edge to the Node entity by IDs.
+func (pu *PersonUpdate) AddSupplierNodeIDs(ids ...uuid.UUID) *PersonUpdate {
+	pu.mutation.AddSupplierNodeIDs(ids...)
+	return pu
+}
+
+// AddSupplierNodes adds the "supplier_nodes" edges to the Node entity.
+func (pu *PersonUpdate) AddSupplierNodes(n ...*Node) *PersonUpdate {
+	ids := make([]uuid.UUID, len(n))
+	for i := range n {
+		ids[i] = n[i].ID
+	}
+	return pu.AddSupplierNodeIDs(ids...)
 }
 
 // Mutation returns the PersonMutation object of the builder.
@@ -194,10 +185,25 @@ func (pu *PersonUpdate) Mutation() *PersonMutation {
 	return pu.mutation
 }
 
-// ClearContactOwner clears the "contact_owner" edge to the Person entity.
+// ClearContactOwner clears all "contact_owner" edges to the Person entity.
 func (pu *PersonUpdate) ClearContactOwner() *PersonUpdate {
 	pu.mutation.ClearContactOwner()
 	return pu
+}
+
+// RemoveContactOwnerIDs removes the "contact_owner" edge to Person entities by IDs.
+func (pu *PersonUpdate) RemoveContactOwnerIDs(ids ...uuid.UUID) *PersonUpdate {
+	pu.mutation.RemoveContactOwnerIDs(ids...)
+	return pu
+}
+
+// RemoveContactOwner removes "contact_owner" edges to Person entities.
+func (pu *PersonUpdate) RemoveContactOwner(p ...*Person) *PersonUpdate {
+	ids := make([]uuid.UUID, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return pu.RemoveContactOwnerIDs(ids...)
 }
 
 // ClearContacts clears all "contacts" edges to the Person entity.
@@ -221,16 +227,67 @@ func (pu *PersonUpdate) RemoveContacts(p ...*Person) *PersonUpdate {
 	return pu.RemoveContactIDs(ids...)
 }
 
-// ClearMetadata clears the "metadata" edge to the Metadata entity.
+// ClearMetadata clears all "metadata" edges to the Metadata entity.
 func (pu *PersonUpdate) ClearMetadata() *PersonUpdate {
 	pu.mutation.ClearMetadata()
 	return pu
 }
 
-// ClearNode clears the "node" edge to the Node entity.
-func (pu *PersonUpdate) ClearNode() *PersonUpdate {
-	pu.mutation.ClearNode()
+// RemoveMetadatumIDs removes the "metadata" edge to Metadata entities by IDs.
+func (pu *PersonUpdate) RemoveMetadatumIDs(ids ...uuid.UUID) *PersonUpdate {
+	pu.mutation.RemoveMetadatumIDs(ids...)
 	return pu
+}
+
+// RemoveMetadata removes "metadata" edges to Metadata entities.
+func (pu *PersonUpdate) RemoveMetadata(m ...*Metadata) *PersonUpdate {
+	ids := make([]uuid.UUID, len(m))
+	for i := range m {
+		ids[i] = m[i].ID
+	}
+	return pu.RemoveMetadatumIDs(ids...)
+}
+
+// ClearOriginatorNodes clears all "originator_nodes" edges to the Node entity.
+func (pu *PersonUpdate) ClearOriginatorNodes() *PersonUpdate {
+	pu.mutation.ClearOriginatorNodes()
+	return pu
+}
+
+// RemoveOriginatorNodeIDs removes the "originator_nodes" edge to Node entities by IDs.
+func (pu *PersonUpdate) RemoveOriginatorNodeIDs(ids ...uuid.UUID) *PersonUpdate {
+	pu.mutation.RemoveOriginatorNodeIDs(ids...)
+	return pu
+}
+
+// RemoveOriginatorNodes removes "originator_nodes" edges to Node entities.
+func (pu *PersonUpdate) RemoveOriginatorNodes(n ...*Node) *PersonUpdate {
+	ids := make([]uuid.UUID, len(n))
+	for i := range n {
+		ids[i] = n[i].ID
+	}
+	return pu.RemoveOriginatorNodeIDs(ids...)
+}
+
+// ClearSupplierNodes clears all "supplier_nodes" edges to the Node entity.
+func (pu *PersonUpdate) ClearSupplierNodes() *PersonUpdate {
+	pu.mutation.ClearSupplierNodes()
+	return pu
+}
+
+// RemoveSupplierNodeIDs removes the "supplier_nodes" edge to Node entities by IDs.
+func (pu *PersonUpdate) RemoveSupplierNodeIDs(ids ...uuid.UUID) *PersonUpdate {
+	pu.mutation.RemoveSupplierNodeIDs(ids...)
+	return pu
+}
+
+// RemoveSupplierNodes removes "supplier_nodes" edges to Node entities.
+func (pu *PersonUpdate) RemoveSupplierNodes(n ...*Node) *PersonUpdate {
+	ids := make([]uuid.UUID, len(n))
+	for i := range n {
+		ids[i] = n[i].ID
+	}
+	return pu.RemoveSupplierNodeIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -286,10 +343,10 @@ func (pu *PersonUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if pu.mutation.ContactOwnerCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.M2M,
 			Inverse: true,
 			Table:   person.ContactOwnerTable,
-			Columns: []string{person.ContactOwnerColumn},
+			Columns: person.ContactOwnerPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
@@ -297,12 +354,28 @@ func (pu *PersonUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := pu.mutation.ContactOwnerIDs(); len(nodes) > 0 {
+	if nodes := pu.mutation.RemovedContactOwnerIDs(); len(nodes) > 0 && !pu.mutation.ContactOwnerCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.M2M,
 			Inverse: true,
 			Table:   person.ContactOwnerTable,
-			Columns: []string{person.ContactOwnerColumn},
+			Columns: person.ContactOwnerPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := pu.mutation.ContactOwnerIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   person.ContactOwnerTable,
+			Columns: person.ContactOwnerPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
@@ -315,10 +388,10 @@ func (pu *PersonUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if pu.mutation.ContactsCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   person.ContactsTable,
-			Columns: []string{person.ContactsColumn},
+			Columns: person.ContactsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
@@ -328,10 +401,10 @@ func (pu *PersonUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if nodes := pu.mutation.RemovedContactsIDs(); len(nodes) > 0 && !pu.mutation.ContactsCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   person.ContactsTable,
-			Columns: []string{person.ContactsColumn},
+			Columns: person.ContactsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
@@ -344,10 +417,10 @@ func (pu *PersonUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if nodes := pu.mutation.ContactsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   person.ContactsTable,
-			Columns: []string{person.ContactsColumn},
+			Columns: person.ContactsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
@@ -360,10 +433,10 @@ func (pu *PersonUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if pu.mutation.MetadataCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.M2M,
 			Inverse: true,
 			Table:   person.MetadataTable,
-			Columns: []string{person.MetadataColumn},
+			Columns: person.MetadataPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(metadata.FieldID, field.TypeUUID),
@@ -371,12 +444,28 @@ func (pu *PersonUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := pu.mutation.MetadataIDs(); len(nodes) > 0 {
+	if nodes := pu.mutation.RemovedMetadataIDs(); len(nodes) > 0 && !pu.mutation.MetadataCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.M2M,
 			Inverse: true,
 			Table:   person.MetadataTable,
-			Columns: []string{person.MetadataColumn},
+			Columns: person.MetadataPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(metadata.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := pu.mutation.MetadataIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   person.MetadataTable,
+			Columns: person.MetadataPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(metadata.FieldID, field.TypeUUID),
@@ -387,12 +476,12 @@ func (pu *PersonUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if pu.mutation.NodeCleared() {
+	if pu.mutation.OriginatorNodesCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.M2M,
 			Inverse: true,
-			Table:   person.NodeTable,
-			Columns: []string{person.NodeColumn},
+			Table:   person.OriginatorNodesTable,
+			Columns: person.OriginatorNodesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
@@ -400,12 +489,73 @@ func (pu *PersonUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := pu.mutation.NodeIDs(); len(nodes) > 0 {
+	if nodes := pu.mutation.RemovedOriginatorNodesIDs(); len(nodes) > 0 && !pu.mutation.OriginatorNodesCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.M2M,
 			Inverse: true,
-			Table:   person.NodeTable,
-			Columns: []string{person.NodeColumn},
+			Table:   person.OriginatorNodesTable,
+			Columns: person.OriginatorNodesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := pu.mutation.OriginatorNodesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   person.OriginatorNodesTable,
+			Columns: person.OriginatorNodesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if pu.mutation.SupplierNodesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   person.SupplierNodesTable,
+			Columns: person.SupplierNodesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := pu.mutation.RemovedSupplierNodesIDs(); len(nodes) > 0 && !pu.mutation.SupplierNodesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   person.SupplierNodesTable,
+			Columns: person.SupplierNodesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := pu.mutation.SupplierNodesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   person.SupplierNodesTable,
+			Columns: person.SupplierNodesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
@@ -434,46 +584,6 @@ type PersonUpdateOne struct {
 	fields   []string
 	hooks    []Hook
 	mutation *PersonMutation
-}
-
-// SetMetadataID sets the "metadata_id" field.
-func (puo *PersonUpdateOne) SetMetadataID(u uuid.UUID) *PersonUpdateOne {
-	puo.mutation.SetMetadataID(u)
-	return puo
-}
-
-// SetNillableMetadataID sets the "metadata_id" field if the given value is not nil.
-func (puo *PersonUpdateOne) SetNillableMetadataID(u *uuid.UUID) *PersonUpdateOne {
-	if u != nil {
-		puo.SetMetadataID(*u)
-	}
-	return puo
-}
-
-// ClearMetadataID clears the value of the "metadata_id" field.
-func (puo *PersonUpdateOne) ClearMetadataID() *PersonUpdateOne {
-	puo.mutation.ClearMetadataID()
-	return puo
-}
-
-// SetNodeID sets the "node_id" field.
-func (puo *PersonUpdateOne) SetNodeID(u uuid.UUID) *PersonUpdateOne {
-	puo.mutation.SetNodeID(u)
-	return puo
-}
-
-// SetNillableNodeID sets the "node_id" field if the given value is not nil.
-func (puo *PersonUpdateOne) SetNillableNodeID(u *uuid.UUID) *PersonUpdateOne {
-	if u != nil {
-		puo.SetNodeID(*u)
-	}
-	return puo
-}
-
-// ClearNodeID clears the value of the "node_id" field.
-func (puo *PersonUpdateOne) ClearNodeID() *PersonUpdateOne {
-	puo.mutation.ClearNodeID()
-	return puo
 }
 
 // SetName sets the "name" field.
@@ -546,23 +656,19 @@ func (puo *PersonUpdateOne) SetNillablePhone(s *string) *PersonUpdateOne {
 	return puo
 }
 
-// SetContactOwnerID sets the "contact_owner" edge to the Person entity by ID.
-func (puo *PersonUpdateOne) SetContactOwnerID(id uuid.UUID) *PersonUpdateOne {
-	puo.mutation.SetContactOwnerID(id)
+// AddContactOwnerIDs adds the "contact_owner" edge to the Person entity by IDs.
+func (puo *PersonUpdateOne) AddContactOwnerIDs(ids ...uuid.UUID) *PersonUpdateOne {
+	puo.mutation.AddContactOwnerIDs(ids...)
 	return puo
 }
 
-// SetNillableContactOwnerID sets the "contact_owner" edge to the Person entity by ID if the given value is not nil.
-func (puo *PersonUpdateOne) SetNillableContactOwnerID(id *uuid.UUID) *PersonUpdateOne {
-	if id != nil {
-		puo = puo.SetContactOwnerID(*id)
+// AddContactOwner adds the "contact_owner" edges to the Person entity.
+func (puo *PersonUpdateOne) AddContactOwner(p ...*Person) *PersonUpdateOne {
+	ids := make([]uuid.UUID, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
 	}
-	return puo
-}
-
-// SetContactOwner sets the "contact_owner" edge to the Person entity.
-func (puo *PersonUpdateOne) SetContactOwner(p *Person) *PersonUpdateOne {
-	return puo.SetContactOwnerID(p.ID)
+	return puo.AddContactOwnerIDs(ids...)
 }
 
 // AddContactIDs adds the "contacts" edge to the Person entity by IDs.
@@ -580,14 +686,49 @@ func (puo *PersonUpdateOne) AddContacts(p ...*Person) *PersonUpdateOne {
 	return puo.AddContactIDs(ids...)
 }
 
-// SetMetadata sets the "metadata" edge to the Metadata entity.
-func (puo *PersonUpdateOne) SetMetadata(m *Metadata) *PersonUpdateOne {
-	return puo.SetMetadataID(m.ID)
+// AddMetadatumIDs adds the "metadata" edge to the Metadata entity by IDs.
+func (puo *PersonUpdateOne) AddMetadatumIDs(ids ...uuid.UUID) *PersonUpdateOne {
+	puo.mutation.AddMetadatumIDs(ids...)
+	return puo
 }
 
-// SetNode sets the "node" edge to the Node entity.
-func (puo *PersonUpdateOne) SetNode(n *Node) *PersonUpdateOne {
-	return puo.SetNodeID(n.ID)
+// AddMetadata adds the "metadata" edges to the Metadata entity.
+func (puo *PersonUpdateOne) AddMetadata(m ...*Metadata) *PersonUpdateOne {
+	ids := make([]uuid.UUID, len(m))
+	for i := range m {
+		ids[i] = m[i].ID
+	}
+	return puo.AddMetadatumIDs(ids...)
+}
+
+// AddOriginatorNodeIDs adds the "originator_nodes" edge to the Node entity by IDs.
+func (puo *PersonUpdateOne) AddOriginatorNodeIDs(ids ...uuid.UUID) *PersonUpdateOne {
+	puo.mutation.AddOriginatorNodeIDs(ids...)
+	return puo
+}
+
+// AddOriginatorNodes adds the "originator_nodes" edges to the Node entity.
+func (puo *PersonUpdateOne) AddOriginatorNodes(n ...*Node) *PersonUpdateOne {
+	ids := make([]uuid.UUID, len(n))
+	for i := range n {
+		ids[i] = n[i].ID
+	}
+	return puo.AddOriginatorNodeIDs(ids...)
+}
+
+// AddSupplierNodeIDs adds the "supplier_nodes" edge to the Node entity by IDs.
+func (puo *PersonUpdateOne) AddSupplierNodeIDs(ids ...uuid.UUID) *PersonUpdateOne {
+	puo.mutation.AddSupplierNodeIDs(ids...)
+	return puo
+}
+
+// AddSupplierNodes adds the "supplier_nodes" edges to the Node entity.
+func (puo *PersonUpdateOne) AddSupplierNodes(n ...*Node) *PersonUpdateOne {
+	ids := make([]uuid.UUID, len(n))
+	for i := range n {
+		ids[i] = n[i].ID
+	}
+	return puo.AddSupplierNodeIDs(ids...)
 }
 
 // Mutation returns the PersonMutation object of the builder.
@@ -595,10 +736,25 @@ func (puo *PersonUpdateOne) Mutation() *PersonMutation {
 	return puo.mutation
 }
 
-// ClearContactOwner clears the "contact_owner" edge to the Person entity.
+// ClearContactOwner clears all "contact_owner" edges to the Person entity.
 func (puo *PersonUpdateOne) ClearContactOwner() *PersonUpdateOne {
 	puo.mutation.ClearContactOwner()
 	return puo
+}
+
+// RemoveContactOwnerIDs removes the "contact_owner" edge to Person entities by IDs.
+func (puo *PersonUpdateOne) RemoveContactOwnerIDs(ids ...uuid.UUID) *PersonUpdateOne {
+	puo.mutation.RemoveContactOwnerIDs(ids...)
+	return puo
+}
+
+// RemoveContactOwner removes "contact_owner" edges to Person entities.
+func (puo *PersonUpdateOne) RemoveContactOwner(p ...*Person) *PersonUpdateOne {
+	ids := make([]uuid.UUID, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return puo.RemoveContactOwnerIDs(ids...)
 }
 
 // ClearContacts clears all "contacts" edges to the Person entity.
@@ -622,16 +778,67 @@ func (puo *PersonUpdateOne) RemoveContacts(p ...*Person) *PersonUpdateOne {
 	return puo.RemoveContactIDs(ids...)
 }
 
-// ClearMetadata clears the "metadata" edge to the Metadata entity.
+// ClearMetadata clears all "metadata" edges to the Metadata entity.
 func (puo *PersonUpdateOne) ClearMetadata() *PersonUpdateOne {
 	puo.mutation.ClearMetadata()
 	return puo
 }
 
-// ClearNode clears the "node" edge to the Node entity.
-func (puo *PersonUpdateOne) ClearNode() *PersonUpdateOne {
-	puo.mutation.ClearNode()
+// RemoveMetadatumIDs removes the "metadata" edge to Metadata entities by IDs.
+func (puo *PersonUpdateOne) RemoveMetadatumIDs(ids ...uuid.UUID) *PersonUpdateOne {
+	puo.mutation.RemoveMetadatumIDs(ids...)
 	return puo
+}
+
+// RemoveMetadata removes "metadata" edges to Metadata entities.
+func (puo *PersonUpdateOne) RemoveMetadata(m ...*Metadata) *PersonUpdateOne {
+	ids := make([]uuid.UUID, len(m))
+	for i := range m {
+		ids[i] = m[i].ID
+	}
+	return puo.RemoveMetadatumIDs(ids...)
+}
+
+// ClearOriginatorNodes clears all "originator_nodes" edges to the Node entity.
+func (puo *PersonUpdateOne) ClearOriginatorNodes() *PersonUpdateOne {
+	puo.mutation.ClearOriginatorNodes()
+	return puo
+}
+
+// RemoveOriginatorNodeIDs removes the "originator_nodes" edge to Node entities by IDs.
+func (puo *PersonUpdateOne) RemoveOriginatorNodeIDs(ids ...uuid.UUID) *PersonUpdateOne {
+	puo.mutation.RemoveOriginatorNodeIDs(ids...)
+	return puo
+}
+
+// RemoveOriginatorNodes removes "originator_nodes" edges to Node entities.
+func (puo *PersonUpdateOne) RemoveOriginatorNodes(n ...*Node) *PersonUpdateOne {
+	ids := make([]uuid.UUID, len(n))
+	for i := range n {
+		ids[i] = n[i].ID
+	}
+	return puo.RemoveOriginatorNodeIDs(ids...)
+}
+
+// ClearSupplierNodes clears all "supplier_nodes" edges to the Node entity.
+func (puo *PersonUpdateOne) ClearSupplierNodes() *PersonUpdateOne {
+	puo.mutation.ClearSupplierNodes()
+	return puo
+}
+
+// RemoveSupplierNodeIDs removes the "supplier_nodes" edge to Node entities by IDs.
+func (puo *PersonUpdateOne) RemoveSupplierNodeIDs(ids ...uuid.UUID) *PersonUpdateOne {
+	puo.mutation.RemoveSupplierNodeIDs(ids...)
+	return puo
+}
+
+// RemoveSupplierNodes removes "supplier_nodes" edges to Node entities.
+func (puo *PersonUpdateOne) RemoveSupplierNodes(n ...*Node) *PersonUpdateOne {
+	ids := make([]uuid.UUID, len(n))
+	for i := range n {
+		ids[i] = n[i].ID
+	}
+	return puo.RemoveSupplierNodeIDs(ids...)
 }
 
 // Where appends a list predicates to the PersonUpdate builder.
@@ -717,10 +924,10 @@ func (puo *PersonUpdateOne) sqlSave(ctx context.Context) (_node *Person, err err
 	}
 	if puo.mutation.ContactOwnerCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.M2M,
 			Inverse: true,
 			Table:   person.ContactOwnerTable,
-			Columns: []string{person.ContactOwnerColumn},
+			Columns: person.ContactOwnerPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
@@ -728,12 +935,28 @@ func (puo *PersonUpdateOne) sqlSave(ctx context.Context) (_node *Person, err err
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := puo.mutation.ContactOwnerIDs(); len(nodes) > 0 {
+	if nodes := puo.mutation.RemovedContactOwnerIDs(); len(nodes) > 0 && !puo.mutation.ContactOwnerCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.M2M,
 			Inverse: true,
 			Table:   person.ContactOwnerTable,
-			Columns: []string{person.ContactOwnerColumn},
+			Columns: person.ContactOwnerPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := puo.mutation.ContactOwnerIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   person.ContactOwnerTable,
+			Columns: person.ContactOwnerPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
@@ -746,10 +969,10 @@ func (puo *PersonUpdateOne) sqlSave(ctx context.Context) (_node *Person, err err
 	}
 	if puo.mutation.ContactsCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   person.ContactsTable,
-			Columns: []string{person.ContactsColumn},
+			Columns: person.ContactsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
@@ -759,10 +982,10 @@ func (puo *PersonUpdateOne) sqlSave(ctx context.Context) (_node *Person, err err
 	}
 	if nodes := puo.mutation.RemovedContactsIDs(); len(nodes) > 0 && !puo.mutation.ContactsCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   person.ContactsTable,
-			Columns: []string{person.ContactsColumn},
+			Columns: person.ContactsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
@@ -775,10 +998,10 @@ func (puo *PersonUpdateOne) sqlSave(ctx context.Context) (_node *Person, err err
 	}
 	if nodes := puo.mutation.ContactsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   person.ContactsTable,
-			Columns: []string{person.ContactsColumn},
+			Columns: person.ContactsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
@@ -791,10 +1014,10 @@ func (puo *PersonUpdateOne) sqlSave(ctx context.Context) (_node *Person, err err
 	}
 	if puo.mutation.MetadataCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.M2M,
 			Inverse: true,
 			Table:   person.MetadataTable,
-			Columns: []string{person.MetadataColumn},
+			Columns: person.MetadataPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(metadata.FieldID, field.TypeUUID),
@@ -802,12 +1025,28 @@ func (puo *PersonUpdateOne) sqlSave(ctx context.Context) (_node *Person, err err
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := puo.mutation.MetadataIDs(); len(nodes) > 0 {
+	if nodes := puo.mutation.RemovedMetadataIDs(); len(nodes) > 0 && !puo.mutation.MetadataCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.M2M,
 			Inverse: true,
 			Table:   person.MetadataTable,
-			Columns: []string{person.MetadataColumn},
+			Columns: person.MetadataPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(metadata.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := puo.mutation.MetadataIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   person.MetadataTable,
+			Columns: person.MetadataPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(metadata.FieldID, field.TypeUUID),
@@ -818,12 +1057,12 @@ func (puo *PersonUpdateOne) sqlSave(ctx context.Context) (_node *Person, err err
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if puo.mutation.NodeCleared() {
+	if puo.mutation.OriginatorNodesCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.M2M,
 			Inverse: true,
-			Table:   person.NodeTable,
-			Columns: []string{person.NodeColumn},
+			Table:   person.OriginatorNodesTable,
+			Columns: person.OriginatorNodesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
@@ -831,12 +1070,73 @@ func (puo *PersonUpdateOne) sqlSave(ctx context.Context) (_node *Person, err err
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := puo.mutation.NodeIDs(); len(nodes) > 0 {
+	if nodes := puo.mutation.RemovedOriginatorNodesIDs(); len(nodes) > 0 && !puo.mutation.OriginatorNodesCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.M2M,
 			Inverse: true,
-			Table:   person.NodeTable,
-			Columns: []string{person.NodeColumn},
+			Table:   person.OriginatorNodesTable,
+			Columns: person.OriginatorNodesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := puo.mutation.OriginatorNodesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   person.OriginatorNodesTable,
+			Columns: person.OriginatorNodesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if puo.mutation.SupplierNodesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   person.SupplierNodesTable,
+			Columns: person.SupplierNodesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := puo.mutation.RemovedSupplierNodesIDs(); len(nodes) > 0 && !puo.mutation.SupplierNodesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   person.SupplierNodesTable,
+			Columns: person.SupplierNodesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := puo.mutation.SupplierNodesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   person.SupplierNodesTable,
+			Columns: person.SupplierNodesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),

@@ -16,6 +16,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
+	"github.com/protobom/storage/internal/backends/ent/hashesentry"
 	"github.com/protobom/storage/internal/backends/ent/metadata"
 	"github.com/protobom/storage/internal/backends/ent/predicate"
 	"github.com/protobom/storage/internal/backends/ent/sourcedata"
@@ -31,20 +32,6 @@ type SourceDataUpdate struct {
 // Where appends a list predicates to the SourceDataUpdate builder.
 func (sdu *SourceDataUpdate) Where(ps ...predicate.SourceData) *SourceDataUpdate {
 	sdu.mutation.Where(ps...)
-	return sdu
-}
-
-// SetMetadataID sets the "metadata_id" field.
-func (sdu *SourceDataUpdate) SetMetadataID(u uuid.UUID) *SourceDataUpdate {
-	sdu.mutation.SetMetadataID(u)
-	return sdu
-}
-
-// SetNillableMetadataID sets the "metadata_id" field if the given value is not nil.
-func (sdu *SourceDataUpdate) SetNillableMetadataID(u *uuid.UUID) *SourceDataUpdate {
-	if u != nil {
-		sdu.SetMetadataID(*u)
-	}
 	return sdu
 }
 
@@ -103,21 +90,34 @@ func (sdu *SourceDataUpdate) ClearURI() *SourceDataUpdate {
 	return sdu
 }
 
-// SetHashes sets the "hashes" field.
-func (sdu *SourceDataUpdate) SetHashes(m map[int32]string) *SourceDataUpdate {
-	sdu.mutation.SetHashes(m)
+// AddHashIDs adds the "hashes" edge to the HashesEntry entity by IDs.
+func (sdu *SourceDataUpdate) AddHashIDs(ids ...uuid.UUID) *SourceDataUpdate {
+	sdu.mutation.AddHashIDs(ids...)
 	return sdu
 }
 
-// ClearHashes clears the value of the "hashes" field.
-func (sdu *SourceDataUpdate) ClearHashes() *SourceDataUpdate {
-	sdu.mutation.ClearHashes()
+// AddHashes adds the "hashes" edges to the HashesEntry entity.
+func (sdu *SourceDataUpdate) AddHashes(h ...*HashesEntry) *SourceDataUpdate {
+	ids := make([]uuid.UUID, len(h))
+	for i := range h {
+		ids[i] = h[i].ID
+	}
+	return sdu.AddHashIDs(ids...)
+}
+
+// AddMetadatumIDs adds the "metadata" edge to the Metadata entity by IDs.
+func (sdu *SourceDataUpdate) AddMetadatumIDs(ids ...uuid.UUID) *SourceDataUpdate {
+	sdu.mutation.AddMetadatumIDs(ids...)
 	return sdu
 }
 
-// SetMetadata sets the "metadata" edge to the Metadata entity.
-func (sdu *SourceDataUpdate) SetMetadata(m *Metadata) *SourceDataUpdate {
-	return sdu.SetMetadataID(m.ID)
+// AddMetadata adds the "metadata" edges to the Metadata entity.
+func (sdu *SourceDataUpdate) AddMetadata(m ...*Metadata) *SourceDataUpdate {
+	ids := make([]uuid.UUID, len(m))
+	for i := range m {
+		ids[i] = m[i].ID
+	}
+	return sdu.AddMetadatumIDs(ids...)
 }
 
 // Mutation returns the SourceDataMutation object of the builder.
@@ -125,10 +125,46 @@ func (sdu *SourceDataUpdate) Mutation() *SourceDataMutation {
 	return sdu.mutation
 }
 
-// ClearMetadata clears the "metadata" edge to the Metadata entity.
+// ClearHashes clears all "hashes" edges to the HashesEntry entity.
+func (sdu *SourceDataUpdate) ClearHashes() *SourceDataUpdate {
+	sdu.mutation.ClearHashes()
+	return sdu
+}
+
+// RemoveHashIDs removes the "hashes" edge to HashesEntry entities by IDs.
+func (sdu *SourceDataUpdate) RemoveHashIDs(ids ...uuid.UUID) *SourceDataUpdate {
+	sdu.mutation.RemoveHashIDs(ids...)
+	return sdu
+}
+
+// RemoveHashes removes "hashes" edges to HashesEntry entities.
+func (sdu *SourceDataUpdate) RemoveHashes(h ...*HashesEntry) *SourceDataUpdate {
+	ids := make([]uuid.UUID, len(h))
+	for i := range h {
+		ids[i] = h[i].ID
+	}
+	return sdu.RemoveHashIDs(ids...)
+}
+
+// ClearMetadata clears all "metadata" edges to the Metadata entity.
 func (sdu *SourceDataUpdate) ClearMetadata() *SourceDataUpdate {
 	sdu.mutation.ClearMetadata()
 	return sdu
+}
+
+// RemoveMetadatumIDs removes the "metadata" edge to Metadata entities by IDs.
+func (sdu *SourceDataUpdate) RemoveMetadatumIDs(ids ...uuid.UUID) *SourceDataUpdate {
+	sdu.mutation.RemoveMetadatumIDs(ids...)
+	return sdu
+}
+
+// RemoveMetadata removes "metadata" edges to Metadata entities.
+func (sdu *SourceDataUpdate) RemoveMetadata(m ...*Metadata) *SourceDataUpdate {
+	ids := make([]uuid.UUID, len(m))
+	for i := range m {
+		ids[i] = m[i].ID
+	}
+	return sdu.RemoveMetadatumIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -158,18 +194,7 @@ func (sdu *SourceDataUpdate) ExecX(ctx context.Context) {
 	}
 }
 
-// check runs all checks and user-defined validators on the builder.
-func (sdu *SourceDataUpdate) check() error {
-	if sdu.mutation.MetadataCleared() && len(sdu.mutation.MetadataIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "SourceData.metadata"`)
-	}
-	return nil
-}
-
 func (sdu *SourceDataUpdate) sqlSave(ctx context.Context) (n int, err error) {
-	if err := sdu.check(); err != nil {
-		return n, err
-	}
 	_spec := sqlgraph.NewUpdateSpec(sourcedata.Table, sourcedata.Columns, sqlgraph.NewFieldSpec(sourcedata.FieldID, field.TypeUUID))
 	if ps := sdu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
@@ -193,15 +218,54 @@ func (sdu *SourceDataUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if sdu.mutation.URICleared() {
 		_spec.ClearField(sourcedata.FieldURI, field.TypeString)
 	}
-	if value, ok := sdu.mutation.Hashes(); ok {
-		_spec.SetField(sourcedata.FieldHashes, field.TypeJSON, value)
-	}
 	if sdu.mutation.HashesCleared() {
-		_spec.ClearField(sourcedata.FieldHashes, field.TypeJSON)
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   sourcedata.HashesTable,
+			Columns: sourcedata.HashesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(hashesentry.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := sdu.mutation.RemovedHashesIDs(); len(nodes) > 0 && !sdu.mutation.HashesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   sourcedata.HashesTable,
+			Columns: sourcedata.HashesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(hashesentry.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := sdu.mutation.HashesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   sourcedata.HashesTable,
+			Columns: sourcedata.HashesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(hashesentry.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if sdu.mutation.MetadataCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.O2M,
 			Inverse: true,
 			Table:   sourcedata.MetadataTable,
 			Columns: []string{sourcedata.MetadataColumn},
@@ -212,9 +276,25 @@ func (sdu *SourceDataUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
+	if nodes := sdu.mutation.RemovedMetadataIDs(); len(nodes) > 0 && !sdu.mutation.MetadataCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   sourcedata.MetadataTable,
+			Columns: []string{sourcedata.MetadataColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(metadata.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
 	if nodes := sdu.mutation.MetadataIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.O2M,
 			Inverse: true,
 			Table:   sourcedata.MetadataTable,
 			Columns: []string{sourcedata.MetadataColumn},
@@ -246,20 +326,6 @@ type SourceDataUpdateOne struct {
 	fields   []string
 	hooks    []Hook
 	mutation *SourceDataMutation
-}
-
-// SetMetadataID sets the "metadata_id" field.
-func (sduo *SourceDataUpdateOne) SetMetadataID(u uuid.UUID) *SourceDataUpdateOne {
-	sduo.mutation.SetMetadataID(u)
-	return sduo
-}
-
-// SetNillableMetadataID sets the "metadata_id" field if the given value is not nil.
-func (sduo *SourceDataUpdateOne) SetNillableMetadataID(u *uuid.UUID) *SourceDataUpdateOne {
-	if u != nil {
-		sduo.SetMetadataID(*u)
-	}
-	return sduo
 }
 
 // SetFormat sets the "format" field.
@@ -317,21 +383,34 @@ func (sduo *SourceDataUpdateOne) ClearURI() *SourceDataUpdateOne {
 	return sduo
 }
 
-// SetHashes sets the "hashes" field.
-func (sduo *SourceDataUpdateOne) SetHashes(m map[int32]string) *SourceDataUpdateOne {
-	sduo.mutation.SetHashes(m)
+// AddHashIDs adds the "hashes" edge to the HashesEntry entity by IDs.
+func (sduo *SourceDataUpdateOne) AddHashIDs(ids ...uuid.UUID) *SourceDataUpdateOne {
+	sduo.mutation.AddHashIDs(ids...)
 	return sduo
 }
 
-// ClearHashes clears the value of the "hashes" field.
-func (sduo *SourceDataUpdateOne) ClearHashes() *SourceDataUpdateOne {
-	sduo.mutation.ClearHashes()
+// AddHashes adds the "hashes" edges to the HashesEntry entity.
+func (sduo *SourceDataUpdateOne) AddHashes(h ...*HashesEntry) *SourceDataUpdateOne {
+	ids := make([]uuid.UUID, len(h))
+	for i := range h {
+		ids[i] = h[i].ID
+	}
+	return sduo.AddHashIDs(ids...)
+}
+
+// AddMetadatumIDs adds the "metadata" edge to the Metadata entity by IDs.
+func (sduo *SourceDataUpdateOne) AddMetadatumIDs(ids ...uuid.UUID) *SourceDataUpdateOne {
+	sduo.mutation.AddMetadatumIDs(ids...)
 	return sduo
 }
 
-// SetMetadata sets the "metadata" edge to the Metadata entity.
-func (sduo *SourceDataUpdateOne) SetMetadata(m *Metadata) *SourceDataUpdateOne {
-	return sduo.SetMetadataID(m.ID)
+// AddMetadata adds the "metadata" edges to the Metadata entity.
+func (sduo *SourceDataUpdateOne) AddMetadata(m ...*Metadata) *SourceDataUpdateOne {
+	ids := make([]uuid.UUID, len(m))
+	for i := range m {
+		ids[i] = m[i].ID
+	}
+	return sduo.AddMetadatumIDs(ids...)
 }
 
 // Mutation returns the SourceDataMutation object of the builder.
@@ -339,10 +418,46 @@ func (sduo *SourceDataUpdateOne) Mutation() *SourceDataMutation {
 	return sduo.mutation
 }
 
-// ClearMetadata clears the "metadata" edge to the Metadata entity.
+// ClearHashes clears all "hashes" edges to the HashesEntry entity.
+func (sduo *SourceDataUpdateOne) ClearHashes() *SourceDataUpdateOne {
+	sduo.mutation.ClearHashes()
+	return sduo
+}
+
+// RemoveHashIDs removes the "hashes" edge to HashesEntry entities by IDs.
+func (sduo *SourceDataUpdateOne) RemoveHashIDs(ids ...uuid.UUID) *SourceDataUpdateOne {
+	sduo.mutation.RemoveHashIDs(ids...)
+	return sduo
+}
+
+// RemoveHashes removes "hashes" edges to HashesEntry entities.
+func (sduo *SourceDataUpdateOne) RemoveHashes(h ...*HashesEntry) *SourceDataUpdateOne {
+	ids := make([]uuid.UUID, len(h))
+	for i := range h {
+		ids[i] = h[i].ID
+	}
+	return sduo.RemoveHashIDs(ids...)
+}
+
+// ClearMetadata clears all "metadata" edges to the Metadata entity.
 func (sduo *SourceDataUpdateOne) ClearMetadata() *SourceDataUpdateOne {
 	sduo.mutation.ClearMetadata()
 	return sduo
+}
+
+// RemoveMetadatumIDs removes the "metadata" edge to Metadata entities by IDs.
+func (sduo *SourceDataUpdateOne) RemoveMetadatumIDs(ids ...uuid.UUID) *SourceDataUpdateOne {
+	sduo.mutation.RemoveMetadatumIDs(ids...)
+	return sduo
+}
+
+// RemoveMetadata removes "metadata" edges to Metadata entities.
+func (sduo *SourceDataUpdateOne) RemoveMetadata(m ...*Metadata) *SourceDataUpdateOne {
+	ids := make([]uuid.UUID, len(m))
+	for i := range m {
+		ids[i] = m[i].ID
+	}
+	return sduo.RemoveMetadatumIDs(ids...)
 }
 
 // Where appends a list predicates to the SourceDataUpdate builder.
@@ -385,18 +500,7 @@ func (sduo *SourceDataUpdateOne) ExecX(ctx context.Context) {
 	}
 }
 
-// check runs all checks and user-defined validators on the builder.
-func (sduo *SourceDataUpdateOne) check() error {
-	if sduo.mutation.MetadataCleared() && len(sduo.mutation.MetadataIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "SourceData.metadata"`)
-	}
-	return nil
-}
-
 func (sduo *SourceDataUpdateOne) sqlSave(ctx context.Context) (_node *SourceData, err error) {
-	if err := sduo.check(); err != nil {
-		return _node, err
-	}
 	_spec := sqlgraph.NewUpdateSpec(sourcedata.Table, sourcedata.Columns, sqlgraph.NewFieldSpec(sourcedata.FieldID, field.TypeUUID))
 	id, ok := sduo.mutation.ID()
 	if !ok {
@@ -437,15 +541,54 @@ func (sduo *SourceDataUpdateOne) sqlSave(ctx context.Context) (_node *SourceData
 	if sduo.mutation.URICleared() {
 		_spec.ClearField(sourcedata.FieldURI, field.TypeString)
 	}
-	if value, ok := sduo.mutation.Hashes(); ok {
-		_spec.SetField(sourcedata.FieldHashes, field.TypeJSON, value)
-	}
 	if sduo.mutation.HashesCleared() {
-		_spec.ClearField(sourcedata.FieldHashes, field.TypeJSON)
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   sourcedata.HashesTable,
+			Columns: sourcedata.HashesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(hashesentry.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := sduo.mutation.RemovedHashesIDs(); len(nodes) > 0 && !sduo.mutation.HashesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   sourcedata.HashesTable,
+			Columns: sourcedata.HashesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(hashesentry.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := sduo.mutation.HashesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   sourcedata.HashesTable,
+			Columns: sourcedata.HashesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(hashesentry.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if sduo.mutation.MetadataCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.O2M,
 			Inverse: true,
 			Table:   sourcedata.MetadataTable,
 			Columns: []string{sourcedata.MetadataColumn},
@@ -456,9 +599,25 @@ func (sduo *SourceDataUpdateOne) sqlSave(ctx context.Context) (_node *SourceData
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
+	if nodes := sduo.mutation.RemovedMetadataIDs(); len(nodes) > 0 && !sduo.mutation.MetadataCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   sourcedata.MetadataTable,
+			Columns: []string{sourcedata.MetadataColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(metadata.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
 	if nodes := sduo.mutation.MetadataIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.O2M,
 			Inverse: true,
 			Table:   sourcedata.MetadataTable,
 			Columns: []string{sourcedata.MetadataColumn},

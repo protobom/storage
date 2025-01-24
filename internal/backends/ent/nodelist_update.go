@@ -152,18 +152,7 @@ func (nlu *NodeListUpdate) ExecX(ctx context.Context) {
 	}
 }
 
-// check runs all checks and user-defined validators on the builder.
-func (nlu *NodeListUpdate) check() error {
-	if nlu.mutation.DocumentCleared() && len(nlu.mutation.DocumentIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "NodeList.document"`)
-	}
-	return nil
-}
-
 func (nlu *NodeListUpdate) sqlSave(ctx context.Context) (n int, err error) {
-	if err := nlu.check(); err != nil {
-		return n, err
-	}
 	_spec := sqlgraph.NewUpdateSpec(nodelist.Table, nodelist.Columns, sqlgraph.NewFieldSpec(nodelist.FieldID, field.TypeUUID))
 	if ps := nlu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
@@ -419,18 +408,7 @@ func (nluo *NodeListUpdateOne) ExecX(ctx context.Context) {
 	}
 }
 
-// check runs all checks and user-defined validators on the builder.
-func (nluo *NodeListUpdateOne) check() error {
-	if nluo.mutation.DocumentCleared() && len(nluo.mutation.DocumentIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "NodeList.document"`)
-	}
-	return nil
-}
-
 func (nluo *NodeListUpdateOne) sqlSave(ctx context.Context) (_node *NodeList, err error) {
-	if err := nluo.check(); err != nil {
-		return _node, err
-	}
 	_spec := sqlgraph.NewUpdateSpec(nodelist.Table, nodelist.Columns, sqlgraph.NewFieldSpec(nodelist.FieldID, field.TypeUUID))
 	id, ok := nluo.mutation.ID()
 	if !ok {

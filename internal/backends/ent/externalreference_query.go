@@ -28,13 +28,13 @@ import (
 // ExternalReferenceQuery is the builder for querying ExternalReference entities.
 type ExternalReferenceQuery struct {
 	config
-	ctx          *QueryContext
-	order        []externalreference.OrderOption
-	inters       []Interceptor
-	predicates   []predicate.ExternalReference
-	withDocument *DocumentQuery
-	withHashes   *HashesEntryQuery
-	withNodes    *NodeQuery
+	ctx           *QueryContext
+	order         []externalreference.OrderOption
+	inters        []Interceptor
+	predicates    []predicate.ExternalReference
+	withHashes    *HashesEntryQuery
+	withDocuments *DocumentQuery
+	withNodes     *NodeQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -71,28 +71,6 @@ func (erq *ExternalReferenceQuery) Order(o ...externalreference.OrderOption) *Ex
 	return erq
 }
 
-// QueryDocument chains the current query on the "document" edge.
-func (erq *ExternalReferenceQuery) QueryDocument() *DocumentQuery {
-	query := (&DocumentClient{config: erq.config}).Query()
-	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := erq.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		selector := erq.sqlQuery(ctx)
-		if err := selector.Err(); err != nil {
-			return nil, err
-		}
-		step := sqlgraph.NewStep(
-			sqlgraph.From(externalreference.Table, externalreference.FieldID, selector),
-			sqlgraph.To(document.Table, document.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, externalreference.DocumentTable, externalreference.DocumentColumn),
-		)
-		fromU = sqlgraph.SetNeighbors(erq.driver.Dialect(), step)
-		return fromU, nil
-	}
-	return query
-}
-
 // QueryHashes chains the current query on the "hashes" edge.
 func (erq *ExternalReferenceQuery) QueryHashes() *HashesEntryQuery {
 	query := (&HashesEntryClient{config: erq.config}).Query()
@@ -108,6 +86,28 @@ func (erq *ExternalReferenceQuery) QueryHashes() *HashesEntryQuery {
 			sqlgraph.From(externalreference.Table, externalreference.FieldID, selector),
 			sqlgraph.To(hashesentry.Table, hashesentry.FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, false, externalreference.HashesTable, externalreference.HashesPrimaryKey...),
+		)
+		fromU = sqlgraph.SetNeighbors(erq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryDocuments chains the current query on the "documents" edge.
+func (erq *ExternalReferenceQuery) QueryDocuments() *DocumentQuery {
+	query := (&DocumentClient{config: erq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := erq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := erq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(externalreference.Table, externalreference.FieldID, selector),
+			sqlgraph.To(document.Table, document.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, externalreference.DocumentsTable, externalreference.DocumentsPrimaryKey...),
 		)
 		fromU = sqlgraph.SetNeighbors(erq.driver.Dialect(), step)
 		return fromU, nil
@@ -324,29 +324,18 @@ func (erq *ExternalReferenceQuery) Clone() *ExternalReferenceQuery {
 		return nil
 	}
 	return &ExternalReferenceQuery{
-		config:       erq.config,
-		ctx:          erq.ctx.Clone(),
-		order:        append([]externalreference.OrderOption{}, erq.order...),
-		inters:       append([]Interceptor{}, erq.inters...),
-		predicates:   append([]predicate.ExternalReference{}, erq.predicates...),
-		withDocument: erq.withDocument.Clone(),
-		withHashes:   erq.withHashes.Clone(),
-		withNodes:    erq.withNodes.Clone(),
+		config:        erq.config,
+		ctx:           erq.ctx.Clone(),
+		order:         append([]externalreference.OrderOption{}, erq.order...),
+		inters:        append([]Interceptor{}, erq.inters...),
+		predicates:    append([]predicate.ExternalReference{}, erq.predicates...),
+		withHashes:    erq.withHashes.Clone(),
+		withDocuments: erq.withDocuments.Clone(),
+		withNodes:     erq.withNodes.Clone(),
 		// clone intermediate query.
 		sql:  erq.sql.Clone(),
 		path: erq.path,
 	}
-}
-
-// WithDocument tells the query-builder to eager-load the nodes that are connected to
-// the "document" edge. The optional arguments are used to configure the query builder of the edge.
-func (erq *ExternalReferenceQuery) WithDocument(opts ...func(*DocumentQuery)) *ExternalReferenceQuery {
-	query := (&DocumentClient{config: erq.config}).Query()
-	for _, opt := range opts {
-		opt(query)
-	}
-	erq.withDocument = query
-	return erq
 }
 
 // WithHashes tells the query-builder to eager-load the nodes that are connected to
@@ -357,6 +346,17 @@ func (erq *ExternalReferenceQuery) WithHashes(opts ...func(*HashesEntryQuery)) *
 		opt(query)
 	}
 	erq.withHashes = query
+	return erq
+}
+
+// WithDocuments tells the query-builder to eager-load the nodes that are connected to
+// the "documents" edge. The optional arguments are used to configure the query builder of the edge.
+func (erq *ExternalReferenceQuery) WithDocuments(opts ...func(*DocumentQuery)) *ExternalReferenceQuery {
+	query := (&DocumentClient{config: erq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	erq.withDocuments = query
 	return erq
 }
 
@@ -377,12 +377,12 @@ func (erq *ExternalReferenceQuery) WithNodes(opts ...func(*NodeQuery)) *External
 // Example:
 //
 //	var v []struct {
-//		DocumentID uuid.UUID `json:"-"`
+//		ProtoMessage *sbom.ExternalReference `json:"-"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.ExternalReference.Query().
-//		GroupBy(externalreference.FieldDocumentID).
+//		GroupBy(externalreference.FieldProtoMessage).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (erq *ExternalReferenceQuery) GroupBy(field string, fields ...string) *ExternalReferenceGroupBy {
@@ -400,11 +400,11 @@ func (erq *ExternalReferenceQuery) GroupBy(field string, fields ...string) *Exte
 // Example:
 //
 //	var v []struct {
-//		DocumentID uuid.UUID `json:"-"`
+//		ProtoMessage *sbom.ExternalReference `json:"-"`
 //	}
 //
 //	client.ExternalReference.Query().
-//		Select(externalreference.FieldDocumentID).
+//		Select(externalreference.FieldProtoMessage).
 //		Scan(ctx, &v)
 func (erq *ExternalReferenceQuery) Select(fields ...string) *ExternalReferenceSelect {
 	erq.ctx.Fields = append(erq.ctx.Fields, fields...)
@@ -450,8 +450,8 @@ func (erq *ExternalReferenceQuery) sqlAll(ctx context.Context, hooks ...queryHoo
 		nodes       = []*ExternalReference{}
 		_spec       = erq.querySpec()
 		loadedTypes = [3]bool{
-			erq.withDocument != nil,
 			erq.withHashes != nil,
+			erq.withDocuments != nil,
 			erq.withNodes != nil,
 		}
 	)
@@ -473,16 +473,17 @@ func (erq *ExternalReferenceQuery) sqlAll(ctx context.Context, hooks ...queryHoo
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
-	if query := erq.withDocument; query != nil {
-		if err := erq.loadDocument(ctx, query, nodes, nil,
-			func(n *ExternalReference, e *Document) { n.Edges.Document = e }); err != nil {
-			return nil, err
-		}
-	}
 	if query := erq.withHashes; query != nil {
 		if err := erq.loadHashes(ctx, query, nodes,
 			func(n *ExternalReference) { n.Edges.Hashes = []*HashesEntry{} },
 			func(n *ExternalReference, e *HashesEntry) { n.Edges.Hashes = append(n.Edges.Hashes, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := erq.withDocuments; query != nil {
+		if err := erq.loadDocuments(ctx, query, nodes,
+			func(n *ExternalReference) { n.Edges.Documents = []*Document{} },
+			func(n *ExternalReference, e *Document) { n.Edges.Documents = append(n.Edges.Documents, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -496,35 +497,6 @@ func (erq *ExternalReferenceQuery) sqlAll(ctx context.Context, hooks ...queryHoo
 	return nodes, nil
 }
 
-func (erq *ExternalReferenceQuery) loadDocument(ctx context.Context, query *DocumentQuery, nodes []*ExternalReference, init func(*ExternalReference), assign func(*ExternalReference, *Document)) error {
-	ids := make([]uuid.UUID, 0, len(nodes))
-	nodeids := make(map[uuid.UUID][]*ExternalReference)
-	for i := range nodes {
-		fk := nodes[i].DocumentID
-		if _, ok := nodeids[fk]; !ok {
-			ids = append(ids, fk)
-		}
-		nodeids[fk] = append(nodeids[fk], nodes[i])
-	}
-	if len(ids) == 0 {
-		return nil
-	}
-	query.Where(document.IDIn(ids...))
-	neighbors, err := query.All(ctx)
-	if err != nil {
-		return err
-	}
-	for _, n := range neighbors {
-		nodes, ok := nodeids[n.ID]
-		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "document_id" returned %v`, n.ID)
-		}
-		for i := range nodes {
-			assign(nodes[i], n)
-		}
-	}
-	return nil
-}
 func (erq *ExternalReferenceQuery) loadHashes(ctx context.Context, query *HashesEntryQuery, nodes []*ExternalReference, init func(*ExternalReference), assign func(*ExternalReference, *HashesEntry)) error {
 	edgeIDs := make([]driver.Value, len(nodes))
 	byID := make(map[uuid.UUID]*ExternalReference)
@@ -579,6 +551,67 @@ func (erq *ExternalReferenceQuery) loadHashes(ctx context.Context, query *Hashes
 		nodes, ok := nids[n.ID]
 		if !ok {
 			return fmt.Errorf(`unexpected "hashes" node returned %v`, n.ID)
+		}
+		for kn := range nodes {
+			assign(kn, n)
+		}
+	}
+	return nil
+}
+func (erq *ExternalReferenceQuery) loadDocuments(ctx context.Context, query *DocumentQuery, nodes []*ExternalReference, init func(*ExternalReference), assign func(*ExternalReference, *Document)) error {
+	edgeIDs := make([]driver.Value, len(nodes))
+	byID := make(map[uuid.UUID]*ExternalReference)
+	nids := make(map[uuid.UUID]map[*ExternalReference]struct{})
+	for i, node := range nodes {
+		edgeIDs[i] = node.ID
+		byID[node.ID] = node
+		if init != nil {
+			init(node)
+		}
+	}
+	query.Where(func(s *sql.Selector) {
+		joinT := sql.Table(externalreference.DocumentsTable)
+		s.Join(joinT).On(s.C(document.FieldID), joinT.C(externalreference.DocumentsPrimaryKey[0]))
+		s.Where(sql.InValues(joinT.C(externalreference.DocumentsPrimaryKey[1]), edgeIDs...))
+		columns := s.SelectedColumns()
+		s.Select(joinT.C(externalreference.DocumentsPrimaryKey[1]))
+		s.AppendSelect(columns...)
+		s.SetDistinct(false)
+	})
+	if err := query.prepareQuery(ctx); err != nil {
+		return err
+	}
+	qr := QuerierFunc(func(ctx context.Context, q Query) (Value, error) {
+		return query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
+			assign := spec.Assign
+			values := spec.ScanValues
+			spec.ScanValues = func(columns []string) ([]any, error) {
+				values, err := values(columns[1:])
+				if err != nil {
+					return nil, err
+				}
+				return append([]any{new(uuid.UUID)}, values...), nil
+			}
+			spec.Assign = func(columns []string, values []any) error {
+				outValue := *values[0].(*uuid.UUID)
+				inValue := *values[1].(*uuid.UUID)
+				if nids[inValue] == nil {
+					nids[inValue] = map[*ExternalReference]struct{}{byID[outValue]: {}}
+					return assign(columns[1:], values[1:])
+				}
+				nids[inValue][byID[outValue]] = struct{}{}
+				return nil
+			}
+		})
+	})
+	neighbors, err := withInterceptors[[]*Document](ctx, query, qr, query.inters)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected "documents" node returned %v`, n.ID)
 		}
 		for kn := range nodes {
 			assign(kn, n)
@@ -672,9 +705,6 @@ func (erq *ExternalReferenceQuery) querySpec() *sqlgraph.QuerySpec {
 			if fields[i] != externalreference.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
-		}
-		if erq.withDocument != nil {
-			_spec.Node.AddColumnOnce(externalreference.FieldDocumentID)
 		}
 	}
 	if ps := erq.predicates; len(ps) > 0 {

@@ -19,8 +19,19 @@ import (
 	"github.com/google/uuid"
 	"github.com/protobom/storage/internal/backends/ent/annotation"
 	"github.com/protobom/storage/internal/backends/ent/document"
+	"github.com/protobom/storage/internal/backends/ent/documenttype"
+	"github.com/protobom/storage/internal/backends/ent/edgetype"
+	"github.com/protobom/storage/internal/backends/ent/externalreference"
+	"github.com/protobom/storage/internal/backends/ent/hashesentry"
+	"github.com/protobom/storage/internal/backends/ent/identifiersentry"
 	"github.com/protobom/storage/internal/backends/ent/metadata"
+	"github.com/protobom/storage/internal/backends/ent/node"
 	"github.com/protobom/storage/internal/backends/ent/nodelist"
+	"github.com/protobom/storage/internal/backends/ent/person"
+	"github.com/protobom/storage/internal/backends/ent/property"
+	"github.com/protobom/storage/internal/backends/ent/purpose"
+	"github.com/protobom/storage/internal/backends/ent/sourcedata"
+	"github.com/protobom/storage/internal/backends/ent/tool"
 )
 
 // DocumentCreate is the builder for creating a Document entity.
@@ -98,6 +109,171 @@ func (dc *DocumentCreate) SetNodeList(n *NodeList) *DocumentCreate {
 	return dc.SetNodeListID(n.ID)
 }
 
+// AddDocumentTypeIDs adds the "document_types" edge to the DocumentType entity by IDs.
+func (dc *DocumentCreate) AddDocumentTypeIDs(ids ...uuid.UUID) *DocumentCreate {
+	dc.mutation.AddDocumentTypeIDs(ids...)
+	return dc
+}
+
+// AddDocumentTypes adds the "document_types" edges to the DocumentType entity.
+func (dc *DocumentCreate) AddDocumentTypes(d ...*DocumentType) *DocumentCreate {
+	ids := make([]uuid.UUID, len(d))
+	for i := range d {
+		ids[i] = d[i].ID
+	}
+	return dc.AddDocumentTypeIDs(ids...)
+}
+
+// AddEdgeTypeIDs adds the "edge_types" edge to the EdgeType entity by IDs.
+func (dc *DocumentCreate) AddEdgeTypeIDs(ids ...uuid.UUID) *DocumentCreate {
+	dc.mutation.AddEdgeTypeIDs(ids...)
+	return dc
+}
+
+// AddEdgeTypes adds the "edge_types" edges to the EdgeType entity.
+func (dc *DocumentCreate) AddEdgeTypes(e ...*EdgeType) *DocumentCreate {
+	ids := make([]uuid.UUID, len(e))
+	for i := range e {
+		ids[i] = e[i].ID
+	}
+	return dc.AddEdgeTypeIDs(ids...)
+}
+
+// AddExternalReferenceIDs adds the "external_references" edge to the ExternalReference entity by IDs.
+func (dc *DocumentCreate) AddExternalReferenceIDs(ids ...uuid.UUID) *DocumentCreate {
+	dc.mutation.AddExternalReferenceIDs(ids...)
+	return dc
+}
+
+// AddExternalReferences adds the "external_references" edges to the ExternalReference entity.
+func (dc *DocumentCreate) AddExternalReferences(e ...*ExternalReference) *DocumentCreate {
+	ids := make([]uuid.UUID, len(e))
+	for i := range e {
+		ids[i] = e[i].ID
+	}
+	return dc.AddExternalReferenceIDs(ids...)
+}
+
+// AddHashIDs adds the "hashes" edge to the HashesEntry entity by IDs.
+func (dc *DocumentCreate) AddHashIDs(ids ...uuid.UUID) *DocumentCreate {
+	dc.mutation.AddHashIDs(ids...)
+	return dc
+}
+
+// AddHashes adds the "hashes" edges to the HashesEntry entity.
+func (dc *DocumentCreate) AddHashes(h ...*HashesEntry) *DocumentCreate {
+	ids := make([]uuid.UUID, len(h))
+	for i := range h {
+		ids[i] = h[i].ID
+	}
+	return dc.AddHashIDs(ids...)
+}
+
+// AddIdentifierIDs adds the "identifiers" edge to the IdentifiersEntry entity by IDs.
+func (dc *DocumentCreate) AddIdentifierIDs(ids ...uuid.UUID) *DocumentCreate {
+	dc.mutation.AddIdentifierIDs(ids...)
+	return dc
+}
+
+// AddIdentifiers adds the "identifiers" edges to the IdentifiersEntry entity.
+func (dc *DocumentCreate) AddIdentifiers(i ...*IdentifiersEntry) *DocumentCreate {
+	ids := make([]uuid.UUID, len(i))
+	for j := range i {
+		ids[j] = i[j].ID
+	}
+	return dc.AddIdentifierIDs(ids...)
+}
+
+// AddNodeIDs adds the "nodes" edge to the Node entity by IDs.
+func (dc *DocumentCreate) AddNodeIDs(ids ...uuid.UUID) *DocumentCreate {
+	dc.mutation.AddNodeIDs(ids...)
+	return dc
+}
+
+// AddNodes adds the "nodes" edges to the Node entity.
+func (dc *DocumentCreate) AddNodes(n ...*Node) *DocumentCreate {
+	ids := make([]uuid.UUID, len(n))
+	for i := range n {
+		ids[i] = n[i].ID
+	}
+	return dc.AddNodeIDs(ids...)
+}
+
+// AddPersonIDs adds the "persons" edge to the Person entity by IDs.
+func (dc *DocumentCreate) AddPersonIDs(ids ...uuid.UUID) *DocumentCreate {
+	dc.mutation.AddPersonIDs(ids...)
+	return dc
+}
+
+// AddPersons adds the "persons" edges to the Person entity.
+func (dc *DocumentCreate) AddPersons(p ...*Person) *DocumentCreate {
+	ids := make([]uuid.UUID, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return dc.AddPersonIDs(ids...)
+}
+
+// AddPropertyIDs adds the "properties" edge to the Property entity by IDs.
+func (dc *DocumentCreate) AddPropertyIDs(ids ...uuid.UUID) *DocumentCreate {
+	dc.mutation.AddPropertyIDs(ids...)
+	return dc
+}
+
+// AddProperties adds the "properties" edges to the Property entity.
+func (dc *DocumentCreate) AddProperties(p ...*Property) *DocumentCreate {
+	ids := make([]uuid.UUID, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return dc.AddPropertyIDs(ids...)
+}
+
+// AddPurposeIDs adds the "purposes" edge to the Purpose entity by IDs.
+func (dc *DocumentCreate) AddPurposeIDs(ids ...int) *DocumentCreate {
+	dc.mutation.AddPurposeIDs(ids...)
+	return dc
+}
+
+// AddPurposes adds the "purposes" edges to the Purpose entity.
+func (dc *DocumentCreate) AddPurposes(p ...*Purpose) *DocumentCreate {
+	ids := make([]int, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return dc.AddPurposeIDs(ids...)
+}
+
+// AddSourceDatumIDs adds the "source_data" edge to the SourceData entity by IDs.
+func (dc *DocumentCreate) AddSourceDatumIDs(ids ...uuid.UUID) *DocumentCreate {
+	dc.mutation.AddSourceDatumIDs(ids...)
+	return dc
+}
+
+// AddSourceData adds the "source_data" edges to the SourceData entity.
+func (dc *DocumentCreate) AddSourceData(s ...*SourceData) *DocumentCreate {
+	ids := make([]uuid.UUID, len(s))
+	for i := range s {
+		ids[i] = s[i].ID
+	}
+	return dc.AddSourceDatumIDs(ids...)
+}
+
+// AddToolIDs adds the "tools" edge to the Tool entity by IDs.
+func (dc *DocumentCreate) AddToolIDs(ids ...uuid.UUID) *DocumentCreate {
+	dc.mutation.AddToolIDs(ids...)
+	return dc
+}
+
+// AddTools adds the "tools" edges to the Tool entity.
+func (dc *DocumentCreate) AddTools(t ...*Tool) *DocumentCreate {
+	ids := make([]uuid.UUID, len(t))
+	for i := range t {
+		ids[i] = t[i].ID
+	}
+	return dc.AddToolIDs(ids...)
+}
+
 // Mutation returns the DocumentMutation object of the builder.
 func (dc *DocumentCreate) Mutation() *DocumentMutation {
 	return dc.mutation
@@ -105,7 +281,9 @@ func (dc *DocumentCreate) Mutation() *DocumentMutation {
 
 // Save creates the Document in the database.
 func (dc *DocumentCreate) Save(ctx context.Context) (*Document, error) {
-	dc.defaults()
+	if err := dc.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, dc.sqlSave, dc.mutation, dc.hooks)
 }
 
@@ -132,11 +310,15 @@ func (dc *DocumentCreate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (dc *DocumentCreate) defaults() {
+func (dc *DocumentCreate) defaults() error {
 	if _, ok := dc.mutation.ID(); !ok {
+		if document.DefaultID == nil {
+			return fmt.Errorf("ent: uninitialized document.DefaultID (forgotten import ent/runtime?)")
+		}
 		v := document.DefaultID()
 		dc.mutation.SetID(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -195,8 +377,8 @@ func (dc *DocumentCreate) createSpec() (*Document, *sqlgraph.CreateSpec) {
 	}
 	if nodes := dc.mutation.MetadataIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2O,
-			Inverse: true,
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
 			Table:   document.MetadataTable,
 			Columns: []string{document.MetadataColumn},
 			Bidi:    false,
@@ -212,8 +394,8 @@ func (dc *DocumentCreate) createSpec() (*Document, *sqlgraph.CreateSpec) {
 	}
 	if nodes := dc.mutation.NodeListIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2O,
-			Inverse: true,
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
 			Table:   document.NodeListTable,
 			Columns: []string{document.NodeListColumn},
 			Bidi:    false,
@@ -225,6 +407,182 @@ func (dc *DocumentCreate) createSpec() (*Document, *sqlgraph.CreateSpec) {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.NodeListID = nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := dc.mutation.DocumentTypesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.DocumentTypesTable,
+			Columns: document.DocumentTypesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(documenttype.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := dc.mutation.EdgeTypesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.EdgeTypesTable,
+			Columns: document.EdgeTypesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(edgetype.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := dc.mutation.ExternalReferencesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.ExternalReferencesTable,
+			Columns: document.ExternalReferencesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(externalreference.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := dc.mutation.HashesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.HashesTable,
+			Columns: document.HashesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(hashesentry.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := dc.mutation.IdentifiersIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.IdentifiersTable,
+			Columns: document.IdentifiersPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(identifiersentry.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := dc.mutation.NodesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.NodesTable,
+			Columns: document.NodesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := dc.mutation.PersonsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.PersonsTable,
+			Columns: document.PersonsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := dc.mutation.PropertiesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.PropertiesTable,
+			Columns: document.PropertiesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(property.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := dc.mutation.PurposesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.PurposesTable,
+			Columns: document.PurposesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(purpose.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := dc.mutation.SourceDataIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.SourceDataTable,
+			Columns: document.SourceDataPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(sourcedata.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := dc.mutation.ToolsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.ToolsTable,
+			Columns: document.ToolsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(tool.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

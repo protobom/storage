@@ -32,9 +32,9 @@ type NodeListQuery struct {
 	order         []nodelist.OrderOption
 	inters        []Interceptor
 	predicates    []predicate.NodeList
-	withDocument  *DocumentQuery
 	withEdgeTypes *EdgeTypeQuery
 	withNodes     *NodeQuery
+	withDocuments *DocumentQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -69,28 +69,6 @@ func (nlq *NodeListQuery) Unique(unique bool) *NodeListQuery {
 func (nlq *NodeListQuery) Order(o ...nodelist.OrderOption) *NodeListQuery {
 	nlq.order = append(nlq.order, o...)
 	return nlq
-}
-
-// QueryDocument chains the current query on the "document" edge.
-func (nlq *NodeListQuery) QueryDocument() *DocumentQuery {
-	query := (&DocumentClient{config: nlq.config}).Query()
-	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := nlq.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		selector := nlq.sqlQuery(ctx)
-		if err := selector.Err(); err != nil {
-			return nil, err
-		}
-		step := sqlgraph.NewStep(
-			sqlgraph.From(nodelist.Table, nodelist.FieldID, selector),
-			sqlgraph.To(document.Table, document.FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, false, nodelist.DocumentTable, nodelist.DocumentColumn),
-		)
-		fromU = sqlgraph.SetNeighbors(nlq.driver.Dialect(), step)
-		return fromU, nil
-	}
-	return query
 }
 
 // QueryEdgeTypes chains the current query on the "edge_types" edge.
@@ -130,6 +108,28 @@ func (nlq *NodeListQuery) QueryNodes() *NodeQuery {
 			sqlgraph.From(nodelist.Table, nodelist.FieldID, selector),
 			sqlgraph.To(node.Table, node.FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, false, nodelist.NodesTable, nodelist.NodesPrimaryKey...),
+		)
+		fromU = sqlgraph.SetNeighbors(nlq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryDocuments chains the current query on the "documents" edge.
+func (nlq *NodeListQuery) QueryDocuments() *DocumentQuery {
+	query := (&DocumentClient{config: nlq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := nlq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := nlq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(nodelist.Table, nodelist.FieldID, selector),
+			sqlgraph.To(document.Table, document.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, nodelist.DocumentsTable, nodelist.DocumentsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(nlq.driver.Dialect(), step)
 		return fromU, nil
@@ -329,24 +329,13 @@ func (nlq *NodeListQuery) Clone() *NodeListQuery {
 		order:         append([]nodelist.OrderOption{}, nlq.order...),
 		inters:        append([]Interceptor{}, nlq.inters...),
 		predicates:    append([]predicate.NodeList{}, nlq.predicates...),
-		withDocument:  nlq.withDocument.Clone(),
 		withEdgeTypes: nlq.withEdgeTypes.Clone(),
 		withNodes:     nlq.withNodes.Clone(),
+		withDocuments: nlq.withDocuments.Clone(),
 		// clone intermediate query.
 		sql:  nlq.sql.Clone(),
 		path: nlq.path,
 	}
-}
-
-// WithDocument tells the query-builder to eager-load the nodes that are connected to
-// the "document" edge. The optional arguments are used to configure the query builder of the edge.
-func (nlq *NodeListQuery) WithDocument(opts ...func(*DocumentQuery)) *NodeListQuery {
-	query := (&DocumentClient{config: nlq.config}).Query()
-	for _, opt := range opts {
-		opt(query)
-	}
-	nlq.withDocument = query
-	return nlq
 }
 
 // WithEdgeTypes tells the query-builder to eager-load the nodes that are connected to
@@ -368,6 +357,17 @@ func (nlq *NodeListQuery) WithNodes(opts ...func(*NodeQuery)) *NodeListQuery {
 		opt(query)
 	}
 	nlq.withNodes = query
+	return nlq
+}
+
+// WithDocuments tells the query-builder to eager-load the nodes that are connected to
+// the "documents" edge. The optional arguments are used to configure the query builder of the edge.
+func (nlq *NodeListQuery) WithDocuments(opts ...func(*DocumentQuery)) *NodeListQuery {
+	query := (&DocumentClient{config: nlq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	nlq.withDocuments = query
 	return nlq
 }
 
@@ -450,9 +450,9 @@ func (nlq *NodeListQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*No
 		nodes       = []*NodeList{}
 		_spec       = nlq.querySpec()
 		loadedTypes = [3]bool{
-			nlq.withDocument != nil,
 			nlq.withEdgeTypes != nil,
 			nlq.withNodes != nil,
+			nlq.withDocuments != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -473,12 +473,6 @@ func (nlq *NodeListQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*No
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
-	if query := nlq.withDocument; query != nil {
-		if err := nlq.loadDocument(ctx, query, nodes, nil,
-			func(n *NodeList, e *Document) { n.Edges.Document = e }); err != nil {
-			return nil, err
-		}
-	}
 	if query := nlq.withEdgeTypes; query != nil {
 		if err := nlq.loadEdgeTypes(ctx, query, nodes,
 			func(n *NodeList) { n.Edges.EdgeTypes = []*EdgeType{} },
@@ -493,36 +487,16 @@ func (nlq *NodeListQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*No
 			return nil, err
 		}
 	}
+	if query := nlq.withDocuments; query != nil {
+		if err := nlq.loadDocuments(ctx, query, nodes,
+			func(n *NodeList) { n.Edges.Documents = []*Document{} },
+			func(n *NodeList, e *Document) { n.Edges.Documents = append(n.Edges.Documents, e) }); err != nil {
+			return nil, err
+		}
+	}
 	return nodes, nil
 }
 
-func (nlq *NodeListQuery) loadDocument(ctx context.Context, query *DocumentQuery, nodes []*NodeList, init func(*NodeList), assign func(*NodeList, *Document)) error {
-	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[uuid.UUID]*NodeList)
-	for i := range nodes {
-		fks = append(fks, nodes[i].ID)
-		nodeids[nodes[i].ID] = nodes[i]
-	}
-	if len(query.ctx.Fields) > 0 {
-		query.ctx.AppendFieldOnce(document.FieldNodeListID)
-	}
-	query.Where(predicate.Document(func(s *sql.Selector) {
-		s.Where(sql.InValues(s.C(nodelist.DocumentColumn), fks...))
-	}))
-	neighbors, err := query.All(ctx)
-	if err != nil {
-		return err
-	}
-	for _, n := range neighbors {
-		fk := n.NodeListID
-		node, ok := nodeids[fk]
-		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "node_list_id" returned %v for node %v`, fk, n.ID)
-		}
-		assign(node, n)
-	}
-	return nil
-}
 func (nlq *NodeListQuery) loadEdgeTypes(ctx context.Context, query *EdgeTypeQuery, nodes []*NodeList, init func(*NodeList), assign func(*NodeList, *EdgeType)) error {
 	edgeIDs := make([]driver.Value, len(nodes))
 	byID := make(map[uuid.UUID]*NodeList)
@@ -642,6 +616,36 @@ func (nlq *NodeListQuery) loadNodes(ctx context.Context, query *NodeQuery, nodes
 		for kn := range nodes {
 			assign(kn, n)
 		}
+	}
+	return nil
+}
+func (nlq *NodeListQuery) loadDocuments(ctx context.Context, query *DocumentQuery, nodes []*NodeList, init func(*NodeList), assign func(*NodeList, *Document)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*NodeList)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(document.FieldNodeListID)
+	}
+	query.Where(predicate.Document(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(nodelist.DocumentsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.NodeListID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "node_list_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
 	}
 	return nil
 }

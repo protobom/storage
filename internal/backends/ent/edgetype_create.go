@@ -32,20 +32,6 @@ type EdgeTypeCreate struct {
 	conflict []sql.ConflictOption
 }
 
-// SetDocumentID sets the "document_id" field.
-func (etc *EdgeTypeCreate) SetDocumentID(u uuid.UUID) *EdgeTypeCreate {
-	etc.mutation.SetDocumentID(u)
-	return etc
-}
-
-// SetNillableDocumentID sets the "document_id" field if the given value is not nil.
-func (etc *EdgeTypeCreate) SetNillableDocumentID(u *uuid.UUID) *EdgeTypeCreate {
-	if u != nil {
-		etc.SetDocumentID(*u)
-	}
-	return etc
-}
-
 // SetProtoMessage sets the "proto_message" field.
 func (etc *EdgeTypeCreate) SetProtoMessage(s *sbom.Edge) *EdgeTypeCreate {
 	etc.mutation.SetProtoMessage(s)
@@ -84,11 +70,6 @@ func (etc *EdgeTypeCreate) SetNillableID(u *uuid.UUID) *EdgeTypeCreate {
 	return etc
 }
 
-// SetDocument sets the "document" edge to the Document entity.
-func (etc *EdgeTypeCreate) SetDocument(d *Document) *EdgeTypeCreate {
-	return etc.SetDocumentID(d.ID)
-}
-
 // SetFromID sets the "from" edge to the Node entity by ID.
 func (etc *EdgeTypeCreate) SetFromID(id uuid.UUID) *EdgeTypeCreate {
 	etc.mutation.SetFromID(id)
@@ -109,6 +90,21 @@ func (etc *EdgeTypeCreate) SetToID(id uuid.UUID) *EdgeTypeCreate {
 // SetTo sets the "to" edge to the Node entity.
 func (etc *EdgeTypeCreate) SetTo(n *Node) *EdgeTypeCreate {
 	return etc.SetToID(n.ID)
+}
+
+// AddDocumentIDs adds the "documents" edge to the Document entity by IDs.
+func (etc *EdgeTypeCreate) AddDocumentIDs(ids ...uuid.UUID) *EdgeTypeCreate {
+	etc.mutation.AddDocumentIDs(ids...)
+	return etc
+}
+
+// AddDocuments adds the "documents" edges to the Document entity.
+func (etc *EdgeTypeCreate) AddDocuments(d ...*Document) *EdgeTypeCreate {
+	ids := make([]uuid.UUID, len(d))
+	for i := range d {
+		ids[i] = d[i].ID
+	}
+	return etc.AddDocumentIDs(ids...)
 }
 
 // AddNodeListIDs adds the "node_lists" edge to the NodeList entity by IDs.
@@ -163,13 +159,6 @@ func (etc *EdgeTypeCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (etc *EdgeTypeCreate) defaults() error {
-	if _, ok := etc.mutation.DocumentID(); !ok {
-		if edgetype.DefaultDocumentID == nil {
-			return fmt.Errorf("ent: uninitialized edgetype.DefaultDocumentID (forgotten import ent/runtime?)")
-		}
-		v := edgetype.DefaultDocumentID()
-		etc.mutation.SetDocumentID(v)
-	}
 	if _, ok := etc.mutation.ID(); !ok {
 		if edgetype.DefaultID == nil {
 			return fmt.Errorf("ent: uninitialized edgetype.DefaultID (forgotten import ent/runtime?)")
@@ -205,8 +194,8 @@ func (etc *EdgeTypeCreate) check() error {
 	if len(etc.mutation.ToIDs()) == 0 {
 		return &ValidationError{Name: "to", err: errors.New(`ent: missing required edge "EdgeType.to"`)}
 	}
-	if len(etc.mutation.NodeListsIDs()) == 0 {
-		return &ValidationError{Name: "node_lists", err: errors.New(`ent: missing required edge "EdgeType.node_lists"`)}
+	if len(etc.mutation.DocumentsIDs()) == 0 {
+		return &ValidationError{Name: "documents", err: errors.New(`ent: missing required edge "EdgeType.documents"`)}
 	}
 	return nil
 }
@@ -252,23 +241,6 @@ func (etc *EdgeTypeCreate) createSpec() (*EdgeType, *sqlgraph.CreateSpec) {
 		_spec.SetField(edgetype.FieldType, field.TypeEnum, value)
 		_node.Type = value
 	}
-	if nodes := etc.mutation.DocumentIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: false,
-			Table:   edgetype.DocumentTable,
-			Columns: []string{edgetype.DocumentColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(document.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_node.DocumentID = nodes[0]
-		_spec.Edges = append(_spec.Edges, edge)
-	}
 	if nodes := etc.mutation.FromIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -303,6 +275,22 @@ func (etc *EdgeTypeCreate) createSpec() (*EdgeType, *sqlgraph.CreateSpec) {
 		_node.ToNodeID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
+	if nodes := etc.mutation.DocumentsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   edgetype.DocumentsTable,
+			Columns: edgetype.DocumentsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(document.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
 	if nodes := etc.mutation.NodeListsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
@@ -326,7 +314,7 @@ func (etc *EdgeTypeCreate) createSpec() (*EdgeType, *sqlgraph.CreateSpec) {
 // of the `INSERT` statement. For example:
 //
 //	client.EdgeType.Create().
-//		SetDocumentID(v).
+//		SetProtoMessage(v).
 //		OnConflict(
 //			// Update the row with the new values
 //			// the was proposed for insertion.
@@ -335,7 +323,7 @@ func (etc *EdgeTypeCreate) createSpec() (*EdgeType, *sqlgraph.CreateSpec) {
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.EdgeTypeUpsert) {
-//			SetDocumentID(v+v).
+//			SetProtoMessage(v+v).
 //		}).
 //		Exec(ctx)
 func (etc *EdgeTypeCreate) OnConflict(opts ...sql.ConflictOption) *EdgeTypeUpsertOne {
@@ -423,9 +411,6 @@ func (u *EdgeTypeUpsertOne) UpdateNewValues() *EdgeTypeUpsertOne {
 	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
 		if _, exists := u.create.mutation.ID(); exists {
 			s.SetIgnore(edgetype.FieldID)
-		}
-		if _, exists := u.create.mutation.DocumentID(); exists {
-			s.SetIgnore(edgetype.FieldDocumentID)
 		}
 		if _, exists := u.create.mutation.ProtoMessage(); exists {
 			s.SetIgnore(edgetype.FieldProtoMessage)
@@ -639,7 +624,7 @@ func (etcb *EdgeTypeCreateBulk) ExecX(ctx context.Context) {
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.EdgeTypeUpsert) {
-//			SetDocumentID(v+v).
+//			SetProtoMessage(v+v).
 //		}).
 //		Exec(ctx)
 func (etcb *EdgeTypeCreateBulk) OnConflict(opts ...sql.ConflictOption) *EdgeTypeUpsertBulk {
@@ -685,9 +670,6 @@ func (u *EdgeTypeUpsertBulk) UpdateNewValues() *EdgeTypeUpsertBulk {
 		for _, b := range u.create.builders {
 			if _, exists := b.mutation.ID(); exists {
 				s.SetIgnore(edgetype.FieldID)
-			}
-			if _, exists := b.mutation.DocumentID(); exists {
-				s.SetIgnore(edgetype.FieldDocumentID)
 			}
 			if _, exists := b.mutation.ProtoMessage(); exists {
 				s.SetIgnore(edgetype.FieldProtoMessage)

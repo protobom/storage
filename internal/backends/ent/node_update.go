@@ -44,26 +44,6 @@ func (nu *NodeUpdate) Where(ps ...predicate.Node) *NodeUpdate {
 	return nu
 }
 
-// SetNodeListID sets the "node_list_id" field.
-func (nu *NodeUpdate) SetNodeListID(u uuid.UUID) *NodeUpdate {
-	nu.mutation.SetNodeListID(u)
-	return nu
-}
-
-// SetNillableNodeListID sets the "node_list_id" field if the given value is not nil.
-func (nu *NodeUpdate) SetNillableNodeListID(u *uuid.UUID) *NodeUpdate {
-	if u != nil {
-		nu.SetNodeListID(*u)
-	}
-	return nu
-}
-
-// ClearNodeListID clears the value of the "node_list_id" field.
-func (nu *NodeUpdate) ClearNodeListID() *NodeUpdate {
-	nu.mutation.ClearNodeListID()
-	return nu
-}
-
 // SetType sets the "type" field.
 func (nu *NodeUpdate) SetType(n node.Type) *NodeUpdate {
 	nu.mutation.SetType(n)
@@ -810,12 +790,6 @@ func (nu *NodeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
-	if value, ok := nu.mutation.NodeListID(); ok {
-		_spec.SetField(node.FieldNodeListID, field.TypeUUID, value)
-	}
-	if nu.mutation.NodeListIDCleared() {
-		_spec.ClearField(node.FieldNodeListID, field.TypeUUID)
-	}
 	if value, ok := nu.mutation.GetType(); ok {
 		_spec.SetField(node.FieldType, field.TypeEnum, value)
 	}
@@ -935,10 +909,10 @@ func (nu *NodeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if nu.mutation.SuppliersCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   node.SuppliersTable,
-			Columns: []string{node.SuppliersColumn},
+			Columns: node.SuppliersPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
@@ -948,10 +922,10 @@ func (nu *NodeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if nodes := nu.mutation.RemovedSuppliersIDs(); len(nodes) > 0 && !nu.mutation.SuppliersCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   node.SuppliersTable,
-			Columns: []string{node.SuppliersColumn},
+			Columns: node.SuppliersPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
@@ -964,10 +938,10 @@ func (nu *NodeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if nodes := nu.mutation.SuppliersIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   node.SuppliersTable,
-			Columns: []string{node.SuppliersColumn},
+			Columns: node.SuppliersPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
@@ -980,10 +954,10 @@ func (nu *NodeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if nu.mutation.OriginatorsCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   node.OriginatorsTable,
-			Columns: []string{node.OriginatorsColumn},
+			Columns: node.OriginatorsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
@@ -993,10 +967,10 @@ func (nu *NodeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if nodes := nu.mutation.RemovedOriginatorsIDs(); len(nodes) > 0 && !nu.mutation.OriginatorsCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   node.OriginatorsTable,
-			Columns: []string{node.OriginatorsColumn},
+			Columns: node.OriginatorsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
@@ -1009,10 +983,10 @@ func (nu *NodeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if nodes := nu.mutation.OriginatorsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   node.OriginatorsTable,
-			Columns: []string{node.OriginatorsColumn},
+			Columns: node.OriginatorsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
@@ -1070,10 +1044,10 @@ func (nu *NodeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if nu.mutation.PrimaryPurposeCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   node.PrimaryPurposeTable,
-			Columns: []string{node.PrimaryPurposeColumn},
+			Columns: node.PrimaryPurposePrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(purpose.FieldID, field.TypeInt),
@@ -1083,10 +1057,10 @@ func (nu *NodeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if nodes := nu.mutation.RemovedPrimaryPurposeIDs(); len(nodes) > 0 && !nu.mutation.PrimaryPurposeCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   node.PrimaryPurposeTable,
-			Columns: []string{node.PrimaryPurposeColumn},
+			Columns: node.PrimaryPurposePrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(purpose.FieldID, field.TypeInt),
@@ -1099,10 +1073,10 @@ func (nu *NodeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if nodes := nu.mutation.PrimaryPurposeIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   node.PrimaryPurposeTable,
-			Columns: []string{node.PrimaryPurposeColumn},
+			Columns: node.PrimaryPurposePrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(purpose.FieldID, field.TypeInt),
@@ -1316,10 +1290,10 @@ func (nu *NodeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if nu.mutation.PropertiesCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   node.PropertiesTable,
-			Columns: []string{node.PropertiesColumn},
+			Columns: node.PropertiesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(property.FieldID, field.TypeUUID),
@@ -1329,10 +1303,10 @@ func (nu *NodeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if nodes := nu.mutation.RemovedPropertiesIDs(); len(nodes) > 0 && !nu.mutation.PropertiesCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   node.PropertiesTable,
-			Columns: []string{node.PropertiesColumn},
+			Columns: node.PropertiesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(property.FieldID, field.TypeUUID),
@@ -1345,10 +1319,10 @@ func (nu *NodeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if nodes := nu.mutation.PropertiesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   node.PropertiesTable,
-			Columns: []string{node.PropertiesColumn},
+			Columns: node.PropertiesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(property.FieldID, field.TypeUUID),
@@ -1467,26 +1441,6 @@ type NodeUpdateOne struct {
 	fields   []string
 	hooks    []Hook
 	mutation *NodeMutation
-}
-
-// SetNodeListID sets the "node_list_id" field.
-func (nuo *NodeUpdateOne) SetNodeListID(u uuid.UUID) *NodeUpdateOne {
-	nuo.mutation.SetNodeListID(u)
-	return nuo
-}
-
-// SetNillableNodeListID sets the "node_list_id" field if the given value is not nil.
-func (nuo *NodeUpdateOne) SetNillableNodeListID(u *uuid.UUID) *NodeUpdateOne {
-	if u != nil {
-		nuo.SetNodeListID(*u)
-	}
-	return nuo
-}
-
-// ClearNodeListID clears the value of the "node_list_id" field.
-func (nuo *NodeUpdateOne) ClearNodeListID() *NodeUpdateOne {
-	nuo.mutation.ClearNodeListID()
-	return nuo
 }
 
 // SetType sets the "type" field.
@@ -2265,12 +2219,6 @@ func (nuo *NodeUpdateOne) sqlSave(ctx context.Context) (_node *Node, err error) 
 			}
 		}
 	}
-	if value, ok := nuo.mutation.NodeListID(); ok {
-		_spec.SetField(node.FieldNodeListID, field.TypeUUID, value)
-	}
-	if nuo.mutation.NodeListIDCleared() {
-		_spec.ClearField(node.FieldNodeListID, field.TypeUUID)
-	}
 	if value, ok := nuo.mutation.GetType(); ok {
 		_spec.SetField(node.FieldType, field.TypeEnum, value)
 	}
@@ -2390,10 +2338,10 @@ func (nuo *NodeUpdateOne) sqlSave(ctx context.Context) (_node *Node, err error) 
 	}
 	if nuo.mutation.SuppliersCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   node.SuppliersTable,
-			Columns: []string{node.SuppliersColumn},
+			Columns: node.SuppliersPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
@@ -2403,10 +2351,10 @@ func (nuo *NodeUpdateOne) sqlSave(ctx context.Context) (_node *Node, err error) 
 	}
 	if nodes := nuo.mutation.RemovedSuppliersIDs(); len(nodes) > 0 && !nuo.mutation.SuppliersCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   node.SuppliersTable,
-			Columns: []string{node.SuppliersColumn},
+			Columns: node.SuppliersPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
@@ -2419,10 +2367,10 @@ func (nuo *NodeUpdateOne) sqlSave(ctx context.Context) (_node *Node, err error) 
 	}
 	if nodes := nuo.mutation.SuppliersIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   node.SuppliersTable,
-			Columns: []string{node.SuppliersColumn},
+			Columns: node.SuppliersPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
@@ -2435,10 +2383,10 @@ func (nuo *NodeUpdateOne) sqlSave(ctx context.Context) (_node *Node, err error) 
 	}
 	if nuo.mutation.OriginatorsCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   node.OriginatorsTable,
-			Columns: []string{node.OriginatorsColumn},
+			Columns: node.OriginatorsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
@@ -2448,10 +2396,10 @@ func (nuo *NodeUpdateOne) sqlSave(ctx context.Context) (_node *Node, err error) 
 	}
 	if nodes := nuo.mutation.RemovedOriginatorsIDs(); len(nodes) > 0 && !nuo.mutation.OriginatorsCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   node.OriginatorsTable,
-			Columns: []string{node.OriginatorsColumn},
+			Columns: node.OriginatorsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
@@ -2464,10 +2412,10 @@ func (nuo *NodeUpdateOne) sqlSave(ctx context.Context) (_node *Node, err error) 
 	}
 	if nodes := nuo.mutation.OriginatorsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   node.OriginatorsTable,
-			Columns: []string{node.OriginatorsColumn},
+			Columns: node.OriginatorsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
@@ -2525,10 +2473,10 @@ func (nuo *NodeUpdateOne) sqlSave(ctx context.Context) (_node *Node, err error) 
 	}
 	if nuo.mutation.PrimaryPurposeCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   node.PrimaryPurposeTable,
-			Columns: []string{node.PrimaryPurposeColumn},
+			Columns: node.PrimaryPurposePrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(purpose.FieldID, field.TypeInt),
@@ -2538,10 +2486,10 @@ func (nuo *NodeUpdateOne) sqlSave(ctx context.Context) (_node *Node, err error) 
 	}
 	if nodes := nuo.mutation.RemovedPrimaryPurposeIDs(); len(nodes) > 0 && !nuo.mutation.PrimaryPurposeCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   node.PrimaryPurposeTable,
-			Columns: []string{node.PrimaryPurposeColumn},
+			Columns: node.PrimaryPurposePrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(purpose.FieldID, field.TypeInt),
@@ -2554,10 +2502,10 @@ func (nuo *NodeUpdateOne) sqlSave(ctx context.Context) (_node *Node, err error) 
 	}
 	if nodes := nuo.mutation.PrimaryPurposeIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   node.PrimaryPurposeTable,
-			Columns: []string{node.PrimaryPurposeColumn},
+			Columns: node.PrimaryPurposePrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(purpose.FieldID, field.TypeInt),
@@ -2771,10 +2719,10 @@ func (nuo *NodeUpdateOne) sqlSave(ctx context.Context) (_node *Node, err error) 
 	}
 	if nuo.mutation.PropertiesCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   node.PropertiesTable,
-			Columns: []string{node.PropertiesColumn},
+			Columns: node.PropertiesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(property.FieldID, field.TypeUUID),
@@ -2784,10 +2732,10 @@ func (nuo *NodeUpdateOne) sqlSave(ctx context.Context) (_node *Node, err error) 
 	}
 	if nodes := nuo.mutation.RemovedPropertiesIDs(); len(nodes) > 0 && !nuo.mutation.PropertiesCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   node.PropertiesTable,
-			Columns: []string{node.PropertiesColumn},
+			Columns: node.PropertiesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(property.FieldID, field.TypeUUID),
@@ -2800,10 +2748,10 @@ func (nuo *NodeUpdateOne) sqlSave(ctx context.Context) (_node *Node, err error) 
 	}
 	if nodes := nuo.mutation.PropertiesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   node.PropertiesTable,
-			Columns: []string{node.PropertiesColumn},
+			Columns: node.PropertiesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(property.FieldID, field.TypeUUID),

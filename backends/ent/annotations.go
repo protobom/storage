@@ -29,9 +29,9 @@ func (backend *Backend) AddAnnotationToDocuments(name, value string, documentIDs
 	}
 
 	docUUIDs, err := backend.client.Metadata.Query().
-		WithDocument().
+		WithDocuments().
 		Where(predicates...).
-		QueryDocument().
+		QueryDocuments().
 		IDs(backend.ctx)
 	if err != nil {
 		return fmt.Errorf("querying documents: %w", err)
@@ -80,9 +80,9 @@ func (backend *Backend) AddDocumentAnnotations(documentID, name string, values .
 	data := ent.Annotations{}
 
 	ids, err := backend.client.Metadata.Query().
-		WithDocument().
+		WithDocuments().
 		Where(metadata.NativeIDEQ(documentID)).
-		QueryDocument().
+		QueryDocuments().
 		IDs(backend.ctx)
 	if err != nil {
 		return fmt.Errorf("querying documents: %w", err)
@@ -132,9 +132,9 @@ func (backend *Backend) ClearDocumentAnnotations(documentIDs ...string) error {
 	}
 
 	docUUIDs, err := backend.client.Metadata.Query().
-		WithDocument().
+		WithDocuments().
 		Where(metadata.NativeIDIn(documentIDs...)).
-		QueryDocument().
+		QueryDocuments().
 		IDs(backend.ctx)
 	if err != nil {
 		return fmt.Errorf("querying document IDs: %w", err)
@@ -409,9 +409,9 @@ func (backend *Backend) SetDocumentAnnotations(documentID, name string, values .
 // SetDocumentUniqueAnnotation sets a named annotation value that is unique to the specified document.
 func (backend *Backend) SetDocumentUniqueAnnotation(documentID, name, value string) error {
 	ids, err := backend.client.Metadata.Query().
-		WithDocument().
+		WithDocuments().
 		Where(metadata.NativeIDEQ(documentID)).
-		QueryDocument().
+		QueryDocuments().
 		IDs(backend.ctx)
 	if err != nil {
 		return fmt.Errorf("%w", err)
@@ -454,7 +454,7 @@ func (backend *Backend) SetNodeUniqueAnnotation(nodeID, name, value string) erro
 	for idx := range nodes {
 		documentID, err := nodes[idx].
 			QueryNodeLists().
-			QueryDocument().
+			QueryDocuments().
 			OnlyID(backend.ctx)
 		if err != nil {
 			return fmt.Errorf("querying node edges for document ID: %w", err)

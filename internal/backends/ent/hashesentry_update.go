@@ -20,6 +20,7 @@ import (
 	"github.com/protobom/storage/internal/backends/ent/hashesentry"
 	"github.com/protobom/storage/internal/backends/ent/node"
 	"github.com/protobom/storage/internal/backends/ent/predicate"
+	"github.com/protobom/storage/internal/backends/ent/sourcedata"
 )
 
 // HashesEntryUpdate is the builder for updating HashesEntry entities.
@@ -93,6 +94,21 @@ func (heu *HashesEntryUpdate) AddNodes(n ...*Node) *HashesEntryUpdate {
 	return heu.AddNodeIDs(ids...)
 }
 
+// AddSourceDatumIDs adds the "source_data" edge to the SourceData entity by IDs.
+func (heu *HashesEntryUpdate) AddSourceDatumIDs(ids ...uuid.UUID) *HashesEntryUpdate {
+	heu.mutation.AddSourceDatumIDs(ids...)
+	return heu
+}
+
+// AddSourceData adds the "source_data" edges to the SourceData entity.
+func (heu *HashesEntryUpdate) AddSourceData(s ...*SourceData) *HashesEntryUpdate {
+	ids := make([]uuid.UUID, len(s))
+	for i := range s {
+		ids[i] = s[i].ID
+	}
+	return heu.AddSourceDatumIDs(ids...)
+}
+
 // Mutation returns the HashesEntryMutation object of the builder.
 func (heu *HashesEntryUpdate) Mutation() *HashesEntryMutation {
 	return heu.mutation
@@ -138,6 +154,27 @@ func (heu *HashesEntryUpdate) RemoveNodes(n ...*Node) *HashesEntryUpdate {
 		ids[i] = n[i].ID
 	}
 	return heu.RemoveNodeIDs(ids...)
+}
+
+// ClearSourceData clears all "source_data" edges to the SourceData entity.
+func (heu *HashesEntryUpdate) ClearSourceData() *HashesEntryUpdate {
+	heu.mutation.ClearSourceData()
+	return heu
+}
+
+// RemoveSourceDatumIDs removes the "source_data" edge to SourceData entities by IDs.
+func (heu *HashesEntryUpdate) RemoveSourceDatumIDs(ids ...uuid.UUID) *HashesEntryUpdate {
+	heu.mutation.RemoveSourceDatumIDs(ids...)
+	return heu
+}
+
+// RemoveSourceData removes "source_data" edges to SourceData entities.
+func (heu *HashesEntryUpdate) RemoveSourceData(s ...*SourceData) *HashesEntryUpdate {
+	ids := make([]uuid.UUID, len(s))
+	for i := range s {
+		ids[i] = s[i].ID
+	}
+	return heu.RemoveSourceDatumIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -285,6 +322,51 @@ func (heu *HashesEntryUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if heu.mutation.SourceDataCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   hashesentry.SourceDataTable,
+			Columns: hashesentry.SourceDataPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(sourcedata.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := heu.mutation.RemovedSourceDataIDs(); len(nodes) > 0 && !heu.mutation.SourceDataCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   hashesentry.SourceDataTable,
+			Columns: hashesentry.SourceDataPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(sourcedata.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := heu.mutation.SourceDataIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   hashesentry.SourceDataTable,
+			Columns: hashesentry.SourceDataPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(sourcedata.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, heu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{hashesentry.Label}
@@ -363,6 +445,21 @@ func (heuo *HashesEntryUpdateOne) AddNodes(n ...*Node) *HashesEntryUpdateOne {
 	return heuo.AddNodeIDs(ids...)
 }
 
+// AddSourceDatumIDs adds the "source_data" edge to the SourceData entity by IDs.
+func (heuo *HashesEntryUpdateOne) AddSourceDatumIDs(ids ...uuid.UUID) *HashesEntryUpdateOne {
+	heuo.mutation.AddSourceDatumIDs(ids...)
+	return heuo
+}
+
+// AddSourceData adds the "source_data" edges to the SourceData entity.
+func (heuo *HashesEntryUpdateOne) AddSourceData(s ...*SourceData) *HashesEntryUpdateOne {
+	ids := make([]uuid.UUID, len(s))
+	for i := range s {
+		ids[i] = s[i].ID
+	}
+	return heuo.AddSourceDatumIDs(ids...)
+}
+
 // Mutation returns the HashesEntryMutation object of the builder.
 func (heuo *HashesEntryUpdateOne) Mutation() *HashesEntryMutation {
 	return heuo.mutation
@@ -408,6 +505,27 @@ func (heuo *HashesEntryUpdateOne) RemoveNodes(n ...*Node) *HashesEntryUpdateOne 
 		ids[i] = n[i].ID
 	}
 	return heuo.RemoveNodeIDs(ids...)
+}
+
+// ClearSourceData clears all "source_data" edges to the SourceData entity.
+func (heuo *HashesEntryUpdateOne) ClearSourceData() *HashesEntryUpdateOne {
+	heuo.mutation.ClearSourceData()
+	return heuo
+}
+
+// RemoveSourceDatumIDs removes the "source_data" edge to SourceData entities by IDs.
+func (heuo *HashesEntryUpdateOne) RemoveSourceDatumIDs(ids ...uuid.UUID) *HashesEntryUpdateOne {
+	heuo.mutation.RemoveSourceDatumIDs(ids...)
+	return heuo
+}
+
+// RemoveSourceData removes "source_data" edges to SourceData entities.
+func (heuo *HashesEntryUpdateOne) RemoveSourceData(s ...*SourceData) *HashesEntryUpdateOne {
+	ids := make([]uuid.UUID, len(s))
+	for i := range s {
+		ids[i] = s[i].ID
+	}
+	return heuo.RemoveSourceDatumIDs(ids...)
 }
 
 // Where appends a list predicates to the HashesEntryUpdate builder.
@@ -578,6 +696,51 @@ func (heuo *HashesEntryUpdateOne) sqlSave(ctx context.Context) (_node *HashesEnt
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if heuo.mutation.SourceDataCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   hashesentry.SourceDataTable,
+			Columns: hashesentry.SourceDataPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(sourcedata.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := heuo.mutation.RemovedSourceDataIDs(); len(nodes) > 0 && !heuo.mutation.SourceDataCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   hashesentry.SourceDataTable,
+			Columns: hashesentry.SourceDataPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(sourcedata.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := heuo.mutation.SourceDataIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   hashesentry.SourceDataTable,
+			Columns: hashesentry.SourceDataPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(sourcedata.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

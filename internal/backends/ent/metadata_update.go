@@ -38,6 +38,26 @@ func (mu *MetadataUpdate) Where(ps ...predicate.Metadata) *MetadataUpdate {
 	return mu
 }
 
+// SetSourceDataID sets the "source_data_id" field.
+func (mu *MetadataUpdate) SetSourceDataID(u uuid.UUID) *MetadataUpdate {
+	mu.mutation.SetSourceDataID(u)
+	return mu
+}
+
+// SetNillableSourceDataID sets the "source_data_id" field if the given value is not nil.
+func (mu *MetadataUpdate) SetNillableSourceDataID(u *uuid.UUID) *MetadataUpdate {
+	if u != nil {
+		mu.SetSourceDataID(*u)
+	}
+	return mu
+}
+
+// ClearSourceDataID clears the value of the "source_data_id" field.
+func (mu *MetadataUpdate) ClearSourceDataID() *MetadataUpdate {
+	mu.mutation.ClearSourceDataID()
+	return mu
+}
+
 // SetVersion sets the "version" field.
 func (mu *MetadataUpdate) SetVersion(s string) *MetadataUpdate {
 	mu.mutation.SetVersion(s)
@@ -139,19 +159,9 @@ func (mu *MetadataUpdate) AddDocumentTypes(d ...*DocumentType) *MetadataUpdate {
 	return mu.AddDocumentTypeIDs(ids...)
 }
 
-// AddSourceDatumIDs adds the "source_data" edge to the SourceData entity by IDs.
-func (mu *MetadataUpdate) AddSourceDatumIDs(ids ...uuid.UUID) *MetadataUpdate {
-	mu.mutation.AddSourceDatumIDs(ids...)
-	return mu
-}
-
-// AddSourceData adds the "source_data" edges to the SourceData entity.
-func (mu *MetadataUpdate) AddSourceData(s ...*SourceData) *MetadataUpdate {
-	ids := make([]uuid.UUID, len(s))
-	for i := range s {
-		ids[i] = s[i].ID
-	}
-	return mu.AddSourceDatumIDs(ids...)
+// SetSourceData sets the "source_data" edge to the SourceData entity.
+func (mu *MetadataUpdate) SetSourceData(s *SourceData) *MetadataUpdate {
+	return mu.SetSourceDataID(s.ID)
 }
 
 // Mutation returns the MetadataMutation object of the builder.
@@ -222,25 +232,10 @@ func (mu *MetadataUpdate) RemoveDocumentTypes(d ...*DocumentType) *MetadataUpdat
 	return mu.RemoveDocumentTypeIDs(ids...)
 }
 
-// ClearSourceData clears all "source_data" edges to the SourceData entity.
+// ClearSourceData clears the "source_data" edge to the SourceData entity.
 func (mu *MetadataUpdate) ClearSourceData() *MetadataUpdate {
 	mu.mutation.ClearSourceData()
 	return mu
-}
-
-// RemoveSourceDatumIDs removes the "source_data" edge to SourceData entities by IDs.
-func (mu *MetadataUpdate) RemoveSourceDatumIDs(ids ...uuid.UUID) *MetadataUpdate {
-	mu.mutation.RemoveSourceDatumIDs(ids...)
-	return mu
-}
-
-// RemoveSourceData removes "source_data" edges to SourceData entities.
-func (mu *MetadataUpdate) RemoveSourceData(s ...*SourceData) *MetadataUpdate {
-	ids := make([]uuid.UUID, len(s))
-	for i := range s {
-		ids[i] = s[i].ID
-	}
-	return mu.RemoveSourceDatumIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -270,18 +265,7 @@ func (mu *MetadataUpdate) ExecX(ctx context.Context) {
 	}
 }
 
-// check runs all checks and user-defined validators on the builder.
-func (mu *MetadataUpdate) check() error {
-	if mu.mutation.DocumentCleared() && len(mu.mutation.DocumentIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "Metadata.document"`)
-	}
-	return nil
-}
-
 func (mu *MetadataUpdate) sqlSave(ctx context.Context) (n int, err error) {
-	if err := mu.check(); err != nil {
-		return n, err
-	}
 	_spec := sqlgraph.NewUpdateSpec(metadata.Table, metadata.Columns, sqlgraph.NewFieldSpec(metadata.FieldID, field.TypeUUID))
 	if ps := mu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
@@ -304,10 +288,10 @@ func (mu *MetadataUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if mu.mutation.ToolsCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   metadata.ToolsTable,
-			Columns: []string{metadata.ToolsColumn},
+			Columns: metadata.ToolsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(tool.FieldID, field.TypeUUID),
@@ -317,10 +301,10 @@ func (mu *MetadataUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if nodes := mu.mutation.RemovedToolsIDs(); len(nodes) > 0 && !mu.mutation.ToolsCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   metadata.ToolsTable,
-			Columns: []string{metadata.ToolsColumn},
+			Columns: metadata.ToolsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(tool.FieldID, field.TypeUUID),
@@ -333,10 +317,10 @@ func (mu *MetadataUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if nodes := mu.mutation.ToolsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   metadata.ToolsTable,
-			Columns: []string{metadata.ToolsColumn},
+			Columns: metadata.ToolsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(tool.FieldID, field.TypeUUID),
@@ -349,10 +333,10 @@ func (mu *MetadataUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if mu.mutation.AuthorsCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   metadata.AuthorsTable,
-			Columns: []string{metadata.AuthorsColumn},
+			Columns: metadata.AuthorsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
@@ -362,10 +346,10 @@ func (mu *MetadataUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if nodes := mu.mutation.RemovedAuthorsIDs(); len(nodes) > 0 && !mu.mutation.AuthorsCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   metadata.AuthorsTable,
-			Columns: []string{metadata.AuthorsColumn},
+			Columns: metadata.AuthorsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
@@ -378,10 +362,10 @@ func (mu *MetadataUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if nodes := mu.mutation.AuthorsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   metadata.AuthorsTable,
-			Columns: []string{metadata.AuthorsColumn},
+			Columns: metadata.AuthorsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
@@ -394,10 +378,10 @@ func (mu *MetadataUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if mu.mutation.DocumentTypesCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   metadata.DocumentTypesTable,
-			Columns: []string{metadata.DocumentTypesColumn},
+			Columns: metadata.DocumentTypesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(documenttype.FieldID, field.TypeUUID),
@@ -407,10 +391,10 @@ func (mu *MetadataUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if nodes := mu.mutation.RemovedDocumentTypesIDs(); len(nodes) > 0 && !mu.mutation.DocumentTypesCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   metadata.DocumentTypesTable,
-			Columns: []string{metadata.DocumentTypesColumn},
+			Columns: metadata.DocumentTypesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(documenttype.FieldID, field.TypeUUID),
@@ -423,10 +407,10 @@ func (mu *MetadataUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if nodes := mu.mutation.DocumentTypesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   metadata.DocumentTypesTable,
-			Columns: []string{metadata.DocumentTypesColumn},
+			Columns: metadata.DocumentTypesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(documenttype.FieldID, field.TypeUUID),
@@ -439,7 +423,7 @@ func (mu *MetadataUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if mu.mutation.SourceDataCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2O,
 			Inverse: false,
 			Table:   metadata.SourceDataTable,
 			Columns: []string{metadata.SourceDataColumn},
@@ -447,28 +431,12 @@ func (mu *MetadataUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(sourcedata.FieldID, field.TypeUUID),
 			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := mu.mutation.RemovedSourceDataIDs(); len(nodes) > 0 && !mu.mutation.SourceDataCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   metadata.SourceDataTable,
-			Columns: []string{metadata.SourceDataColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(sourcedata.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
 	if nodes := mu.mutation.SourceDataIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2O,
 			Inverse: false,
 			Table:   metadata.SourceDataTable,
 			Columns: []string{metadata.SourceDataColumn},
@@ -500,6 +468,26 @@ type MetadataUpdateOne struct {
 	fields   []string
 	hooks    []Hook
 	mutation *MetadataMutation
+}
+
+// SetSourceDataID sets the "source_data_id" field.
+func (muo *MetadataUpdateOne) SetSourceDataID(u uuid.UUID) *MetadataUpdateOne {
+	muo.mutation.SetSourceDataID(u)
+	return muo
+}
+
+// SetNillableSourceDataID sets the "source_data_id" field if the given value is not nil.
+func (muo *MetadataUpdateOne) SetNillableSourceDataID(u *uuid.UUID) *MetadataUpdateOne {
+	if u != nil {
+		muo.SetSourceDataID(*u)
+	}
+	return muo
+}
+
+// ClearSourceDataID clears the value of the "source_data_id" field.
+func (muo *MetadataUpdateOne) ClearSourceDataID() *MetadataUpdateOne {
+	muo.mutation.ClearSourceDataID()
+	return muo
 }
 
 // SetVersion sets the "version" field.
@@ -603,19 +591,9 @@ func (muo *MetadataUpdateOne) AddDocumentTypes(d ...*DocumentType) *MetadataUpda
 	return muo.AddDocumentTypeIDs(ids...)
 }
 
-// AddSourceDatumIDs adds the "source_data" edge to the SourceData entity by IDs.
-func (muo *MetadataUpdateOne) AddSourceDatumIDs(ids ...uuid.UUID) *MetadataUpdateOne {
-	muo.mutation.AddSourceDatumIDs(ids...)
-	return muo
-}
-
-// AddSourceData adds the "source_data" edges to the SourceData entity.
-func (muo *MetadataUpdateOne) AddSourceData(s ...*SourceData) *MetadataUpdateOne {
-	ids := make([]uuid.UUID, len(s))
-	for i := range s {
-		ids[i] = s[i].ID
-	}
-	return muo.AddSourceDatumIDs(ids...)
+// SetSourceData sets the "source_data" edge to the SourceData entity.
+func (muo *MetadataUpdateOne) SetSourceData(s *SourceData) *MetadataUpdateOne {
+	return muo.SetSourceDataID(s.ID)
 }
 
 // Mutation returns the MetadataMutation object of the builder.
@@ -686,25 +664,10 @@ func (muo *MetadataUpdateOne) RemoveDocumentTypes(d ...*DocumentType) *MetadataU
 	return muo.RemoveDocumentTypeIDs(ids...)
 }
 
-// ClearSourceData clears all "source_data" edges to the SourceData entity.
+// ClearSourceData clears the "source_data" edge to the SourceData entity.
 func (muo *MetadataUpdateOne) ClearSourceData() *MetadataUpdateOne {
 	muo.mutation.ClearSourceData()
 	return muo
-}
-
-// RemoveSourceDatumIDs removes the "source_data" edge to SourceData entities by IDs.
-func (muo *MetadataUpdateOne) RemoveSourceDatumIDs(ids ...uuid.UUID) *MetadataUpdateOne {
-	muo.mutation.RemoveSourceDatumIDs(ids...)
-	return muo
-}
-
-// RemoveSourceData removes "source_data" edges to SourceData entities.
-func (muo *MetadataUpdateOne) RemoveSourceData(s ...*SourceData) *MetadataUpdateOne {
-	ids := make([]uuid.UUID, len(s))
-	for i := range s {
-		ids[i] = s[i].ID
-	}
-	return muo.RemoveSourceDatumIDs(ids...)
 }
 
 // Where appends a list predicates to the MetadataUpdate builder.
@@ -747,18 +710,7 @@ func (muo *MetadataUpdateOne) ExecX(ctx context.Context) {
 	}
 }
 
-// check runs all checks and user-defined validators on the builder.
-func (muo *MetadataUpdateOne) check() error {
-	if muo.mutation.DocumentCleared() && len(muo.mutation.DocumentIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "Metadata.document"`)
-	}
-	return nil
-}
-
 func (muo *MetadataUpdateOne) sqlSave(ctx context.Context) (_node *Metadata, err error) {
-	if err := muo.check(); err != nil {
-		return _node, err
-	}
 	_spec := sqlgraph.NewUpdateSpec(metadata.Table, metadata.Columns, sqlgraph.NewFieldSpec(metadata.FieldID, field.TypeUUID))
 	id, ok := muo.mutation.ID()
 	if !ok {
@@ -798,10 +750,10 @@ func (muo *MetadataUpdateOne) sqlSave(ctx context.Context) (_node *Metadata, err
 	}
 	if muo.mutation.ToolsCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   metadata.ToolsTable,
-			Columns: []string{metadata.ToolsColumn},
+			Columns: metadata.ToolsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(tool.FieldID, field.TypeUUID),
@@ -811,10 +763,10 @@ func (muo *MetadataUpdateOne) sqlSave(ctx context.Context) (_node *Metadata, err
 	}
 	if nodes := muo.mutation.RemovedToolsIDs(); len(nodes) > 0 && !muo.mutation.ToolsCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   metadata.ToolsTable,
-			Columns: []string{metadata.ToolsColumn},
+			Columns: metadata.ToolsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(tool.FieldID, field.TypeUUID),
@@ -827,10 +779,10 @@ func (muo *MetadataUpdateOne) sqlSave(ctx context.Context) (_node *Metadata, err
 	}
 	if nodes := muo.mutation.ToolsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   metadata.ToolsTable,
-			Columns: []string{metadata.ToolsColumn},
+			Columns: metadata.ToolsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(tool.FieldID, field.TypeUUID),
@@ -843,10 +795,10 @@ func (muo *MetadataUpdateOne) sqlSave(ctx context.Context) (_node *Metadata, err
 	}
 	if muo.mutation.AuthorsCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   metadata.AuthorsTable,
-			Columns: []string{metadata.AuthorsColumn},
+			Columns: metadata.AuthorsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
@@ -856,10 +808,10 @@ func (muo *MetadataUpdateOne) sqlSave(ctx context.Context) (_node *Metadata, err
 	}
 	if nodes := muo.mutation.RemovedAuthorsIDs(); len(nodes) > 0 && !muo.mutation.AuthorsCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   metadata.AuthorsTable,
-			Columns: []string{metadata.AuthorsColumn},
+			Columns: metadata.AuthorsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
@@ -872,10 +824,10 @@ func (muo *MetadataUpdateOne) sqlSave(ctx context.Context) (_node *Metadata, err
 	}
 	if nodes := muo.mutation.AuthorsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   metadata.AuthorsTable,
-			Columns: []string{metadata.AuthorsColumn},
+			Columns: metadata.AuthorsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
@@ -888,10 +840,10 @@ func (muo *MetadataUpdateOne) sqlSave(ctx context.Context) (_node *Metadata, err
 	}
 	if muo.mutation.DocumentTypesCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   metadata.DocumentTypesTable,
-			Columns: []string{metadata.DocumentTypesColumn},
+			Columns: metadata.DocumentTypesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(documenttype.FieldID, field.TypeUUID),
@@ -901,10 +853,10 @@ func (muo *MetadataUpdateOne) sqlSave(ctx context.Context) (_node *Metadata, err
 	}
 	if nodes := muo.mutation.RemovedDocumentTypesIDs(); len(nodes) > 0 && !muo.mutation.DocumentTypesCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   metadata.DocumentTypesTable,
-			Columns: []string{metadata.DocumentTypesColumn},
+			Columns: metadata.DocumentTypesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(documenttype.FieldID, field.TypeUUID),
@@ -917,10 +869,10 @@ func (muo *MetadataUpdateOne) sqlSave(ctx context.Context) (_node *Metadata, err
 	}
 	if nodes := muo.mutation.DocumentTypesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   metadata.DocumentTypesTable,
-			Columns: []string{metadata.DocumentTypesColumn},
+			Columns: metadata.DocumentTypesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(documenttype.FieldID, field.TypeUUID),
@@ -933,7 +885,7 @@ func (muo *MetadataUpdateOne) sqlSave(ctx context.Context) (_node *Metadata, err
 	}
 	if muo.mutation.SourceDataCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2O,
 			Inverse: false,
 			Table:   metadata.SourceDataTable,
 			Columns: []string{metadata.SourceDataColumn},
@@ -941,28 +893,12 @@ func (muo *MetadataUpdateOne) sqlSave(ctx context.Context) (_node *Metadata, err
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(sourcedata.FieldID, field.TypeUUID),
 			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := muo.mutation.RemovedSourceDataIDs(); len(nodes) > 0 && !muo.mutation.SourceDataCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   metadata.SourceDataTable,
-			Columns: []string{metadata.SourceDataColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(sourcedata.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
 	if nodes := muo.mutation.SourceDataIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2O,
 			Inverse: false,
 			Table:   metadata.SourceDataTable,
 			Columns: []string{metadata.SourceDataColumn},

@@ -157,7 +157,7 @@ func HasMetadata() predicate.Document {
 	return predicate.Document(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, true, MetadataTable, MetadataColumn),
+			sqlgraph.Edge(sqlgraph.M2O, false, MetadataTable, MetadataColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
@@ -180,7 +180,7 @@ func HasNodeList() predicate.Document {
 	return predicate.Document(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, true, NodeListTable, NodeListColumn),
+			sqlgraph.Edge(sqlgraph.M2O, false, NodeListTable, NodeListColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
@@ -190,6 +190,259 @@ func HasNodeList() predicate.Document {
 func HasNodeListWith(preds ...predicate.NodeList) predicate.Document {
 	return predicate.Document(func(s *sql.Selector) {
 		step := newNodeListStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasDocumentTypes applies the HasEdge predicate on the "document_types" edge.
+func HasDocumentTypes() predicate.Document {
+	return predicate.Document(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, DocumentTypesTable, DocumentTypesPrimaryKey...),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasDocumentTypesWith applies the HasEdge predicate on the "document_types" edge with a given conditions (other predicates).
+func HasDocumentTypesWith(preds ...predicate.DocumentType) predicate.Document {
+	return predicate.Document(func(s *sql.Selector) {
+		step := newDocumentTypesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasEdgeTypes applies the HasEdge predicate on the "edge_types" edge.
+func HasEdgeTypes() predicate.Document {
+	return predicate.Document(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, EdgeTypesTable, EdgeTypesPrimaryKey...),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasEdgeTypesWith applies the HasEdge predicate on the "edge_types" edge with a given conditions (other predicates).
+func HasEdgeTypesWith(preds ...predicate.EdgeType) predicate.Document {
+	return predicate.Document(func(s *sql.Selector) {
+		step := newEdgeTypesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasExternalReferences applies the HasEdge predicate on the "external_references" edge.
+func HasExternalReferences() predicate.Document {
+	return predicate.Document(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, ExternalReferencesTable, ExternalReferencesPrimaryKey...),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasExternalReferencesWith applies the HasEdge predicate on the "external_references" edge with a given conditions (other predicates).
+func HasExternalReferencesWith(preds ...predicate.ExternalReference) predicate.Document {
+	return predicate.Document(func(s *sql.Selector) {
+		step := newExternalReferencesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasHashes applies the HasEdge predicate on the "hashes" edge.
+func HasHashes() predicate.Document {
+	return predicate.Document(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, HashesTable, HashesPrimaryKey...),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasHashesWith applies the HasEdge predicate on the "hashes" edge with a given conditions (other predicates).
+func HasHashesWith(preds ...predicate.HashesEntry) predicate.Document {
+	return predicate.Document(func(s *sql.Selector) {
+		step := newHashesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasIdentifiers applies the HasEdge predicate on the "identifiers" edge.
+func HasIdentifiers() predicate.Document {
+	return predicate.Document(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, IdentifiersTable, IdentifiersPrimaryKey...),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasIdentifiersWith applies the HasEdge predicate on the "identifiers" edge with a given conditions (other predicates).
+func HasIdentifiersWith(preds ...predicate.IdentifiersEntry) predicate.Document {
+	return predicate.Document(func(s *sql.Selector) {
+		step := newIdentifiersStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasNodes applies the HasEdge predicate on the "nodes" edge.
+func HasNodes() predicate.Document {
+	return predicate.Document(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, NodesTable, NodesPrimaryKey...),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasNodesWith applies the HasEdge predicate on the "nodes" edge with a given conditions (other predicates).
+func HasNodesWith(preds ...predicate.Node) predicate.Document {
+	return predicate.Document(func(s *sql.Selector) {
+		step := newNodesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasPersons applies the HasEdge predicate on the "persons" edge.
+func HasPersons() predicate.Document {
+	return predicate.Document(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, PersonsTable, PersonsPrimaryKey...),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasPersonsWith applies the HasEdge predicate on the "persons" edge with a given conditions (other predicates).
+func HasPersonsWith(preds ...predicate.Person) predicate.Document {
+	return predicate.Document(func(s *sql.Selector) {
+		step := newPersonsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasProperties applies the HasEdge predicate on the "properties" edge.
+func HasProperties() predicate.Document {
+	return predicate.Document(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, PropertiesTable, PropertiesPrimaryKey...),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasPropertiesWith applies the HasEdge predicate on the "properties" edge with a given conditions (other predicates).
+func HasPropertiesWith(preds ...predicate.Property) predicate.Document {
+	return predicate.Document(func(s *sql.Selector) {
+		step := newPropertiesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasPurposes applies the HasEdge predicate on the "purposes" edge.
+func HasPurposes() predicate.Document {
+	return predicate.Document(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, PurposesTable, PurposesPrimaryKey...),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasPurposesWith applies the HasEdge predicate on the "purposes" edge with a given conditions (other predicates).
+func HasPurposesWith(preds ...predicate.Purpose) predicate.Document {
+	return predicate.Document(func(s *sql.Selector) {
+		step := newPurposesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasSourceData applies the HasEdge predicate on the "source_data" edge.
+func HasSourceData() predicate.Document {
+	return predicate.Document(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, SourceDataTable, SourceDataPrimaryKey...),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasSourceDataWith applies the HasEdge predicate on the "source_data" edge with a given conditions (other predicates).
+func HasSourceDataWith(preds ...predicate.SourceData) predicate.Document {
+	return predicate.Document(func(s *sql.Selector) {
+		step := newSourceDataStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasTools applies the HasEdge predicate on the "tools" edge.
+func HasTools() predicate.Document {
+	return predicate.Document(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, ToolsTable, ToolsPrimaryKey...),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasToolsWith applies the HasEdge predicate on the "tools" edge with a given conditions (other predicates).
+func HasToolsWith(preds ...predicate.Tool) predicate.Document {
+	return predicate.Document(func(s *sql.Selector) {
+		step := newToolsStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

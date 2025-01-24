@@ -19,14 +19,8 @@ const (
 	Label = "person"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
-	// FieldDocumentID holds the string denoting the document_id field in the database.
-	FieldDocumentID = "document_id"
 	// FieldProtoMessage holds the string denoting the proto_message field in the database.
 	FieldProtoMessage = "proto_message"
-	// FieldMetadataID holds the string denoting the metadata_id field in the database.
-	FieldMetadataID = "metadata_id"
-	// FieldNodeID holds the string denoting the node_id field in the database.
-	FieldNodeID = "node_id"
 	// FieldName holds the string denoting the name field in the database.
 	FieldName = "name"
 	// FieldIsOrg holds the string denoting the is_org field in the database.
@@ -37,56 +31,50 @@ const (
 	FieldURL = "url"
 	// FieldPhone holds the string denoting the phone field in the database.
 	FieldPhone = "phone"
-	// EdgeDocument holds the string denoting the document edge name in mutations.
-	EdgeDocument = "document"
 	// EdgeContactOwner holds the string denoting the contact_owner edge name in mutations.
 	EdgeContactOwner = "contact_owner"
 	// EdgeContacts holds the string denoting the contacts edge name in mutations.
 	EdgeContacts = "contacts"
+	// EdgeDocuments holds the string denoting the documents edge name in mutations.
+	EdgeDocuments = "documents"
 	// EdgeMetadata holds the string denoting the metadata edge name in mutations.
 	EdgeMetadata = "metadata"
-	// EdgeNode holds the string denoting the node edge name in mutations.
-	EdgeNode = "node"
+	// EdgeOriginatorNodes holds the string denoting the originator_nodes edge name in mutations.
+	EdgeOriginatorNodes = "originator_nodes"
+	// EdgeSupplierNodes holds the string denoting the supplier_nodes edge name in mutations.
+	EdgeSupplierNodes = "supplier_nodes"
 	// Table holds the table name of the person in the database.
 	Table = "persons"
-	// DocumentTable is the table that holds the document relation/edge.
-	DocumentTable = "persons"
-	// DocumentInverseTable is the table name for the Document entity.
+	// ContactOwnerTable is the table that holds the contact_owner relation/edge. The primary key declared below.
+	ContactOwnerTable = "person_contacts"
+	// ContactsTable is the table that holds the contacts relation/edge. The primary key declared below.
+	ContactsTable = "person_contacts"
+	// DocumentsTable is the table that holds the documents relation/edge. The primary key declared below.
+	DocumentsTable = "document_persons"
+	// DocumentsInverseTable is the table name for the Document entity.
 	// It exists in this package in order to avoid circular dependency with the "document" package.
-	DocumentInverseTable = "documents"
-	// DocumentColumn is the table column denoting the document relation/edge.
-	DocumentColumn = "document_id"
-	// ContactOwnerTable is the table that holds the contact_owner relation/edge.
-	ContactOwnerTable = "persons"
-	// ContactOwnerColumn is the table column denoting the contact_owner relation/edge.
-	ContactOwnerColumn = "person_contacts"
-	// ContactsTable is the table that holds the contacts relation/edge.
-	ContactsTable = "persons"
-	// ContactsColumn is the table column denoting the contacts relation/edge.
-	ContactsColumn = "person_contacts"
-	// MetadataTable is the table that holds the metadata relation/edge.
-	MetadataTable = "persons"
+	DocumentsInverseTable = "documents"
+	// MetadataTable is the table that holds the metadata relation/edge. The primary key declared below.
+	MetadataTable = "metadata_authors"
 	// MetadataInverseTable is the table name for the Metadata entity.
 	// It exists in this package in order to avoid circular dependency with the "metadata" package.
 	MetadataInverseTable = "metadata"
-	// MetadataColumn is the table column denoting the metadata relation/edge.
-	MetadataColumn = "metadata_id"
-	// NodeTable is the table that holds the node relation/edge.
-	NodeTable = "persons"
-	// NodeInverseTable is the table name for the Node entity.
+	// OriginatorNodesTable is the table that holds the originator_nodes relation/edge. The primary key declared below.
+	OriginatorNodesTable = "node_originators"
+	// OriginatorNodesInverseTable is the table name for the Node entity.
 	// It exists in this package in order to avoid circular dependency with the "node" package.
-	NodeInverseTable = "nodes"
-	// NodeColumn is the table column denoting the node relation/edge.
-	NodeColumn = "node_id"
+	OriginatorNodesInverseTable = "nodes"
+	// SupplierNodesTable is the table that holds the supplier_nodes relation/edge. The primary key declared below.
+	SupplierNodesTable = "node_suppliers"
+	// SupplierNodesInverseTable is the table name for the Node entity.
+	// It exists in this package in order to avoid circular dependency with the "node" package.
+	SupplierNodesInverseTable = "nodes"
 )
 
 // Columns holds all SQL columns for person fields.
 var Columns = []string{
 	FieldID,
-	FieldDocumentID,
 	FieldProtoMessage,
-	FieldMetadataID,
-	FieldNodeID,
 	FieldName,
 	FieldIsOrg,
 	FieldEmail,
@@ -94,22 +82,31 @@ var Columns = []string{
 	FieldPhone,
 }
 
-// ForeignKeys holds the SQL foreign-keys that are owned by the "persons"
-// table and are not defined as standalone fields in the schema.
-var ForeignKeys = []string{
-	"node_suppliers",
-	"person_contacts",
-}
+var (
+	// ContactOwnerPrimaryKey and ContactOwnerColumn2 are the table columns denoting the
+	// primary key for the contact_owner relation (M2M).
+	ContactOwnerPrimaryKey = []string{"person_id", "contact_owner_id"}
+	// ContactsPrimaryKey and ContactsColumn2 are the table columns denoting the
+	// primary key for the contacts relation (M2M).
+	ContactsPrimaryKey = []string{"person_id", "contact_owner_id"}
+	// DocumentsPrimaryKey and DocumentsColumn2 are the table columns denoting the
+	// primary key for the documents relation (M2M).
+	DocumentsPrimaryKey = []string{"document_id", "person_id"}
+	// MetadataPrimaryKey and MetadataColumn2 are the table columns denoting the
+	// primary key for the metadata relation (M2M).
+	MetadataPrimaryKey = []string{"metadata_id", "person_id"}
+	// OriginatorNodesPrimaryKey and OriginatorNodesColumn2 are the table columns denoting the
+	// primary key for the originator_nodes relation (M2M).
+	OriginatorNodesPrimaryKey = []string{"node_id", "person_id"}
+	// SupplierNodesPrimaryKey and SupplierNodesColumn2 are the table columns denoting the
+	// primary key for the supplier_nodes relation (M2M).
+	SupplierNodesPrimaryKey = []string{"node_id", "person_id"}
+)
 
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {
 	for i := range Columns {
 		if column == Columns[i] {
-			return true
-		}
-	}
-	for i := range ForeignKeys {
-		if column == ForeignKeys[i] {
 			return true
 		}
 	}
@@ -123,8 +120,6 @@ func ValidColumn(column string) bool {
 //	import _ "github.com/protobom/storage/internal/backends/ent/runtime"
 var (
 	Hooks [2]ent.Hook
-	// DefaultDocumentID holds the default value on creation for the "document_id" field.
-	DefaultDocumentID func() uuid.UUID
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() uuid.UUID
 )
@@ -135,21 +130,6 @@ type OrderOption func(*sql.Selector)
 // ByID orders the results by the id field.
 func ByID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldID, opts...).ToFunc()
-}
-
-// ByDocumentID orders the results by the document_id field.
-func ByDocumentID(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldDocumentID, opts...).ToFunc()
-}
-
-// ByMetadataID orders the results by the metadata_id field.
-func ByMetadataID(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldMetadataID, opts...).ToFunc()
-}
-
-// ByNodeID orders the results by the node_id field.
-func ByNodeID(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldNodeID, opts...).ToFunc()
 }
 
 // ByName orders the results by the name field.
@@ -177,17 +157,17 @@ func ByPhone(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldPhone, opts...).ToFunc()
 }
 
-// ByDocumentField orders the results by document field.
-func ByDocumentField(field string, opts ...sql.OrderTermOption) OrderOption {
+// ByContactOwnerCount orders the results by contact_owner count.
+func ByContactOwnerCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newDocumentStep(), sql.OrderByField(field, opts...))
+		sqlgraph.OrderByNeighborsCount(s, newContactOwnerStep(), opts...)
 	}
 }
 
-// ByContactOwnerField orders the results by contact_owner field.
-func ByContactOwnerField(field string, opts ...sql.OrderTermOption) OrderOption {
+// ByContactOwner orders the results by contact_owner terms.
+func ByContactOwner(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newContactOwnerStep(), sql.OrderByField(field, opts...))
+		sqlgraph.OrderByNeighborTerms(s, newContactOwnerStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
 
@@ -205,51 +185,100 @@ func ByContacts(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	}
 }
 
-// ByMetadataField orders the results by metadata field.
-func ByMetadataField(field string, opts ...sql.OrderTermOption) OrderOption {
+// ByDocumentsCount orders the results by documents count.
+func ByDocumentsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newMetadataStep(), sql.OrderByField(field, opts...))
+		sqlgraph.OrderByNeighborsCount(s, newDocumentsStep(), opts...)
 	}
 }
 
-// ByNodeField orders the results by node field.
-func ByNodeField(field string, opts ...sql.OrderTermOption) OrderOption {
+// ByDocuments orders the results by documents terms.
+func ByDocuments(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newNodeStep(), sql.OrderByField(field, opts...))
+		sqlgraph.OrderByNeighborTerms(s, newDocumentsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
-func newDocumentStep() *sqlgraph.Step {
-	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(DocumentInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.M2O, false, DocumentTable, DocumentColumn),
-	)
+
+// ByMetadataCount orders the results by metadata count.
+func ByMetadataCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newMetadataStep(), opts...)
+	}
+}
+
+// ByMetadata orders the results by metadata terms.
+func ByMetadata(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newMetadataStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByOriginatorNodesCount orders the results by originator_nodes count.
+func ByOriginatorNodesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newOriginatorNodesStep(), opts...)
+	}
+}
+
+// ByOriginatorNodes orders the results by originator_nodes terms.
+func ByOriginatorNodes(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newOriginatorNodesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// BySupplierNodesCount orders the results by supplier_nodes count.
+func BySupplierNodesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newSupplierNodesStep(), opts...)
+	}
+}
+
+// BySupplierNodes orders the results by supplier_nodes terms.
+func BySupplierNodes(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newSupplierNodesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
 }
 func newContactOwnerStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(Table, FieldID),
-		sqlgraph.Edge(sqlgraph.M2O, true, ContactOwnerTable, ContactOwnerColumn),
+		sqlgraph.Edge(sqlgraph.M2M, true, ContactOwnerTable, ContactOwnerPrimaryKey...),
 	)
 }
 func newContactsStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(Table, FieldID),
-		sqlgraph.Edge(sqlgraph.O2M, false, ContactsTable, ContactsColumn),
+		sqlgraph.Edge(sqlgraph.M2M, false, ContactsTable, ContactsPrimaryKey...),
+	)
+}
+func newDocumentsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(DocumentsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2M, true, DocumentsTable, DocumentsPrimaryKey...),
 	)
 }
 func newMetadataStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(MetadataInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.M2O, true, MetadataTable, MetadataColumn),
+		sqlgraph.Edge(sqlgraph.M2M, true, MetadataTable, MetadataPrimaryKey...),
 	)
 }
-func newNodeStep() *sqlgraph.Step {
+func newOriginatorNodesStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(NodeInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.M2O, true, NodeTable, NodeColumn),
+		sqlgraph.To(OriginatorNodesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2M, true, OriginatorNodesTable, OriginatorNodesPrimaryKey...),
+	)
+}
+func newSupplierNodesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(SupplierNodesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2M, true, SupplierNodesTable, SupplierNodesPrimaryKey...),
 	)
 }

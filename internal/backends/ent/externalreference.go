@@ -16,7 +16,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"github.com/google/uuid"
 	"github.com/protobom/protobom/pkg/sbom"
-	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/externalreference"
 )
 
@@ -25,8 +24,6 @@ type ExternalReference struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID uuid.UUID `json:"-"`
-	// DocumentID holds the value of the "document_id" field.
-	DocumentID uuid.UUID `json:"-"`
 	// ProtoMessage holds the value of the "proto_message" field.
 	ProtoMessage *sbom.ExternalReference `json:"-"`
 	// URL holds the value of the "url" field.
@@ -45,10 +42,10 @@ type ExternalReference struct {
 
 // ExternalReferenceEdges holds the relations/edges for other nodes in the graph.
 type ExternalReferenceEdges struct {
-	// Document holds the value of the document edge.
-	Document *Document `json:"document,omitempty"`
 	// Hashes holds the value of the hashes edge.
 	Hashes []*HashesEntry `json:"hashes,omitempty"`
+	// Documents holds the value of the documents edge.
+	Documents []*Document `json:"-"`
 	// Nodes holds the value of the nodes edge.
 	Nodes []*Node `json:"-"`
 	// loadedTypes holds the information for reporting if a
@@ -56,24 +53,22 @@ type ExternalReferenceEdges struct {
 	loadedTypes [3]bool
 }
 
-// DocumentOrErr returns the Document value or an error if the edge
-// was not loaded in eager-loading, or loaded but was not found.
-func (e ExternalReferenceEdges) DocumentOrErr() (*Document, error) {
-	if e.Document != nil {
-		return e.Document, nil
-	} else if e.loadedTypes[0] {
-		return nil, &NotFoundError{label: document.Label}
-	}
-	return nil, &NotLoadedError{edge: "document"}
-}
-
 // HashesOrErr returns the Hashes value or an error if the edge
 // was not loaded in eager-loading.
 func (e ExternalReferenceEdges) HashesOrErr() ([]*HashesEntry, error) {
-	if e.loadedTypes[1] {
+	if e.loadedTypes[0] {
 		return e.Hashes, nil
 	}
 	return nil, &NotLoadedError{edge: "hashes"}
+}
+
+// DocumentsOrErr returns the Documents value or an error if the edge
+// was not loaded in eager-loading.
+func (e ExternalReferenceEdges) DocumentsOrErr() ([]*Document, error) {
+	if e.loadedTypes[1] {
+		return e.Documents, nil
+	}
+	return nil, &NotLoadedError{edge: "documents"}
 }
 
 // NodesOrErr returns the Nodes value or an error if the edge
@@ -94,7 +89,7 @@ func (*ExternalReference) scanValues(columns []string) ([]any, error) {
 			values[i] = &sql.NullScanner{S: new(sbom.ExternalReference)}
 		case externalreference.FieldURL, externalreference.FieldComment, externalreference.FieldAuthority, externalreference.FieldType:
 			values[i] = new(sql.NullString)
-		case externalreference.FieldID, externalreference.FieldDocumentID:
+		case externalreference.FieldID:
 			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -116,12 +111,6 @@ func (er *ExternalReference) assignValues(columns []string, values []any) error 
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value != nil {
 				er.ID = *value
-			}
-		case externalreference.FieldDocumentID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
-				return fmt.Errorf("unexpected type %T for field document_id", values[i])
-			} else if value != nil {
-				er.DocumentID = *value
 			}
 		case externalreference.FieldProtoMessage:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
@@ -166,14 +155,14 @@ func (er *ExternalReference) Value(name string) (ent.Value, error) {
 	return er.selectValues.Get(name)
 }
 
-// QueryDocument queries the "document" edge of the ExternalReference entity.
-func (er *ExternalReference) QueryDocument() *DocumentQuery {
-	return NewExternalReferenceClient(er.config).QueryDocument(er)
-}
-
 // QueryHashes queries the "hashes" edge of the ExternalReference entity.
 func (er *ExternalReference) QueryHashes() *HashesEntryQuery {
 	return NewExternalReferenceClient(er.config).QueryHashes(er)
+}
+
+// QueryDocuments queries the "documents" edge of the ExternalReference entity.
+func (er *ExternalReference) QueryDocuments() *DocumentQuery {
+	return NewExternalReferenceClient(er.config).QueryDocuments(er)
 }
 
 // QueryNodes queries the "nodes" edge of the ExternalReference entity.
@@ -204,9 +193,6 @@ func (er *ExternalReference) String() string {
 	var builder strings.Builder
 	builder.WriteString("ExternalReference(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", er.ID))
-	builder.WriteString("document_id=")
-	builder.WriteString(fmt.Sprintf("%v", er.DocumentID))
-	builder.WriteString(", ")
 	if v := er.ProtoMessage; v != nil {
 		builder.WriteString("proto_message=")
 		builder.WriteString(fmt.Sprintf("%v", *v))

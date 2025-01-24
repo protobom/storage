@@ -60,19 +60,9 @@ func IDLTE(id uuid.UUID) predicate.Tool {
 	return predicate.Tool(sql.FieldLTE(FieldID, id))
 }
 
-// DocumentID applies equality check predicate on the "document_id" field. It's identical to DocumentIDEQ.
-func DocumentID(v uuid.UUID) predicate.Tool {
-	return predicate.Tool(sql.FieldEQ(FieldDocumentID, v))
-}
-
 // ProtoMessage applies equality check predicate on the "proto_message" field. It's identical to ProtoMessageEQ.
 func ProtoMessage(v *sbom.Tool) predicate.Tool {
 	return predicate.Tool(sql.FieldEQ(FieldProtoMessage, v))
-}
-
-// MetadataID applies equality check predicate on the "metadata_id" field. It's identical to MetadataIDEQ.
-func MetadataID(v uuid.UUID) predicate.Tool {
-	return predicate.Tool(sql.FieldEQ(FieldMetadataID, v))
 }
 
 // Name applies equality check predicate on the "name" field. It's identical to NameEQ.
@@ -88,36 +78,6 @@ func Version(v string) predicate.Tool {
 // Vendor applies equality check predicate on the "vendor" field. It's identical to VendorEQ.
 func Vendor(v string) predicate.Tool {
 	return predicate.Tool(sql.FieldEQ(FieldVendor, v))
-}
-
-// DocumentIDEQ applies the EQ predicate on the "document_id" field.
-func DocumentIDEQ(v uuid.UUID) predicate.Tool {
-	return predicate.Tool(sql.FieldEQ(FieldDocumentID, v))
-}
-
-// DocumentIDNEQ applies the NEQ predicate on the "document_id" field.
-func DocumentIDNEQ(v uuid.UUID) predicate.Tool {
-	return predicate.Tool(sql.FieldNEQ(FieldDocumentID, v))
-}
-
-// DocumentIDIn applies the In predicate on the "document_id" field.
-func DocumentIDIn(vs ...uuid.UUID) predicate.Tool {
-	return predicate.Tool(sql.FieldIn(FieldDocumentID, vs...))
-}
-
-// DocumentIDNotIn applies the NotIn predicate on the "document_id" field.
-func DocumentIDNotIn(vs ...uuid.UUID) predicate.Tool {
-	return predicate.Tool(sql.FieldNotIn(FieldDocumentID, vs...))
-}
-
-// DocumentIDIsNil applies the IsNil predicate on the "document_id" field.
-func DocumentIDIsNil() predicate.Tool {
-	return predicate.Tool(sql.FieldIsNull(FieldDocumentID))
-}
-
-// DocumentIDNotNil applies the NotNil predicate on the "document_id" field.
-func DocumentIDNotNil() predicate.Tool {
-	return predicate.Tool(sql.FieldNotNull(FieldDocumentID))
 }
 
 // ProtoMessageEQ applies the EQ predicate on the "proto_message" field.
@@ -158,26 +118,6 @@ func ProtoMessageLT(v *sbom.Tool) predicate.Tool {
 // ProtoMessageLTE applies the LTE predicate on the "proto_message" field.
 func ProtoMessageLTE(v *sbom.Tool) predicate.Tool {
 	return predicate.Tool(sql.FieldLTE(FieldProtoMessage, v))
-}
-
-// MetadataIDEQ applies the EQ predicate on the "metadata_id" field.
-func MetadataIDEQ(v uuid.UUID) predicate.Tool {
-	return predicate.Tool(sql.FieldEQ(FieldMetadataID, v))
-}
-
-// MetadataIDNEQ applies the NEQ predicate on the "metadata_id" field.
-func MetadataIDNEQ(v uuid.UUID) predicate.Tool {
-	return predicate.Tool(sql.FieldNEQ(FieldMetadataID, v))
-}
-
-// MetadataIDIn applies the In predicate on the "metadata_id" field.
-func MetadataIDIn(vs ...uuid.UUID) predicate.Tool {
-	return predicate.Tool(sql.FieldIn(FieldMetadataID, vs...))
-}
-
-// MetadataIDNotIn applies the NotIn predicate on the "metadata_id" field.
-func MetadataIDNotIn(vs ...uuid.UUID) predicate.Tool {
-	return predicate.Tool(sql.FieldNotIn(FieldMetadataID, vs...))
 }
 
 // NameEQ applies the EQ predicate on the "name" field.
@@ -375,21 +315,21 @@ func VendorContainsFold(v string) predicate.Tool {
 	return predicate.Tool(sql.FieldContainsFold(FieldVendor, v))
 }
 
-// HasDocument applies the HasEdge predicate on the "document" edge.
-func HasDocument() predicate.Tool {
+// HasDocuments applies the HasEdge predicate on the "documents" edge.
+func HasDocuments() predicate.Tool {
 	return predicate.Tool(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, DocumentTable, DocumentColumn),
+			sqlgraph.Edge(sqlgraph.M2M, true, DocumentsTable, DocumentsPrimaryKey...),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
 }
 
-// HasDocumentWith applies the HasEdge predicate on the "document" edge with a given conditions (other predicates).
-func HasDocumentWith(preds ...predicate.Document) predicate.Tool {
+// HasDocumentsWith applies the HasEdge predicate on the "documents" edge with a given conditions (other predicates).
+func HasDocumentsWith(preds ...predicate.Document) predicate.Tool {
 	return predicate.Tool(func(s *sql.Selector) {
-		step := newDocumentStep()
+		step := newDocumentsStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)
@@ -403,7 +343,7 @@ func HasMetadata() predicate.Tool {
 	return predicate.Tool(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, MetadataTable, MetadataColumn),
+			sqlgraph.Edge(sqlgraph.M2M, true, MetadataTable, MetadataPrimaryKey...),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})

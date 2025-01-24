@@ -15,9 +15,21 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/google/uuid"
 	"github.com/protobom/storage/internal/backends/ent/annotation"
 	"github.com/protobom/storage/internal/backends/ent/document"
+	"github.com/protobom/storage/internal/backends/ent/documenttype"
+	"github.com/protobom/storage/internal/backends/ent/edgetype"
+	"github.com/protobom/storage/internal/backends/ent/externalreference"
+	"github.com/protobom/storage/internal/backends/ent/hashesentry"
+	"github.com/protobom/storage/internal/backends/ent/identifiersentry"
+	"github.com/protobom/storage/internal/backends/ent/node"
+	"github.com/protobom/storage/internal/backends/ent/person"
 	"github.com/protobom/storage/internal/backends/ent/predicate"
+	"github.com/protobom/storage/internal/backends/ent/property"
+	"github.com/protobom/storage/internal/backends/ent/purpose"
+	"github.com/protobom/storage/internal/backends/ent/sourcedata"
+	"github.com/protobom/storage/internal/backends/ent/tool"
 )
 
 // DocumentUpdate is the builder for updating Document entities.
@@ -48,6 +60,171 @@ func (du *DocumentUpdate) AddAnnotations(a ...*Annotation) *DocumentUpdate {
 	return du.AddAnnotationIDs(ids...)
 }
 
+// AddDocumentTypeIDs adds the "document_types" edge to the DocumentType entity by IDs.
+func (du *DocumentUpdate) AddDocumentTypeIDs(ids ...uuid.UUID) *DocumentUpdate {
+	du.mutation.AddDocumentTypeIDs(ids...)
+	return du
+}
+
+// AddDocumentTypes adds the "document_types" edges to the DocumentType entity.
+func (du *DocumentUpdate) AddDocumentTypes(d ...*DocumentType) *DocumentUpdate {
+	ids := make([]uuid.UUID, len(d))
+	for i := range d {
+		ids[i] = d[i].ID
+	}
+	return du.AddDocumentTypeIDs(ids...)
+}
+
+// AddEdgeTypeIDs adds the "edge_types" edge to the EdgeType entity by IDs.
+func (du *DocumentUpdate) AddEdgeTypeIDs(ids ...uuid.UUID) *DocumentUpdate {
+	du.mutation.AddEdgeTypeIDs(ids...)
+	return du
+}
+
+// AddEdgeTypes adds the "edge_types" edges to the EdgeType entity.
+func (du *DocumentUpdate) AddEdgeTypes(e ...*EdgeType) *DocumentUpdate {
+	ids := make([]uuid.UUID, len(e))
+	for i := range e {
+		ids[i] = e[i].ID
+	}
+	return du.AddEdgeTypeIDs(ids...)
+}
+
+// AddExternalReferenceIDs adds the "external_references" edge to the ExternalReference entity by IDs.
+func (du *DocumentUpdate) AddExternalReferenceIDs(ids ...uuid.UUID) *DocumentUpdate {
+	du.mutation.AddExternalReferenceIDs(ids...)
+	return du
+}
+
+// AddExternalReferences adds the "external_references" edges to the ExternalReference entity.
+func (du *DocumentUpdate) AddExternalReferences(e ...*ExternalReference) *DocumentUpdate {
+	ids := make([]uuid.UUID, len(e))
+	for i := range e {
+		ids[i] = e[i].ID
+	}
+	return du.AddExternalReferenceIDs(ids...)
+}
+
+// AddHashIDs adds the "hashes" edge to the HashesEntry entity by IDs.
+func (du *DocumentUpdate) AddHashIDs(ids ...uuid.UUID) *DocumentUpdate {
+	du.mutation.AddHashIDs(ids...)
+	return du
+}
+
+// AddHashes adds the "hashes" edges to the HashesEntry entity.
+func (du *DocumentUpdate) AddHashes(h ...*HashesEntry) *DocumentUpdate {
+	ids := make([]uuid.UUID, len(h))
+	for i := range h {
+		ids[i] = h[i].ID
+	}
+	return du.AddHashIDs(ids...)
+}
+
+// AddIdentifierIDs adds the "identifiers" edge to the IdentifiersEntry entity by IDs.
+func (du *DocumentUpdate) AddIdentifierIDs(ids ...uuid.UUID) *DocumentUpdate {
+	du.mutation.AddIdentifierIDs(ids...)
+	return du
+}
+
+// AddIdentifiers adds the "identifiers" edges to the IdentifiersEntry entity.
+func (du *DocumentUpdate) AddIdentifiers(i ...*IdentifiersEntry) *DocumentUpdate {
+	ids := make([]uuid.UUID, len(i))
+	for j := range i {
+		ids[j] = i[j].ID
+	}
+	return du.AddIdentifierIDs(ids...)
+}
+
+// AddNodeIDs adds the "nodes" edge to the Node entity by IDs.
+func (du *DocumentUpdate) AddNodeIDs(ids ...uuid.UUID) *DocumentUpdate {
+	du.mutation.AddNodeIDs(ids...)
+	return du
+}
+
+// AddNodes adds the "nodes" edges to the Node entity.
+func (du *DocumentUpdate) AddNodes(n ...*Node) *DocumentUpdate {
+	ids := make([]uuid.UUID, len(n))
+	for i := range n {
+		ids[i] = n[i].ID
+	}
+	return du.AddNodeIDs(ids...)
+}
+
+// AddPersonIDs adds the "persons" edge to the Person entity by IDs.
+func (du *DocumentUpdate) AddPersonIDs(ids ...uuid.UUID) *DocumentUpdate {
+	du.mutation.AddPersonIDs(ids...)
+	return du
+}
+
+// AddPersons adds the "persons" edges to the Person entity.
+func (du *DocumentUpdate) AddPersons(p ...*Person) *DocumentUpdate {
+	ids := make([]uuid.UUID, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return du.AddPersonIDs(ids...)
+}
+
+// AddPropertyIDs adds the "properties" edge to the Property entity by IDs.
+func (du *DocumentUpdate) AddPropertyIDs(ids ...uuid.UUID) *DocumentUpdate {
+	du.mutation.AddPropertyIDs(ids...)
+	return du
+}
+
+// AddProperties adds the "properties" edges to the Property entity.
+func (du *DocumentUpdate) AddProperties(p ...*Property) *DocumentUpdate {
+	ids := make([]uuid.UUID, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return du.AddPropertyIDs(ids...)
+}
+
+// AddPurposeIDs adds the "purposes" edge to the Purpose entity by IDs.
+func (du *DocumentUpdate) AddPurposeIDs(ids ...int) *DocumentUpdate {
+	du.mutation.AddPurposeIDs(ids...)
+	return du
+}
+
+// AddPurposes adds the "purposes" edges to the Purpose entity.
+func (du *DocumentUpdate) AddPurposes(p ...*Purpose) *DocumentUpdate {
+	ids := make([]int, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return du.AddPurposeIDs(ids...)
+}
+
+// AddSourceDatumIDs adds the "source_data" edge to the SourceData entity by IDs.
+func (du *DocumentUpdate) AddSourceDatumIDs(ids ...uuid.UUID) *DocumentUpdate {
+	du.mutation.AddSourceDatumIDs(ids...)
+	return du
+}
+
+// AddSourceData adds the "source_data" edges to the SourceData entity.
+func (du *DocumentUpdate) AddSourceData(s ...*SourceData) *DocumentUpdate {
+	ids := make([]uuid.UUID, len(s))
+	for i := range s {
+		ids[i] = s[i].ID
+	}
+	return du.AddSourceDatumIDs(ids...)
+}
+
+// AddToolIDs adds the "tools" edge to the Tool entity by IDs.
+func (du *DocumentUpdate) AddToolIDs(ids ...uuid.UUID) *DocumentUpdate {
+	du.mutation.AddToolIDs(ids...)
+	return du
+}
+
+// AddTools adds the "tools" edges to the Tool entity.
+func (du *DocumentUpdate) AddTools(t ...*Tool) *DocumentUpdate {
+	ids := make([]uuid.UUID, len(t))
+	for i := range t {
+		ids[i] = t[i].ID
+	}
+	return du.AddToolIDs(ids...)
+}
+
 // Mutation returns the DocumentMutation object of the builder.
 func (du *DocumentUpdate) Mutation() *DocumentMutation {
 	return du.mutation
@@ -72,6 +249,237 @@ func (du *DocumentUpdate) RemoveAnnotations(a ...*Annotation) *DocumentUpdate {
 		ids[i] = a[i].ID
 	}
 	return du.RemoveAnnotationIDs(ids...)
+}
+
+// ClearDocumentTypes clears all "document_types" edges to the DocumentType entity.
+func (du *DocumentUpdate) ClearDocumentTypes() *DocumentUpdate {
+	du.mutation.ClearDocumentTypes()
+	return du
+}
+
+// RemoveDocumentTypeIDs removes the "document_types" edge to DocumentType entities by IDs.
+func (du *DocumentUpdate) RemoveDocumentTypeIDs(ids ...uuid.UUID) *DocumentUpdate {
+	du.mutation.RemoveDocumentTypeIDs(ids...)
+	return du
+}
+
+// RemoveDocumentTypes removes "document_types" edges to DocumentType entities.
+func (du *DocumentUpdate) RemoveDocumentTypes(d ...*DocumentType) *DocumentUpdate {
+	ids := make([]uuid.UUID, len(d))
+	for i := range d {
+		ids[i] = d[i].ID
+	}
+	return du.RemoveDocumentTypeIDs(ids...)
+}
+
+// ClearEdgeTypes clears all "edge_types" edges to the EdgeType entity.
+func (du *DocumentUpdate) ClearEdgeTypes() *DocumentUpdate {
+	du.mutation.ClearEdgeTypes()
+	return du
+}
+
+// RemoveEdgeTypeIDs removes the "edge_types" edge to EdgeType entities by IDs.
+func (du *DocumentUpdate) RemoveEdgeTypeIDs(ids ...uuid.UUID) *DocumentUpdate {
+	du.mutation.RemoveEdgeTypeIDs(ids...)
+	return du
+}
+
+// RemoveEdgeTypes removes "edge_types" edges to EdgeType entities.
+func (du *DocumentUpdate) RemoveEdgeTypes(e ...*EdgeType) *DocumentUpdate {
+	ids := make([]uuid.UUID, len(e))
+	for i := range e {
+		ids[i] = e[i].ID
+	}
+	return du.RemoveEdgeTypeIDs(ids...)
+}
+
+// ClearExternalReferences clears all "external_references" edges to the ExternalReference entity.
+func (du *DocumentUpdate) ClearExternalReferences() *DocumentUpdate {
+	du.mutation.ClearExternalReferences()
+	return du
+}
+
+// RemoveExternalReferenceIDs removes the "external_references" edge to ExternalReference entities by IDs.
+func (du *DocumentUpdate) RemoveExternalReferenceIDs(ids ...uuid.UUID) *DocumentUpdate {
+	du.mutation.RemoveExternalReferenceIDs(ids...)
+	return du
+}
+
+// RemoveExternalReferences removes "external_references" edges to ExternalReference entities.
+func (du *DocumentUpdate) RemoveExternalReferences(e ...*ExternalReference) *DocumentUpdate {
+	ids := make([]uuid.UUID, len(e))
+	for i := range e {
+		ids[i] = e[i].ID
+	}
+	return du.RemoveExternalReferenceIDs(ids...)
+}
+
+// ClearHashes clears all "hashes" edges to the HashesEntry entity.
+func (du *DocumentUpdate) ClearHashes() *DocumentUpdate {
+	du.mutation.ClearHashes()
+	return du
+}
+
+// RemoveHashIDs removes the "hashes" edge to HashesEntry entities by IDs.
+func (du *DocumentUpdate) RemoveHashIDs(ids ...uuid.UUID) *DocumentUpdate {
+	du.mutation.RemoveHashIDs(ids...)
+	return du
+}
+
+// RemoveHashes removes "hashes" edges to HashesEntry entities.
+func (du *DocumentUpdate) RemoveHashes(h ...*HashesEntry) *DocumentUpdate {
+	ids := make([]uuid.UUID, len(h))
+	for i := range h {
+		ids[i] = h[i].ID
+	}
+	return du.RemoveHashIDs(ids...)
+}
+
+// ClearIdentifiers clears all "identifiers" edges to the IdentifiersEntry entity.
+func (du *DocumentUpdate) ClearIdentifiers() *DocumentUpdate {
+	du.mutation.ClearIdentifiers()
+	return du
+}
+
+// RemoveIdentifierIDs removes the "identifiers" edge to IdentifiersEntry entities by IDs.
+func (du *DocumentUpdate) RemoveIdentifierIDs(ids ...uuid.UUID) *DocumentUpdate {
+	du.mutation.RemoveIdentifierIDs(ids...)
+	return du
+}
+
+// RemoveIdentifiers removes "identifiers" edges to IdentifiersEntry entities.
+func (du *DocumentUpdate) RemoveIdentifiers(i ...*IdentifiersEntry) *DocumentUpdate {
+	ids := make([]uuid.UUID, len(i))
+	for j := range i {
+		ids[j] = i[j].ID
+	}
+	return du.RemoveIdentifierIDs(ids...)
+}
+
+// ClearNodes clears all "nodes" edges to the Node entity.
+func (du *DocumentUpdate) ClearNodes() *DocumentUpdate {
+	du.mutation.ClearNodes()
+	return du
+}
+
+// RemoveNodeIDs removes the "nodes" edge to Node entities by IDs.
+func (du *DocumentUpdate) RemoveNodeIDs(ids ...uuid.UUID) *DocumentUpdate {
+	du.mutation.RemoveNodeIDs(ids...)
+	return du
+}
+
+// RemoveNodes removes "nodes" edges to Node entities.
+func (du *DocumentUpdate) RemoveNodes(n ...*Node) *DocumentUpdate {
+	ids := make([]uuid.UUID, len(n))
+	for i := range n {
+		ids[i] = n[i].ID
+	}
+	return du.RemoveNodeIDs(ids...)
+}
+
+// ClearPersons clears all "persons" edges to the Person entity.
+func (du *DocumentUpdate) ClearPersons() *DocumentUpdate {
+	du.mutation.ClearPersons()
+	return du
+}
+
+// RemovePersonIDs removes the "persons" edge to Person entities by IDs.
+func (du *DocumentUpdate) RemovePersonIDs(ids ...uuid.UUID) *DocumentUpdate {
+	du.mutation.RemovePersonIDs(ids...)
+	return du
+}
+
+// RemovePersons removes "persons" edges to Person entities.
+func (du *DocumentUpdate) RemovePersons(p ...*Person) *DocumentUpdate {
+	ids := make([]uuid.UUID, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return du.RemovePersonIDs(ids...)
+}
+
+// ClearProperties clears all "properties" edges to the Property entity.
+func (du *DocumentUpdate) ClearProperties() *DocumentUpdate {
+	du.mutation.ClearProperties()
+	return du
+}
+
+// RemovePropertyIDs removes the "properties" edge to Property entities by IDs.
+func (du *DocumentUpdate) RemovePropertyIDs(ids ...uuid.UUID) *DocumentUpdate {
+	du.mutation.RemovePropertyIDs(ids...)
+	return du
+}
+
+// RemoveProperties removes "properties" edges to Property entities.
+func (du *DocumentUpdate) RemoveProperties(p ...*Property) *DocumentUpdate {
+	ids := make([]uuid.UUID, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return du.RemovePropertyIDs(ids...)
+}
+
+// ClearPurposes clears all "purposes" edges to the Purpose entity.
+func (du *DocumentUpdate) ClearPurposes() *DocumentUpdate {
+	du.mutation.ClearPurposes()
+	return du
+}
+
+// RemovePurposeIDs removes the "purposes" edge to Purpose entities by IDs.
+func (du *DocumentUpdate) RemovePurposeIDs(ids ...int) *DocumentUpdate {
+	du.mutation.RemovePurposeIDs(ids...)
+	return du
+}
+
+// RemovePurposes removes "purposes" edges to Purpose entities.
+func (du *DocumentUpdate) RemovePurposes(p ...*Purpose) *DocumentUpdate {
+	ids := make([]int, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return du.RemovePurposeIDs(ids...)
+}
+
+// ClearSourceData clears all "source_data" edges to the SourceData entity.
+func (du *DocumentUpdate) ClearSourceData() *DocumentUpdate {
+	du.mutation.ClearSourceData()
+	return du
+}
+
+// RemoveSourceDatumIDs removes the "source_data" edge to SourceData entities by IDs.
+func (du *DocumentUpdate) RemoveSourceDatumIDs(ids ...uuid.UUID) *DocumentUpdate {
+	du.mutation.RemoveSourceDatumIDs(ids...)
+	return du
+}
+
+// RemoveSourceData removes "source_data" edges to SourceData entities.
+func (du *DocumentUpdate) RemoveSourceData(s ...*SourceData) *DocumentUpdate {
+	ids := make([]uuid.UUID, len(s))
+	for i := range s {
+		ids[i] = s[i].ID
+	}
+	return du.RemoveSourceDatumIDs(ids...)
+}
+
+// ClearTools clears all "tools" edges to the Tool entity.
+func (du *DocumentUpdate) ClearTools() *DocumentUpdate {
+	du.mutation.ClearTools()
+	return du
+}
+
+// RemoveToolIDs removes the "tools" edge to Tool entities by IDs.
+func (du *DocumentUpdate) RemoveToolIDs(ids ...uuid.UUID) *DocumentUpdate {
+	du.mutation.RemoveToolIDs(ids...)
+	return du
+}
+
+// RemoveTools removes "tools" edges to Tool entities.
+func (du *DocumentUpdate) RemoveTools(t ...*Tool) *DocumentUpdate {
+	ids := make([]uuid.UUID, len(t))
+	for i := range t {
+		ids[i] = t[i].ID
+	}
+	return du.RemoveToolIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -155,6 +563,501 @@ func (du *DocumentUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if du.mutation.DocumentTypesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.DocumentTypesTable,
+			Columns: document.DocumentTypesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(documenttype.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := du.mutation.RemovedDocumentTypesIDs(); len(nodes) > 0 && !du.mutation.DocumentTypesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.DocumentTypesTable,
+			Columns: document.DocumentTypesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(documenttype.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := du.mutation.DocumentTypesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.DocumentTypesTable,
+			Columns: document.DocumentTypesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(documenttype.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if du.mutation.EdgeTypesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.EdgeTypesTable,
+			Columns: document.EdgeTypesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(edgetype.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := du.mutation.RemovedEdgeTypesIDs(); len(nodes) > 0 && !du.mutation.EdgeTypesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.EdgeTypesTable,
+			Columns: document.EdgeTypesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(edgetype.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := du.mutation.EdgeTypesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.EdgeTypesTable,
+			Columns: document.EdgeTypesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(edgetype.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if du.mutation.ExternalReferencesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.ExternalReferencesTable,
+			Columns: document.ExternalReferencesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(externalreference.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := du.mutation.RemovedExternalReferencesIDs(); len(nodes) > 0 && !du.mutation.ExternalReferencesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.ExternalReferencesTable,
+			Columns: document.ExternalReferencesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(externalreference.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := du.mutation.ExternalReferencesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.ExternalReferencesTable,
+			Columns: document.ExternalReferencesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(externalreference.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if du.mutation.HashesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.HashesTable,
+			Columns: document.HashesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(hashesentry.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := du.mutation.RemovedHashesIDs(); len(nodes) > 0 && !du.mutation.HashesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.HashesTable,
+			Columns: document.HashesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(hashesentry.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := du.mutation.HashesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.HashesTable,
+			Columns: document.HashesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(hashesentry.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if du.mutation.IdentifiersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.IdentifiersTable,
+			Columns: document.IdentifiersPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(identifiersentry.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := du.mutation.RemovedIdentifiersIDs(); len(nodes) > 0 && !du.mutation.IdentifiersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.IdentifiersTable,
+			Columns: document.IdentifiersPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(identifiersentry.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := du.mutation.IdentifiersIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.IdentifiersTable,
+			Columns: document.IdentifiersPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(identifiersentry.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if du.mutation.NodesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.NodesTable,
+			Columns: document.NodesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := du.mutation.RemovedNodesIDs(); len(nodes) > 0 && !du.mutation.NodesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.NodesTable,
+			Columns: document.NodesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := du.mutation.NodesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.NodesTable,
+			Columns: document.NodesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if du.mutation.PersonsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.PersonsTable,
+			Columns: document.PersonsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := du.mutation.RemovedPersonsIDs(); len(nodes) > 0 && !du.mutation.PersonsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.PersonsTable,
+			Columns: document.PersonsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := du.mutation.PersonsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.PersonsTable,
+			Columns: document.PersonsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if du.mutation.PropertiesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.PropertiesTable,
+			Columns: document.PropertiesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(property.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := du.mutation.RemovedPropertiesIDs(); len(nodes) > 0 && !du.mutation.PropertiesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.PropertiesTable,
+			Columns: document.PropertiesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(property.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := du.mutation.PropertiesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.PropertiesTable,
+			Columns: document.PropertiesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(property.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if du.mutation.PurposesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.PurposesTable,
+			Columns: document.PurposesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(purpose.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := du.mutation.RemovedPurposesIDs(); len(nodes) > 0 && !du.mutation.PurposesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.PurposesTable,
+			Columns: document.PurposesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(purpose.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := du.mutation.PurposesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.PurposesTable,
+			Columns: document.PurposesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(purpose.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if du.mutation.SourceDataCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.SourceDataTable,
+			Columns: document.SourceDataPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(sourcedata.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := du.mutation.RemovedSourceDataIDs(); len(nodes) > 0 && !du.mutation.SourceDataCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.SourceDataTable,
+			Columns: document.SourceDataPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(sourcedata.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := du.mutation.SourceDataIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.SourceDataTable,
+			Columns: document.SourceDataPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(sourcedata.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if du.mutation.ToolsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.ToolsTable,
+			Columns: document.ToolsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(tool.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := du.mutation.RemovedToolsIDs(); len(nodes) > 0 && !du.mutation.ToolsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.ToolsTable,
+			Columns: document.ToolsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(tool.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := du.mutation.ToolsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.ToolsTable,
+			Columns: document.ToolsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(tool.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, du.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{document.Label}
@@ -190,6 +1093,171 @@ func (duo *DocumentUpdateOne) AddAnnotations(a ...*Annotation) *DocumentUpdateOn
 	return duo.AddAnnotationIDs(ids...)
 }
 
+// AddDocumentTypeIDs adds the "document_types" edge to the DocumentType entity by IDs.
+func (duo *DocumentUpdateOne) AddDocumentTypeIDs(ids ...uuid.UUID) *DocumentUpdateOne {
+	duo.mutation.AddDocumentTypeIDs(ids...)
+	return duo
+}
+
+// AddDocumentTypes adds the "document_types" edges to the DocumentType entity.
+func (duo *DocumentUpdateOne) AddDocumentTypes(d ...*DocumentType) *DocumentUpdateOne {
+	ids := make([]uuid.UUID, len(d))
+	for i := range d {
+		ids[i] = d[i].ID
+	}
+	return duo.AddDocumentTypeIDs(ids...)
+}
+
+// AddEdgeTypeIDs adds the "edge_types" edge to the EdgeType entity by IDs.
+func (duo *DocumentUpdateOne) AddEdgeTypeIDs(ids ...uuid.UUID) *DocumentUpdateOne {
+	duo.mutation.AddEdgeTypeIDs(ids...)
+	return duo
+}
+
+// AddEdgeTypes adds the "edge_types" edges to the EdgeType entity.
+func (duo *DocumentUpdateOne) AddEdgeTypes(e ...*EdgeType) *DocumentUpdateOne {
+	ids := make([]uuid.UUID, len(e))
+	for i := range e {
+		ids[i] = e[i].ID
+	}
+	return duo.AddEdgeTypeIDs(ids...)
+}
+
+// AddExternalReferenceIDs adds the "external_references" edge to the ExternalReference entity by IDs.
+func (duo *DocumentUpdateOne) AddExternalReferenceIDs(ids ...uuid.UUID) *DocumentUpdateOne {
+	duo.mutation.AddExternalReferenceIDs(ids...)
+	return duo
+}
+
+// AddExternalReferences adds the "external_references" edges to the ExternalReference entity.
+func (duo *DocumentUpdateOne) AddExternalReferences(e ...*ExternalReference) *DocumentUpdateOne {
+	ids := make([]uuid.UUID, len(e))
+	for i := range e {
+		ids[i] = e[i].ID
+	}
+	return duo.AddExternalReferenceIDs(ids...)
+}
+
+// AddHashIDs adds the "hashes" edge to the HashesEntry entity by IDs.
+func (duo *DocumentUpdateOne) AddHashIDs(ids ...uuid.UUID) *DocumentUpdateOne {
+	duo.mutation.AddHashIDs(ids...)
+	return duo
+}
+
+// AddHashes adds the "hashes" edges to the HashesEntry entity.
+func (duo *DocumentUpdateOne) AddHashes(h ...*HashesEntry) *DocumentUpdateOne {
+	ids := make([]uuid.UUID, len(h))
+	for i := range h {
+		ids[i] = h[i].ID
+	}
+	return duo.AddHashIDs(ids...)
+}
+
+// AddIdentifierIDs adds the "identifiers" edge to the IdentifiersEntry entity by IDs.
+func (duo *DocumentUpdateOne) AddIdentifierIDs(ids ...uuid.UUID) *DocumentUpdateOne {
+	duo.mutation.AddIdentifierIDs(ids...)
+	return duo
+}
+
+// AddIdentifiers adds the "identifiers" edges to the IdentifiersEntry entity.
+func (duo *DocumentUpdateOne) AddIdentifiers(i ...*IdentifiersEntry) *DocumentUpdateOne {
+	ids := make([]uuid.UUID, len(i))
+	for j := range i {
+		ids[j] = i[j].ID
+	}
+	return duo.AddIdentifierIDs(ids...)
+}
+
+// AddNodeIDs adds the "nodes" edge to the Node entity by IDs.
+func (duo *DocumentUpdateOne) AddNodeIDs(ids ...uuid.UUID) *DocumentUpdateOne {
+	duo.mutation.AddNodeIDs(ids...)
+	return duo
+}
+
+// AddNodes adds the "nodes" edges to the Node entity.
+func (duo *DocumentUpdateOne) AddNodes(n ...*Node) *DocumentUpdateOne {
+	ids := make([]uuid.UUID, len(n))
+	for i := range n {
+		ids[i] = n[i].ID
+	}
+	return duo.AddNodeIDs(ids...)
+}
+
+// AddPersonIDs adds the "persons" edge to the Person entity by IDs.
+func (duo *DocumentUpdateOne) AddPersonIDs(ids ...uuid.UUID) *DocumentUpdateOne {
+	duo.mutation.AddPersonIDs(ids...)
+	return duo
+}
+
+// AddPersons adds the "persons" edges to the Person entity.
+func (duo *DocumentUpdateOne) AddPersons(p ...*Person) *DocumentUpdateOne {
+	ids := make([]uuid.UUID, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return duo.AddPersonIDs(ids...)
+}
+
+// AddPropertyIDs adds the "properties" edge to the Property entity by IDs.
+func (duo *DocumentUpdateOne) AddPropertyIDs(ids ...uuid.UUID) *DocumentUpdateOne {
+	duo.mutation.AddPropertyIDs(ids...)
+	return duo
+}
+
+// AddProperties adds the "properties" edges to the Property entity.
+func (duo *DocumentUpdateOne) AddProperties(p ...*Property) *DocumentUpdateOne {
+	ids := make([]uuid.UUID, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return duo.AddPropertyIDs(ids...)
+}
+
+// AddPurposeIDs adds the "purposes" edge to the Purpose entity by IDs.
+func (duo *DocumentUpdateOne) AddPurposeIDs(ids ...int) *DocumentUpdateOne {
+	duo.mutation.AddPurposeIDs(ids...)
+	return duo
+}
+
+// AddPurposes adds the "purposes" edges to the Purpose entity.
+func (duo *DocumentUpdateOne) AddPurposes(p ...*Purpose) *DocumentUpdateOne {
+	ids := make([]int, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return duo.AddPurposeIDs(ids...)
+}
+
+// AddSourceDatumIDs adds the "source_data" edge to the SourceData entity by IDs.
+func (duo *DocumentUpdateOne) AddSourceDatumIDs(ids ...uuid.UUID) *DocumentUpdateOne {
+	duo.mutation.AddSourceDatumIDs(ids...)
+	return duo
+}
+
+// AddSourceData adds the "source_data" edges to the SourceData entity.
+func (duo *DocumentUpdateOne) AddSourceData(s ...*SourceData) *DocumentUpdateOne {
+	ids := make([]uuid.UUID, len(s))
+	for i := range s {
+		ids[i] = s[i].ID
+	}
+	return duo.AddSourceDatumIDs(ids...)
+}
+
+// AddToolIDs adds the "tools" edge to the Tool entity by IDs.
+func (duo *DocumentUpdateOne) AddToolIDs(ids ...uuid.UUID) *DocumentUpdateOne {
+	duo.mutation.AddToolIDs(ids...)
+	return duo
+}
+
+// AddTools adds the "tools" edges to the Tool entity.
+func (duo *DocumentUpdateOne) AddTools(t ...*Tool) *DocumentUpdateOne {
+	ids := make([]uuid.UUID, len(t))
+	for i := range t {
+		ids[i] = t[i].ID
+	}
+	return duo.AddToolIDs(ids...)
+}
+
 // Mutation returns the DocumentMutation object of the builder.
 func (duo *DocumentUpdateOne) Mutation() *DocumentMutation {
 	return duo.mutation
@@ -214,6 +1282,237 @@ func (duo *DocumentUpdateOne) RemoveAnnotations(a ...*Annotation) *DocumentUpdat
 		ids[i] = a[i].ID
 	}
 	return duo.RemoveAnnotationIDs(ids...)
+}
+
+// ClearDocumentTypes clears all "document_types" edges to the DocumentType entity.
+func (duo *DocumentUpdateOne) ClearDocumentTypes() *DocumentUpdateOne {
+	duo.mutation.ClearDocumentTypes()
+	return duo
+}
+
+// RemoveDocumentTypeIDs removes the "document_types" edge to DocumentType entities by IDs.
+func (duo *DocumentUpdateOne) RemoveDocumentTypeIDs(ids ...uuid.UUID) *DocumentUpdateOne {
+	duo.mutation.RemoveDocumentTypeIDs(ids...)
+	return duo
+}
+
+// RemoveDocumentTypes removes "document_types" edges to DocumentType entities.
+func (duo *DocumentUpdateOne) RemoveDocumentTypes(d ...*DocumentType) *DocumentUpdateOne {
+	ids := make([]uuid.UUID, len(d))
+	for i := range d {
+		ids[i] = d[i].ID
+	}
+	return duo.RemoveDocumentTypeIDs(ids...)
+}
+
+// ClearEdgeTypes clears all "edge_types" edges to the EdgeType entity.
+func (duo *DocumentUpdateOne) ClearEdgeTypes() *DocumentUpdateOne {
+	duo.mutation.ClearEdgeTypes()
+	return duo
+}
+
+// RemoveEdgeTypeIDs removes the "edge_types" edge to EdgeType entities by IDs.
+func (duo *DocumentUpdateOne) RemoveEdgeTypeIDs(ids ...uuid.UUID) *DocumentUpdateOne {
+	duo.mutation.RemoveEdgeTypeIDs(ids...)
+	return duo
+}
+
+// RemoveEdgeTypes removes "edge_types" edges to EdgeType entities.
+func (duo *DocumentUpdateOne) RemoveEdgeTypes(e ...*EdgeType) *DocumentUpdateOne {
+	ids := make([]uuid.UUID, len(e))
+	for i := range e {
+		ids[i] = e[i].ID
+	}
+	return duo.RemoveEdgeTypeIDs(ids...)
+}
+
+// ClearExternalReferences clears all "external_references" edges to the ExternalReference entity.
+func (duo *DocumentUpdateOne) ClearExternalReferences() *DocumentUpdateOne {
+	duo.mutation.ClearExternalReferences()
+	return duo
+}
+
+// RemoveExternalReferenceIDs removes the "external_references" edge to ExternalReference entities by IDs.
+func (duo *DocumentUpdateOne) RemoveExternalReferenceIDs(ids ...uuid.UUID) *DocumentUpdateOne {
+	duo.mutation.RemoveExternalReferenceIDs(ids...)
+	return duo
+}
+
+// RemoveExternalReferences removes "external_references" edges to ExternalReference entities.
+func (duo *DocumentUpdateOne) RemoveExternalReferences(e ...*ExternalReference) *DocumentUpdateOne {
+	ids := make([]uuid.UUID, len(e))
+	for i := range e {
+		ids[i] = e[i].ID
+	}
+	return duo.RemoveExternalReferenceIDs(ids...)
+}
+
+// ClearHashes clears all "hashes" edges to the HashesEntry entity.
+func (duo *DocumentUpdateOne) ClearHashes() *DocumentUpdateOne {
+	duo.mutation.ClearHashes()
+	return duo
+}
+
+// RemoveHashIDs removes the "hashes" edge to HashesEntry entities by IDs.
+func (duo *DocumentUpdateOne) RemoveHashIDs(ids ...uuid.UUID) *DocumentUpdateOne {
+	duo.mutation.RemoveHashIDs(ids...)
+	return duo
+}
+
+// RemoveHashes removes "hashes" edges to HashesEntry entities.
+func (duo *DocumentUpdateOne) RemoveHashes(h ...*HashesEntry) *DocumentUpdateOne {
+	ids := make([]uuid.UUID, len(h))
+	for i := range h {
+		ids[i] = h[i].ID
+	}
+	return duo.RemoveHashIDs(ids...)
+}
+
+// ClearIdentifiers clears all "identifiers" edges to the IdentifiersEntry entity.
+func (duo *DocumentUpdateOne) ClearIdentifiers() *DocumentUpdateOne {
+	duo.mutation.ClearIdentifiers()
+	return duo
+}
+
+// RemoveIdentifierIDs removes the "identifiers" edge to IdentifiersEntry entities by IDs.
+func (duo *DocumentUpdateOne) RemoveIdentifierIDs(ids ...uuid.UUID) *DocumentUpdateOne {
+	duo.mutation.RemoveIdentifierIDs(ids...)
+	return duo
+}
+
+// RemoveIdentifiers removes "identifiers" edges to IdentifiersEntry entities.
+func (duo *DocumentUpdateOne) RemoveIdentifiers(i ...*IdentifiersEntry) *DocumentUpdateOne {
+	ids := make([]uuid.UUID, len(i))
+	for j := range i {
+		ids[j] = i[j].ID
+	}
+	return duo.RemoveIdentifierIDs(ids...)
+}
+
+// ClearNodes clears all "nodes" edges to the Node entity.
+func (duo *DocumentUpdateOne) ClearNodes() *DocumentUpdateOne {
+	duo.mutation.ClearNodes()
+	return duo
+}
+
+// RemoveNodeIDs removes the "nodes" edge to Node entities by IDs.
+func (duo *DocumentUpdateOne) RemoveNodeIDs(ids ...uuid.UUID) *DocumentUpdateOne {
+	duo.mutation.RemoveNodeIDs(ids...)
+	return duo
+}
+
+// RemoveNodes removes "nodes" edges to Node entities.
+func (duo *DocumentUpdateOne) RemoveNodes(n ...*Node) *DocumentUpdateOne {
+	ids := make([]uuid.UUID, len(n))
+	for i := range n {
+		ids[i] = n[i].ID
+	}
+	return duo.RemoveNodeIDs(ids...)
+}
+
+// ClearPersons clears all "persons" edges to the Person entity.
+func (duo *DocumentUpdateOne) ClearPersons() *DocumentUpdateOne {
+	duo.mutation.ClearPersons()
+	return duo
+}
+
+// RemovePersonIDs removes the "persons" edge to Person entities by IDs.
+func (duo *DocumentUpdateOne) RemovePersonIDs(ids ...uuid.UUID) *DocumentUpdateOne {
+	duo.mutation.RemovePersonIDs(ids...)
+	return duo
+}
+
+// RemovePersons removes "persons" edges to Person entities.
+func (duo *DocumentUpdateOne) RemovePersons(p ...*Person) *DocumentUpdateOne {
+	ids := make([]uuid.UUID, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return duo.RemovePersonIDs(ids...)
+}
+
+// ClearProperties clears all "properties" edges to the Property entity.
+func (duo *DocumentUpdateOne) ClearProperties() *DocumentUpdateOne {
+	duo.mutation.ClearProperties()
+	return duo
+}
+
+// RemovePropertyIDs removes the "properties" edge to Property entities by IDs.
+func (duo *DocumentUpdateOne) RemovePropertyIDs(ids ...uuid.UUID) *DocumentUpdateOne {
+	duo.mutation.RemovePropertyIDs(ids...)
+	return duo
+}
+
+// RemoveProperties removes "properties" edges to Property entities.
+func (duo *DocumentUpdateOne) RemoveProperties(p ...*Property) *DocumentUpdateOne {
+	ids := make([]uuid.UUID, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return duo.RemovePropertyIDs(ids...)
+}
+
+// ClearPurposes clears all "purposes" edges to the Purpose entity.
+func (duo *DocumentUpdateOne) ClearPurposes() *DocumentUpdateOne {
+	duo.mutation.ClearPurposes()
+	return duo
+}
+
+// RemovePurposeIDs removes the "purposes" edge to Purpose entities by IDs.
+func (duo *DocumentUpdateOne) RemovePurposeIDs(ids ...int) *DocumentUpdateOne {
+	duo.mutation.RemovePurposeIDs(ids...)
+	return duo
+}
+
+// RemovePurposes removes "purposes" edges to Purpose entities.
+func (duo *DocumentUpdateOne) RemovePurposes(p ...*Purpose) *DocumentUpdateOne {
+	ids := make([]int, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return duo.RemovePurposeIDs(ids...)
+}
+
+// ClearSourceData clears all "source_data" edges to the SourceData entity.
+func (duo *DocumentUpdateOne) ClearSourceData() *DocumentUpdateOne {
+	duo.mutation.ClearSourceData()
+	return duo
+}
+
+// RemoveSourceDatumIDs removes the "source_data" edge to SourceData entities by IDs.
+func (duo *DocumentUpdateOne) RemoveSourceDatumIDs(ids ...uuid.UUID) *DocumentUpdateOne {
+	duo.mutation.RemoveSourceDatumIDs(ids...)
+	return duo
+}
+
+// RemoveSourceData removes "source_data" edges to SourceData entities.
+func (duo *DocumentUpdateOne) RemoveSourceData(s ...*SourceData) *DocumentUpdateOne {
+	ids := make([]uuid.UUID, len(s))
+	for i := range s {
+		ids[i] = s[i].ID
+	}
+	return duo.RemoveSourceDatumIDs(ids...)
+}
+
+// ClearTools clears all "tools" edges to the Tool entity.
+func (duo *DocumentUpdateOne) ClearTools() *DocumentUpdateOne {
+	duo.mutation.ClearTools()
+	return duo
+}
+
+// RemoveToolIDs removes the "tools" edge to Tool entities by IDs.
+func (duo *DocumentUpdateOne) RemoveToolIDs(ids ...uuid.UUID) *DocumentUpdateOne {
+	duo.mutation.RemoveToolIDs(ids...)
+	return duo
+}
+
+// RemoveTools removes "tools" edges to Tool entities.
+func (duo *DocumentUpdateOne) RemoveTools(t ...*Tool) *DocumentUpdateOne {
+	ids := make([]uuid.UUID, len(t))
+	for i := range t {
+		ids[i] = t[i].ID
+	}
+	return duo.RemoveToolIDs(ids...)
 }
 
 // Where appends a list predicates to the DocumentUpdate builder.
@@ -320,6 +1619,501 @@ func (duo *DocumentUpdateOne) sqlSave(ctx context.Context) (_node *Document, err
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(annotation.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if duo.mutation.DocumentTypesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.DocumentTypesTable,
+			Columns: document.DocumentTypesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(documenttype.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := duo.mutation.RemovedDocumentTypesIDs(); len(nodes) > 0 && !duo.mutation.DocumentTypesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.DocumentTypesTable,
+			Columns: document.DocumentTypesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(documenttype.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := duo.mutation.DocumentTypesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.DocumentTypesTable,
+			Columns: document.DocumentTypesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(documenttype.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if duo.mutation.EdgeTypesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.EdgeTypesTable,
+			Columns: document.EdgeTypesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(edgetype.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := duo.mutation.RemovedEdgeTypesIDs(); len(nodes) > 0 && !duo.mutation.EdgeTypesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.EdgeTypesTable,
+			Columns: document.EdgeTypesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(edgetype.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := duo.mutation.EdgeTypesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.EdgeTypesTable,
+			Columns: document.EdgeTypesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(edgetype.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if duo.mutation.ExternalReferencesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.ExternalReferencesTable,
+			Columns: document.ExternalReferencesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(externalreference.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := duo.mutation.RemovedExternalReferencesIDs(); len(nodes) > 0 && !duo.mutation.ExternalReferencesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.ExternalReferencesTable,
+			Columns: document.ExternalReferencesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(externalreference.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := duo.mutation.ExternalReferencesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.ExternalReferencesTable,
+			Columns: document.ExternalReferencesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(externalreference.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if duo.mutation.HashesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.HashesTable,
+			Columns: document.HashesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(hashesentry.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := duo.mutation.RemovedHashesIDs(); len(nodes) > 0 && !duo.mutation.HashesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.HashesTable,
+			Columns: document.HashesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(hashesentry.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := duo.mutation.HashesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.HashesTable,
+			Columns: document.HashesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(hashesentry.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if duo.mutation.IdentifiersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.IdentifiersTable,
+			Columns: document.IdentifiersPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(identifiersentry.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := duo.mutation.RemovedIdentifiersIDs(); len(nodes) > 0 && !duo.mutation.IdentifiersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.IdentifiersTable,
+			Columns: document.IdentifiersPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(identifiersentry.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := duo.mutation.IdentifiersIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.IdentifiersTable,
+			Columns: document.IdentifiersPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(identifiersentry.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if duo.mutation.NodesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.NodesTable,
+			Columns: document.NodesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := duo.mutation.RemovedNodesIDs(); len(nodes) > 0 && !duo.mutation.NodesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.NodesTable,
+			Columns: document.NodesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := duo.mutation.NodesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.NodesTable,
+			Columns: document.NodesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if duo.mutation.PersonsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.PersonsTable,
+			Columns: document.PersonsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := duo.mutation.RemovedPersonsIDs(); len(nodes) > 0 && !duo.mutation.PersonsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.PersonsTable,
+			Columns: document.PersonsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := duo.mutation.PersonsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.PersonsTable,
+			Columns: document.PersonsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if duo.mutation.PropertiesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.PropertiesTable,
+			Columns: document.PropertiesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(property.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := duo.mutation.RemovedPropertiesIDs(); len(nodes) > 0 && !duo.mutation.PropertiesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.PropertiesTable,
+			Columns: document.PropertiesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(property.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := duo.mutation.PropertiesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.PropertiesTable,
+			Columns: document.PropertiesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(property.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if duo.mutation.PurposesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.PurposesTable,
+			Columns: document.PurposesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(purpose.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := duo.mutation.RemovedPurposesIDs(); len(nodes) > 0 && !duo.mutation.PurposesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.PurposesTable,
+			Columns: document.PurposesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(purpose.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := duo.mutation.PurposesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.PurposesTable,
+			Columns: document.PurposesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(purpose.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if duo.mutation.SourceDataCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.SourceDataTable,
+			Columns: document.SourceDataPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(sourcedata.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := duo.mutation.RemovedSourceDataIDs(); len(nodes) > 0 && !duo.mutation.SourceDataCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.SourceDataTable,
+			Columns: document.SourceDataPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(sourcedata.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := duo.mutation.SourceDataIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.SourceDataTable,
+			Columns: document.SourceDataPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(sourcedata.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if duo.mutation.ToolsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.ToolsTable,
+			Columns: document.ToolsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(tool.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := duo.mutation.RemovedToolsIDs(); len(nodes) > 0 && !duo.mutation.ToolsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.ToolsTable,
+			Columns: document.ToolsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(tool.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := duo.mutation.ToolsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.ToolsTable,
+			Columns: document.ToolsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(tool.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

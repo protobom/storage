@@ -12,6 +12,8 @@ import (
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"github.com/protobom/protobom/pkg/sbom"
+
+	"github.com/protobom/storage/internal/backends/ent/schema/mixin"
 )
 
 type ExternalReference struct {
@@ -20,8 +22,7 @@ type ExternalReference struct {
 
 func (ExternalReference) Mixin() []ent.Mixin {
 	return []ent.Mixin{
-		DocumentMixin{},
-		ProtoMessageMixin[*sbom.ExternalReference]{},
+		mixin.ProtoMessage[*sbom.ExternalReference]{},
 	}
 }
 
@@ -40,6 +41,10 @@ func (ExternalReference) Edges() []ent.Edge {
 		edge.To("hashes", HashesEntry.Type).
 			StorageKey(edge.Table("ext_ref_hashes"), edge.Columns("ext_ref_id", "hash_entry_id")).
 			Annotations(entsql.OnDelete(entsql.Cascade)),
+		edge.From("documents", Document.Type).
+			Ref("external_references").
+			Required().
+			Immutable(),
 		edge.From("nodes", Node.Type).
 			Ref("external_references").
 			Required(),

@@ -32,51 +32,9 @@ type PersonCreate struct {
 	conflict []sql.ConflictOption
 }
 
-// SetDocumentID sets the "document_id" field.
-func (pc *PersonCreate) SetDocumentID(u uuid.UUID) *PersonCreate {
-	pc.mutation.SetDocumentID(u)
-	return pc
-}
-
-// SetNillableDocumentID sets the "document_id" field if the given value is not nil.
-func (pc *PersonCreate) SetNillableDocumentID(u *uuid.UUID) *PersonCreate {
-	if u != nil {
-		pc.SetDocumentID(*u)
-	}
-	return pc
-}
-
 // SetProtoMessage sets the "proto_message" field.
 func (pc *PersonCreate) SetProtoMessage(s *sbom.Person) *PersonCreate {
 	pc.mutation.SetProtoMessage(s)
-	return pc
-}
-
-// SetMetadataID sets the "metadata_id" field.
-func (pc *PersonCreate) SetMetadataID(u uuid.UUID) *PersonCreate {
-	pc.mutation.SetMetadataID(u)
-	return pc
-}
-
-// SetNillableMetadataID sets the "metadata_id" field if the given value is not nil.
-func (pc *PersonCreate) SetNillableMetadataID(u *uuid.UUID) *PersonCreate {
-	if u != nil {
-		pc.SetMetadataID(*u)
-	}
-	return pc
-}
-
-// SetNodeID sets the "node_id" field.
-func (pc *PersonCreate) SetNodeID(u uuid.UUID) *PersonCreate {
-	pc.mutation.SetNodeID(u)
-	return pc
-}
-
-// SetNillableNodeID sets the "node_id" field if the given value is not nil.
-func (pc *PersonCreate) SetNillableNodeID(u *uuid.UUID) *PersonCreate {
-	if u != nil {
-		pc.SetNodeID(*u)
-	}
 	return pc
 }
 
@@ -124,28 +82,19 @@ func (pc *PersonCreate) SetNillableID(u *uuid.UUID) *PersonCreate {
 	return pc
 }
 
-// SetDocument sets the "document" edge to the Document entity.
-func (pc *PersonCreate) SetDocument(d *Document) *PersonCreate {
-	return pc.SetDocumentID(d.ID)
-}
-
-// SetContactOwnerID sets the "contact_owner" edge to the Person entity by ID.
-func (pc *PersonCreate) SetContactOwnerID(id uuid.UUID) *PersonCreate {
-	pc.mutation.SetContactOwnerID(id)
+// AddContactOwnerIDs adds the "contact_owner" edge to the Person entity by IDs.
+func (pc *PersonCreate) AddContactOwnerIDs(ids ...uuid.UUID) *PersonCreate {
+	pc.mutation.AddContactOwnerIDs(ids...)
 	return pc
 }
 
-// SetNillableContactOwnerID sets the "contact_owner" edge to the Person entity by ID if the given value is not nil.
-func (pc *PersonCreate) SetNillableContactOwnerID(id *uuid.UUID) *PersonCreate {
-	if id != nil {
-		pc = pc.SetContactOwnerID(*id)
+// AddContactOwner adds the "contact_owner" edges to the Person entity.
+func (pc *PersonCreate) AddContactOwner(p ...*Person) *PersonCreate {
+	ids := make([]uuid.UUID, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
 	}
-	return pc
-}
-
-// SetContactOwner sets the "contact_owner" edge to the Person entity.
-func (pc *PersonCreate) SetContactOwner(p *Person) *PersonCreate {
-	return pc.SetContactOwnerID(p.ID)
+	return pc.AddContactOwnerIDs(ids...)
 }
 
 // AddContactIDs adds the "contacts" edge to the Person entity by IDs.
@@ -163,14 +112,64 @@ func (pc *PersonCreate) AddContacts(p ...*Person) *PersonCreate {
 	return pc.AddContactIDs(ids...)
 }
 
-// SetMetadata sets the "metadata" edge to the Metadata entity.
-func (pc *PersonCreate) SetMetadata(m *Metadata) *PersonCreate {
-	return pc.SetMetadataID(m.ID)
+// AddDocumentIDs adds the "documents" edge to the Document entity by IDs.
+func (pc *PersonCreate) AddDocumentIDs(ids ...uuid.UUID) *PersonCreate {
+	pc.mutation.AddDocumentIDs(ids...)
+	return pc
 }
 
-// SetNode sets the "node" edge to the Node entity.
-func (pc *PersonCreate) SetNode(n *Node) *PersonCreate {
-	return pc.SetNodeID(n.ID)
+// AddDocuments adds the "documents" edges to the Document entity.
+func (pc *PersonCreate) AddDocuments(d ...*Document) *PersonCreate {
+	ids := make([]uuid.UUID, len(d))
+	for i := range d {
+		ids[i] = d[i].ID
+	}
+	return pc.AddDocumentIDs(ids...)
+}
+
+// AddMetadatumIDs adds the "metadata" edge to the Metadata entity by IDs.
+func (pc *PersonCreate) AddMetadatumIDs(ids ...uuid.UUID) *PersonCreate {
+	pc.mutation.AddMetadatumIDs(ids...)
+	return pc
+}
+
+// AddMetadata adds the "metadata" edges to the Metadata entity.
+func (pc *PersonCreate) AddMetadata(m ...*Metadata) *PersonCreate {
+	ids := make([]uuid.UUID, len(m))
+	for i := range m {
+		ids[i] = m[i].ID
+	}
+	return pc.AddMetadatumIDs(ids...)
+}
+
+// AddOriginatorNodeIDs adds the "originator_nodes" edge to the Node entity by IDs.
+func (pc *PersonCreate) AddOriginatorNodeIDs(ids ...uuid.UUID) *PersonCreate {
+	pc.mutation.AddOriginatorNodeIDs(ids...)
+	return pc
+}
+
+// AddOriginatorNodes adds the "originator_nodes" edges to the Node entity.
+func (pc *PersonCreate) AddOriginatorNodes(n ...*Node) *PersonCreate {
+	ids := make([]uuid.UUID, len(n))
+	for i := range n {
+		ids[i] = n[i].ID
+	}
+	return pc.AddOriginatorNodeIDs(ids...)
+}
+
+// AddSupplierNodeIDs adds the "supplier_nodes" edge to the Node entity by IDs.
+func (pc *PersonCreate) AddSupplierNodeIDs(ids ...uuid.UUID) *PersonCreate {
+	pc.mutation.AddSupplierNodeIDs(ids...)
+	return pc
+}
+
+// AddSupplierNodes adds the "supplier_nodes" edges to the Node entity.
+func (pc *PersonCreate) AddSupplierNodes(n ...*Node) *PersonCreate {
+	ids := make([]uuid.UUID, len(n))
+	for i := range n {
+		ids[i] = n[i].ID
+	}
+	return pc.AddSupplierNodeIDs(ids...)
 }
 
 // Mutation returns the PersonMutation object of the builder.
@@ -210,13 +209,6 @@ func (pc *PersonCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (pc *PersonCreate) defaults() error {
-	if _, ok := pc.mutation.DocumentID(); !ok {
-		if person.DefaultDocumentID == nil {
-			return fmt.Errorf("ent: uninitialized person.DefaultDocumentID (forgotten import ent/runtime?)")
-		}
-		v := person.DefaultDocumentID()
-		pc.mutation.SetDocumentID(v)
-	}
 	if _, ok := pc.mutation.ID(); !ok {
 		if person.DefaultID == nil {
 			return fmt.Errorf("ent: uninitialized person.DefaultID (forgotten import ent/runtime?)")
@@ -246,6 +238,9 @@ func (pc *PersonCreate) check() error {
 	}
 	if _, ok := pc.mutation.Phone(); !ok {
 		return &ValidationError{Name: "phone", err: errors.New(`ent: missing required field "Person.phone"`)}
+	}
+	if len(pc.mutation.DocumentsIDs()) == 0 {
+		return &ValidationError{Name: "documents", err: errors.New(`ent: missing required edge "Person.documents"`)}
 	}
 	return nil
 }
@@ -307,29 +302,12 @@ func (pc *PersonCreate) createSpec() (*Person, *sqlgraph.CreateSpec) {
 		_spec.SetField(person.FieldPhone, field.TypeString, value)
 		_node.Phone = value
 	}
-	if nodes := pc.mutation.DocumentIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: false,
-			Table:   person.DocumentTable,
-			Columns: []string{person.DocumentColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(document.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_node.DocumentID = nodes[0]
-		_spec.Edges = append(_spec.Edges, edge)
-	}
 	if nodes := pc.mutation.ContactOwnerIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.M2M,
 			Inverse: true,
 			Table:   person.ContactOwnerTable,
-			Columns: []string{person.ContactOwnerColumn},
+			Columns: person.ContactOwnerPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
@@ -338,18 +316,33 @@ func (pc *PersonCreate) createSpec() (*Person, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.person_contacts = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := pc.mutation.ContactsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   person.ContactsTable,
-			Columns: []string{person.ContactsColumn},
+			Columns: person.ContactsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := pc.mutation.DocumentsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   person.DocumentsTable,
+			Columns: person.DocumentsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(document.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -359,10 +352,10 @@ func (pc *PersonCreate) createSpec() (*Person, *sqlgraph.CreateSpec) {
 	}
 	if nodes := pc.mutation.MetadataIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.M2M,
 			Inverse: true,
 			Table:   person.MetadataTable,
-			Columns: []string{person.MetadataColumn},
+			Columns: person.MetadataPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(metadata.FieldID, field.TypeUUID),
@@ -371,15 +364,14 @@ func (pc *PersonCreate) createSpec() (*Person, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.MetadataID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := pc.mutation.NodeIDs(); len(nodes) > 0 {
+	if nodes := pc.mutation.OriginatorNodesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.M2M,
 			Inverse: true,
-			Table:   person.NodeTable,
-			Columns: []string{person.NodeColumn},
+			Table:   person.OriginatorNodesTable,
+			Columns: person.OriginatorNodesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
@@ -388,7 +380,22 @@ func (pc *PersonCreate) createSpec() (*Person, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.NodeID = nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := pc.mutation.SupplierNodesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   person.SupplierNodesTable,
+			Columns: person.SupplierNodesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
@@ -398,7 +405,7 @@ func (pc *PersonCreate) createSpec() (*Person, *sqlgraph.CreateSpec) {
 // of the `INSERT` statement. For example:
 //
 //	client.Person.Create().
-//		SetDocumentID(v).
+//		SetProtoMessage(v).
 //		OnConflict(
 //			// Update the row with the new values
 //			// the was proposed for insertion.
@@ -407,7 +414,7 @@ func (pc *PersonCreate) createSpec() (*Person, *sqlgraph.CreateSpec) {
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.PersonUpsert) {
-//			SetDocumentID(v+v).
+//			SetProtoMessage(v+v).
 //		}).
 //		Exec(ctx)
 func (pc *PersonCreate) OnConflict(opts ...sql.ConflictOption) *PersonUpsertOne {
@@ -442,42 +449,6 @@ type (
 		*sql.UpdateSet
 	}
 )
-
-// SetMetadataID sets the "metadata_id" field.
-func (u *PersonUpsert) SetMetadataID(v uuid.UUID) *PersonUpsert {
-	u.Set(person.FieldMetadataID, v)
-	return u
-}
-
-// UpdateMetadataID sets the "metadata_id" field to the value that was provided on create.
-func (u *PersonUpsert) UpdateMetadataID() *PersonUpsert {
-	u.SetExcluded(person.FieldMetadataID)
-	return u
-}
-
-// ClearMetadataID clears the value of the "metadata_id" field.
-func (u *PersonUpsert) ClearMetadataID() *PersonUpsert {
-	u.SetNull(person.FieldMetadataID)
-	return u
-}
-
-// SetNodeID sets the "node_id" field.
-func (u *PersonUpsert) SetNodeID(v uuid.UUID) *PersonUpsert {
-	u.Set(person.FieldNodeID, v)
-	return u
-}
-
-// UpdateNodeID sets the "node_id" field to the value that was provided on create.
-func (u *PersonUpsert) UpdateNodeID() *PersonUpsert {
-	u.SetExcluded(person.FieldNodeID)
-	return u
-}
-
-// ClearNodeID clears the value of the "node_id" field.
-func (u *PersonUpsert) ClearNodeID() *PersonUpsert {
-	u.SetNull(person.FieldNodeID)
-	return u
-}
 
 // SetName sets the "name" field.
 func (u *PersonUpsert) SetName(v string) *PersonUpsert {
@@ -556,9 +527,6 @@ func (u *PersonUpsertOne) UpdateNewValues() *PersonUpsertOne {
 		if _, exists := u.create.mutation.ID(); exists {
 			s.SetIgnore(person.FieldID)
 		}
-		if _, exists := u.create.mutation.DocumentID(); exists {
-			s.SetIgnore(person.FieldDocumentID)
-		}
 		if _, exists := u.create.mutation.ProtoMessage(); exists {
 			s.SetIgnore(person.FieldProtoMessage)
 		}
@@ -591,48 +559,6 @@ func (u *PersonUpsertOne) Update(set func(*PersonUpsert)) *PersonUpsertOne {
 		set(&PersonUpsert{UpdateSet: update})
 	}))
 	return u
-}
-
-// SetMetadataID sets the "metadata_id" field.
-func (u *PersonUpsertOne) SetMetadataID(v uuid.UUID) *PersonUpsertOne {
-	return u.Update(func(s *PersonUpsert) {
-		s.SetMetadataID(v)
-	})
-}
-
-// UpdateMetadataID sets the "metadata_id" field to the value that was provided on create.
-func (u *PersonUpsertOne) UpdateMetadataID() *PersonUpsertOne {
-	return u.Update(func(s *PersonUpsert) {
-		s.UpdateMetadataID()
-	})
-}
-
-// ClearMetadataID clears the value of the "metadata_id" field.
-func (u *PersonUpsertOne) ClearMetadataID() *PersonUpsertOne {
-	return u.Update(func(s *PersonUpsert) {
-		s.ClearMetadataID()
-	})
-}
-
-// SetNodeID sets the "node_id" field.
-func (u *PersonUpsertOne) SetNodeID(v uuid.UUID) *PersonUpsertOne {
-	return u.Update(func(s *PersonUpsert) {
-		s.SetNodeID(v)
-	})
-}
-
-// UpdateNodeID sets the "node_id" field to the value that was provided on create.
-func (u *PersonUpsertOne) UpdateNodeID() *PersonUpsertOne {
-	return u.Update(func(s *PersonUpsert) {
-		s.UpdateNodeID()
-	})
-}
-
-// ClearNodeID clears the value of the "node_id" field.
-func (u *PersonUpsertOne) ClearNodeID() *PersonUpsertOne {
-	return u.Update(func(s *PersonUpsert) {
-		s.ClearNodeID()
-	})
 }
 
 // SetName sets the "name" field.
@@ -841,7 +767,7 @@ func (pcb *PersonCreateBulk) ExecX(ctx context.Context) {
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.PersonUpsert) {
-//			SetDocumentID(v+v).
+//			SetProtoMessage(v+v).
 //		}).
 //		Exec(ctx)
 func (pcb *PersonCreateBulk) OnConflict(opts ...sql.ConflictOption) *PersonUpsertBulk {
@@ -888,9 +814,6 @@ func (u *PersonUpsertBulk) UpdateNewValues() *PersonUpsertBulk {
 			if _, exists := b.mutation.ID(); exists {
 				s.SetIgnore(person.FieldID)
 			}
-			if _, exists := b.mutation.DocumentID(); exists {
-				s.SetIgnore(person.FieldDocumentID)
-			}
 			if _, exists := b.mutation.ProtoMessage(); exists {
 				s.SetIgnore(person.FieldProtoMessage)
 			}
@@ -924,48 +847,6 @@ func (u *PersonUpsertBulk) Update(set func(*PersonUpsert)) *PersonUpsertBulk {
 		set(&PersonUpsert{UpdateSet: update})
 	}))
 	return u
-}
-
-// SetMetadataID sets the "metadata_id" field.
-func (u *PersonUpsertBulk) SetMetadataID(v uuid.UUID) *PersonUpsertBulk {
-	return u.Update(func(s *PersonUpsert) {
-		s.SetMetadataID(v)
-	})
-}
-
-// UpdateMetadataID sets the "metadata_id" field to the value that was provided on create.
-func (u *PersonUpsertBulk) UpdateMetadataID() *PersonUpsertBulk {
-	return u.Update(func(s *PersonUpsert) {
-		s.UpdateMetadataID()
-	})
-}
-
-// ClearMetadataID clears the value of the "metadata_id" field.
-func (u *PersonUpsertBulk) ClearMetadataID() *PersonUpsertBulk {
-	return u.Update(func(s *PersonUpsert) {
-		s.ClearMetadataID()
-	})
-}
-
-// SetNodeID sets the "node_id" field.
-func (u *PersonUpsertBulk) SetNodeID(v uuid.UUID) *PersonUpsertBulk {
-	return u.Update(func(s *PersonUpsert) {
-		s.SetNodeID(v)
-	})
-}
-
-// UpdateNodeID sets the "node_id" field to the value that was provided on create.
-func (u *PersonUpsertBulk) UpdateNodeID() *PersonUpsertBulk {
-	return u.Update(func(s *PersonUpsert) {
-		s.UpdateNodeID()
-	})
-}
-
-// ClearNodeID clears the value of the "node_id" field.
-func (u *PersonUpsertBulk) ClearNodeID() *PersonUpsertBulk {
-	return u.Update(func(s *PersonUpsert) {
-		s.ClearNodeID()
-	})
 }
 
 // SetName sets the "name" field.

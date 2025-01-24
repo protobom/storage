@@ -31,29 +31,9 @@ type PropertyCreate struct {
 	conflict []sql.ConflictOption
 }
 
-// SetDocumentID sets the "document_id" field.
-func (pc *PropertyCreate) SetDocumentID(u uuid.UUID) *PropertyCreate {
-	pc.mutation.SetDocumentID(u)
-	return pc
-}
-
-// SetNillableDocumentID sets the "document_id" field if the given value is not nil.
-func (pc *PropertyCreate) SetNillableDocumentID(u *uuid.UUID) *PropertyCreate {
-	if u != nil {
-		pc.SetDocumentID(*u)
-	}
-	return pc
-}
-
 // SetProtoMessage sets the "proto_message" field.
 func (pc *PropertyCreate) SetProtoMessage(s *sbom.Property) *PropertyCreate {
 	pc.mutation.SetProtoMessage(s)
-	return pc
-}
-
-// SetNodeID sets the "node_id" field.
-func (pc *PropertyCreate) SetNodeID(u uuid.UUID) *PropertyCreate {
-	pc.mutation.SetNodeID(u)
 	return pc
 }
 
@@ -83,14 +63,34 @@ func (pc *PropertyCreate) SetNillableID(u *uuid.UUID) *PropertyCreate {
 	return pc
 }
 
-// SetDocument sets the "document" edge to the Document entity.
-func (pc *PropertyCreate) SetDocument(d *Document) *PropertyCreate {
-	return pc.SetDocumentID(d.ID)
+// AddDocumentIDs adds the "documents" edge to the Document entity by IDs.
+func (pc *PropertyCreate) AddDocumentIDs(ids ...uuid.UUID) *PropertyCreate {
+	pc.mutation.AddDocumentIDs(ids...)
+	return pc
 }
 
-// SetNode sets the "node" edge to the Node entity.
-func (pc *PropertyCreate) SetNode(n *Node) *PropertyCreate {
-	return pc.SetNodeID(n.ID)
+// AddDocuments adds the "documents" edges to the Document entity.
+func (pc *PropertyCreate) AddDocuments(d ...*Document) *PropertyCreate {
+	ids := make([]uuid.UUID, len(d))
+	for i := range d {
+		ids[i] = d[i].ID
+	}
+	return pc.AddDocumentIDs(ids...)
+}
+
+// AddNodeIDs adds the "nodes" edge to the Node entity by IDs.
+func (pc *PropertyCreate) AddNodeIDs(ids ...uuid.UUID) *PropertyCreate {
+	pc.mutation.AddNodeIDs(ids...)
+	return pc
+}
+
+// AddNodes adds the "nodes" edges to the Node entity.
+func (pc *PropertyCreate) AddNodes(n ...*Node) *PropertyCreate {
+	ids := make([]uuid.UUID, len(n))
+	for i := range n {
+		ids[i] = n[i].ID
+	}
+	return pc.AddNodeIDs(ids...)
 }
 
 // Mutation returns the PropertyMutation object of the builder.
@@ -130,13 +130,6 @@ func (pc *PropertyCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (pc *PropertyCreate) defaults() error {
-	if _, ok := pc.mutation.DocumentID(); !ok {
-		if property.DefaultDocumentID == nil {
-			return fmt.Errorf("ent: uninitialized property.DefaultDocumentID (forgotten import ent/runtime?)")
-		}
-		v := property.DefaultDocumentID()
-		pc.mutation.SetDocumentID(v)
-	}
 	if _, ok := pc.mutation.ID(); !ok {
 		if property.DefaultID == nil {
 			return fmt.Errorf("ent: uninitialized property.DefaultID (forgotten import ent/runtime?)")
@@ -152,17 +145,17 @@ func (pc *PropertyCreate) check() error {
 	if _, ok := pc.mutation.ProtoMessage(); !ok {
 		return &ValidationError{Name: "proto_message", err: errors.New(`ent: missing required field "Property.proto_message"`)}
 	}
-	if _, ok := pc.mutation.NodeID(); !ok {
-		return &ValidationError{Name: "node_id", err: errors.New(`ent: missing required field "Property.node_id"`)}
-	}
 	if _, ok := pc.mutation.Name(); !ok {
 		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "Property.name"`)}
 	}
 	if _, ok := pc.mutation.Data(); !ok {
 		return &ValidationError{Name: "data", err: errors.New(`ent: missing required field "Property.data"`)}
 	}
-	if len(pc.mutation.NodeIDs()) == 0 {
-		return &ValidationError{Name: "node", err: errors.New(`ent: missing required edge "Property.node"`)}
+	if len(pc.mutation.DocumentsIDs()) == 0 {
+		return &ValidationError{Name: "documents", err: errors.New(`ent: missing required edge "Property.documents"`)}
+	}
+	if len(pc.mutation.NodesIDs()) == 0 {
+		return &ValidationError{Name: "nodes", err: errors.New(`ent: missing required edge "Property.nodes"`)}
 	}
 	return nil
 }
@@ -212,12 +205,12 @@ func (pc *PropertyCreate) createSpec() (*Property, *sqlgraph.CreateSpec) {
 		_spec.SetField(property.FieldData, field.TypeString, value)
 		_node.Data = value
 	}
-	if nodes := pc.mutation.DocumentIDs(); len(nodes) > 0 {
+	if nodes := pc.mutation.DocumentsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: false,
-			Table:   property.DocumentTable,
-			Columns: []string{property.DocumentColumn},
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   property.DocumentsTable,
+			Columns: property.DocumentsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(document.FieldID, field.TypeUUID),
@@ -226,15 +219,14 @@ func (pc *PropertyCreate) createSpec() (*Property, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.DocumentID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := pc.mutation.NodeIDs(); len(nodes) > 0 {
+	if nodes := pc.mutation.NodesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.M2M,
 			Inverse: true,
-			Table:   property.NodeTable,
-			Columns: []string{property.NodeColumn},
+			Table:   property.NodesTable,
+			Columns: property.NodesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
@@ -243,7 +235,6 @@ func (pc *PropertyCreate) createSpec() (*Property, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.NodeID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
@@ -253,7 +244,7 @@ func (pc *PropertyCreate) createSpec() (*Property, *sqlgraph.CreateSpec) {
 // of the `INSERT` statement. For example:
 //
 //	client.Property.Create().
-//		SetDocumentID(v).
+//		SetProtoMessage(v).
 //		OnConflict(
 //			// Update the row with the new values
 //			// the was proposed for insertion.
@@ -262,7 +253,7 @@ func (pc *PropertyCreate) createSpec() (*Property, *sqlgraph.CreateSpec) {
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.PropertyUpsert) {
-//			SetDocumentID(v+v).
+//			SetProtoMessage(v+v).
 //		}).
 //		Exec(ctx)
 func (pc *PropertyCreate) OnConflict(opts ...sql.ConflictOption) *PropertyUpsertOne {
@@ -297,18 +288,6 @@ type (
 		*sql.UpdateSet
 	}
 )
-
-// SetNodeID sets the "node_id" field.
-func (u *PropertyUpsert) SetNodeID(v uuid.UUID) *PropertyUpsert {
-	u.Set(property.FieldNodeID, v)
-	return u
-}
-
-// UpdateNodeID sets the "node_id" field to the value that was provided on create.
-func (u *PropertyUpsert) UpdateNodeID() *PropertyUpsert {
-	u.SetExcluded(property.FieldNodeID)
-	return u
-}
 
 // SetName sets the "name" field.
 func (u *PropertyUpsert) SetName(v string) *PropertyUpsert {
@@ -351,9 +330,6 @@ func (u *PropertyUpsertOne) UpdateNewValues() *PropertyUpsertOne {
 		if _, exists := u.create.mutation.ID(); exists {
 			s.SetIgnore(property.FieldID)
 		}
-		if _, exists := u.create.mutation.DocumentID(); exists {
-			s.SetIgnore(property.FieldDocumentID)
-		}
 		if _, exists := u.create.mutation.ProtoMessage(); exists {
 			s.SetIgnore(property.FieldProtoMessage)
 		}
@@ -386,20 +362,6 @@ func (u *PropertyUpsertOne) Update(set func(*PropertyUpsert)) *PropertyUpsertOne
 		set(&PropertyUpsert{UpdateSet: update})
 	}))
 	return u
-}
-
-// SetNodeID sets the "node_id" field.
-func (u *PropertyUpsertOne) SetNodeID(v uuid.UUID) *PropertyUpsertOne {
-	return u.Update(func(s *PropertyUpsert) {
-		s.SetNodeID(v)
-	})
-}
-
-// UpdateNodeID sets the "node_id" field to the value that was provided on create.
-func (u *PropertyUpsertOne) UpdateNodeID() *PropertyUpsertOne {
-	return u.Update(func(s *PropertyUpsert) {
-		s.UpdateNodeID()
-	})
 }
 
 // SetName sets the "name" field.
@@ -566,7 +528,7 @@ func (pcb *PropertyCreateBulk) ExecX(ctx context.Context) {
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.PropertyUpsert) {
-//			SetDocumentID(v+v).
+//			SetProtoMessage(v+v).
 //		}).
 //		Exec(ctx)
 func (pcb *PropertyCreateBulk) OnConflict(opts ...sql.ConflictOption) *PropertyUpsertBulk {
@@ -613,9 +575,6 @@ func (u *PropertyUpsertBulk) UpdateNewValues() *PropertyUpsertBulk {
 			if _, exists := b.mutation.ID(); exists {
 				s.SetIgnore(property.FieldID)
 			}
-			if _, exists := b.mutation.DocumentID(); exists {
-				s.SetIgnore(property.FieldDocumentID)
-			}
 			if _, exists := b.mutation.ProtoMessage(); exists {
 				s.SetIgnore(property.FieldProtoMessage)
 			}
@@ -649,20 +608,6 @@ func (u *PropertyUpsertBulk) Update(set func(*PropertyUpsert)) *PropertyUpsertBu
 		set(&PropertyUpsert{UpdateSet: update})
 	}))
 	return u
-}
-
-// SetNodeID sets the "node_id" field.
-func (u *PropertyUpsertBulk) SetNodeID(v uuid.UUID) *PropertyUpsertBulk {
-	return u.Update(func(s *PropertyUpsert) {
-		s.SetNodeID(v)
-	})
-}
-
-// UpdateNodeID sets the "node_id" field to the value that was provided on create.
-func (u *PropertyUpsertBulk) UpdateNodeID() *PropertyUpsertBulk {
-	return u.Update(func(s *PropertyUpsert) {
-		s.UpdateNodeID()
-	})
 }
 
 // SetName sets the "name" field.

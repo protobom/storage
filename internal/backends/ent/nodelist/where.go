@@ -105,29 +105,6 @@ func ProtoMessageLTE(v *sbom.NodeList) predicate.NodeList {
 	return predicate.NodeList(sql.FieldLTE(FieldProtoMessage, v))
 }
 
-// HasDocument applies the HasEdge predicate on the "document" edge.
-func HasDocument() predicate.NodeList {
-	return predicate.NodeList(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, false, DocumentTable, DocumentColumn),
-		)
-		sqlgraph.HasNeighbors(s, step)
-	})
-}
-
-// HasDocumentWith applies the HasEdge predicate on the "document" edge with a given conditions (other predicates).
-func HasDocumentWith(preds ...predicate.Document) predicate.NodeList {
-	return predicate.NodeList(func(s *sql.Selector) {
-		step := newDocumentStep()
-		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
-			for _, p := range preds {
-				p(s)
-			}
-		})
-	})
-}
-
 // HasEdgeTypes applies the HasEdge predicate on the "edge_types" edge.
 func HasEdgeTypes() predicate.NodeList {
 	return predicate.NodeList(func(s *sql.Selector) {
@@ -166,6 +143,29 @@ func HasNodes() predicate.NodeList {
 func HasNodesWith(preds ...predicate.Node) predicate.NodeList {
 	return predicate.NodeList(func(s *sql.Selector) {
 		step := newNodesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasDocuments applies the HasEdge predicate on the "documents" edge.
+func HasDocuments() predicate.NodeList {
+	return predicate.NodeList(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, DocumentsTable, DocumentsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasDocumentsWith applies the HasEdge predicate on the "documents" edge with a given conditions (other predicates).
+func HasDocumentsWith(preds ...predicate.Document) predicate.NodeList {
+	return predicate.NodeList(func(s *sql.Selector) {
+		step := newDocumentsStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

@@ -19,6 +19,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/protobom/protobom/pkg/sbom"
 	"github.com/protobom/storage/internal/backends/ent/document"
+	"github.com/protobom/storage/internal/backends/ent/hashesentry"
 	"github.com/protobom/storage/internal/backends/ent/metadata"
 	"github.com/protobom/storage/internal/backends/ent/sourcedata"
 )
@@ -31,29 +32,9 @@ type SourceDataCreate struct {
 	conflict []sql.ConflictOption
 }
 
-// SetDocumentID sets the "document_id" field.
-func (sdc *SourceDataCreate) SetDocumentID(u uuid.UUID) *SourceDataCreate {
-	sdc.mutation.SetDocumentID(u)
-	return sdc
-}
-
-// SetNillableDocumentID sets the "document_id" field if the given value is not nil.
-func (sdc *SourceDataCreate) SetNillableDocumentID(u *uuid.UUID) *SourceDataCreate {
-	if u != nil {
-		sdc.SetDocumentID(*u)
-	}
-	return sdc
-}
-
 // SetProtoMessage sets the "proto_message" field.
 func (sdc *SourceDataCreate) SetProtoMessage(sd *sbom.SourceData) *SourceDataCreate {
 	sdc.mutation.SetProtoMessage(sd)
-	return sdc
-}
-
-// SetMetadataID sets the "metadata_id" field.
-func (sdc *SourceDataCreate) SetMetadataID(u uuid.UUID) *SourceDataCreate {
-	sdc.mutation.SetMetadataID(u)
 	return sdc
 }
 
@@ -83,12 +64,6 @@ func (sdc *SourceDataCreate) SetNillableURI(s *string) *SourceDataCreate {
 	return sdc
 }
 
-// SetHashes sets the "hashes" field.
-func (sdc *SourceDataCreate) SetHashes(m map[int32]string) *SourceDataCreate {
-	sdc.mutation.SetHashes(m)
-	return sdc
-}
-
 // SetID sets the "id" field.
 func (sdc *SourceDataCreate) SetID(u uuid.UUID) *SourceDataCreate {
 	sdc.mutation.SetID(u)
@@ -103,14 +78,49 @@ func (sdc *SourceDataCreate) SetNillableID(u *uuid.UUID) *SourceDataCreate {
 	return sdc
 }
 
-// SetDocument sets the "document" edge to the Document entity.
-func (sdc *SourceDataCreate) SetDocument(d *Document) *SourceDataCreate {
-	return sdc.SetDocumentID(d.ID)
+// AddHashIDs adds the "hashes" edge to the HashesEntry entity by IDs.
+func (sdc *SourceDataCreate) AddHashIDs(ids ...uuid.UUID) *SourceDataCreate {
+	sdc.mutation.AddHashIDs(ids...)
+	return sdc
 }
 
-// SetMetadata sets the "metadata" edge to the Metadata entity.
-func (sdc *SourceDataCreate) SetMetadata(m *Metadata) *SourceDataCreate {
-	return sdc.SetMetadataID(m.ID)
+// AddHashes adds the "hashes" edges to the HashesEntry entity.
+func (sdc *SourceDataCreate) AddHashes(h ...*HashesEntry) *SourceDataCreate {
+	ids := make([]uuid.UUID, len(h))
+	for i := range h {
+		ids[i] = h[i].ID
+	}
+	return sdc.AddHashIDs(ids...)
+}
+
+// AddDocumentIDs adds the "documents" edge to the Document entity by IDs.
+func (sdc *SourceDataCreate) AddDocumentIDs(ids ...uuid.UUID) *SourceDataCreate {
+	sdc.mutation.AddDocumentIDs(ids...)
+	return sdc
+}
+
+// AddDocuments adds the "documents" edges to the Document entity.
+func (sdc *SourceDataCreate) AddDocuments(d ...*Document) *SourceDataCreate {
+	ids := make([]uuid.UUID, len(d))
+	for i := range d {
+		ids[i] = d[i].ID
+	}
+	return sdc.AddDocumentIDs(ids...)
+}
+
+// AddMetadatumIDs adds the "metadata" edge to the Metadata entity by IDs.
+func (sdc *SourceDataCreate) AddMetadatumIDs(ids ...uuid.UUID) *SourceDataCreate {
+	sdc.mutation.AddMetadatumIDs(ids...)
+	return sdc
+}
+
+// AddMetadata adds the "metadata" edges to the Metadata entity.
+func (sdc *SourceDataCreate) AddMetadata(m ...*Metadata) *SourceDataCreate {
+	ids := make([]uuid.UUID, len(m))
+	for i := range m {
+		ids[i] = m[i].ID
+	}
+	return sdc.AddMetadatumIDs(ids...)
 }
 
 // Mutation returns the SourceDataMutation object of the builder.
@@ -150,13 +160,6 @@ func (sdc *SourceDataCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (sdc *SourceDataCreate) defaults() error {
-	if _, ok := sdc.mutation.DocumentID(); !ok {
-		if sourcedata.DefaultDocumentID == nil {
-			return fmt.Errorf("ent: uninitialized sourcedata.DefaultDocumentID (forgotten import ent/runtime?)")
-		}
-		v := sourcedata.DefaultDocumentID()
-		sdc.mutation.SetDocumentID(v)
-	}
 	if _, ok := sdc.mutation.ID(); !ok {
 		if sourcedata.DefaultID == nil {
 			return fmt.Errorf("ent: uninitialized sourcedata.DefaultID (forgotten import ent/runtime?)")
@@ -172,14 +175,14 @@ func (sdc *SourceDataCreate) check() error {
 	if _, ok := sdc.mutation.ProtoMessage(); !ok {
 		return &ValidationError{Name: "proto_message", err: errors.New(`ent: missing required field "SourceData.proto_message"`)}
 	}
-	if _, ok := sdc.mutation.MetadataID(); !ok {
-		return &ValidationError{Name: "metadata_id", err: errors.New(`ent: missing required field "SourceData.metadata_id"`)}
-	}
 	if _, ok := sdc.mutation.Format(); !ok {
 		return &ValidationError{Name: "format", err: errors.New(`ent: missing required field "SourceData.format"`)}
 	}
 	if _, ok := sdc.mutation.Size(); !ok {
 		return &ValidationError{Name: "size", err: errors.New(`ent: missing required field "SourceData.size"`)}
+	}
+	if len(sdc.mutation.DocumentsIDs()) == 0 {
+		return &ValidationError{Name: "documents", err: errors.New(`ent: missing required edge "SourceData.documents"`)}
 	}
 	if len(sdc.mutation.MetadataIDs()) == 0 {
 		return &ValidationError{Name: "metadata", err: errors.New(`ent: missing required edge "SourceData.metadata"`)}
@@ -236,16 +239,28 @@ func (sdc *SourceDataCreate) createSpec() (*SourceData, *sqlgraph.CreateSpec) {
 		_spec.SetField(sourcedata.FieldURI, field.TypeString, value)
 		_node.URI = &value
 	}
-	if value, ok := sdc.mutation.Hashes(); ok {
-		_spec.SetField(sourcedata.FieldHashes, field.TypeJSON, value)
-		_node.Hashes = value
-	}
-	if nodes := sdc.mutation.DocumentIDs(); len(nodes) > 0 {
+	if nodes := sdc.mutation.HashesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
-			Table:   sourcedata.DocumentTable,
-			Columns: []string{sourcedata.DocumentColumn},
+			Table:   sourcedata.HashesTable,
+			Columns: sourcedata.HashesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(hashesentry.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := sdc.mutation.DocumentsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   sourcedata.DocumentsTable,
+			Columns: sourcedata.DocumentsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(document.FieldID, field.TypeUUID),
@@ -254,12 +269,11 @@ func (sdc *SourceDataCreate) createSpec() (*SourceData, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.DocumentID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := sdc.mutation.MetadataIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.O2M,
 			Inverse: true,
 			Table:   sourcedata.MetadataTable,
 			Columns: []string{sourcedata.MetadataColumn},
@@ -271,7 +285,6 @@ func (sdc *SourceDataCreate) createSpec() (*SourceData, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.MetadataID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
@@ -281,7 +294,7 @@ func (sdc *SourceDataCreate) createSpec() (*SourceData, *sqlgraph.CreateSpec) {
 // of the `INSERT` statement. For example:
 //
 //	client.SourceData.Create().
-//		SetDocumentID(v).
+//		SetProtoMessage(v).
 //		OnConflict(
 //			// Update the row with the new values
 //			// the was proposed for insertion.
@@ -290,7 +303,7 @@ func (sdc *SourceDataCreate) createSpec() (*SourceData, *sqlgraph.CreateSpec) {
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.SourceDataUpsert) {
-//			SetDocumentID(v+v).
+//			SetProtoMessage(v+v).
 //		}).
 //		Exec(ctx)
 func (sdc *SourceDataCreate) OnConflict(opts ...sql.ConflictOption) *SourceDataUpsertOne {
@@ -325,18 +338,6 @@ type (
 		*sql.UpdateSet
 	}
 )
-
-// SetMetadataID sets the "metadata_id" field.
-func (u *SourceDataUpsert) SetMetadataID(v uuid.UUID) *SourceDataUpsert {
-	u.Set(sourcedata.FieldMetadataID, v)
-	return u
-}
-
-// UpdateMetadataID sets the "metadata_id" field to the value that was provided on create.
-func (u *SourceDataUpsert) UpdateMetadataID() *SourceDataUpsert {
-	u.SetExcluded(sourcedata.FieldMetadataID)
-	return u
-}
 
 // SetFormat sets the "format" field.
 func (u *SourceDataUpsert) SetFormat(v string) *SourceDataUpsert {
@@ -386,24 +387,6 @@ func (u *SourceDataUpsert) ClearURI() *SourceDataUpsert {
 	return u
 }
 
-// SetHashes sets the "hashes" field.
-func (u *SourceDataUpsert) SetHashes(v map[int32]string) *SourceDataUpsert {
-	u.Set(sourcedata.FieldHashes, v)
-	return u
-}
-
-// UpdateHashes sets the "hashes" field to the value that was provided on create.
-func (u *SourceDataUpsert) UpdateHashes() *SourceDataUpsert {
-	u.SetExcluded(sourcedata.FieldHashes)
-	return u
-}
-
-// ClearHashes clears the value of the "hashes" field.
-func (u *SourceDataUpsert) ClearHashes() *SourceDataUpsert {
-	u.SetNull(sourcedata.FieldHashes)
-	return u
-}
-
 // UpdateNewValues updates the mutable fields using the new values that were set on create except the ID field.
 // Using this option is equivalent to using:
 //
@@ -420,9 +403,6 @@ func (u *SourceDataUpsertOne) UpdateNewValues() *SourceDataUpsertOne {
 	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
 		if _, exists := u.create.mutation.ID(); exists {
 			s.SetIgnore(sourcedata.FieldID)
-		}
-		if _, exists := u.create.mutation.DocumentID(); exists {
-			s.SetIgnore(sourcedata.FieldDocumentID)
 		}
 		if _, exists := u.create.mutation.ProtoMessage(); exists {
 			s.SetIgnore(sourcedata.FieldProtoMessage)
@@ -456,20 +436,6 @@ func (u *SourceDataUpsertOne) Update(set func(*SourceDataUpsert)) *SourceDataUps
 		set(&SourceDataUpsert{UpdateSet: update})
 	}))
 	return u
-}
-
-// SetMetadataID sets the "metadata_id" field.
-func (u *SourceDataUpsertOne) SetMetadataID(v uuid.UUID) *SourceDataUpsertOne {
-	return u.Update(func(s *SourceDataUpsert) {
-		s.SetMetadataID(v)
-	})
-}
-
-// UpdateMetadataID sets the "metadata_id" field to the value that was provided on create.
-func (u *SourceDataUpsertOne) UpdateMetadataID() *SourceDataUpsertOne {
-	return u.Update(func(s *SourceDataUpsert) {
-		s.UpdateMetadataID()
-	})
 }
 
 // SetFormat sets the "format" field.
@@ -525,27 +491,6 @@ func (u *SourceDataUpsertOne) UpdateURI() *SourceDataUpsertOne {
 func (u *SourceDataUpsertOne) ClearURI() *SourceDataUpsertOne {
 	return u.Update(func(s *SourceDataUpsert) {
 		s.ClearURI()
-	})
-}
-
-// SetHashes sets the "hashes" field.
-func (u *SourceDataUpsertOne) SetHashes(v map[int32]string) *SourceDataUpsertOne {
-	return u.Update(func(s *SourceDataUpsert) {
-		s.SetHashes(v)
-	})
-}
-
-// UpdateHashes sets the "hashes" field to the value that was provided on create.
-func (u *SourceDataUpsertOne) UpdateHashes() *SourceDataUpsertOne {
-	return u.Update(func(s *SourceDataUpsert) {
-		s.UpdateHashes()
-	})
-}
-
-// ClearHashes clears the value of the "hashes" field.
-func (u *SourceDataUpsertOne) ClearHashes() *SourceDataUpsertOne {
-	return u.Update(func(s *SourceDataUpsert) {
-		s.ClearHashes()
 	})
 }
 
@@ -685,7 +630,7 @@ func (sdcb *SourceDataCreateBulk) ExecX(ctx context.Context) {
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.SourceDataUpsert) {
-//			SetDocumentID(v+v).
+//			SetProtoMessage(v+v).
 //		}).
 //		Exec(ctx)
 func (sdcb *SourceDataCreateBulk) OnConflict(opts ...sql.ConflictOption) *SourceDataUpsertBulk {
@@ -732,9 +677,6 @@ func (u *SourceDataUpsertBulk) UpdateNewValues() *SourceDataUpsertBulk {
 			if _, exists := b.mutation.ID(); exists {
 				s.SetIgnore(sourcedata.FieldID)
 			}
-			if _, exists := b.mutation.DocumentID(); exists {
-				s.SetIgnore(sourcedata.FieldDocumentID)
-			}
 			if _, exists := b.mutation.ProtoMessage(); exists {
 				s.SetIgnore(sourcedata.FieldProtoMessage)
 			}
@@ -768,20 +710,6 @@ func (u *SourceDataUpsertBulk) Update(set func(*SourceDataUpsert)) *SourceDataUp
 		set(&SourceDataUpsert{UpdateSet: update})
 	}))
 	return u
-}
-
-// SetMetadataID sets the "metadata_id" field.
-func (u *SourceDataUpsertBulk) SetMetadataID(v uuid.UUID) *SourceDataUpsertBulk {
-	return u.Update(func(s *SourceDataUpsert) {
-		s.SetMetadataID(v)
-	})
-}
-
-// UpdateMetadataID sets the "metadata_id" field to the value that was provided on create.
-func (u *SourceDataUpsertBulk) UpdateMetadataID() *SourceDataUpsertBulk {
-	return u.Update(func(s *SourceDataUpsert) {
-		s.UpdateMetadataID()
-	})
 }
 
 // SetFormat sets the "format" field.
@@ -837,27 +765,6 @@ func (u *SourceDataUpsertBulk) UpdateURI() *SourceDataUpsertBulk {
 func (u *SourceDataUpsertBulk) ClearURI() *SourceDataUpsertBulk {
 	return u.Update(func(s *SourceDataUpsert) {
 		s.ClearURI()
-	})
-}
-
-// SetHashes sets the "hashes" field.
-func (u *SourceDataUpsertBulk) SetHashes(v map[int32]string) *SourceDataUpsertBulk {
-	return u.Update(func(s *SourceDataUpsert) {
-		s.SetHashes(v)
-	})
-}
-
-// UpdateHashes sets the "hashes" field to the value that was provided on create.
-func (u *SourceDataUpsertBulk) UpdateHashes() *SourceDataUpsertBulk {
-	return u.Update(func(s *SourceDataUpsert) {
-		s.UpdateHashes()
-	})
-}
-
-// ClearHashes clears the value of the "hashes" field.
-func (u *SourceDataUpsertBulk) ClearHashes() *SourceDataUpsertBulk {
-	return u.Update(func(s *SourceDataUpsert) {
-		s.ClearHashes()
 	})
 }
 

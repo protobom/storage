@@ -34,20 +34,6 @@ func (pu *PropertyUpdate) Where(ps ...predicate.Property) *PropertyUpdate {
 	return pu
 }
 
-// SetNodeID sets the "node_id" field.
-func (pu *PropertyUpdate) SetNodeID(u uuid.UUID) *PropertyUpdate {
-	pu.mutation.SetNodeID(u)
-	return pu
-}
-
-// SetNillableNodeID sets the "node_id" field if the given value is not nil.
-func (pu *PropertyUpdate) SetNillableNodeID(u *uuid.UUID) *PropertyUpdate {
-	if u != nil {
-		pu.SetNodeID(*u)
-	}
-	return pu
-}
-
 // SetName sets the "name" field.
 func (pu *PropertyUpdate) SetName(s string) *PropertyUpdate {
 	pu.mutation.SetName(s)
@@ -76,9 +62,19 @@ func (pu *PropertyUpdate) SetNillableData(s *string) *PropertyUpdate {
 	return pu
 }
 
-// SetNode sets the "node" edge to the Node entity.
-func (pu *PropertyUpdate) SetNode(n *Node) *PropertyUpdate {
-	return pu.SetNodeID(n.ID)
+// AddNodeIDs adds the "nodes" edge to the Node entity by IDs.
+func (pu *PropertyUpdate) AddNodeIDs(ids ...uuid.UUID) *PropertyUpdate {
+	pu.mutation.AddNodeIDs(ids...)
+	return pu
+}
+
+// AddNodes adds the "nodes" edges to the Node entity.
+func (pu *PropertyUpdate) AddNodes(n ...*Node) *PropertyUpdate {
+	ids := make([]uuid.UUID, len(n))
+	for i := range n {
+		ids[i] = n[i].ID
+	}
+	return pu.AddNodeIDs(ids...)
 }
 
 // Mutation returns the PropertyMutation object of the builder.
@@ -86,10 +82,25 @@ func (pu *PropertyUpdate) Mutation() *PropertyMutation {
 	return pu.mutation
 }
 
-// ClearNode clears the "node" edge to the Node entity.
-func (pu *PropertyUpdate) ClearNode() *PropertyUpdate {
-	pu.mutation.ClearNode()
+// ClearNodes clears all "nodes" edges to the Node entity.
+func (pu *PropertyUpdate) ClearNodes() *PropertyUpdate {
+	pu.mutation.ClearNodes()
 	return pu
+}
+
+// RemoveNodeIDs removes the "nodes" edge to Node entities by IDs.
+func (pu *PropertyUpdate) RemoveNodeIDs(ids ...uuid.UUID) *PropertyUpdate {
+	pu.mutation.RemoveNodeIDs(ids...)
+	return pu
+}
+
+// RemoveNodes removes "nodes" edges to Node entities.
+func (pu *PropertyUpdate) RemoveNodes(n ...*Node) *PropertyUpdate {
+	ids := make([]uuid.UUID, len(n))
+	for i := range n {
+		ids[i] = n[i].ID
+	}
+	return pu.RemoveNodeIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -119,18 +130,7 @@ func (pu *PropertyUpdate) ExecX(ctx context.Context) {
 	}
 }
 
-// check runs all checks and user-defined validators on the builder.
-func (pu *PropertyUpdate) check() error {
-	if pu.mutation.NodeCleared() && len(pu.mutation.NodeIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "Property.node"`)
-	}
-	return nil
-}
-
 func (pu *PropertyUpdate) sqlSave(ctx context.Context) (n int, err error) {
-	if err := pu.check(); err != nil {
-		return n, err
-	}
 	_spec := sqlgraph.NewUpdateSpec(property.Table, property.Columns, sqlgraph.NewFieldSpec(property.FieldID, field.TypeUUID))
 	if ps := pu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
@@ -145,12 +145,12 @@ func (pu *PropertyUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := pu.mutation.Data(); ok {
 		_spec.SetField(property.FieldData, field.TypeString, value)
 	}
-	if pu.mutation.NodeCleared() {
+	if pu.mutation.NodesCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.M2M,
 			Inverse: true,
-			Table:   property.NodeTable,
-			Columns: []string{property.NodeColumn},
+			Table:   property.NodesTable,
+			Columns: property.NodesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
@@ -158,12 +158,28 @@ func (pu *PropertyUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := pu.mutation.NodeIDs(); len(nodes) > 0 {
+	if nodes := pu.mutation.RemovedNodesIDs(); len(nodes) > 0 && !pu.mutation.NodesCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.M2M,
 			Inverse: true,
-			Table:   property.NodeTable,
-			Columns: []string{property.NodeColumn},
+			Table:   property.NodesTable,
+			Columns: property.NodesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := pu.mutation.NodesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   property.NodesTable,
+			Columns: property.NodesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
@@ -194,20 +210,6 @@ type PropertyUpdateOne struct {
 	mutation *PropertyMutation
 }
 
-// SetNodeID sets the "node_id" field.
-func (puo *PropertyUpdateOne) SetNodeID(u uuid.UUID) *PropertyUpdateOne {
-	puo.mutation.SetNodeID(u)
-	return puo
-}
-
-// SetNillableNodeID sets the "node_id" field if the given value is not nil.
-func (puo *PropertyUpdateOne) SetNillableNodeID(u *uuid.UUID) *PropertyUpdateOne {
-	if u != nil {
-		puo.SetNodeID(*u)
-	}
-	return puo
-}
-
 // SetName sets the "name" field.
 func (puo *PropertyUpdateOne) SetName(s string) *PropertyUpdateOne {
 	puo.mutation.SetName(s)
@@ -236,9 +238,19 @@ func (puo *PropertyUpdateOne) SetNillableData(s *string) *PropertyUpdateOne {
 	return puo
 }
 
-// SetNode sets the "node" edge to the Node entity.
-func (puo *PropertyUpdateOne) SetNode(n *Node) *PropertyUpdateOne {
-	return puo.SetNodeID(n.ID)
+// AddNodeIDs adds the "nodes" edge to the Node entity by IDs.
+func (puo *PropertyUpdateOne) AddNodeIDs(ids ...uuid.UUID) *PropertyUpdateOne {
+	puo.mutation.AddNodeIDs(ids...)
+	return puo
+}
+
+// AddNodes adds the "nodes" edges to the Node entity.
+func (puo *PropertyUpdateOne) AddNodes(n ...*Node) *PropertyUpdateOne {
+	ids := make([]uuid.UUID, len(n))
+	for i := range n {
+		ids[i] = n[i].ID
+	}
+	return puo.AddNodeIDs(ids...)
 }
 
 // Mutation returns the PropertyMutation object of the builder.
@@ -246,10 +258,25 @@ func (puo *PropertyUpdateOne) Mutation() *PropertyMutation {
 	return puo.mutation
 }
 
-// ClearNode clears the "node" edge to the Node entity.
-func (puo *PropertyUpdateOne) ClearNode() *PropertyUpdateOne {
-	puo.mutation.ClearNode()
+// ClearNodes clears all "nodes" edges to the Node entity.
+func (puo *PropertyUpdateOne) ClearNodes() *PropertyUpdateOne {
+	puo.mutation.ClearNodes()
 	return puo
+}
+
+// RemoveNodeIDs removes the "nodes" edge to Node entities by IDs.
+func (puo *PropertyUpdateOne) RemoveNodeIDs(ids ...uuid.UUID) *PropertyUpdateOne {
+	puo.mutation.RemoveNodeIDs(ids...)
+	return puo
+}
+
+// RemoveNodes removes "nodes" edges to Node entities.
+func (puo *PropertyUpdateOne) RemoveNodes(n ...*Node) *PropertyUpdateOne {
+	ids := make([]uuid.UUID, len(n))
+	for i := range n {
+		ids[i] = n[i].ID
+	}
+	return puo.RemoveNodeIDs(ids...)
 }
 
 // Where appends a list predicates to the PropertyUpdate builder.
@@ -292,18 +319,7 @@ func (puo *PropertyUpdateOne) ExecX(ctx context.Context) {
 	}
 }
 
-// check runs all checks and user-defined validators on the builder.
-func (puo *PropertyUpdateOne) check() error {
-	if puo.mutation.NodeCleared() && len(puo.mutation.NodeIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "Property.node"`)
-	}
-	return nil
-}
-
 func (puo *PropertyUpdateOne) sqlSave(ctx context.Context) (_node *Property, err error) {
-	if err := puo.check(); err != nil {
-		return _node, err
-	}
 	_spec := sqlgraph.NewUpdateSpec(property.Table, property.Columns, sqlgraph.NewFieldSpec(property.FieldID, field.TypeUUID))
 	id, ok := puo.mutation.ID()
 	if !ok {
@@ -335,12 +351,12 @@ func (puo *PropertyUpdateOne) sqlSave(ctx context.Context) (_node *Property, err
 	if value, ok := puo.mutation.Data(); ok {
 		_spec.SetField(property.FieldData, field.TypeString, value)
 	}
-	if puo.mutation.NodeCleared() {
+	if puo.mutation.NodesCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.M2M,
 			Inverse: true,
-			Table:   property.NodeTable,
-			Columns: []string{property.NodeColumn},
+			Table:   property.NodesTable,
+			Columns: property.NodesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
@@ -348,12 +364,28 @@ func (puo *PropertyUpdateOne) sqlSave(ctx context.Context) (_node *Property, err
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := puo.mutation.NodeIDs(); len(nodes) > 0 {
+	if nodes := puo.mutation.RemovedNodesIDs(); len(nodes) > 0 && !puo.mutation.NodesCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.M2M,
 			Inverse: true,
-			Table:   property.NodeTable,
-			Columns: []string{property.NodeColumn},
+			Table:   property.NodesTable,
+			Columns: property.NodesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := puo.mutation.NodesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   property.NodesTable,
+			Columns: property.NodesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),

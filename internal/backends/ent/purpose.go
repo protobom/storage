@@ -14,9 +14,6 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/google/uuid"
-	"github.com/protobom/storage/internal/backends/ent/document"
-	"github.com/protobom/storage/internal/backends/ent/node"
 	"github.com/protobom/storage/internal/backends/ent/purpose"
 )
 
@@ -25,10 +22,6 @@ type Purpose struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID int `json:"id,omitempty"`
-	// DocumentID holds the value of the "document_id" field.
-	DocumentID uuid.UUID `json:"-"`
-	// NodeID holds the value of the "node_id" field.
-	NodeID uuid.UUID `json:"-"`
 	// PrimaryPurpose holds the value of the "primary_purpose" field.
 	PrimaryPurpose purpose.PrimaryPurpose `json:"primary_purpose,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -39,35 +32,31 @@ type Purpose struct {
 
 // PurposeEdges holds the relations/edges for other nodes in the graph.
 type PurposeEdges struct {
-	// Document holds the value of the document edge.
-	Document *Document `json:"document,omitempty"`
-	// Node holds the value of the node edge.
-	Node *Node `json:"-"`
+	// Documents holds the value of the documents edge.
+	Documents []*Document `json:"-"`
+	// Nodes holds the value of the nodes edge.
+	Nodes []*Node `json:"-"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [2]bool
 }
 
-// DocumentOrErr returns the Document value or an error if the edge
-// was not loaded in eager-loading, or loaded but was not found.
-func (e PurposeEdges) DocumentOrErr() (*Document, error) {
-	if e.Document != nil {
-		return e.Document, nil
-	} else if e.loadedTypes[0] {
-		return nil, &NotFoundError{label: document.Label}
+// DocumentsOrErr returns the Documents value or an error if the edge
+// was not loaded in eager-loading.
+func (e PurposeEdges) DocumentsOrErr() ([]*Document, error) {
+	if e.loadedTypes[0] {
+		return e.Documents, nil
 	}
-	return nil, &NotLoadedError{edge: "document"}
+	return nil, &NotLoadedError{edge: "documents"}
 }
 
-// NodeOrErr returns the Node value or an error if the edge
-// was not loaded in eager-loading, or loaded but was not found.
-func (e PurposeEdges) NodeOrErr() (*Node, error) {
-	if e.Node != nil {
-		return e.Node, nil
-	} else if e.loadedTypes[1] {
-		return nil, &NotFoundError{label: node.Label}
+// NodesOrErr returns the Nodes value or an error if the edge
+// was not loaded in eager-loading.
+func (e PurposeEdges) NodesOrErr() ([]*Node, error) {
+	if e.loadedTypes[1] {
+		return e.Nodes, nil
 	}
-	return nil, &NotLoadedError{edge: "node"}
+	return nil, &NotLoadedError{edge: "nodes"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -79,8 +68,6 @@ func (*Purpose) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullInt64)
 		case purpose.FieldPrimaryPurpose:
 			values[i] = new(sql.NullString)
-		case purpose.FieldDocumentID, purpose.FieldNodeID:
-			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -102,18 +89,6 @@ func (pu *Purpose) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", value)
 			}
 			pu.ID = int(value.Int64)
-		case purpose.FieldDocumentID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
-				return fmt.Errorf("unexpected type %T for field document_id", values[i])
-			} else if value != nil {
-				pu.DocumentID = *value
-			}
-		case purpose.FieldNodeID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
-				return fmt.Errorf("unexpected type %T for field node_id", values[i])
-			} else if value != nil {
-				pu.NodeID = *value
-			}
 		case purpose.FieldPrimaryPurpose:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field primary_purpose", values[i])
@@ -133,14 +108,14 @@ func (pu *Purpose) Value(name string) (ent.Value, error) {
 	return pu.selectValues.Get(name)
 }
 
-// QueryDocument queries the "document" edge of the Purpose entity.
-func (pu *Purpose) QueryDocument() *DocumentQuery {
-	return NewPurposeClient(pu.config).QueryDocument(pu)
+// QueryDocuments queries the "documents" edge of the Purpose entity.
+func (pu *Purpose) QueryDocuments() *DocumentQuery {
+	return NewPurposeClient(pu.config).QueryDocuments(pu)
 }
 
-// QueryNode queries the "node" edge of the Purpose entity.
-func (pu *Purpose) QueryNode() *NodeQuery {
-	return NewPurposeClient(pu.config).QueryNode(pu)
+// QueryNodes queries the "nodes" edge of the Purpose entity.
+func (pu *Purpose) QueryNodes() *NodeQuery {
+	return NewPurposeClient(pu.config).QueryNodes(pu)
 }
 
 // Update returns a builder for updating this Purpose.
@@ -166,12 +141,6 @@ func (pu *Purpose) String() string {
 	var builder strings.Builder
 	builder.WriteString("Purpose(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", pu.ID))
-	builder.WriteString("document_id=")
-	builder.WriteString(fmt.Sprintf("%v", pu.DocumentID))
-	builder.WriteString(", ")
-	builder.WriteString("node_id=")
-	builder.WriteString(fmt.Sprintf("%v", pu.NodeID))
-	builder.WriteString(", ")
 	builder.WriteString("primary_purpose=")
 	builder.WriteString(fmt.Sprintf("%v", pu.PrimaryPurpose))
 	builder.WriteByte(')')

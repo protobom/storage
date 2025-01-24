@@ -59,44 +59,9 @@ func IDLTE(id uuid.UUID) predicate.IdentifiersEntry {
 	return predicate.IdentifiersEntry(sql.FieldLTE(FieldID, id))
 }
 
-// DocumentID applies equality check predicate on the "document_id" field. It's identical to DocumentIDEQ.
-func DocumentID(v uuid.UUID) predicate.IdentifiersEntry {
-	return predicate.IdentifiersEntry(sql.FieldEQ(FieldDocumentID, v))
-}
-
 // Value applies equality check predicate on the "value" field. It's identical to ValueEQ.
 func Value(v string) predicate.IdentifiersEntry {
 	return predicate.IdentifiersEntry(sql.FieldEQ(FieldValue, v))
-}
-
-// DocumentIDEQ applies the EQ predicate on the "document_id" field.
-func DocumentIDEQ(v uuid.UUID) predicate.IdentifiersEntry {
-	return predicate.IdentifiersEntry(sql.FieldEQ(FieldDocumentID, v))
-}
-
-// DocumentIDNEQ applies the NEQ predicate on the "document_id" field.
-func DocumentIDNEQ(v uuid.UUID) predicate.IdentifiersEntry {
-	return predicate.IdentifiersEntry(sql.FieldNEQ(FieldDocumentID, v))
-}
-
-// DocumentIDIn applies the In predicate on the "document_id" field.
-func DocumentIDIn(vs ...uuid.UUID) predicate.IdentifiersEntry {
-	return predicate.IdentifiersEntry(sql.FieldIn(FieldDocumentID, vs...))
-}
-
-// DocumentIDNotIn applies the NotIn predicate on the "document_id" field.
-func DocumentIDNotIn(vs ...uuid.UUID) predicate.IdentifiersEntry {
-	return predicate.IdentifiersEntry(sql.FieldNotIn(FieldDocumentID, vs...))
-}
-
-// DocumentIDIsNil applies the IsNil predicate on the "document_id" field.
-func DocumentIDIsNil() predicate.IdentifiersEntry {
-	return predicate.IdentifiersEntry(sql.FieldIsNull(FieldDocumentID))
-}
-
-// DocumentIDNotNil applies the NotNil predicate on the "document_id" field.
-func DocumentIDNotNil() predicate.IdentifiersEntry {
-	return predicate.IdentifiersEntry(sql.FieldNotNull(FieldDocumentID))
 }
 
 // TypeEQ applies the EQ predicate on the "type" field.
@@ -184,21 +149,21 @@ func ValueContainsFold(v string) predicate.IdentifiersEntry {
 	return predicate.IdentifiersEntry(sql.FieldContainsFold(FieldValue, v))
 }
 
-// HasDocument applies the HasEdge predicate on the "document" edge.
-func HasDocument() predicate.IdentifiersEntry {
+// HasDocuments applies the HasEdge predicate on the "documents" edge.
+func HasDocuments() predicate.IdentifiersEntry {
 	return predicate.IdentifiersEntry(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, DocumentTable, DocumentColumn),
+			sqlgraph.Edge(sqlgraph.M2M, true, DocumentsTable, DocumentsPrimaryKey...),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
 }
 
-// HasDocumentWith applies the HasEdge predicate on the "document" edge with a given conditions (other predicates).
-func HasDocumentWith(preds ...predicate.Document) predicate.IdentifiersEntry {
+// HasDocumentsWith applies the HasEdge predicate on the "documents" edge with a given conditions (other predicates).
+func HasDocumentsWith(preds ...predicate.Document) predicate.IdentifiersEntry {
 	return predicate.IdentifiersEntry(func(s *sql.Selector) {
-		step := newDocumentStep()
+		step := newDocumentsStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

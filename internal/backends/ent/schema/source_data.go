@@ -8,11 +8,13 @@ package schema
 
 import (
 	"entgo.io/ent"
+	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
-	"github.com/google/uuid"
 	"github.com/protobom/protobom/pkg/sbom"
+
+	"github.com/protobom/storage/internal/backends/ent/schema/mixin"
 )
 
 type SourceData struct {
@@ -21,28 +23,30 @@ type SourceData struct {
 
 func (SourceData) Mixin() []ent.Mixin {
 	return []ent.Mixin{
-		DocumentMixin{},
-		ProtoMessageMixin[*sbom.SourceData]{},
+		mixin.ProtoMessage[*sbom.SourceData]{},
 	}
 }
 
 func (SourceData) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("metadata_id", uuid.UUID{}),
 		field.String("format"),
 		field.Int64("size"),
 		field.String("uri").Nillable().Optional(),
-		field.JSON("hashes", map[int32]string{}).Optional(),
 	}
 }
 
 func (SourceData) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("metadata", Metadata.Type).
+		edge.To("hashes", HashesEntry.Type).
+			StorageKey(edge.Table("source_data_hashes"), edge.Columns("source_data_id", "hash_entry_id")).
+			Annotations(entsql.OnDelete(entsql.Cascade)),
+		edge.From("documents", Document.Type).
 			Ref("source_data").
 			Required().
-			Unique().
-			Field("metadata_id"),
+			Immutable(),
+		edge.From("metadata", Metadata.Type).
+			Ref("source_data").
+			Required(),
 	}
 }
 

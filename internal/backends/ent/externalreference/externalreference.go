@@ -21,8 +21,6 @@ const (
 	Label = "external_reference"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
-	// FieldDocumentID holds the string denoting the document_id field in the database.
-	FieldDocumentID = "document_id"
 	// FieldProtoMessage holds the string denoting the proto_message field in the database.
 	FieldProtoMessage = "proto_message"
 	// FieldURL holds the string denoting the url field in the database.
@@ -33,26 +31,24 @@ const (
 	FieldAuthority = "authority"
 	// FieldType holds the string denoting the type field in the database.
 	FieldType = "type"
-	// EdgeDocument holds the string denoting the document edge name in mutations.
-	EdgeDocument = "document"
 	// EdgeHashes holds the string denoting the hashes edge name in mutations.
 	EdgeHashes = "hashes"
+	// EdgeDocuments holds the string denoting the documents edge name in mutations.
+	EdgeDocuments = "documents"
 	// EdgeNodes holds the string denoting the nodes edge name in mutations.
 	EdgeNodes = "nodes"
 	// Table holds the table name of the externalreference in the database.
 	Table = "external_references"
-	// DocumentTable is the table that holds the document relation/edge.
-	DocumentTable = "external_references"
-	// DocumentInverseTable is the table name for the Document entity.
-	// It exists in this package in order to avoid circular dependency with the "document" package.
-	DocumentInverseTable = "documents"
-	// DocumentColumn is the table column denoting the document relation/edge.
-	DocumentColumn = "document_id"
 	// HashesTable is the table that holds the hashes relation/edge. The primary key declared below.
 	HashesTable = "ext_ref_hashes"
 	// HashesInverseTable is the table name for the HashesEntry entity.
 	// It exists in this package in order to avoid circular dependency with the "hashesentry" package.
 	HashesInverseTable = "hashes_entries"
+	// DocumentsTable is the table that holds the documents relation/edge. The primary key declared below.
+	DocumentsTable = "document_external_references"
+	// DocumentsInverseTable is the table name for the Document entity.
+	// It exists in this package in order to avoid circular dependency with the "document" package.
+	DocumentsInverseTable = "documents"
 	// NodesTable is the table that holds the nodes relation/edge. The primary key declared below.
 	NodesTable = "node_external_references"
 	// NodesInverseTable is the table name for the Node entity.
@@ -63,7 +59,6 @@ const (
 // Columns holds all SQL columns for externalreference fields.
 var Columns = []string{
 	FieldID,
-	FieldDocumentID,
 	FieldProtoMessage,
 	FieldURL,
 	FieldComment,
@@ -75,6 +70,9 @@ var (
 	// HashesPrimaryKey and HashesColumn2 are the table columns denoting the
 	// primary key for the hashes relation (M2M).
 	HashesPrimaryKey = []string{"ext_ref_id", "hash_entry_id"}
+	// DocumentsPrimaryKey and DocumentsColumn2 are the table columns denoting the
+	// primary key for the documents relation (M2M).
+	DocumentsPrimaryKey = []string{"document_id", "external_reference_id"}
 	// NodesPrimaryKey and NodesColumn2 are the table columns denoting the
 	// primary key for the nodes relation (M2M).
 	NodesPrimaryKey = []string{"node_id", "external_reference_id"}
@@ -97,8 +95,6 @@ func ValidColumn(column string) bool {
 //	import _ "github.com/protobom/storage/internal/backends/ent/runtime"
 var (
 	Hooks [1]ent.Hook
-	// DefaultDocumentID holds the default value on creation for the "document_id" field.
-	DefaultDocumentID func() uuid.UUID
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() uuid.UUID
 )
@@ -193,11 +189,6 @@ func ByID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldID, opts...).ToFunc()
 }
 
-// ByDocumentID orders the results by the document_id field.
-func ByDocumentID(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldDocumentID, opts...).ToFunc()
-}
-
 // ByURL orders the results by the url field.
 func ByURL(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldURL, opts...).ToFunc()
@@ -218,13 +209,6 @@ func ByType(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldType, opts...).ToFunc()
 }
 
-// ByDocumentField orders the results by document field.
-func ByDocumentField(field string, opts ...sql.OrderTermOption) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newDocumentStep(), sql.OrderByField(field, opts...))
-	}
-}
-
 // ByHashesCount orders the results by hashes count.
 func ByHashesCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -236,6 +220,20 @@ func ByHashesCount(opts ...sql.OrderTermOption) OrderOption {
 func ByHashes(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	return func(s *sql.Selector) {
 		sqlgraph.OrderByNeighborTerms(s, newHashesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByDocumentsCount orders the results by documents count.
+func ByDocumentsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newDocumentsStep(), opts...)
+	}
+}
+
+// ByDocuments orders the results by documents terms.
+func ByDocuments(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newDocumentsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
 
@@ -252,18 +250,18 @@ func ByNodes(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newNodesStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
-func newDocumentStep() *sqlgraph.Step {
-	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(DocumentInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.M2O, false, DocumentTable, DocumentColumn),
-	)
-}
 func newHashesStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(HashesInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.M2M, false, HashesTable, HashesPrimaryKey...),
+	)
+}
+func newDocumentsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(DocumentsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2M, true, DocumentsTable, DocumentsPrimaryKey...),
 	)
 }
 func newNodesStep() *sqlgraph.Step {

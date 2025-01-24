@@ -9,6 +9,7 @@ package ent
 
 import (
 	"context"
+	"database/sql/driver"
 	"fmt"
 	"math"
 
@@ -18,6 +19,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
 	"github.com/protobom/storage/internal/backends/ent/document"
+	"github.com/protobom/storage/internal/backends/ent/hashesentry"
 	"github.com/protobom/storage/internal/backends/ent/metadata"
 	"github.com/protobom/storage/internal/backends/ent/predicate"
 	"github.com/protobom/storage/internal/backends/ent/sourcedata"
@@ -26,12 +28,13 @@ import (
 // SourceDataQuery is the builder for querying SourceData entities.
 type SourceDataQuery struct {
 	config
-	ctx          *QueryContext
-	order        []sourcedata.OrderOption
-	inters       []Interceptor
-	predicates   []predicate.SourceData
-	withDocument *DocumentQuery
-	withMetadata *MetadataQuery
+	ctx           *QueryContext
+	order         []sourcedata.OrderOption
+	inters        []Interceptor
+	predicates    []predicate.SourceData
+	withHashes    *HashesEntryQuery
+	withDocuments *DocumentQuery
+	withMetadata  *MetadataQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -68,8 +71,30 @@ func (sdq *SourceDataQuery) Order(o ...sourcedata.OrderOption) *SourceDataQuery 
 	return sdq
 }
 
-// QueryDocument chains the current query on the "document" edge.
-func (sdq *SourceDataQuery) QueryDocument() *DocumentQuery {
+// QueryHashes chains the current query on the "hashes" edge.
+func (sdq *SourceDataQuery) QueryHashes() *HashesEntryQuery {
+	query := (&HashesEntryClient{config: sdq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := sdq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := sdq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(sourcedata.Table, sourcedata.FieldID, selector),
+			sqlgraph.To(hashesentry.Table, hashesentry.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, sourcedata.HashesTable, sourcedata.HashesPrimaryKey...),
+		)
+		fromU = sqlgraph.SetNeighbors(sdq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryDocuments chains the current query on the "documents" edge.
+func (sdq *SourceDataQuery) QueryDocuments() *DocumentQuery {
 	query := (&DocumentClient{config: sdq.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := sdq.prepareQuery(ctx); err != nil {
@@ -82,7 +107,7 @@ func (sdq *SourceDataQuery) QueryDocument() *DocumentQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(sourcedata.Table, sourcedata.FieldID, selector),
 			sqlgraph.To(document.Table, document.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, sourcedata.DocumentTable, sourcedata.DocumentColumn),
+			sqlgraph.Edge(sqlgraph.M2M, true, sourcedata.DocumentsTable, sourcedata.DocumentsPrimaryKey...),
 		)
 		fromU = sqlgraph.SetNeighbors(sdq.driver.Dialect(), step)
 		return fromU, nil
@@ -104,7 +129,7 @@ func (sdq *SourceDataQuery) QueryMetadata() *MetadataQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(sourcedata.Table, sourcedata.FieldID, selector),
 			sqlgraph.To(metadata.Table, metadata.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, sourcedata.MetadataTable, sourcedata.MetadataColumn),
+			sqlgraph.Edge(sqlgraph.O2M, true, sourcedata.MetadataTable, sourcedata.MetadataColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(sdq.driver.Dialect(), step)
 		return fromU, nil
@@ -299,27 +324,39 @@ func (sdq *SourceDataQuery) Clone() *SourceDataQuery {
 		return nil
 	}
 	return &SourceDataQuery{
-		config:       sdq.config,
-		ctx:          sdq.ctx.Clone(),
-		order:        append([]sourcedata.OrderOption{}, sdq.order...),
-		inters:       append([]Interceptor{}, sdq.inters...),
-		predicates:   append([]predicate.SourceData{}, sdq.predicates...),
-		withDocument: sdq.withDocument.Clone(),
-		withMetadata: sdq.withMetadata.Clone(),
+		config:        sdq.config,
+		ctx:           sdq.ctx.Clone(),
+		order:         append([]sourcedata.OrderOption{}, sdq.order...),
+		inters:        append([]Interceptor{}, sdq.inters...),
+		predicates:    append([]predicate.SourceData{}, sdq.predicates...),
+		withHashes:    sdq.withHashes.Clone(),
+		withDocuments: sdq.withDocuments.Clone(),
+		withMetadata:  sdq.withMetadata.Clone(),
 		// clone intermediate query.
 		sql:  sdq.sql.Clone(),
 		path: sdq.path,
 	}
 }
 
-// WithDocument tells the query-builder to eager-load the nodes that are connected to
-// the "document" edge. The optional arguments are used to configure the query builder of the edge.
-func (sdq *SourceDataQuery) WithDocument(opts ...func(*DocumentQuery)) *SourceDataQuery {
+// WithHashes tells the query-builder to eager-load the nodes that are connected to
+// the "hashes" edge. The optional arguments are used to configure the query builder of the edge.
+func (sdq *SourceDataQuery) WithHashes(opts ...func(*HashesEntryQuery)) *SourceDataQuery {
+	query := (&HashesEntryClient{config: sdq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	sdq.withHashes = query
+	return sdq
+}
+
+// WithDocuments tells the query-builder to eager-load the nodes that are connected to
+// the "documents" edge. The optional arguments are used to configure the query builder of the edge.
+func (sdq *SourceDataQuery) WithDocuments(opts ...func(*DocumentQuery)) *SourceDataQuery {
 	query := (&DocumentClient{config: sdq.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	sdq.withDocument = query
+	sdq.withDocuments = query
 	return sdq
 }
 
@@ -340,12 +377,12 @@ func (sdq *SourceDataQuery) WithMetadata(opts ...func(*MetadataQuery)) *SourceDa
 // Example:
 //
 //	var v []struct {
-//		DocumentID uuid.UUID `json:"-"`
+//		ProtoMessage *sbom.SourceData `json:"-"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.SourceData.Query().
-//		GroupBy(sourcedata.FieldDocumentID).
+//		GroupBy(sourcedata.FieldProtoMessage).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (sdq *SourceDataQuery) GroupBy(field string, fields ...string) *SourceDataGroupBy {
@@ -363,11 +400,11 @@ func (sdq *SourceDataQuery) GroupBy(field string, fields ...string) *SourceDataG
 // Example:
 //
 //	var v []struct {
-//		DocumentID uuid.UUID `json:"-"`
+//		ProtoMessage *sbom.SourceData `json:"-"`
 //	}
 //
 //	client.SourceData.Query().
-//		Select(sourcedata.FieldDocumentID).
+//		Select(sourcedata.FieldProtoMessage).
 //		Scan(ctx, &v)
 func (sdq *SourceDataQuery) Select(fields ...string) *SourceDataSelect {
 	sdq.ctx.Fields = append(sdq.ctx.Fields, fields...)
@@ -412,8 +449,9 @@ func (sdq *SourceDataQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*
 	var (
 		nodes       = []*SourceData{}
 		_spec       = sdq.querySpec()
-		loadedTypes = [2]bool{
-			sdq.withDocument != nil,
+		loadedTypes = [3]bool{
+			sdq.withHashes != nil,
+			sdq.withDocuments != nil,
 			sdq.withMetadata != nil,
 		}
 	)
@@ -435,76 +473,179 @@ func (sdq *SourceDataQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
-	if query := sdq.withDocument; query != nil {
-		if err := sdq.loadDocument(ctx, query, nodes, nil,
-			func(n *SourceData, e *Document) { n.Edges.Document = e }); err != nil {
+	if query := sdq.withHashes; query != nil {
+		if err := sdq.loadHashes(ctx, query, nodes,
+			func(n *SourceData) { n.Edges.Hashes = []*HashesEntry{} },
+			func(n *SourceData, e *HashesEntry) { n.Edges.Hashes = append(n.Edges.Hashes, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := sdq.withDocuments; query != nil {
+		if err := sdq.loadDocuments(ctx, query, nodes,
+			func(n *SourceData) { n.Edges.Documents = []*Document{} },
+			func(n *SourceData, e *Document) { n.Edges.Documents = append(n.Edges.Documents, e) }); err != nil {
 			return nil, err
 		}
 	}
 	if query := sdq.withMetadata; query != nil {
-		if err := sdq.loadMetadata(ctx, query, nodes, nil,
-			func(n *SourceData, e *Metadata) { n.Edges.Metadata = e }); err != nil {
+		if err := sdq.loadMetadata(ctx, query, nodes,
+			func(n *SourceData) { n.Edges.Metadata = []*Metadata{} },
+			func(n *SourceData, e *Metadata) { n.Edges.Metadata = append(n.Edges.Metadata, e) }); err != nil {
 			return nil, err
 		}
 	}
 	return nodes, nil
 }
 
-func (sdq *SourceDataQuery) loadDocument(ctx context.Context, query *DocumentQuery, nodes []*SourceData, init func(*SourceData), assign func(*SourceData, *Document)) error {
-	ids := make([]uuid.UUID, 0, len(nodes))
-	nodeids := make(map[uuid.UUID][]*SourceData)
-	for i := range nodes {
-		fk := nodes[i].DocumentID
-		if _, ok := nodeids[fk]; !ok {
-			ids = append(ids, fk)
+func (sdq *SourceDataQuery) loadHashes(ctx context.Context, query *HashesEntryQuery, nodes []*SourceData, init func(*SourceData), assign func(*SourceData, *HashesEntry)) error {
+	edgeIDs := make([]driver.Value, len(nodes))
+	byID := make(map[uuid.UUID]*SourceData)
+	nids := make(map[uuid.UUID]map[*SourceData]struct{})
+	for i, node := range nodes {
+		edgeIDs[i] = node.ID
+		byID[node.ID] = node
+		if init != nil {
+			init(node)
 		}
-		nodeids[fk] = append(nodeids[fk], nodes[i])
 	}
-	if len(ids) == 0 {
-		return nil
+	query.Where(func(s *sql.Selector) {
+		joinT := sql.Table(sourcedata.HashesTable)
+		s.Join(joinT).On(s.C(hashesentry.FieldID), joinT.C(sourcedata.HashesPrimaryKey[1]))
+		s.Where(sql.InValues(joinT.C(sourcedata.HashesPrimaryKey[0]), edgeIDs...))
+		columns := s.SelectedColumns()
+		s.Select(joinT.C(sourcedata.HashesPrimaryKey[0]))
+		s.AppendSelect(columns...)
+		s.SetDistinct(false)
+	})
+	if err := query.prepareQuery(ctx); err != nil {
+		return err
 	}
-	query.Where(document.IDIn(ids...))
-	neighbors, err := query.All(ctx)
+	qr := QuerierFunc(func(ctx context.Context, q Query) (Value, error) {
+		return query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
+			assign := spec.Assign
+			values := spec.ScanValues
+			spec.ScanValues = func(columns []string) ([]any, error) {
+				values, err := values(columns[1:])
+				if err != nil {
+					return nil, err
+				}
+				return append([]any{new(uuid.UUID)}, values...), nil
+			}
+			spec.Assign = func(columns []string, values []any) error {
+				outValue := *values[0].(*uuid.UUID)
+				inValue := *values[1].(*uuid.UUID)
+				if nids[inValue] == nil {
+					nids[inValue] = map[*SourceData]struct{}{byID[outValue]: {}}
+					return assign(columns[1:], values[1:])
+				}
+				nids[inValue][byID[outValue]] = struct{}{}
+				return nil
+			}
+		})
+	})
+	neighbors, err := withInterceptors[[]*HashesEntry](ctx, query, qr, query.inters)
 	if err != nil {
 		return err
 	}
 	for _, n := range neighbors {
-		nodes, ok := nodeids[n.ID]
+		nodes, ok := nids[n.ID]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "document_id" returned %v`, n.ID)
+			return fmt.Errorf(`unexpected "hashes" node returned %v`, n.ID)
 		}
-		for i := range nodes {
-			assign(nodes[i], n)
+		for kn := range nodes {
+			assign(kn, n)
+		}
+	}
+	return nil
+}
+func (sdq *SourceDataQuery) loadDocuments(ctx context.Context, query *DocumentQuery, nodes []*SourceData, init func(*SourceData), assign func(*SourceData, *Document)) error {
+	edgeIDs := make([]driver.Value, len(nodes))
+	byID := make(map[uuid.UUID]*SourceData)
+	nids := make(map[uuid.UUID]map[*SourceData]struct{})
+	for i, node := range nodes {
+		edgeIDs[i] = node.ID
+		byID[node.ID] = node
+		if init != nil {
+			init(node)
+		}
+	}
+	query.Where(func(s *sql.Selector) {
+		joinT := sql.Table(sourcedata.DocumentsTable)
+		s.Join(joinT).On(s.C(document.FieldID), joinT.C(sourcedata.DocumentsPrimaryKey[0]))
+		s.Where(sql.InValues(joinT.C(sourcedata.DocumentsPrimaryKey[1]), edgeIDs...))
+		columns := s.SelectedColumns()
+		s.Select(joinT.C(sourcedata.DocumentsPrimaryKey[1]))
+		s.AppendSelect(columns...)
+		s.SetDistinct(false)
+	})
+	if err := query.prepareQuery(ctx); err != nil {
+		return err
+	}
+	qr := QuerierFunc(func(ctx context.Context, q Query) (Value, error) {
+		return query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
+			assign := spec.Assign
+			values := spec.ScanValues
+			spec.ScanValues = func(columns []string) ([]any, error) {
+				values, err := values(columns[1:])
+				if err != nil {
+					return nil, err
+				}
+				return append([]any{new(uuid.UUID)}, values...), nil
+			}
+			spec.Assign = func(columns []string, values []any) error {
+				outValue := *values[0].(*uuid.UUID)
+				inValue := *values[1].(*uuid.UUID)
+				if nids[inValue] == nil {
+					nids[inValue] = map[*SourceData]struct{}{byID[outValue]: {}}
+					return assign(columns[1:], values[1:])
+				}
+				nids[inValue][byID[outValue]] = struct{}{}
+				return nil
+			}
+		})
+	})
+	neighbors, err := withInterceptors[[]*Document](ctx, query, qr, query.inters)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected "documents" node returned %v`, n.ID)
+		}
+		for kn := range nodes {
+			assign(kn, n)
 		}
 	}
 	return nil
 }
 func (sdq *SourceDataQuery) loadMetadata(ctx context.Context, query *MetadataQuery, nodes []*SourceData, init func(*SourceData), assign func(*SourceData, *Metadata)) error {
-	ids := make([]uuid.UUID, 0, len(nodes))
-	nodeids := make(map[uuid.UUID][]*SourceData)
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*SourceData)
 	for i := range nodes {
-		fk := nodes[i].MetadataID
-		if _, ok := nodeids[fk]; !ok {
-			ids = append(ids, fk)
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
 		}
-		nodeids[fk] = append(nodeids[fk], nodes[i])
 	}
-	if len(ids) == 0 {
-		return nil
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(metadata.FieldSourceDataID)
 	}
-	query.Where(metadata.IDIn(ids...))
+	query.Where(predicate.Metadata(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(sourcedata.MetadataColumn), fks...))
+	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {
 		return err
 	}
 	for _, n := range neighbors {
-		nodes, ok := nodeids[n.ID]
+		fk := n.SourceDataID
+		node, ok := nodeids[fk]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "metadata_id" returned %v`, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "source_data_id" returned %v for node %v`, fk, n.ID)
 		}
-		for i := range nodes {
-			assign(nodes[i], n)
-		}
+		assign(node, n)
 	}
 	return nil
 }
@@ -533,12 +674,6 @@ func (sdq *SourceDataQuery) querySpec() *sqlgraph.QuerySpec {
 			if fields[i] != sourcedata.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
-		}
-		if sdq.withDocument != nil {
-			_spec.Node.AddColumnOnce(sourcedata.FieldDocumentID)
-		}
-		if sdq.withMetadata != nil {
-			_spec.Node.AddColumnOnce(sourcedata.FieldMetadataID)
 		}
 	}
 	if ps := sdq.predicates; len(ps) > 0 {

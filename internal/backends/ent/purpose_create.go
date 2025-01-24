@@ -29,40 +29,40 @@ type PurposeCreate struct {
 	conflict []sql.ConflictOption
 }
 
-// SetDocumentID sets the "document_id" field.
-func (pc *PurposeCreate) SetDocumentID(u uuid.UUID) *PurposeCreate {
-	pc.mutation.SetDocumentID(u)
-	return pc
-}
-
-// SetNillableDocumentID sets the "document_id" field if the given value is not nil.
-func (pc *PurposeCreate) SetNillableDocumentID(u *uuid.UUID) *PurposeCreate {
-	if u != nil {
-		pc.SetDocumentID(*u)
-	}
-	return pc
-}
-
-// SetNodeID sets the "node_id" field.
-func (pc *PurposeCreate) SetNodeID(u uuid.UUID) *PurposeCreate {
-	pc.mutation.SetNodeID(u)
-	return pc
-}
-
 // SetPrimaryPurpose sets the "primary_purpose" field.
 func (pc *PurposeCreate) SetPrimaryPurpose(pp purpose.PrimaryPurpose) *PurposeCreate {
 	pc.mutation.SetPrimaryPurpose(pp)
 	return pc
 }
 
-// SetDocument sets the "document" edge to the Document entity.
-func (pc *PurposeCreate) SetDocument(d *Document) *PurposeCreate {
-	return pc.SetDocumentID(d.ID)
+// AddDocumentIDs adds the "documents" edge to the Document entity by IDs.
+func (pc *PurposeCreate) AddDocumentIDs(ids ...uuid.UUID) *PurposeCreate {
+	pc.mutation.AddDocumentIDs(ids...)
+	return pc
 }
 
-// SetNode sets the "node" edge to the Node entity.
-func (pc *PurposeCreate) SetNode(n *Node) *PurposeCreate {
-	return pc.SetNodeID(n.ID)
+// AddDocuments adds the "documents" edges to the Document entity.
+func (pc *PurposeCreate) AddDocuments(d ...*Document) *PurposeCreate {
+	ids := make([]uuid.UUID, len(d))
+	for i := range d {
+		ids[i] = d[i].ID
+	}
+	return pc.AddDocumentIDs(ids...)
+}
+
+// AddNodeIDs adds the "nodes" edge to the Node entity by IDs.
+func (pc *PurposeCreate) AddNodeIDs(ids ...uuid.UUID) *PurposeCreate {
+	pc.mutation.AddNodeIDs(ids...)
+	return pc
+}
+
+// AddNodes adds the "nodes" edges to the Node entity.
+func (pc *PurposeCreate) AddNodes(n ...*Node) *PurposeCreate {
+	ids := make([]uuid.UUID, len(n))
+	for i := range n {
+		ids[i] = n[i].ID
+	}
+	return pc.AddNodeIDs(ids...)
 }
 
 // Mutation returns the PurposeMutation object of the builder.
@@ -72,7 +72,6 @@ func (pc *PurposeCreate) Mutation() *PurposeMutation {
 
 // Save creates the Purpose in the database.
 func (pc *PurposeCreate) Save(ctx context.Context) (*Purpose, error) {
-	pc.defaults()
 	return withHooks(ctx, pc.sqlSave, pc.mutation, pc.hooks)
 }
 
@@ -98,19 +97,8 @@ func (pc *PurposeCreate) ExecX(ctx context.Context) {
 	}
 }
 
-// defaults sets the default values of the builder before save.
-func (pc *PurposeCreate) defaults() {
-	if _, ok := pc.mutation.DocumentID(); !ok {
-		v := purpose.DefaultDocumentID()
-		pc.mutation.SetDocumentID(v)
-	}
-}
-
 // check runs all checks and user-defined validators on the builder.
 func (pc *PurposeCreate) check() error {
-	if _, ok := pc.mutation.NodeID(); !ok {
-		return &ValidationError{Name: "node_id", err: errors.New(`ent: missing required field "Purpose.node_id"`)}
-	}
 	if _, ok := pc.mutation.PrimaryPurpose(); !ok {
 		return &ValidationError{Name: "primary_purpose", err: errors.New(`ent: missing required field "Purpose.primary_purpose"`)}
 	}
@@ -119,8 +107,11 @@ func (pc *PurposeCreate) check() error {
 			return &ValidationError{Name: "primary_purpose", err: fmt.Errorf(`ent: validator failed for field "Purpose.primary_purpose": %w`, err)}
 		}
 	}
-	if len(pc.mutation.NodeIDs()) == 0 {
-		return &ValidationError{Name: "node", err: errors.New(`ent: missing required edge "Purpose.node"`)}
+	if len(pc.mutation.DocumentsIDs()) == 0 {
+		return &ValidationError{Name: "documents", err: errors.New(`ent: missing required edge "Purpose.documents"`)}
+	}
+	if len(pc.mutation.NodesIDs()) == 0 {
+		return &ValidationError{Name: "nodes", err: errors.New(`ent: missing required edge "Purpose.nodes"`)}
 	}
 	return nil
 }
@@ -153,12 +144,12 @@ func (pc *PurposeCreate) createSpec() (*Purpose, *sqlgraph.CreateSpec) {
 		_spec.SetField(purpose.FieldPrimaryPurpose, field.TypeEnum, value)
 		_node.PrimaryPurpose = value
 	}
-	if nodes := pc.mutation.DocumentIDs(); len(nodes) > 0 {
+	if nodes := pc.mutation.DocumentsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: false,
-			Table:   purpose.DocumentTable,
-			Columns: []string{purpose.DocumentColumn},
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   purpose.DocumentsTable,
+			Columns: purpose.DocumentsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(document.FieldID, field.TypeUUID),
@@ -167,15 +158,14 @@ func (pc *PurposeCreate) createSpec() (*Purpose, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.DocumentID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := pc.mutation.NodeIDs(); len(nodes) > 0 {
+	if nodes := pc.mutation.NodesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.M2M,
 			Inverse: true,
-			Table:   purpose.NodeTable,
-			Columns: []string{purpose.NodeColumn},
+			Table:   purpose.NodesTable,
+			Columns: purpose.NodesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(node.FieldID, field.TypeUUID),
@@ -184,7 +174,6 @@ func (pc *PurposeCreate) createSpec() (*Purpose, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.NodeID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
@@ -194,7 +183,7 @@ func (pc *PurposeCreate) createSpec() (*Purpose, *sqlgraph.CreateSpec) {
 // of the `INSERT` statement. For example:
 //
 //	client.Purpose.Create().
-//		SetDocumentID(v).
+//		SetPrimaryPurpose(v).
 //		OnConflict(
 //			// Update the row with the new values
 //			// the was proposed for insertion.
@@ -203,7 +192,7 @@ func (pc *PurposeCreate) createSpec() (*Purpose, *sqlgraph.CreateSpec) {
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.PurposeUpsert) {
-//			SetDocumentID(v+v).
+//			SetPrimaryPurpose(v+v).
 //		}).
 //		Exec(ctx)
 func (pc *PurposeCreate) OnConflict(opts ...sql.ConflictOption) *PurposeUpsertOne {
@@ -239,18 +228,6 @@ type (
 	}
 )
 
-// SetNodeID sets the "node_id" field.
-func (u *PurposeUpsert) SetNodeID(v uuid.UUID) *PurposeUpsert {
-	u.Set(purpose.FieldNodeID, v)
-	return u
-}
-
-// UpdateNodeID sets the "node_id" field to the value that was provided on create.
-func (u *PurposeUpsert) UpdateNodeID() *PurposeUpsert {
-	u.SetExcluded(purpose.FieldNodeID)
-	return u
-}
-
 // SetPrimaryPurpose sets the "primary_purpose" field.
 func (u *PurposeUpsert) SetPrimaryPurpose(v purpose.PrimaryPurpose) *PurposeUpsert {
 	u.Set(purpose.FieldPrimaryPurpose, v)
@@ -273,11 +250,6 @@ func (u *PurposeUpsert) UpdatePrimaryPurpose() *PurposeUpsert {
 //		Exec(ctx)
 func (u *PurposeUpsertOne) UpdateNewValues() *PurposeUpsertOne {
 	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
-	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
-		if _, exists := u.create.mutation.DocumentID(); exists {
-			s.SetIgnore(purpose.FieldDocumentID)
-		}
-	}))
 	return u
 }
 
@@ -306,20 +278,6 @@ func (u *PurposeUpsertOne) Update(set func(*PurposeUpsert)) *PurposeUpsertOne {
 		set(&PurposeUpsert{UpdateSet: update})
 	}))
 	return u
-}
-
-// SetNodeID sets the "node_id" field.
-func (u *PurposeUpsertOne) SetNodeID(v uuid.UUID) *PurposeUpsertOne {
-	return u.Update(func(s *PurposeUpsert) {
-		s.SetNodeID(v)
-	})
-}
-
-// UpdateNodeID sets the "node_id" field to the value that was provided on create.
-func (u *PurposeUpsertOne) UpdateNodeID() *PurposeUpsertOne {
-	return u.Update(func(s *PurposeUpsert) {
-		s.UpdateNodeID()
-	})
 }
 
 // SetPrimaryPurpose sets the "primary_purpose" field.
@@ -388,7 +346,6 @@ func (pcb *PurposeCreateBulk) Save(ctx context.Context) ([]*Purpose, error) {
 	for i := range pcb.builders {
 		func(i int, root context.Context) {
 			builder := pcb.builders[i]
-			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*PurposeMutation)
 				if !ok {
@@ -471,7 +428,7 @@ func (pcb *PurposeCreateBulk) ExecX(ctx context.Context) {
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.PurposeUpsert) {
-//			SetDocumentID(v+v).
+//			SetPrimaryPurpose(v+v).
 //		}).
 //		Exec(ctx)
 func (pcb *PurposeCreateBulk) OnConflict(opts ...sql.ConflictOption) *PurposeUpsertBulk {
@@ -510,13 +467,6 @@ type PurposeUpsertBulk struct {
 //		Exec(ctx)
 func (u *PurposeUpsertBulk) UpdateNewValues() *PurposeUpsertBulk {
 	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
-	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
-		for _, b := range u.create.builders {
-			if _, exists := b.mutation.DocumentID(); exists {
-				s.SetIgnore(purpose.FieldDocumentID)
-			}
-		}
-	}))
 	return u
 }
 
@@ -545,20 +495,6 @@ func (u *PurposeUpsertBulk) Update(set func(*PurposeUpsert)) *PurposeUpsertBulk 
 		set(&PurposeUpsert{UpdateSet: update})
 	}))
 	return u
-}
-
-// SetNodeID sets the "node_id" field.
-func (u *PurposeUpsertBulk) SetNodeID(v uuid.UUID) *PurposeUpsertBulk {
-	return u.Update(func(s *PurposeUpsert) {
-		s.SetNodeID(v)
-	})
-}
-
-// UpdateNodeID sets the "node_id" field to the value that was provided on create.
-func (u *PurposeUpsertBulk) UpdateNodeID() *PurposeUpsertBulk {
-	return u.Update(func(s *PurposeUpsert) {
-		s.UpdateNodeID()
-	})
 }
 
 // SetPrimaryPurpose sets the "primary_purpose" field.

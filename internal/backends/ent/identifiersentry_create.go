@@ -30,20 +30,6 @@ type IdentifiersEntryCreate struct {
 	conflict []sql.ConflictOption
 }
 
-// SetDocumentID sets the "document_id" field.
-func (iec *IdentifiersEntryCreate) SetDocumentID(u uuid.UUID) *IdentifiersEntryCreate {
-	iec.mutation.SetDocumentID(u)
-	return iec
-}
-
-// SetNillableDocumentID sets the "document_id" field if the given value is not nil.
-func (iec *IdentifiersEntryCreate) SetNillableDocumentID(u *uuid.UUID) *IdentifiersEntryCreate {
-	if u != nil {
-		iec.SetDocumentID(*u)
-	}
-	return iec
-}
-
 // SetType sets the "type" field.
 func (iec *IdentifiersEntryCreate) SetType(i identifiersentry.Type) *IdentifiersEntryCreate {
 	iec.mutation.SetType(i)
@@ -70,9 +56,19 @@ func (iec *IdentifiersEntryCreate) SetNillableID(u *uuid.UUID) *IdentifiersEntry
 	return iec
 }
 
-// SetDocument sets the "document" edge to the Document entity.
-func (iec *IdentifiersEntryCreate) SetDocument(d *Document) *IdentifiersEntryCreate {
-	return iec.SetDocumentID(d.ID)
+// AddDocumentIDs adds the "documents" edge to the Document entity by IDs.
+func (iec *IdentifiersEntryCreate) AddDocumentIDs(ids ...uuid.UUID) *IdentifiersEntryCreate {
+	iec.mutation.AddDocumentIDs(ids...)
+	return iec
+}
+
+// AddDocuments adds the "documents" edges to the Document entity.
+func (iec *IdentifiersEntryCreate) AddDocuments(d ...*Document) *IdentifiersEntryCreate {
+	ids := make([]uuid.UUID, len(d))
+	for i := range d {
+		ids[i] = d[i].ID
+	}
+	return iec.AddDocumentIDs(ids...)
 }
 
 // AddNodeIDs adds the "nodes" edge to the Node entity by IDs.
@@ -97,7 +93,9 @@ func (iec *IdentifiersEntryCreate) Mutation() *IdentifiersEntryMutation {
 
 // Save creates the IdentifiersEntry in the database.
 func (iec *IdentifiersEntryCreate) Save(ctx context.Context) (*IdentifiersEntry, error) {
-	iec.defaults()
+	if err := iec.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, iec.sqlSave, iec.mutation, iec.hooks)
 }
 
@@ -124,15 +122,15 @@ func (iec *IdentifiersEntryCreate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (iec *IdentifiersEntryCreate) defaults() {
-	if _, ok := iec.mutation.DocumentID(); !ok {
-		v := identifiersentry.DefaultDocumentID()
-		iec.mutation.SetDocumentID(v)
-	}
+func (iec *IdentifiersEntryCreate) defaults() error {
 	if _, ok := iec.mutation.ID(); !ok {
+		if identifiersentry.DefaultID == nil {
+			return fmt.Errorf("ent: uninitialized identifiersentry.DefaultID (forgotten import ent/runtime?)")
+		}
 		v := identifiersentry.DefaultID()
 		iec.mutation.SetID(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -147,6 +145,9 @@ func (iec *IdentifiersEntryCreate) check() error {
 	}
 	if _, ok := iec.mutation.Value(); !ok {
 		return &ValidationError{Name: "value", err: errors.New(`ent: missing required field "IdentifiersEntry.value"`)}
+	}
+	if len(iec.mutation.DocumentsIDs()) == 0 {
+		return &ValidationError{Name: "documents", err: errors.New(`ent: missing required edge "IdentifiersEntry.documents"`)}
 	}
 	if len(iec.mutation.NodesIDs()) == 0 {
 		return &ValidationError{Name: "nodes", err: errors.New(`ent: missing required edge "IdentifiersEntry.nodes"`)}
@@ -195,12 +196,12 @@ func (iec *IdentifiersEntryCreate) createSpec() (*IdentifiersEntry, *sqlgraph.Cr
 		_spec.SetField(identifiersentry.FieldValue, field.TypeString, value)
 		_node.Value = value
 	}
-	if nodes := iec.mutation.DocumentIDs(); len(nodes) > 0 {
+	if nodes := iec.mutation.DocumentsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: false,
-			Table:   identifiersentry.DocumentTable,
-			Columns: []string{identifiersentry.DocumentColumn},
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   identifiersentry.DocumentsTable,
+			Columns: identifiersentry.DocumentsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(document.FieldID, field.TypeUUID),
@@ -209,7 +210,6 @@ func (iec *IdentifiersEntryCreate) createSpec() (*IdentifiersEntry, *sqlgraph.Cr
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.DocumentID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := iec.mutation.NodesIDs(); len(nodes) > 0 {
@@ -235,7 +235,7 @@ func (iec *IdentifiersEntryCreate) createSpec() (*IdentifiersEntry, *sqlgraph.Cr
 // of the `INSERT` statement. For example:
 //
 //	client.IdentifiersEntry.Create().
-//		SetDocumentID(v).
+//		SetType(v).
 //		OnConflict(
 //			// Update the row with the new values
 //			// the was proposed for insertion.
@@ -244,7 +244,7 @@ func (iec *IdentifiersEntryCreate) createSpec() (*IdentifiersEntry, *sqlgraph.Cr
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.IdentifiersEntryUpsert) {
-//			SetDocumentID(v+v).
+//			SetType(v+v).
 //		}).
 //		Exec(ctx)
 func (iec *IdentifiersEntryCreate) OnConflict(opts ...sql.ConflictOption) *IdentifiersEntryUpsertOne {
@@ -320,9 +320,6 @@ func (u *IdentifiersEntryUpsertOne) UpdateNewValues() *IdentifiersEntryUpsertOne
 	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
 		if _, exists := u.create.mutation.ID(); exists {
 			s.SetIgnore(identifiersentry.FieldID)
-		}
-		if _, exists := u.create.mutation.DocumentID(); exists {
-			s.SetIgnore(identifiersentry.FieldDocumentID)
 		}
 	}))
 	return u
@@ -519,7 +516,7 @@ func (iecb *IdentifiersEntryCreateBulk) ExecX(ctx context.Context) {
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.IdentifiersEntryUpsert) {
-//			SetDocumentID(v+v).
+//			SetType(v+v).
 //		}).
 //		Exec(ctx)
 func (iecb *IdentifiersEntryCreateBulk) OnConflict(opts ...sql.ConflictOption) *IdentifiersEntryUpsertBulk {
@@ -565,9 +562,6 @@ func (u *IdentifiersEntryUpsertBulk) UpdateNewValues() *IdentifiersEntryUpsertBu
 		for _, b := range u.create.builders {
 			if _, exists := b.mutation.ID(); exists {
 				s.SetIgnore(identifiersentry.FieldID)
-			}
-			if _, exists := b.mutation.DocumentID(); exists {
-				s.SetIgnore(identifiersentry.FieldDocumentID)
 			}
 		}
 	}))

@@ -31,29 +31,9 @@ type ToolCreate struct {
 	conflict []sql.ConflictOption
 }
 
-// SetDocumentID sets the "document_id" field.
-func (tc *ToolCreate) SetDocumentID(u uuid.UUID) *ToolCreate {
-	tc.mutation.SetDocumentID(u)
-	return tc
-}
-
-// SetNillableDocumentID sets the "document_id" field if the given value is not nil.
-func (tc *ToolCreate) SetNillableDocumentID(u *uuid.UUID) *ToolCreate {
-	if u != nil {
-		tc.SetDocumentID(*u)
-	}
-	return tc
-}
-
 // SetProtoMessage sets the "proto_message" field.
 func (tc *ToolCreate) SetProtoMessage(s *sbom.Tool) *ToolCreate {
 	tc.mutation.SetProtoMessage(s)
-	return tc
-}
-
-// SetMetadataID sets the "metadata_id" field.
-func (tc *ToolCreate) SetMetadataID(u uuid.UUID) *ToolCreate {
-	tc.mutation.SetMetadataID(u)
 	return tc
 }
 
@@ -89,14 +69,34 @@ func (tc *ToolCreate) SetNillableID(u *uuid.UUID) *ToolCreate {
 	return tc
 }
 
-// SetDocument sets the "document" edge to the Document entity.
-func (tc *ToolCreate) SetDocument(d *Document) *ToolCreate {
-	return tc.SetDocumentID(d.ID)
+// AddDocumentIDs adds the "documents" edge to the Document entity by IDs.
+func (tc *ToolCreate) AddDocumentIDs(ids ...uuid.UUID) *ToolCreate {
+	tc.mutation.AddDocumentIDs(ids...)
+	return tc
 }
 
-// SetMetadata sets the "metadata" edge to the Metadata entity.
-func (tc *ToolCreate) SetMetadata(m *Metadata) *ToolCreate {
-	return tc.SetMetadataID(m.ID)
+// AddDocuments adds the "documents" edges to the Document entity.
+func (tc *ToolCreate) AddDocuments(d ...*Document) *ToolCreate {
+	ids := make([]uuid.UUID, len(d))
+	for i := range d {
+		ids[i] = d[i].ID
+	}
+	return tc.AddDocumentIDs(ids...)
+}
+
+// AddMetadatumIDs adds the "metadata" edge to the Metadata entity by IDs.
+func (tc *ToolCreate) AddMetadatumIDs(ids ...uuid.UUID) *ToolCreate {
+	tc.mutation.AddMetadatumIDs(ids...)
+	return tc
+}
+
+// AddMetadata adds the "metadata" edges to the Metadata entity.
+func (tc *ToolCreate) AddMetadata(m ...*Metadata) *ToolCreate {
+	ids := make([]uuid.UUID, len(m))
+	for i := range m {
+		ids[i] = m[i].ID
+	}
+	return tc.AddMetadatumIDs(ids...)
 }
 
 // Mutation returns the ToolMutation object of the builder.
@@ -136,13 +136,6 @@ func (tc *ToolCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (tc *ToolCreate) defaults() error {
-	if _, ok := tc.mutation.DocumentID(); !ok {
-		if tool.DefaultDocumentID == nil {
-			return fmt.Errorf("ent: uninitialized tool.DefaultDocumentID (forgotten import ent/runtime?)")
-		}
-		v := tool.DefaultDocumentID()
-		tc.mutation.SetDocumentID(v)
-	}
 	if _, ok := tc.mutation.ID(); !ok {
 		if tool.DefaultID == nil {
 			return fmt.Errorf("ent: uninitialized tool.DefaultID (forgotten import ent/runtime?)")
@@ -158,9 +151,6 @@ func (tc *ToolCreate) check() error {
 	if _, ok := tc.mutation.ProtoMessage(); !ok {
 		return &ValidationError{Name: "proto_message", err: errors.New(`ent: missing required field "Tool.proto_message"`)}
 	}
-	if _, ok := tc.mutation.MetadataID(); !ok {
-		return &ValidationError{Name: "metadata_id", err: errors.New(`ent: missing required field "Tool.metadata_id"`)}
-	}
 	if _, ok := tc.mutation.Name(); !ok {
 		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "Tool.name"`)}
 	}
@@ -169,6 +159,9 @@ func (tc *ToolCreate) check() error {
 	}
 	if _, ok := tc.mutation.Vendor(); !ok {
 		return &ValidationError{Name: "vendor", err: errors.New(`ent: missing required field "Tool.vendor"`)}
+	}
+	if len(tc.mutation.DocumentsIDs()) == 0 {
+		return &ValidationError{Name: "documents", err: errors.New(`ent: missing required edge "Tool.documents"`)}
 	}
 	if len(tc.mutation.MetadataIDs()) == 0 {
 		return &ValidationError{Name: "metadata", err: errors.New(`ent: missing required edge "Tool.metadata"`)}
@@ -225,12 +218,12 @@ func (tc *ToolCreate) createSpec() (*Tool, *sqlgraph.CreateSpec) {
 		_spec.SetField(tool.FieldVendor, field.TypeString, value)
 		_node.Vendor = value
 	}
-	if nodes := tc.mutation.DocumentIDs(); len(nodes) > 0 {
+	if nodes := tc.mutation.DocumentsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: false,
-			Table:   tool.DocumentTable,
-			Columns: []string{tool.DocumentColumn},
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   tool.DocumentsTable,
+			Columns: tool.DocumentsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(document.FieldID, field.TypeUUID),
@@ -239,15 +232,14 @@ func (tc *ToolCreate) createSpec() (*Tool, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.DocumentID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := tc.mutation.MetadataIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.M2M,
 			Inverse: true,
 			Table:   tool.MetadataTable,
-			Columns: []string{tool.MetadataColumn},
+			Columns: tool.MetadataPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(metadata.FieldID, field.TypeUUID),
@@ -256,7 +248,6 @@ func (tc *ToolCreate) createSpec() (*Tool, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.MetadataID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
@@ -266,7 +257,7 @@ func (tc *ToolCreate) createSpec() (*Tool, *sqlgraph.CreateSpec) {
 // of the `INSERT` statement. For example:
 //
 //	client.Tool.Create().
-//		SetDocumentID(v).
+//		SetProtoMessage(v).
 //		OnConflict(
 //			// Update the row with the new values
 //			// the was proposed for insertion.
@@ -275,7 +266,7 @@ func (tc *ToolCreate) createSpec() (*Tool, *sqlgraph.CreateSpec) {
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.ToolUpsert) {
-//			SetDocumentID(v+v).
+//			SetProtoMessage(v+v).
 //		}).
 //		Exec(ctx)
 func (tc *ToolCreate) OnConflict(opts ...sql.ConflictOption) *ToolUpsertOne {
@@ -310,18 +301,6 @@ type (
 		*sql.UpdateSet
 	}
 )
-
-// SetMetadataID sets the "metadata_id" field.
-func (u *ToolUpsert) SetMetadataID(v uuid.UUID) *ToolUpsert {
-	u.Set(tool.FieldMetadataID, v)
-	return u
-}
-
-// UpdateMetadataID sets the "metadata_id" field to the value that was provided on create.
-func (u *ToolUpsert) UpdateMetadataID() *ToolUpsert {
-	u.SetExcluded(tool.FieldMetadataID)
-	return u
-}
 
 // SetName sets the "name" field.
 func (u *ToolUpsert) SetName(v string) *ToolUpsert {
@@ -376,9 +355,6 @@ func (u *ToolUpsertOne) UpdateNewValues() *ToolUpsertOne {
 		if _, exists := u.create.mutation.ID(); exists {
 			s.SetIgnore(tool.FieldID)
 		}
-		if _, exists := u.create.mutation.DocumentID(); exists {
-			s.SetIgnore(tool.FieldDocumentID)
-		}
 		if _, exists := u.create.mutation.ProtoMessage(); exists {
 			s.SetIgnore(tool.FieldProtoMessage)
 		}
@@ -411,20 +387,6 @@ func (u *ToolUpsertOne) Update(set func(*ToolUpsert)) *ToolUpsertOne {
 		set(&ToolUpsert{UpdateSet: update})
 	}))
 	return u
-}
-
-// SetMetadataID sets the "metadata_id" field.
-func (u *ToolUpsertOne) SetMetadataID(v uuid.UUID) *ToolUpsertOne {
-	return u.Update(func(s *ToolUpsert) {
-		s.SetMetadataID(v)
-	})
-}
-
-// UpdateMetadataID sets the "metadata_id" field to the value that was provided on create.
-func (u *ToolUpsertOne) UpdateMetadataID() *ToolUpsertOne {
-	return u.Update(func(s *ToolUpsert) {
-		s.UpdateMetadataID()
-	})
 }
 
 // SetName sets the "name" field.
@@ -605,7 +567,7 @@ func (tcb *ToolCreateBulk) ExecX(ctx context.Context) {
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.ToolUpsert) {
-//			SetDocumentID(v+v).
+//			SetProtoMessage(v+v).
 //		}).
 //		Exec(ctx)
 func (tcb *ToolCreateBulk) OnConflict(opts ...sql.ConflictOption) *ToolUpsertBulk {
@@ -652,9 +614,6 @@ func (u *ToolUpsertBulk) UpdateNewValues() *ToolUpsertBulk {
 			if _, exists := b.mutation.ID(); exists {
 				s.SetIgnore(tool.FieldID)
 			}
-			if _, exists := b.mutation.DocumentID(); exists {
-				s.SetIgnore(tool.FieldDocumentID)
-			}
 			if _, exists := b.mutation.ProtoMessage(); exists {
 				s.SetIgnore(tool.FieldProtoMessage)
 			}
@@ -688,20 +647,6 @@ func (u *ToolUpsertBulk) Update(set func(*ToolUpsert)) *ToolUpsertBulk {
 		set(&ToolUpsert{UpdateSet: update})
 	}))
 	return u
-}
-
-// SetMetadataID sets the "metadata_id" field.
-func (u *ToolUpsertBulk) SetMetadataID(v uuid.UUID) *ToolUpsertBulk {
-	return u.Update(func(s *ToolUpsert) {
-		s.SetMetadataID(v)
-	})
-}
-
-// UpdateMetadataID sets the "metadata_id" field to the value that was provided on create.
-func (u *ToolUpsertBulk) UpdateMetadataID() *ToolUpsertBulk {
-	return u.Update(func(s *ToolUpsert) {
-		s.UpdateMetadataID()
-	})
 }
 
 // SetName sets the "name" field.

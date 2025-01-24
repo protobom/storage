@@ -27,12 +27,12 @@ import (
 // IdentifiersEntryQuery is the builder for querying IdentifiersEntry entities.
 type IdentifiersEntryQuery struct {
 	config
-	ctx          *QueryContext
-	order        []identifiersentry.OrderOption
-	inters       []Interceptor
-	predicates   []predicate.IdentifiersEntry
-	withDocument *DocumentQuery
-	withNodes    *NodeQuery
+	ctx           *QueryContext
+	order         []identifiersentry.OrderOption
+	inters        []Interceptor
+	predicates    []predicate.IdentifiersEntry
+	withDocuments *DocumentQuery
+	withNodes     *NodeQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -69,8 +69,8 @@ func (ieq *IdentifiersEntryQuery) Order(o ...identifiersentry.OrderOption) *Iden
 	return ieq
 }
 
-// QueryDocument chains the current query on the "document" edge.
-func (ieq *IdentifiersEntryQuery) QueryDocument() *DocumentQuery {
+// QueryDocuments chains the current query on the "documents" edge.
+func (ieq *IdentifiersEntryQuery) QueryDocuments() *DocumentQuery {
 	query := (&DocumentClient{config: ieq.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := ieq.prepareQuery(ctx); err != nil {
@@ -83,7 +83,7 @@ func (ieq *IdentifiersEntryQuery) QueryDocument() *DocumentQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(identifiersentry.Table, identifiersentry.FieldID, selector),
 			sqlgraph.To(document.Table, document.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, identifiersentry.DocumentTable, identifiersentry.DocumentColumn),
+			sqlgraph.Edge(sqlgraph.M2M, true, identifiersentry.DocumentsTable, identifiersentry.DocumentsPrimaryKey...),
 		)
 		fromU = sqlgraph.SetNeighbors(ieq.driver.Dialect(), step)
 		return fromU, nil
@@ -300,27 +300,27 @@ func (ieq *IdentifiersEntryQuery) Clone() *IdentifiersEntryQuery {
 		return nil
 	}
 	return &IdentifiersEntryQuery{
-		config:       ieq.config,
-		ctx:          ieq.ctx.Clone(),
-		order:        append([]identifiersentry.OrderOption{}, ieq.order...),
-		inters:       append([]Interceptor{}, ieq.inters...),
-		predicates:   append([]predicate.IdentifiersEntry{}, ieq.predicates...),
-		withDocument: ieq.withDocument.Clone(),
-		withNodes:    ieq.withNodes.Clone(),
+		config:        ieq.config,
+		ctx:           ieq.ctx.Clone(),
+		order:         append([]identifiersentry.OrderOption{}, ieq.order...),
+		inters:        append([]Interceptor{}, ieq.inters...),
+		predicates:    append([]predicate.IdentifiersEntry{}, ieq.predicates...),
+		withDocuments: ieq.withDocuments.Clone(),
+		withNodes:     ieq.withNodes.Clone(),
 		// clone intermediate query.
 		sql:  ieq.sql.Clone(),
 		path: ieq.path,
 	}
 }
 
-// WithDocument tells the query-builder to eager-load the nodes that are connected to
-// the "document" edge. The optional arguments are used to configure the query builder of the edge.
-func (ieq *IdentifiersEntryQuery) WithDocument(opts ...func(*DocumentQuery)) *IdentifiersEntryQuery {
+// WithDocuments tells the query-builder to eager-load the nodes that are connected to
+// the "documents" edge. The optional arguments are used to configure the query builder of the edge.
+func (ieq *IdentifiersEntryQuery) WithDocuments(opts ...func(*DocumentQuery)) *IdentifiersEntryQuery {
 	query := (&DocumentClient{config: ieq.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	ieq.withDocument = query
+	ieq.withDocuments = query
 	return ieq
 }
 
@@ -341,12 +341,12 @@ func (ieq *IdentifiersEntryQuery) WithNodes(opts ...func(*NodeQuery)) *Identifie
 // Example:
 //
 //	var v []struct {
-//		DocumentID uuid.UUID `json:"-"`
+//		Type identifiersentry.Type `json:"type,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.IdentifiersEntry.Query().
-//		GroupBy(identifiersentry.FieldDocumentID).
+//		GroupBy(identifiersentry.FieldType).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (ieq *IdentifiersEntryQuery) GroupBy(field string, fields ...string) *IdentifiersEntryGroupBy {
@@ -364,11 +364,11 @@ func (ieq *IdentifiersEntryQuery) GroupBy(field string, fields ...string) *Ident
 // Example:
 //
 //	var v []struct {
-//		DocumentID uuid.UUID `json:"-"`
+//		Type identifiersentry.Type `json:"type,omitempty"`
 //	}
 //
 //	client.IdentifiersEntry.Query().
-//		Select(identifiersentry.FieldDocumentID).
+//		Select(identifiersentry.FieldType).
 //		Scan(ctx, &v)
 func (ieq *IdentifiersEntryQuery) Select(fields ...string) *IdentifiersEntrySelect {
 	ieq.ctx.Fields = append(ieq.ctx.Fields, fields...)
@@ -414,7 +414,7 @@ func (ieq *IdentifiersEntryQuery) sqlAll(ctx context.Context, hooks ...queryHook
 		nodes       = []*IdentifiersEntry{}
 		_spec       = ieq.querySpec()
 		loadedTypes = [2]bool{
-			ieq.withDocument != nil,
+			ieq.withDocuments != nil,
 			ieq.withNodes != nil,
 		}
 	)
@@ -436,9 +436,10 @@ func (ieq *IdentifiersEntryQuery) sqlAll(ctx context.Context, hooks ...queryHook
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
-	if query := ieq.withDocument; query != nil {
-		if err := ieq.loadDocument(ctx, query, nodes, nil,
-			func(n *IdentifiersEntry, e *Document) { n.Edges.Document = e }); err != nil {
+	if query := ieq.withDocuments; query != nil {
+		if err := ieq.loadDocuments(ctx, query, nodes,
+			func(n *IdentifiersEntry) { n.Edges.Documents = []*Document{} },
+			func(n *IdentifiersEntry, e *Document) { n.Edges.Documents = append(n.Edges.Documents, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -452,31 +453,63 @@ func (ieq *IdentifiersEntryQuery) sqlAll(ctx context.Context, hooks ...queryHook
 	return nodes, nil
 }
 
-func (ieq *IdentifiersEntryQuery) loadDocument(ctx context.Context, query *DocumentQuery, nodes []*IdentifiersEntry, init func(*IdentifiersEntry), assign func(*IdentifiersEntry, *Document)) error {
-	ids := make([]uuid.UUID, 0, len(nodes))
-	nodeids := make(map[uuid.UUID][]*IdentifiersEntry)
-	for i := range nodes {
-		fk := nodes[i].DocumentID
-		if _, ok := nodeids[fk]; !ok {
-			ids = append(ids, fk)
+func (ieq *IdentifiersEntryQuery) loadDocuments(ctx context.Context, query *DocumentQuery, nodes []*IdentifiersEntry, init func(*IdentifiersEntry), assign func(*IdentifiersEntry, *Document)) error {
+	edgeIDs := make([]driver.Value, len(nodes))
+	byID := make(map[uuid.UUID]*IdentifiersEntry)
+	nids := make(map[uuid.UUID]map[*IdentifiersEntry]struct{})
+	for i, node := range nodes {
+		edgeIDs[i] = node.ID
+		byID[node.ID] = node
+		if init != nil {
+			init(node)
 		}
-		nodeids[fk] = append(nodeids[fk], nodes[i])
 	}
-	if len(ids) == 0 {
-		return nil
+	query.Where(func(s *sql.Selector) {
+		joinT := sql.Table(identifiersentry.DocumentsTable)
+		s.Join(joinT).On(s.C(document.FieldID), joinT.C(identifiersentry.DocumentsPrimaryKey[0]))
+		s.Where(sql.InValues(joinT.C(identifiersentry.DocumentsPrimaryKey[1]), edgeIDs...))
+		columns := s.SelectedColumns()
+		s.Select(joinT.C(identifiersentry.DocumentsPrimaryKey[1]))
+		s.AppendSelect(columns...)
+		s.SetDistinct(false)
+	})
+	if err := query.prepareQuery(ctx); err != nil {
+		return err
 	}
-	query.Where(document.IDIn(ids...))
-	neighbors, err := query.All(ctx)
+	qr := QuerierFunc(func(ctx context.Context, q Query) (Value, error) {
+		return query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
+			assign := spec.Assign
+			values := spec.ScanValues
+			spec.ScanValues = func(columns []string) ([]any, error) {
+				values, err := values(columns[1:])
+				if err != nil {
+					return nil, err
+				}
+				return append([]any{new(uuid.UUID)}, values...), nil
+			}
+			spec.Assign = func(columns []string, values []any) error {
+				outValue := *values[0].(*uuid.UUID)
+				inValue := *values[1].(*uuid.UUID)
+				if nids[inValue] == nil {
+					nids[inValue] = map[*IdentifiersEntry]struct{}{byID[outValue]: {}}
+					return assign(columns[1:], values[1:])
+				}
+				nids[inValue][byID[outValue]] = struct{}{}
+				return nil
+			}
+		})
+	})
+	neighbors, err := withInterceptors[[]*Document](ctx, query, qr, query.inters)
 	if err != nil {
 		return err
 	}
 	for _, n := range neighbors {
-		nodes, ok := nodeids[n.ID]
+		nodes, ok := nids[n.ID]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "document_id" returned %v`, n.ID)
+			return fmt.Errorf(`unexpected "documents" node returned %v`, n.ID)
 		}
-		for i := range nodes {
-			assign(nodes[i], n)
+		for kn := range nodes {
+			assign(kn, n)
 		}
 	}
 	return nil
@@ -567,9 +600,6 @@ func (ieq *IdentifiersEntryQuery) querySpec() *sqlgraph.QuerySpec {
 			if fields[i] != identifiersentry.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
-		}
-		if ieq.withDocument != nil {
-			_spec.Node.AddColumnOnce(identifiersentry.FieldDocumentID)
 		}
 	}
 	if ps := ieq.predicates; len(ps) > 0 {
