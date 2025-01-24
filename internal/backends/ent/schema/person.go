@@ -7,6 +7,9 @@
 package schema
 
 import (
+	"context"
+	"errors"
+
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/schema/edge"
@@ -14,11 +17,16 @@ import (
 	"entgo.io/ent/schema/index"
 	"github.com/google/uuid"
 	"github.com/protobom/protobom/pkg/sbom"
+
+	entint "github.com/protobom/storage/internal/backends/ent"
+	"github.com/protobom/storage/internal/backends/ent/hook"
 )
 
 type Person struct {
 	ent.Schema
 }
+
+var errInvalidPerson = errors.New("either metadata_id or node_id (exclusive) must be set")
 
 func (Person) Mixin() []ent.Mixin {
 	return []ent.Mixin{
@@ -58,6 +66,12 @@ func (Person) Edges() []ent.Edge {
 	}
 }
 
+func (Person) Hooks() []ent.Hook {
+	return []ent.Hook{
+		hook.On(personHook, ent.OpCreate|ent.OpUpdate|ent.OpUpdateOne),
+	}
+}
+
 func (Person) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Fields("metadata_id", "name", "is_org", "email", "url", "phone").
@@ -69,4 +83,20 @@ func (Person) Indexes() []ent.Index {
 			Annotations(entsql.IndexWhere("metadata_id IS NULL AND node_id IS NOT NULL")).
 			StorageKey("idx_person_node_id"),
 	}
+}
+
+func personHook(next ent.Mutator) ent.Mutator {
+	return hook.PersonFunc(
+		func(ctx context.Context, mutation *entint.PersonMutation) (entint.Value, error) {
+			_, nodeExists := mutation.NodeID()
+			_, metadataExists := mutation.MetadataID()
+
+			// Fail validation if both metadata_id and node_id are set, or neither are.
+			if metadataExists == nodeExists {
+				return nil, errInvalidPerson
+			}
+
+			return next.Mutate(ctx, mutation)
+		},
+	)
 }

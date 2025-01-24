@@ -522,6 +522,9 @@ func (nc *NodeCreate) check() error {
 	if _, ok := nc.mutation.FileTypes(); !ok {
 		return &ValidationError{Name: "file_types", err: errors.New(`ent: missing required field "Node.file_types"`)}
 	}
+	if len(nc.mutation.NodeListsIDs()) == 0 {
+		return &ValidationError{Name: "node_lists", err: errors.New(`ent: missing required edge "Node.node_lists"`)}
+	}
 	return nil
 }
 

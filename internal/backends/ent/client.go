@@ -471,7 +471,8 @@ func (c *AnnotationClient) QueryNode(a *Annotation) *NodeQuery {
 
 // Hooks returns the client hooks.
 func (c *AnnotationClient) Hooks() []Hook {
-	return c.hooks.Annotation
+	hooks := c.hooks.Annotation
+	return append(hooks[:len(hooks):len(hooks)], annotation.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -1379,7 +1380,8 @@ func (c *HashesEntryClient) QueryNodes(he *HashesEntry) *NodeQuery {
 
 // Hooks returns the client hooks.
 func (c *HashesEntryClient) Hooks() []Hook {
-	return c.hooks.HashesEntry
+	hooks := c.hooks.HashesEntry
+	return append(hooks[:len(hooks):len(hooks)], hashesentry.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.

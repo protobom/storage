@@ -121,7 +121,7 @@ var (
 		{Name: "name", Type: field.TypeString, Nullable: true},
 		{Name: "description", Type: field.TypeString, Nullable: true},
 		{Name: "document_id", Type: field.TypeUUID, Nullable: true},
-		{Name: "metadata_id", Type: field.TypeUUID, Nullable: true},
+		{Name: "metadata_id", Type: field.TypeUUID},
 	}
 	// DocumentTypesTable holds the schema information for the "document_types" table.
 	DocumentTypesTable = &schema.Table{
@@ -437,7 +437,7 @@ var (
 		{Name: "proto_message", Type: field.TypeBytes, Unique: true},
 		{Name: "name", Type: field.TypeString},
 		{Name: "data", Type: field.TypeString},
-		{Name: "node_id", Type: field.TypeUUID, Nullable: true},
+		{Name: "node_id", Type: field.TypeUUID},
 		{Name: "document_id", Type: field.TypeUUID, Nullable: true},
 	}
 	// PropertiesTable holds the schema information for the "properties" table.
@@ -471,7 +471,7 @@ var (
 	PurposesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "primary_purpose", Type: field.TypeEnum, Enums: []string{"UNKNOWN_PURPOSE", "APPLICATION", "ARCHIVE", "BOM", "CONFIGURATION", "CONTAINER", "DATA", "DEVICE", "DEVICE_DRIVER", "DOCUMENTATION", "EVIDENCE", "EXECUTABLE", "FILE", "FIRMWARE", "FRAMEWORK", "INSTALL", "LIBRARY", "MACHINE_LEARNING_MODEL", "MANIFEST", "MODEL", "MODULE", "OPERATING_SYSTEM", "OTHER", "PATCH", "PLATFORM", "REQUIREMENT", "SOURCE", "SPECIFICATION", "TEST"}},
-		{Name: "node_id", Type: field.TypeUUID, Nullable: true},
+		{Name: "node_id", Type: field.TypeUUID},
 		{Name: "document_id", Type: field.TypeUUID, Nullable: true},
 	}
 	// PurposesTable holds the schema information for the "purposes" table.
@@ -546,7 +546,7 @@ var (
 		{Name: "name", Type: field.TypeString},
 		{Name: "version", Type: field.TypeString},
 		{Name: "vendor", Type: field.TypeString},
-		{Name: "metadata_id", Type: field.TypeUUID, Nullable: true},
+		{Name: "metadata_id", Type: field.TypeUUID},
 		{Name: "document_id", Type: field.TypeUUID, Nullable: true},
 	}
 	// ToolsTable holds the schema information for the "tools" table.

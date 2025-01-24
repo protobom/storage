@@ -148,6 +148,9 @@ func (iec *IdentifiersEntryCreate) check() error {
 	if _, ok := iec.mutation.Value(); !ok {
 		return &ValidationError{Name: "value", err: errors.New(`ent: missing required field "IdentifiersEntry.value"`)}
 	}
+	if len(iec.mutation.NodesIDs()) == 0 {
+		return &ValidationError{Name: "nodes", err: errors.New(`ent: missing required edge "IdentifiersEntry.nodes"`)}
+	}
 	return nil
 }
 

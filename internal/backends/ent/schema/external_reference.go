@@ -40,6 +40,8 @@ func (ExternalReference) Edges() []ent.Edge {
 		edge.To("hashes", HashesEntry.Type).
 			StorageKey(edge.Table("ext_ref_hashes"), edge.Columns("ext_ref_id", "hash_entry_id")).
 			Annotations(entsql.OnDelete(entsql.Cascade)),
-		edge.From("nodes", Node.Type).Ref("external_references"),
+		edge.From("nodes", Node.Type).
+			Ref("external_references").
+			Required(),
 	}
 }

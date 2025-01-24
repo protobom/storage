@@ -119,16 +119,6 @@ func NodeIDNotIn(vs ...uuid.UUID) predicate.Purpose {
 	return predicate.Purpose(sql.FieldNotIn(FieldNodeID, vs...))
 }
 
-// NodeIDIsNil applies the IsNil predicate on the "node_id" field.
-func NodeIDIsNil() predicate.Purpose {
-	return predicate.Purpose(sql.FieldIsNull(FieldNodeID))
-}
-
-// NodeIDNotNil applies the NotNil predicate on the "node_id" field.
-func NodeIDNotNil() predicate.Purpose {
-	return predicate.Purpose(sql.FieldNotNull(FieldNodeID))
-}
-
 // PrimaryPurposeEQ applies the EQ predicate on the "primary_purpose" field.
 func PrimaryPurposeEQ(v PrimaryPurpose) predicate.Purpose {
 	return predicate.Purpose(sql.FieldEQ(FieldPrimaryPurpose, v))

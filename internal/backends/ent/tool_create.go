@@ -57,14 +57,6 @@ func (tc *ToolCreate) SetMetadataID(u uuid.UUID) *ToolCreate {
 	return tc
 }
 
-// SetNillableMetadataID sets the "metadata_id" field if the given value is not nil.
-func (tc *ToolCreate) SetNillableMetadataID(u *uuid.UUID) *ToolCreate {
-	if u != nil {
-		tc.SetMetadataID(*u)
-	}
-	return tc
-}
-
 // SetName sets the "name" field.
 func (tc *ToolCreate) SetName(s string) *ToolCreate {
 	tc.mutation.SetName(s)
@@ -166,6 +158,9 @@ func (tc *ToolCreate) check() error {
 	if _, ok := tc.mutation.ProtoMessage(); !ok {
 		return &ValidationError{Name: "proto_message", err: errors.New(`ent: missing required field "Tool.proto_message"`)}
 	}
+	if _, ok := tc.mutation.MetadataID(); !ok {
+		return &ValidationError{Name: "metadata_id", err: errors.New(`ent: missing required field "Tool.metadata_id"`)}
+	}
 	if _, ok := tc.mutation.Name(); !ok {
 		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "Tool.name"`)}
 	}
@@ -174,6 +169,9 @@ func (tc *ToolCreate) check() error {
 	}
 	if _, ok := tc.mutation.Vendor(); !ok {
 		return &ValidationError{Name: "vendor", err: errors.New(`ent: missing required field "Tool.vendor"`)}
+	}
+	if len(tc.mutation.MetadataIDs()) == 0 {
+		return &ValidationError{Name: "metadata", err: errors.New(`ent: missing required edge "Tool.metadata"`)}
 	}
 	return nil
 }
@@ -325,12 +323,6 @@ func (u *ToolUpsert) UpdateMetadataID() *ToolUpsert {
 	return u
 }
 
-// ClearMetadataID clears the value of the "metadata_id" field.
-func (u *ToolUpsert) ClearMetadataID() *ToolUpsert {
-	u.SetNull(tool.FieldMetadataID)
-	return u
-}
-
 // SetName sets the "name" field.
 func (u *ToolUpsert) SetName(v string) *ToolUpsert {
 	u.Set(tool.FieldName, v)
@@ -432,13 +424,6 @@ func (u *ToolUpsertOne) SetMetadataID(v uuid.UUID) *ToolUpsertOne {
 func (u *ToolUpsertOne) UpdateMetadataID() *ToolUpsertOne {
 	return u.Update(func(s *ToolUpsert) {
 		s.UpdateMetadataID()
-	})
-}
-
-// ClearMetadataID clears the value of the "metadata_id" field.
-func (u *ToolUpsertOne) ClearMetadataID() *ToolUpsertOne {
-	return u.Update(func(s *ToolUpsert) {
-		s.ClearMetadataID()
 	})
 }
 
@@ -716,13 +701,6 @@ func (u *ToolUpsertBulk) SetMetadataID(v uuid.UUID) *ToolUpsertBulk {
 func (u *ToolUpsertBulk) UpdateMetadataID() *ToolUpsertBulk {
 	return u.Update(func(s *ToolUpsert) {
 		s.UpdateMetadataID()
-	})
-}
-
-// ClearMetadataID clears the value of the "metadata_id" field.
-func (u *ToolUpsertBulk) ClearMetadataID() *ToolUpsertBulk {
-	return u.Update(func(s *ToolUpsert) {
-		s.ClearMetadataID()
 	})
 }
 

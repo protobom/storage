@@ -81,7 +81,9 @@ func (Node) Edges() []ent.Edge {
 			Annotations(entsql.OnDelete(entsql.Cascade)),
 		edge.To("properties", Property.Type).
 			Annotations(entsql.OnDelete(entsql.Cascade)),
-		edge.From("node_lists", NodeList.Type).Ref("nodes"),
+		edge.From("node_lists", NodeList.Type).
+			Ref("nodes").
+			Required(),
 	}
 }
 

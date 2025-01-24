@@ -48,12 +48,6 @@ func (dtu *DocumentTypeUpdate) SetNillableMetadataID(u *uuid.UUID) *DocumentType
 	return dtu
 }
 
-// ClearMetadataID clears the value of the "metadata_id" field.
-func (dtu *DocumentTypeUpdate) ClearMetadataID() *DocumentTypeUpdate {
-	dtu.mutation.ClearMetadataID()
-	return dtu
-}
-
 // SetType sets the "type" field.
 func (dtu *DocumentTypeUpdate) SetType(d documenttype.Type) *DocumentTypeUpdate {
 	dtu.mutation.SetType(d)
@@ -164,6 +158,9 @@ func (dtu *DocumentTypeUpdate) check() error {
 			return &ValidationError{Name: "type", err: fmt.Errorf(`ent: validator failed for field "DocumentType.type": %w`, err)}
 		}
 	}
+	if dtu.mutation.MetadataCleared() && len(dtu.mutation.MetadataIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "DocumentType.metadata"`)
+	}
 	return nil
 }
 
@@ -257,12 +254,6 @@ func (dtuo *DocumentTypeUpdateOne) SetNillableMetadataID(u *uuid.UUID) *Document
 	if u != nil {
 		dtuo.SetMetadataID(*u)
 	}
-	return dtuo
-}
-
-// ClearMetadataID clears the value of the "metadata_id" field.
-func (dtuo *DocumentTypeUpdateOne) ClearMetadataID() *DocumentTypeUpdateOne {
-	dtuo.mutation.ClearMetadataID()
 	return dtuo
 }
 
@@ -388,6 +379,9 @@ func (dtuo *DocumentTypeUpdateOne) check() error {
 		if err := documenttype.TypeValidator(v); err != nil {
 			return &ValidationError{Name: "type", err: fmt.Errorf(`ent: validator failed for field "DocumentType.type": %w`, err)}
 		}
+	}
+	if dtuo.mutation.MetadataCleared() && len(dtuo.mutation.MetadataIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "DocumentType.metadata"`)
 	}
 	return nil
 }

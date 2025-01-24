@@ -28,7 +28,7 @@ func (DocumentType) Mixin() []ent.Mixin {
 
 func (DocumentType) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("metadata_id", uuid.UUID{}).Optional(),
+		field.UUID("metadata_id", uuid.UUID{}),
 		field.Enum("type").
 			Values(enumValues(new(sbom.DocumentType_SBOMType))...).
 			Optional().
@@ -42,6 +42,7 @@ func (DocumentType) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("metadata", Metadata.Type).
 			Ref("document_types").
+			Required().
 			Unique().
 			Field("metadata_id"),
 	}

@@ -28,7 +28,7 @@ func (Property) Mixin() []ent.Mixin {
 
 func (Property) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("node_id", uuid.UUID{}).Optional(),
+		field.UUID("node_id", uuid.UUID{}),
 		field.String("name"),
 		field.String("data"),
 	}
@@ -38,6 +38,7 @@ func (Property) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("node", Node.Type).
 			Ref("properties").
+			Required().
 			Unique().
 			Field("node_id"),
 	}

@@ -175,16 +175,6 @@ func NodeIDNotIn(vs ...uuid.UUID) predicate.Property {
 	return predicate.Property(sql.FieldNotIn(FieldNodeID, vs...))
 }
 
-// NodeIDIsNil applies the IsNil predicate on the "node_id" field.
-func NodeIDIsNil() predicate.Property {
-	return predicate.Property(sql.FieldIsNull(FieldNodeID))
-}
-
-// NodeIDNotNil applies the NotNil predicate on the "node_id" field.
-func NodeIDNotNil() predicate.Property {
-	return predicate.Property(sql.FieldNotNull(FieldNodeID))
-}
-
 // NameEQ applies the EQ predicate on the "name" field.
 func NameEQ(v string) predicate.Property {
 	return predicate.Property(sql.FieldEQ(FieldName, v))

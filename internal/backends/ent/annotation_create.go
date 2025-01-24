@@ -100,7 +100,9 @@ func (ac *AnnotationCreate) Mutation() *AnnotationMutation {
 
 // Save creates the Annotation in the database.
 func (ac *AnnotationCreate) Save(ctx context.Context) (*Annotation, error) {
-	ac.defaults()
+	if err := ac.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, ac.sqlSave, ac.mutation, ac.hooks)
 }
 
@@ -127,11 +129,12 @@ func (ac *AnnotationCreate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (ac *AnnotationCreate) defaults() {
+func (ac *AnnotationCreate) defaults() error {
 	if _, ok := ac.mutation.IsUnique(); !ok {
 		v := annotation.DefaultIsUnique
 		ac.mutation.SetIsUnique(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.

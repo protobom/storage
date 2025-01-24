@@ -122,7 +122,7 @@ func ValidColumn(column string) bool {
 //
 //	import _ "github.com/protobom/storage/internal/backends/ent/runtime"
 var (
-	Hooks [1]ent.Hook
+	Hooks [2]ent.Hook
 	// DefaultDocumentID holds the default value on creation for the "document_id" field.
 	DefaultDocumentID func() uuid.UUID
 	// DefaultID holds the default value on creation for the "id" field.

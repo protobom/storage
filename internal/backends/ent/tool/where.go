@@ -180,16 +180,6 @@ func MetadataIDNotIn(vs ...uuid.UUID) predicate.Tool {
 	return predicate.Tool(sql.FieldNotIn(FieldMetadataID, vs...))
 }
 
-// MetadataIDIsNil applies the IsNil predicate on the "metadata_id" field.
-func MetadataIDIsNil() predicate.Tool {
-	return predicate.Tool(sql.FieldIsNull(FieldMetadataID))
-}
-
-// MetadataIDNotNil applies the NotNil predicate on the "metadata_id" field.
-func MetadataIDNotNil() predicate.Tool {
-	return predicate.Tool(sql.FieldNotNull(FieldMetadataID))
-}
-
 // NameEQ applies the EQ predicate on the "name" field.
 func NameEQ(v string) predicate.Tool {
 	return predicate.Tool(sql.FieldEQ(FieldName, v))

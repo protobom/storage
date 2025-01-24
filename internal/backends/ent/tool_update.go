@@ -48,12 +48,6 @@ func (tu *ToolUpdate) SetNillableMetadataID(u *uuid.UUID) *ToolUpdate {
 	return tu
 }
 
-// ClearMetadataID clears the value of the "metadata_id" field.
-func (tu *ToolUpdate) ClearMetadataID() *ToolUpdate {
-	tu.mutation.ClearMetadataID()
-	return tu
-}
-
 // SetName sets the "name" field.
 func (tu *ToolUpdate) SetName(s string) *ToolUpdate {
 	tu.mutation.SetName(s)
@@ -139,7 +133,18 @@ func (tu *ToolUpdate) ExecX(ctx context.Context) {
 	}
 }
 
+// check runs all checks and user-defined validators on the builder.
+func (tu *ToolUpdate) check() error {
+	if tu.mutation.MetadataCleared() && len(tu.mutation.MetadataIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "Tool.metadata"`)
+	}
+	return nil
+}
+
 func (tu *ToolUpdate) sqlSave(ctx context.Context) (n int, err error) {
+	if err := tu.check(); err != nil {
+		return n, err
+	}
 	_spec := sqlgraph.NewUpdateSpec(tool.Table, tool.Columns, sqlgraph.NewFieldSpec(tool.FieldID, field.TypeUUID))
 	if ps := tu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
@@ -217,12 +222,6 @@ func (tuo *ToolUpdateOne) SetNillableMetadataID(u *uuid.UUID) *ToolUpdateOne {
 	if u != nil {
 		tuo.SetMetadataID(*u)
 	}
-	return tuo
-}
-
-// ClearMetadataID clears the value of the "metadata_id" field.
-func (tuo *ToolUpdateOne) ClearMetadataID() *ToolUpdateOne {
-	tuo.mutation.ClearMetadataID()
 	return tuo
 }
 
@@ -324,7 +323,18 @@ func (tuo *ToolUpdateOne) ExecX(ctx context.Context) {
 	}
 }
 
+// check runs all checks and user-defined validators on the builder.
+func (tuo *ToolUpdateOne) check() error {
+	if tuo.mutation.MetadataCleared() && len(tuo.mutation.MetadataIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "Tool.metadata"`)
+	}
+	return nil
+}
+
 func (tuo *ToolUpdateOne) sqlSave(ctx context.Context) (_node *Tool, err error) {
+	if err := tuo.check(); err != nil {
+		return _node, err
+	}
 	_spec := sqlgraph.NewUpdateSpec(tool.Table, tool.Columns, sqlgraph.NewFieldSpec(tool.FieldID, field.TypeUUID))
 	id, ok := tuo.mutation.ID()
 	if !ok {

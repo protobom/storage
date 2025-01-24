@@ -205,6 +205,9 @@ func (etc *EdgeTypeCreate) check() error {
 	if len(etc.mutation.ToIDs()) == 0 {
 		return &ValidationError{Name: "to", err: errors.New(`ent: missing required edge "EdgeType.to"`)}
 	}
+	if len(etc.mutation.NodeListsIDs()) == 0 {
+		return &ValidationError{Name: "node_lists", err: errors.New(`ent: missing required edge "EdgeType.node_lists"`)}
+	}
 	return nil
 }
 

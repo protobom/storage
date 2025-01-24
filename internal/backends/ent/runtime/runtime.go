@@ -31,6 +31,8 @@ import (
 // (default values, validators, hooks and policies) and stitches it
 // to their package variables.
 func init() {
+	annotationHooks := schema.Annotation{}.Hooks()
+	annotation.Hooks[0] = annotationHooks[0]
 	annotationFields := schema.Annotation{}.Fields()
 	_ = annotationFields
 	// annotationDescIsUnique is the schema descriptor for is_unique field.
@@ -98,6 +100,8 @@ func init() {
 	// externalreference.DefaultID holds the default value on creation for the id field.
 	externalreference.DefaultID = externalreferenceDescID.Default.(func() uuid.UUID)
 	hashesentryMixin := schema.HashesEntry{}.Mixin()
+	hashesentryHooks := schema.HashesEntry{}.Hooks()
+	hashesentry.Hooks[0] = hashesentryHooks[0]
 	hashesentryMixinFields0 := hashesentryMixin[0].Fields()
 	_ = hashesentryMixinFields0
 	hashesentryMixinFields1 := hashesentryMixin[1].Fields()
@@ -176,7 +180,9 @@ func init() {
 	nodelist.DefaultID = nodelistDescID.Default.(func() uuid.UUID)
 	personMixin := schema.Person{}.Mixin()
 	personMixinHooks1 := personMixin[1].Hooks()
+	personHooks := schema.Person{}.Hooks()
 	person.Hooks[0] = personMixinHooks1[0]
+	person.Hooks[1] = personHooks[0]
 	personMixinFields0 := personMixin[0].Fields()
 	_ = personMixinFields0
 	personMixinFields1 := personMixin[1].Fields()
