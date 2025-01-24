@@ -21,7 +21,6 @@ import (
 	"github.com/protobom/storage/internal/backends/ent/nodelist"
 	"github.com/protobom/storage/internal/backends/ent/person"
 	"github.com/protobom/storage/internal/backends/ent/property"
-	"github.com/protobom/storage/internal/backends/ent/purpose"
 	"github.com/protobom/storage/internal/backends/ent/schema"
 	"github.com/protobom/storage/internal/backends/ent/sourcedata"
 	"github.com/protobom/storage/internal/backends/ent/tool"
@@ -40,6 +39,8 @@ func init() {
 	// annotation.DefaultIsUnique holds the default value on creation for the is_unique field.
 	annotation.DefaultIsUnique = annotationDescIsUnique.Default.(bool)
 	documentMixin := schema.Document{}.Mixin()
+	documentMixinHooks0 := documentMixin[0].Hooks()
+	document.Hooks[0] = documentMixinHooks0[0]
 	documentMixinFields0 := documentMixin[0].Fields()
 	_ = documentMixinFields0
 	documentFields := schema.Document{}.Fields()
@@ -49,86 +50,60 @@ func init() {
 	// document.DefaultID holds the default value on creation for the id field.
 	document.DefaultID = documentDescID.Default.(func() uuid.UUID)
 	documenttypeMixin := schema.DocumentType{}.Mixin()
-	documenttypeMixinHooks1 := documenttypeMixin[1].Hooks()
-	documenttype.Hooks[0] = documenttypeMixinHooks1[0]
+	documenttypeMixinHooks0 := documenttypeMixin[0].Hooks()
+	documenttype.Hooks[0] = documenttypeMixinHooks0[0]
 	documenttypeMixinFields0 := documenttypeMixin[0].Fields()
 	_ = documenttypeMixinFields0
-	documenttypeMixinFields1 := documenttypeMixin[1].Fields()
-	_ = documenttypeMixinFields1
 	documenttypeFields := schema.DocumentType{}.Fields()
 	_ = documenttypeFields
-	// documenttypeDescDocumentID is the schema descriptor for document_id field.
-	documenttypeDescDocumentID := documenttypeMixinFields0[0].Descriptor()
-	// documenttype.DefaultDocumentID holds the default value on creation for the document_id field.
-	documenttype.DefaultDocumentID = documenttypeDescDocumentID.Default.(func() uuid.UUID)
 	// documenttypeDescID is the schema descriptor for id field.
-	documenttypeDescID := documenttypeMixinFields1[0].Descriptor()
+	documenttypeDescID := documenttypeMixinFields0[0].Descriptor()
 	// documenttype.DefaultID holds the default value on creation for the id field.
 	documenttype.DefaultID = documenttypeDescID.Default.(func() uuid.UUID)
 	edgetypeMixin := schema.EdgeType{}.Mixin()
-	edgetypeMixinHooks1 := edgetypeMixin[1].Hooks()
-	edgetype.Hooks[0] = edgetypeMixinHooks1[0]
+	edgetypeMixinHooks0 := edgetypeMixin[0].Hooks()
+	edgetype.Hooks[0] = edgetypeMixinHooks0[0]
 	edgetypeMixinFields0 := edgetypeMixin[0].Fields()
 	_ = edgetypeMixinFields0
-	edgetypeMixinFields1 := edgetypeMixin[1].Fields()
-	_ = edgetypeMixinFields1
 	edgetypeFields := schema.EdgeType{}.Fields()
 	_ = edgetypeFields
-	// edgetypeDescDocumentID is the schema descriptor for document_id field.
-	edgetypeDescDocumentID := edgetypeMixinFields0[0].Descriptor()
-	// edgetype.DefaultDocumentID holds the default value on creation for the document_id field.
-	edgetype.DefaultDocumentID = edgetypeDescDocumentID.Default.(func() uuid.UUID)
 	// edgetypeDescID is the schema descriptor for id field.
-	edgetypeDescID := edgetypeMixinFields1[0].Descriptor()
+	edgetypeDescID := edgetypeMixinFields0[0].Descriptor()
 	// edgetype.DefaultID holds the default value on creation for the id field.
 	edgetype.DefaultID = edgetypeDescID.Default.(func() uuid.UUID)
 	externalreferenceMixin := schema.ExternalReference{}.Mixin()
-	externalreferenceMixinHooks1 := externalreferenceMixin[1].Hooks()
-	externalreference.Hooks[0] = externalreferenceMixinHooks1[0]
+	externalreferenceMixinHooks0 := externalreferenceMixin[0].Hooks()
+	externalreference.Hooks[0] = externalreferenceMixinHooks0[0]
 	externalreferenceMixinFields0 := externalreferenceMixin[0].Fields()
 	_ = externalreferenceMixinFields0
-	externalreferenceMixinFields1 := externalreferenceMixin[1].Fields()
-	_ = externalreferenceMixinFields1
 	externalreferenceFields := schema.ExternalReference{}.Fields()
 	_ = externalreferenceFields
-	// externalreferenceDescDocumentID is the schema descriptor for document_id field.
-	externalreferenceDescDocumentID := externalreferenceMixinFields0[0].Descriptor()
-	// externalreference.DefaultDocumentID holds the default value on creation for the document_id field.
-	externalreference.DefaultDocumentID = externalreferenceDescDocumentID.Default.(func() uuid.UUID)
 	// externalreferenceDescID is the schema descriptor for id field.
-	externalreferenceDescID := externalreferenceMixinFields1[0].Descriptor()
+	externalreferenceDescID := externalreferenceMixinFields0[0].Descriptor()
 	// externalreference.DefaultID holds the default value on creation for the id field.
 	externalreference.DefaultID = externalreferenceDescID.Default.(func() uuid.UUID)
 	hashesentryMixin := schema.HashesEntry{}.Mixin()
+	hashesentryMixinHooks0 := hashesentryMixin[0].Hooks()
 	hashesentryHooks := schema.HashesEntry{}.Hooks()
-	hashesentry.Hooks[0] = hashesentryHooks[0]
+	hashesentry.Hooks[0] = hashesentryMixinHooks0[0]
+	hashesentry.Hooks[1] = hashesentryHooks[0]
 	hashesentryMixinFields0 := hashesentryMixin[0].Fields()
 	_ = hashesentryMixinFields0
-	hashesentryMixinFields1 := hashesentryMixin[1].Fields()
-	_ = hashesentryMixinFields1
 	hashesentryFields := schema.HashesEntry{}.Fields()
 	_ = hashesentryFields
-	// hashesentryDescDocumentID is the schema descriptor for document_id field.
-	hashesentryDescDocumentID := hashesentryMixinFields0[0].Descriptor()
-	// hashesentry.DefaultDocumentID holds the default value on creation for the document_id field.
-	hashesentry.DefaultDocumentID = hashesentryDescDocumentID.Default.(func() uuid.UUID)
 	// hashesentryDescID is the schema descriptor for id field.
-	hashesentryDescID := hashesentryMixinFields1[0].Descriptor()
+	hashesentryDescID := hashesentryMixinFields0[0].Descriptor()
 	// hashesentry.DefaultID holds the default value on creation for the id field.
 	hashesentry.DefaultID = hashesentryDescID.Default.(func() uuid.UUID)
 	identifiersentryMixin := schema.IdentifiersEntry{}.Mixin()
+	identifiersentryMixinHooks0 := identifiersentryMixin[0].Hooks()
+	identifiersentry.Hooks[0] = identifiersentryMixinHooks0[0]
 	identifiersentryMixinFields0 := identifiersentryMixin[0].Fields()
 	_ = identifiersentryMixinFields0
-	identifiersentryMixinFields1 := identifiersentryMixin[1].Fields()
-	_ = identifiersentryMixinFields1
 	identifiersentryFields := schema.IdentifiersEntry{}.Fields()
 	_ = identifiersentryFields
-	// identifiersentryDescDocumentID is the schema descriptor for document_id field.
-	identifiersentryDescDocumentID := identifiersentryMixinFields0[0].Descriptor()
-	// identifiersentry.DefaultDocumentID holds the default value on creation for the document_id field.
-	identifiersentry.DefaultDocumentID = identifiersentryDescDocumentID.Default.(func() uuid.UUID)
 	// identifiersentryDescID is the schema descriptor for id field.
-	identifiersentryDescID := identifiersentryMixinFields1[0].Descriptor()
+	identifiersentryDescID := identifiersentryMixinFields0[0].Descriptor()
 	// identifiersentry.DefaultID holds the default value on creation for the id field.
 	identifiersentry.DefaultID = identifiersentryDescID.Default.(func() uuid.UUID)
 	metadataMixin := schema.Metadata{}.Mixin()
@@ -139,7 +114,7 @@ func init() {
 	metadataFields := schema.Metadata{}.Fields()
 	_ = metadataFields
 	// metadataDescNativeID is the schema descriptor for native_id field.
-	metadataDescNativeID := metadataFields[0].Descriptor()
+	metadataDescNativeID := metadataFields[1].Descriptor()
 	// metadata.NativeIDValidator is a validator for the "native_id" field. It is called by the builders before save.
 	metadata.NativeIDValidator = metadataDescNativeID.Validators[0].(func(string) error)
 	// metadataDescID is the schema descriptor for id field.
@@ -147,24 +122,18 @@ func init() {
 	// metadata.DefaultID holds the default value on creation for the id field.
 	metadata.DefaultID = metadataDescID.Default.(func() uuid.UUID)
 	nodeMixin := schema.Node{}.Mixin()
-	nodeMixinHooks1 := nodeMixin[1].Hooks()
-	node.Hooks[0] = nodeMixinHooks1[0]
+	nodeMixinHooks0 := nodeMixin[0].Hooks()
+	node.Hooks[0] = nodeMixinHooks0[0]
 	nodeMixinFields0 := nodeMixin[0].Fields()
 	_ = nodeMixinFields0
-	nodeMixinFields1 := nodeMixin[1].Fields()
-	_ = nodeMixinFields1
 	nodeFields := schema.Node{}.Fields()
 	_ = nodeFields
-	// nodeDescDocumentID is the schema descriptor for document_id field.
-	nodeDescDocumentID := nodeMixinFields0[0].Descriptor()
-	// node.DefaultDocumentID holds the default value on creation for the document_id field.
-	node.DefaultDocumentID = nodeDescDocumentID.Default.(func() uuid.UUID)
 	// nodeDescNativeID is the schema descriptor for native_id field.
 	nodeDescNativeID := nodeFields[0].Descriptor()
 	// node.NativeIDValidator is a validator for the "native_id" field. It is called by the builders before save.
 	node.NativeIDValidator = nodeDescNativeID.Validators[0].(func(string) error)
 	// nodeDescID is the schema descriptor for id field.
-	nodeDescID := nodeMixinFields1[0].Descriptor()
+	nodeDescID := nodeMixinFields0[0].Descriptor()
 	// node.DefaultID holds the default value on creation for the id field.
 	node.DefaultID = nodeDescID.Default.(func() uuid.UUID)
 	nodelistMixin := schema.NodeList{}.Mixin()
@@ -179,82 +148,49 @@ func init() {
 	// nodelist.DefaultID holds the default value on creation for the id field.
 	nodelist.DefaultID = nodelistDescID.Default.(func() uuid.UUID)
 	personMixin := schema.Person{}.Mixin()
-	personMixinHooks1 := personMixin[1].Hooks()
+	personMixinHooks0 := personMixin[0].Hooks()
 	personHooks := schema.Person{}.Hooks()
-	person.Hooks[0] = personMixinHooks1[0]
+	person.Hooks[0] = personMixinHooks0[0]
 	person.Hooks[1] = personHooks[0]
 	personMixinFields0 := personMixin[0].Fields()
 	_ = personMixinFields0
-	personMixinFields1 := personMixin[1].Fields()
-	_ = personMixinFields1
 	personFields := schema.Person{}.Fields()
 	_ = personFields
-	// personDescDocumentID is the schema descriptor for document_id field.
-	personDescDocumentID := personMixinFields0[0].Descriptor()
-	// person.DefaultDocumentID holds the default value on creation for the document_id field.
-	person.DefaultDocumentID = personDescDocumentID.Default.(func() uuid.UUID)
 	// personDescID is the schema descriptor for id field.
-	personDescID := personMixinFields1[0].Descriptor()
+	personDescID := personMixinFields0[0].Descriptor()
 	// person.DefaultID holds the default value on creation for the id field.
 	person.DefaultID = personDescID.Default.(func() uuid.UUID)
 	propertyMixin := schema.Property{}.Mixin()
-	propertyMixinHooks1 := propertyMixin[1].Hooks()
-	property.Hooks[0] = propertyMixinHooks1[0]
+	propertyMixinHooks0 := propertyMixin[0].Hooks()
+	property.Hooks[0] = propertyMixinHooks0[0]
 	propertyMixinFields0 := propertyMixin[0].Fields()
 	_ = propertyMixinFields0
-	propertyMixinFields1 := propertyMixin[1].Fields()
-	_ = propertyMixinFields1
 	propertyFields := schema.Property{}.Fields()
 	_ = propertyFields
-	// propertyDescDocumentID is the schema descriptor for document_id field.
-	propertyDescDocumentID := propertyMixinFields0[0].Descriptor()
-	// property.DefaultDocumentID holds the default value on creation for the document_id field.
-	property.DefaultDocumentID = propertyDescDocumentID.Default.(func() uuid.UUID)
 	// propertyDescID is the schema descriptor for id field.
-	propertyDescID := propertyMixinFields1[0].Descriptor()
+	propertyDescID := propertyMixinFields0[0].Descriptor()
 	// property.DefaultID holds the default value on creation for the id field.
 	property.DefaultID = propertyDescID.Default.(func() uuid.UUID)
-	purposeMixin := schema.Purpose{}.Mixin()
-	purposeMixinFields0 := purposeMixin[0].Fields()
-	_ = purposeMixinFields0
-	purposeFields := schema.Purpose{}.Fields()
-	_ = purposeFields
-	// purposeDescDocumentID is the schema descriptor for document_id field.
-	purposeDescDocumentID := purposeMixinFields0[0].Descriptor()
-	// purpose.DefaultDocumentID holds the default value on creation for the document_id field.
-	purpose.DefaultDocumentID = purposeDescDocumentID.Default.(func() uuid.UUID)
 	sourcedataMixin := schema.SourceData{}.Mixin()
-	sourcedataMixinHooks1 := sourcedataMixin[1].Hooks()
-	sourcedata.Hooks[0] = sourcedataMixinHooks1[0]
+	sourcedataMixinHooks0 := sourcedataMixin[0].Hooks()
+	sourcedata.Hooks[0] = sourcedataMixinHooks0[0]
 	sourcedataMixinFields0 := sourcedataMixin[0].Fields()
 	_ = sourcedataMixinFields0
-	sourcedataMixinFields1 := sourcedataMixin[1].Fields()
-	_ = sourcedataMixinFields1
 	sourcedataFields := schema.SourceData{}.Fields()
 	_ = sourcedataFields
-	// sourcedataDescDocumentID is the schema descriptor for document_id field.
-	sourcedataDescDocumentID := sourcedataMixinFields0[0].Descriptor()
-	// sourcedata.DefaultDocumentID holds the default value on creation for the document_id field.
-	sourcedata.DefaultDocumentID = sourcedataDescDocumentID.Default.(func() uuid.UUID)
 	// sourcedataDescID is the schema descriptor for id field.
-	sourcedataDescID := sourcedataMixinFields1[0].Descriptor()
+	sourcedataDescID := sourcedataMixinFields0[0].Descriptor()
 	// sourcedata.DefaultID holds the default value on creation for the id field.
 	sourcedata.DefaultID = sourcedataDescID.Default.(func() uuid.UUID)
 	toolMixin := schema.Tool{}.Mixin()
-	toolMixinHooks1 := toolMixin[1].Hooks()
-	tool.Hooks[0] = toolMixinHooks1[0]
+	toolMixinHooks0 := toolMixin[0].Hooks()
+	tool.Hooks[0] = toolMixinHooks0[0]
 	toolMixinFields0 := toolMixin[0].Fields()
 	_ = toolMixinFields0
-	toolMixinFields1 := toolMixin[1].Fields()
-	_ = toolMixinFields1
 	toolFields := schema.Tool{}.Fields()
 	_ = toolFields
-	// toolDescDocumentID is the schema descriptor for document_id field.
-	toolDescDocumentID := toolMixinFields0[0].Descriptor()
-	// tool.DefaultDocumentID holds the default value on creation for the document_id field.
-	tool.DefaultDocumentID = toolDescDocumentID.Default.(func() uuid.UUID)
 	// toolDescID is the schema descriptor for id field.
-	toolDescID := toolMixinFields1[0].Descriptor()
+	toolDescID := toolMixinFields0[0].Descriptor()
 	// tool.DefaultID holds the default value on creation for the id field.
 	tool.DefaultID = toolDescID.Default.(func() uuid.UUID)
 }

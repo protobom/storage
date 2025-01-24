@@ -11,9 +11,9 @@ import (
 	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
-	"entgo.io/ent/schema/index"
-	"github.com/google/uuid"
 	"github.com/protobom/protobom/pkg/sbom"
+
+	"github.com/protobom/storage/internal/backends/ent/schema/mixin"
 )
 
 type Node struct {
@@ -22,8 +22,7 @@ type Node struct {
 
 func (Node) Mixin() []ent.Mixin {
 	return []ent.Mixin{
-		DocumentMixin{},
-		ProtoMessageMixin[*sbom.Node]{},
+		mixin.ProtoMessage[*sbom.Node]{},
 	}
 }
 
@@ -33,7 +32,6 @@ func (Node) Fields() []ent.Field {
 			NotEmpty().
 			Immutable().
 			StructTag(`json:"id"`),
-		field.UUID("node_list_id", uuid.UUID{}).Optional(),
 		field.Enum("type").Values("PACKAGE", "FILE"),
 		field.String("name"),
 		field.String("version"),
@@ -68,6 +66,7 @@ func (Node) Edges() []ent.Edge {
 		edge.To("external_references", ExternalReference.Type).
 			Annotations(entsql.OnDelete(entsql.Cascade)),
 		edge.To("primary_purpose", Purpose.Type).
+			StorageKey(edge.Table("node_primary_purposes"), edge.Columns("node_id", "purpose_id")).
 			Annotations(entsql.OnDelete(entsql.Cascade)),
 		edge.To("nodes", Node.Type).
 			From("to_nodes").
@@ -80,17 +79,14 @@ func (Node) Edges() []ent.Edge {
 			StorageKey(edge.Table("node_identifiers"), edge.Columns("node_id", "identifier_entry_id")).
 			Annotations(entsql.OnDelete(entsql.Cascade)),
 		edge.To("properties", Property.Type).
+			StorageKey(edge.Table("node_properties"), edge.Columns("node_id", "property_id")).
 			Annotations(entsql.OnDelete(entsql.Cascade)),
+		edge.From("documents", Document.Type).
+			Ref("nodes").
+			Required().
+			Immutable(),
 		edge.From("node_lists", NodeList.Type).
 			Ref("nodes").
 			Required(),
-	}
-}
-
-func (Node) Indexes() []ent.Index {
-	return []ent.Index{
-		index.Fields("native_id", "node_list_id").
-			Unique().
-			StorageKey("idx_nodes"),
 	}
 }

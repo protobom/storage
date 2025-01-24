@@ -32,20 +32,6 @@ type ExternalReferenceCreate struct {
 	conflict []sql.ConflictOption
 }
 
-// SetDocumentID sets the "document_id" field.
-func (erc *ExternalReferenceCreate) SetDocumentID(u uuid.UUID) *ExternalReferenceCreate {
-	erc.mutation.SetDocumentID(u)
-	return erc
-}
-
-// SetNillableDocumentID sets the "document_id" field if the given value is not nil.
-func (erc *ExternalReferenceCreate) SetNillableDocumentID(u *uuid.UUID) *ExternalReferenceCreate {
-	if u != nil {
-		erc.SetDocumentID(*u)
-	}
-	return erc
-}
-
 // SetProtoMessage sets the "proto_message" field.
 func (erc *ExternalReferenceCreate) SetProtoMessage(sr *sbom.ExternalReference) *ExternalReferenceCreate {
 	erc.mutation.SetProtoMessage(sr)
@@ -98,11 +84,6 @@ func (erc *ExternalReferenceCreate) SetNillableID(u *uuid.UUID) *ExternalReferen
 	return erc
 }
 
-// SetDocument sets the "document" edge to the Document entity.
-func (erc *ExternalReferenceCreate) SetDocument(d *Document) *ExternalReferenceCreate {
-	return erc.SetDocumentID(d.ID)
-}
-
 // AddHashIDs adds the "hashes" edge to the HashesEntry entity by IDs.
 func (erc *ExternalReferenceCreate) AddHashIDs(ids ...uuid.UUID) *ExternalReferenceCreate {
 	erc.mutation.AddHashIDs(ids...)
@@ -116,6 +97,21 @@ func (erc *ExternalReferenceCreate) AddHashes(h ...*HashesEntry) *ExternalRefere
 		ids[i] = h[i].ID
 	}
 	return erc.AddHashIDs(ids...)
+}
+
+// AddDocumentIDs adds the "documents" edge to the Document entity by IDs.
+func (erc *ExternalReferenceCreate) AddDocumentIDs(ids ...uuid.UUID) *ExternalReferenceCreate {
+	erc.mutation.AddDocumentIDs(ids...)
+	return erc
+}
+
+// AddDocuments adds the "documents" edges to the Document entity.
+func (erc *ExternalReferenceCreate) AddDocuments(d ...*Document) *ExternalReferenceCreate {
+	ids := make([]uuid.UUID, len(d))
+	for i := range d {
+		ids[i] = d[i].ID
+	}
+	return erc.AddDocumentIDs(ids...)
 }
 
 // AddNodeIDs adds the "nodes" edge to the Node entity by IDs.
@@ -170,13 +166,6 @@ func (erc *ExternalReferenceCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (erc *ExternalReferenceCreate) defaults() error {
-	if _, ok := erc.mutation.DocumentID(); !ok {
-		if externalreference.DefaultDocumentID == nil {
-			return fmt.Errorf("ent: uninitialized externalreference.DefaultDocumentID (forgotten import ent/runtime?)")
-		}
-		v := externalreference.DefaultDocumentID()
-		erc.mutation.SetDocumentID(v)
-	}
 	if _, ok := erc.mutation.ID(); !ok {
 		if externalreference.DefaultID == nil {
 			return fmt.Errorf("ent: uninitialized externalreference.DefaultID (forgotten import ent/runtime?)")
@@ -205,6 +194,9 @@ func (erc *ExternalReferenceCreate) check() error {
 		if err := externalreference.TypeValidator(v); err != nil {
 			return &ValidationError{Name: "type", err: fmt.Errorf(`ent: validator failed for field "ExternalReference.type": %w`, err)}
 		}
+	}
+	if len(erc.mutation.DocumentsIDs()) == 0 {
+		return &ValidationError{Name: "documents", err: errors.New(`ent: missing required edge "ExternalReference.documents"`)}
 	}
 	if len(erc.mutation.NodesIDs()) == 0 {
 		return &ValidationError{Name: "nodes", err: errors.New(`ent: missing required edge "ExternalReference.nodes"`)}
@@ -265,23 +257,6 @@ func (erc *ExternalReferenceCreate) createSpec() (*ExternalReference, *sqlgraph.
 		_spec.SetField(externalreference.FieldType, field.TypeEnum, value)
 		_node.Type = value
 	}
-	if nodes := erc.mutation.DocumentIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: false,
-			Table:   externalreference.DocumentTable,
-			Columns: []string{externalreference.DocumentColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(document.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_node.DocumentID = nodes[0]
-		_spec.Edges = append(_spec.Edges, edge)
-	}
 	if nodes := erc.mutation.HashesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
@@ -291,6 +266,22 @@ func (erc *ExternalReferenceCreate) createSpec() (*ExternalReference, *sqlgraph.
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(hashesentry.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := erc.mutation.DocumentsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   externalreference.DocumentsTable,
+			Columns: externalreference.DocumentsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(document.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -321,7 +312,7 @@ func (erc *ExternalReferenceCreate) createSpec() (*ExternalReference, *sqlgraph.
 // of the `INSERT` statement. For example:
 //
 //	client.ExternalReference.Create().
-//		SetDocumentID(v).
+//		SetProtoMessage(v).
 //		OnConflict(
 //			// Update the row with the new values
 //			// the was proposed for insertion.
@@ -330,7 +321,7 @@ func (erc *ExternalReferenceCreate) createSpec() (*ExternalReference, *sqlgraph.
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.ExternalReferenceUpsert) {
-//			SetDocumentID(v+v).
+//			SetProtoMessage(v+v).
 //		}).
 //		Exec(ctx)
 func (erc *ExternalReferenceCreate) OnConflict(opts ...sql.ConflictOption) *ExternalReferenceUpsertOne {
@@ -436,9 +427,6 @@ func (u *ExternalReferenceUpsertOne) UpdateNewValues() *ExternalReferenceUpsertO
 	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
 		if _, exists := u.create.mutation.ID(); exists {
 			s.SetIgnore(externalreference.FieldID)
-		}
-		if _, exists := u.create.mutation.DocumentID(); exists {
-			s.SetIgnore(externalreference.FieldDocumentID)
 		}
 		if _, exists := u.create.mutation.ProtoMessage(); exists {
 			s.SetIgnore(externalreference.FieldProtoMessage)
@@ -673,7 +661,7 @@ func (ercb *ExternalReferenceCreateBulk) ExecX(ctx context.Context) {
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.ExternalReferenceUpsert) {
-//			SetDocumentID(v+v).
+//			SetProtoMessage(v+v).
 //		}).
 //		Exec(ctx)
 func (ercb *ExternalReferenceCreateBulk) OnConflict(opts ...sql.ConflictOption) *ExternalReferenceUpsertBulk {
@@ -719,9 +707,6 @@ func (u *ExternalReferenceUpsertBulk) UpdateNewValues() *ExternalReferenceUpsert
 		for _, b := range u.create.builders {
 			if _, exists := b.mutation.ID(); exists {
 				s.SetIgnore(externalreference.FieldID)
-			}
-			if _, exists := b.mutation.DocumentID(); exists {
-				s.SetIgnore(externalreference.FieldDocumentID)
 			}
 			if _, exists := b.mutation.ProtoMessage(); exists {
 				s.SetIgnore(externalreference.FieldProtoMessage)

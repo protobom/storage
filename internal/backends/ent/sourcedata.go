@@ -16,8 +16,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"github.com/google/uuid"
 	"github.com/protobom/protobom/pkg/sbom"
-	"github.com/protobom/storage/internal/backends/ent/document"
-	"github.com/protobom/storage/internal/backends/ent/metadata"
 	"github.com/protobom/storage/internal/backends/ent/sourcedata"
 )
 
@@ -26,20 +24,14 @@ type SourceData struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID uuid.UUID `json:"-"`
-	// DocumentID holds the value of the "document_id" field.
-	DocumentID uuid.UUID `json:"-"`
 	// ProtoMessage holds the value of the "proto_message" field.
 	ProtoMessage *sbom.SourceData `json:"-"`
-	// MetadataID holds the value of the "metadata_id" field.
-	MetadataID uuid.UUID `json:"-"`
 	// Format holds the value of the "format" field.
 	Format string `json:"format,omitempty"`
 	// Size holds the value of the "size" field.
 	Size int64 `json:"size,omitempty"`
 	// URI holds the value of the "uri" field.
 	URI *string `json:"uri,omitempty"`
-	// Hashes holds the value of the "hashes" field.
-	Hashes map[int32]string `json:"hashes,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the SourceDataQuery when eager-loading is set.
 	Edges        SourceDataEdges `json:"-"`
@@ -48,33 +40,40 @@ type SourceData struct {
 
 // SourceDataEdges holds the relations/edges for other nodes in the graph.
 type SourceDataEdges struct {
-	// Document holds the value of the document edge.
-	Document *Document `json:"document,omitempty"`
+	// Hashes holds the value of the hashes edge.
+	Hashes []*HashesEntry `json:"hashes,omitempty"`
+	// Documents holds the value of the documents edge.
+	Documents []*Document `json:"-"`
 	// Metadata holds the value of the metadata edge.
-	Metadata *Metadata `json:"-"`
+	Metadata []*Metadata `json:"-"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [3]bool
 }
 
-// DocumentOrErr returns the Document value or an error if the edge
-// was not loaded in eager-loading, or loaded but was not found.
-func (e SourceDataEdges) DocumentOrErr() (*Document, error) {
-	if e.Document != nil {
-		return e.Document, nil
-	} else if e.loadedTypes[0] {
-		return nil, &NotFoundError{label: document.Label}
+// HashesOrErr returns the Hashes value or an error if the edge
+// was not loaded in eager-loading.
+func (e SourceDataEdges) HashesOrErr() ([]*HashesEntry, error) {
+	if e.loadedTypes[0] {
+		return e.Hashes, nil
 	}
-	return nil, &NotLoadedError{edge: "document"}
+	return nil, &NotLoadedError{edge: "hashes"}
+}
+
+// DocumentsOrErr returns the Documents value or an error if the edge
+// was not loaded in eager-loading.
+func (e SourceDataEdges) DocumentsOrErr() ([]*Document, error) {
+	if e.loadedTypes[1] {
+		return e.Documents, nil
+	}
+	return nil, &NotLoadedError{edge: "documents"}
 }
 
 // MetadataOrErr returns the Metadata value or an error if the edge
-// was not loaded in eager-loading, or loaded but was not found.
-func (e SourceDataEdges) MetadataOrErr() (*Metadata, error) {
-	if e.Metadata != nil {
+// was not loaded in eager-loading.
+func (e SourceDataEdges) MetadataOrErr() ([]*Metadata, error) {
+	if e.loadedTypes[2] {
 		return e.Metadata, nil
-	} else if e.loadedTypes[1] {
-		return nil, &NotFoundError{label: metadata.Label}
 	}
 	return nil, &NotLoadedError{edge: "metadata"}
 }
@@ -86,13 +85,11 @@ func (*SourceData) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case sourcedata.FieldProtoMessage:
 			values[i] = &sql.NullScanner{S: new(sbom.SourceData)}
-		case sourcedata.FieldHashes:
-			values[i] = new([]byte)
 		case sourcedata.FieldSize:
 			values[i] = new(sql.NullInt64)
 		case sourcedata.FieldFormat, sourcedata.FieldURI:
 			values[i] = new(sql.NullString)
-		case sourcedata.FieldID, sourcedata.FieldDocumentID, sourcedata.FieldMetadataID:
+		case sourcedata.FieldID:
 			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -115,23 +112,11 @@ func (sd *SourceData) assignValues(columns []string, values []any) error {
 			} else if value != nil {
 				sd.ID = *value
 			}
-		case sourcedata.FieldDocumentID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
-				return fmt.Errorf("unexpected type %T for field document_id", values[i])
-			} else if value != nil {
-				sd.DocumentID = *value
-			}
 		case sourcedata.FieldProtoMessage:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
 				return fmt.Errorf("unexpected type %T for field proto_message", values[i])
 			} else if value.Valid {
 				sd.ProtoMessage = value.S.(*sbom.SourceData)
-			}
-		case sourcedata.FieldMetadataID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
-				return fmt.Errorf("unexpected type %T for field metadata_id", values[i])
-			} else if value != nil {
-				sd.MetadataID = *value
 			}
 		case sourcedata.FieldFormat:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -152,14 +137,6 @@ func (sd *SourceData) assignValues(columns []string, values []any) error {
 				sd.URI = new(string)
 				*sd.URI = value.String
 			}
-		case sourcedata.FieldHashes:
-			if value, ok := values[i].(*[]byte); !ok {
-				return fmt.Errorf("unexpected type %T for field hashes", values[i])
-			} else if value != nil && len(*value) > 0 {
-				if err := json.Unmarshal(*value, &sd.Hashes); err != nil {
-					return fmt.Errorf("unmarshal field hashes: %w", err)
-				}
-			}
 		default:
 			sd.selectValues.Set(columns[i], values[i])
 		}
@@ -173,9 +150,14 @@ func (sd *SourceData) Value(name string) (ent.Value, error) {
 	return sd.selectValues.Get(name)
 }
 
-// QueryDocument queries the "document" edge of the SourceData entity.
-func (sd *SourceData) QueryDocument() *DocumentQuery {
-	return NewSourceDataClient(sd.config).QueryDocument(sd)
+// QueryHashes queries the "hashes" edge of the SourceData entity.
+func (sd *SourceData) QueryHashes() *HashesEntryQuery {
+	return NewSourceDataClient(sd.config).QueryHashes(sd)
+}
+
+// QueryDocuments queries the "documents" edge of the SourceData entity.
+func (sd *SourceData) QueryDocuments() *DocumentQuery {
+	return NewSourceDataClient(sd.config).QueryDocuments(sd)
 }
 
 // QueryMetadata queries the "metadata" edge of the SourceData entity.
@@ -206,16 +188,10 @@ func (sd *SourceData) String() string {
 	var builder strings.Builder
 	builder.WriteString("SourceData(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", sd.ID))
-	builder.WriteString("document_id=")
-	builder.WriteString(fmt.Sprintf("%v", sd.DocumentID))
-	builder.WriteString(", ")
 	if v := sd.ProtoMessage; v != nil {
 		builder.WriteString("proto_message=")
 		builder.WriteString(fmt.Sprintf("%v", *v))
 	}
-	builder.WriteString(", ")
-	builder.WriteString("metadata_id=")
-	builder.WriteString(fmt.Sprintf("%v", sd.MetadataID))
 	builder.WriteString(", ")
 	builder.WriteString("format=")
 	builder.WriteString(sd.Format)
@@ -227,9 +203,6 @@ func (sd *SourceData) String() string {
 		builder.WriteString("uri=")
 		builder.WriteString(*v)
 	}
-	builder.WriteString(", ")
-	builder.WriteString("hashes=")
-	builder.WriteString(fmt.Sprintf("%v", sd.Hashes))
 	builder.WriteByte(')')
 	return builder.String()
 }

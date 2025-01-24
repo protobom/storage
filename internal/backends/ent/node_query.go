@@ -39,7 +39,6 @@ type NodeQuery struct {
 	order                  []node.OrderOption
 	inters                 []Interceptor
 	predicates             []predicate.Node
-	withDocument           *DocumentQuery
 	withAnnotations        *AnnotationQuery
 	withSuppliers          *PersonQuery
 	withOriginators        *PersonQuery
@@ -50,6 +49,7 @@ type NodeQuery struct {
 	withHashes             *HashesEntryQuery
 	withIdentifiers        *IdentifiersEntryQuery
 	withProperties         *PropertyQuery
+	withDocuments          *DocumentQuery
 	withNodeLists          *NodeListQuery
 	withEdgeTypes          *EdgeTypeQuery
 	// intermediate query (i.e. traversal path).
@@ -88,28 +88,6 @@ func (nq *NodeQuery) Order(o ...node.OrderOption) *NodeQuery {
 	return nq
 }
 
-// QueryDocument chains the current query on the "document" edge.
-func (nq *NodeQuery) QueryDocument() *DocumentQuery {
-	query := (&DocumentClient{config: nq.config}).Query()
-	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := nq.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		selector := nq.sqlQuery(ctx)
-		if err := selector.Err(); err != nil {
-			return nil, err
-		}
-		step := sqlgraph.NewStep(
-			sqlgraph.From(node.Table, node.FieldID, selector),
-			sqlgraph.To(document.Table, document.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, node.DocumentTable, node.DocumentColumn),
-		)
-		fromU = sqlgraph.SetNeighbors(nq.driver.Dialect(), step)
-		return fromU, nil
-	}
-	return query
-}
-
 // QueryAnnotations chains the current query on the "annotations" edge.
 func (nq *NodeQuery) QueryAnnotations() *AnnotationQuery {
 	query := (&AnnotationClient{config: nq.config}).Query()
@@ -146,7 +124,7 @@ func (nq *NodeQuery) QuerySuppliers() *PersonQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(node.Table, node.FieldID, selector),
 			sqlgraph.To(person.Table, person.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, node.SuppliersTable, node.SuppliersColumn),
+			sqlgraph.Edge(sqlgraph.M2M, false, node.SuppliersTable, node.SuppliersPrimaryKey...),
 		)
 		fromU = sqlgraph.SetNeighbors(nq.driver.Dialect(), step)
 		return fromU, nil
@@ -168,7 +146,7 @@ func (nq *NodeQuery) QueryOriginators() *PersonQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(node.Table, node.FieldID, selector),
 			sqlgraph.To(person.Table, person.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, node.OriginatorsTable, node.OriginatorsColumn),
+			sqlgraph.Edge(sqlgraph.M2M, false, node.OriginatorsTable, node.OriginatorsPrimaryKey...),
 		)
 		fromU = sqlgraph.SetNeighbors(nq.driver.Dialect(), step)
 		return fromU, nil
@@ -212,7 +190,7 @@ func (nq *NodeQuery) QueryPrimaryPurpose() *PurposeQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(node.Table, node.FieldID, selector),
 			sqlgraph.To(purpose.Table, purpose.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, node.PrimaryPurposeTable, node.PrimaryPurposeColumn),
+			sqlgraph.Edge(sqlgraph.M2M, false, node.PrimaryPurposeTable, node.PrimaryPurposePrimaryKey...),
 		)
 		fromU = sqlgraph.SetNeighbors(nq.driver.Dialect(), step)
 		return fromU, nil
@@ -322,7 +300,29 @@ func (nq *NodeQuery) QueryProperties() *PropertyQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(node.Table, node.FieldID, selector),
 			sqlgraph.To(property.Table, property.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, node.PropertiesTable, node.PropertiesColumn),
+			sqlgraph.Edge(sqlgraph.M2M, false, node.PropertiesTable, node.PropertiesPrimaryKey...),
+		)
+		fromU = sqlgraph.SetNeighbors(nq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryDocuments chains the current query on the "documents" edge.
+func (nq *NodeQuery) QueryDocuments() *DocumentQuery {
+	query := (&DocumentClient{config: nq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := nq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := nq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(node.Table, node.FieldID, selector),
+			sqlgraph.To(document.Table, document.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, node.DocumentsTable, node.DocumentsPrimaryKey...),
 		)
 		fromU = sqlgraph.SetNeighbors(nq.driver.Dialect(), step)
 		return fromU, nil
@@ -566,7 +566,6 @@ func (nq *NodeQuery) Clone() *NodeQuery {
 		order:                  append([]node.OrderOption{}, nq.order...),
 		inters:                 append([]Interceptor{}, nq.inters...),
 		predicates:             append([]predicate.Node{}, nq.predicates...),
-		withDocument:           nq.withDocument.Clone(),
 		withAnnotations:        nq.withAnnotations.Clone(),
 		withSuppliers:          nq.withSuppliers.Clone(),
 		withOriginators:        nq.withOriginators.Clone(),
@@ -577,23 +576,13 @@ func (nq *NodeQuery) Clone() *NodeQuery {
 		withHashes:             nq.withHashes.Clone(),
 		withIdentifiers:        nq.withIdentifiers.Clone(),
 		withProperties:         nq.withProperties.Clone(),
+		withDocuments:          nq.withDocuments.Clone(),
 		withNodeLists:          nq.withNodeLists.Clone(),
 		withEdgeTypes:          nq.withEdgeTypes.Clone(),
 		// clone intermediate query.
 		sql:  nq.sql.Clone(),
 		path: nq.path,
 	}
-}
-
-// WithDocument tells the query-builder to eager-load the nodes that are connected to
-// the "document" edge. The optional arguments are used to configure the query builder of the edge.
-func (nq *NodeQuery) WithDocument(opts ...func(*DocumentQuery)) *NodeQuery {
-	query := (&DocumentClient{config: nq.config}).Query()
-	for _, opt := range opts {
-		opt(query)
-	}
-	nq.withDocument = query
-	return nq
 }
 
 // WithAnnotations tells the query-builder to eager-load the nodes that are connected to
@@ -706,6 +695,17 @@ func (nq *NodeQuery) WithProperties(opts ...func(*PropertyQuery)) *NodeQuery {
 	return nq
 }
 
+// WithDocuments tells the query-builder to eager-load the nodes that are connected to
+// the "documents" edge. The optional arguments are used to configure the query builder of the edge.
+func (nq *NodeQuery) WithDocuments(opts ...func(*DocumentQuery)) *NodeQuery {
+	query := (&DocumentClient{config: nq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	nq.withDocuments = query
+	return nq
+}
+
 // WithNodeLists tells the query-builder to eager-load the nodes that are connected to
 // the "node_lists" edge. The optional arguments are used to configure the query builder of the edge.
 func (nq *NodeQuery) WithNodeLists(opts ...func(*NodeListQuery)) *NodeQuery {
@@ -734,12 +734,12 @@ func (nq *NodeQuery) WithEdgeTypes(opts ...func(*EdgeTypeQuery)) *NodeQuery {
 // Example:
 //
 //	var v []struct {
-//		DocumentID uuid.UUID `json:"-"`
+//		ProtoMessage *sbom.Node `json:"-"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.Node.Query().
-//		GroupBy(node.FieldDocumentID).
+//		GroupBy(node.FieldProtoMessage).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (nq *NodeQuery) GroupBy(field string, fields ...string) *NodeGroupBy {
@@ -757,11 +757,11 @@ func (nq *NodeQuery) GroupBy(field string, fields ...string) *NodeGroupBy {
 // Example:
 //
 //	var v []struct {
-//		DocumentID uuid.UUID `json:"-"`
+//		ProtoMessage *sbom.Node `json:"-"`
 //	}
 //
 //	client.Node.Query().
-//		Select(node.FieldDocumentID).
+//		Select(node.FieldProtoMessage).
 //		Scan(ctx, &v)
 func (nq *NodeQuery) Select(fields ...string) *NodeSelect {
 	nq.ctx.Fields = append(nq.ctx.Fields, fields...)
@@ -807,7 +807,6 @@ func (nq *NodeQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Node, e
 		nodes       = []*Node{}
 		_spec       = nq.querySpec()
 		loadedTypes = [13]bool{
-			nq.withDocument != nil,
 			nq.withAnnotations != nil,
 			nq.withSuppliers != nil,
 			nq.withOriginators != nil,
@@ -818,6 +817,7 @@ func (nq *NodeQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Node, e
 			nq.withHashes != nil,
 			nq.withIdentifiers != nil,
 			nq.withProperties != nil,
+			nq.withDocuments != nil,
 			nq.withNodeLists != nil,
 			nq.withEdgeTypes != nil,
 		}
@@ -839,12 +839,6 @@ func (nq *NodeQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Node, e
 	}
 	if len(nodes) == 0 {
 		return nodes, nil
-	}
-	if query := nq.withDocument; query != nil {
-		if err := nq.loadDocument(ctx, query, nodes, nil,
-			func(n *Node, e *Document) { n.Edges.Document = e }); err != nil {
-			return nil, err
-		}
 	}
 	if query := nq.withAnnotations; query != nil {
 		if err := nq.loadAnnotations(ctx, query, nodes,
@@ -918,6 +912,13 @@ func (nq *NodeQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Node, e
 			return nil, err
 		}
 	}
+	if query := nq.withDocuments; query != nil {
+		if err := nq.loadDocuments(ctx, query, nodes,
+			func(n *Node) { n.Edges.Documents = []*Document{} },
+			func(n *Node, e *Document) { n.Edges.Documents = append(n.Edges.Documents, e) }); err != nil {
+			return nil, err
+		}
+	}
 	if query := nq.withNodeLists; query != nil {
 		if err := nq.loadNodeLists(ctx, query, nodes,
 			func(n *Node) { n.Edges.NodeLists = []*NodeList{} },
@@ -935,35 +936,6 @@ func (nq *NodeQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Node, e
 	return nodes, nil
 }
 
-func (nq *NodeQuery) loadDocument(ctx context.Context, query *DocumentQuery, nodes []*Node, init func(*Node), assign func(*Node, *Document)) error {
-	ids := make([]uuid.UUID, 0, len(nodes))
-	nodeids := make(map[uuid.UUID][]*Node)
-	for i := range nodes {
-		fk := nodes[i].DocumentID
-		if _, ok := nodeids[fk]; !ok {
-			ids = append(ids, fk)
-		}
-		nodeids[fk] = append(nodeids[fk], nodes[i])
-	}
-	if len(ids) == 0 {
-		return nil
-	}
-	query.Where(document.IDIn(ids...))
-	neighbors, err := query.All(ctx)
-	if err != nil {
-		return err
-	}
-	for _, n := range neighbors {
-		nodes, ok := nodeids[n.ID]
-		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "document_id" returned %v`, n.ID)
-		}
-		for i := range nodes {
-			assign(nodes[i], n)
-		}
-	}
-	return nil
-}
 func (nq *NodeQuery) loadAnnotations(ctx context.Context, query *AnnotationQuery, nodes []*Node, init func(*Node), assign func(*Node, *Annotation)) error {
 	fks := make([]driver.Value, 0, len(nodes))
 	nodeids := make(map[uuid.UUID]*Node)
@@ -998,64 +970,124 @@ func (nq *NodeQuery) loadAnnotations(ctx context.Context, query *AnnotationQuery
 	return nil
 }
 func (nq *NodeQuery) loadSuppliers(ctx context.Context, query *PersonQuery, nodes []*Node, init func(*Node), assign func(*Node, *Person)) error {
-	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[uuid.UUID]*Node)
-	for i := range nodes {
-		fks = append(fks, nodes[i].ID)
-		nodeids[nodes[i].ID] = nodes[i]
+	edgeIDs := make([]driver.Value, len(nodes))
+	byID := make(map[uuid.UUID]*Node)
+	nids := make(map[uuid.UUID]map[*Node]struct{})
+	for i, node := range nodes {
+		edgeIDs[i] = node.ID
+		byID[node.ID] = node
 		if init != nil {
-			init(nodes[i])
+			init(node)
 		}
 	}
-	query.withFKs = true
-	query.Where(predicate.Person(func(s *sql.Selector) {
-		s.Where(sql.InValues(s.C(node.SuppliersColumn), fks...))
-	}))
-	neighbors, err := query.All(ctx)
+	query.Where(func(s *sql.Selector) {
+		joinT := sql.Table(node.SuppliersTable)
+		s.Join(joinT).On(s.C(person.FieldID), joinT.C(node.SuppliersPrimaryKey[1]))
+		s.Where(sql.InValues(joinT.C(node.SuppliersPrimaryKey[0]), edgeIDs...))
+		columns := s.SelectedColumns()
+		s.Select(joinT.C(node.SuppliersPrimaryKey[0]))
+		s.AppendSelect(columns...)
+		s.SetDistinct(false)
+	})
+	if err := query.prepareQuery(ctx); err != nil {
+		return err
+	}
+	qr := QuerierFunc(func(ctx context.Context, q Query) (Value, error) {
+		return query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
+			assign := spec.Assign
+			values := spec.ScanValues
+			spec.ScanValues = func(columns []string) ([]any, error) {
+				values, err := values(columns[1:])
+				if err != nil {
+					return nil, err
+				}
+				return append([]any{new(uuid.UUID)}, values...), nil
+			}
+			spec.Assign = func(columns []string, values []any) error {
+				outValue := *values[0].(*uuid.UUID)
+				inValue := *values[1].(*uuid.UUID)
+				if nids[inValue] == nil {
+					nids[inValue] = map[*Node]struct{}{byID[outValue]: {}}
+					return assign(columns[1:], values[1:])
+				}
+				nids[inValue][byID[outValue]] = struct{}{}
+				return nil
+			}
+		})
+	})
+	neighbors, err := withInterceptors[[]*Person](ctx, query, qr, query.inters)
 	if err != nil {
 		return err
 	}
 	for _, n := range neighbors {
-		fk := n.node_suppliers
-		if fk == nil {
-			return fmt.Errorf(`foreign-key "node_suppliers" is nil for node %v`, n.ID)
-		}
-		node, ok := nodeids[*fk]
+		nodes, ok := nids[n.ID]
 		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "node_suppliers" returned %v for node %v`, *fk, n.ID)
+			return fmt.Errorf(`unexpected "suppliers" node returned %v`, n.ID)
 		}
-		assign(node, n)
+		for kn := range nodes {
+			assign(kn, n)
+		}
 	}
 	return nil
 }
 func (nq *NodeQuery) loadOriginators(ctx context.Context, query *PersonQuery, nodes []*Node, init func(*Node), assign func(*Node, *Person)) error {
-	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[uuid.UUID]*Node)
-	for i := range nodes {
-		fks = append(fks, nodes[i].ID)
-		nodeids[nodes[i].ID] = nodes[i]
+	edgeIDs := make([]driver.Value, len(nodes))
+	byID := make(map[uuid.UUID]*Node)
+	nids := make(map[uuid.UUID]map[*Node]struct{})
+	for i, node := range nodes {
+		edgeIDs[i] = node.ID
+		byID[node.ID] = node
 		if init != nil {
-			init(nodes[i])
+			init(node)
 		}
 	}
-	query.withFKs = true
-	if len(query.ctx.Fields) > 0 {
-		query.ctx.AppendFieldOnce(person.FieldNodeID)
+	query.Where(func(s *sql.Selector) {
+		joinT := sql.Table(node.OriginatorsTable)
+		s.Join(joinT).On(s.C(person.FieldID), joinT.C(node.OriginatorsPrimaryKey[1]))
+		s.Where(sql.InValues(joinT.C(node.OriginatorsPrimaryKey[0]), edgeIDs...))
+		columns := s.SelectedColumns()
+		s.Select(joinT.C(node.OriginatorsPrimaryKey[0]))
+		s.AppendSelect(columns...)
+		s.SetDistinct(false)
+	})
+	if err := query.prepareQuery(ctx); err != nil {
+		return err
 	}
-	query.Where(predicate.Person(func(s *sql.Selector) {
-		s.Where(sql.InValues(s.C(node.OriginatorsColumn), fks...))
-	}))
-	neighbors, err := query.All(ctx)
+	qr := QuerierFunc(func(ctx context.Context, q Query) (Value, error) {
+		return query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
+			assign := spec.Assign
+			values := spec.ScanValues
+			spec.ScanValues = func(columns []string) ([]any, error) {
+				values, err := values(columns[1:])
+				if err != nil {
+					return nil, err
+				}
+				return append([]any{new(uuid.UUID)}, values...), nil
+			}
+			spec.Assign = func(columns []string, values []any) error {
+				outValue := *values[0].(*uuid.UUID)
+				inValue := *values[1].(*uuid.UUID)
+				if nids[inValue] == nil {
+					nids[inValue] = map[*Node]struct{}{byID[outValue]: {}}
+					return assign(columns[1:], values[1:])
+				}
+				nids[inValue][byID[outValue]] = struct{}{}
+				return nil
+			}
+		})
+	})
+	neighbors, err := withInterceptors[[]*Person](ctx, query, qr, query.inters)
 	if err != nil {
 		return err
 	}
 	for _, n := range neighbors {
-		fk := n.NodeID
-		node, ok := nodeids[fk]
+		nodes, ok := nids[n.ID]
 		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "node_id" returned %v for node %v`, fk, n.ID)
+			return fmt.Errorf(`unexpected "originators" node returned %v`, n.ID)
 		}
-		assign(node, n)
+		for kn := range nodes {
+			assign(kn, n)
+		}
 	}
 	return nil
 }
@@ -1121,32 +1153,63 @@ func (nq *NodeQuery) loadExternalReferences(ctx context.Context, query *External
 	return nil
 }
 func (nq *NodeQuery) loadPrimaryPurpose(ctx context.Context, query *PurposeQuery, nodes []*Node, init func(*Node), assign func(*Node, *Purpose)) error {
-	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[uuid.UUID]*Node)
-	for i := range nodes {
-		fks = append(fks, nodes[i].ID)
-		nodeids[nodes[i].ID] = nodes[i]
+	edgeIDs := make([]driver.Value, len(nodes))
+	byID := make(map[uuid.UUID]*Node)
+	nids := make(map[int]map[*Node]struct{})
+	for i, node := range nodes {
+		edgeIDs[i] = node.ID
+		byID[node.ID] = node
 		if init != nil {
-			init(nodes[i])
+			init(node)
 		}
 	}
-	if len(query.ctx.Fields) > 0 {
-		query.ctx.AppendFieldOnce(purpose.FieldNodeID)
+	query.Where(func(s *sql.Selector) {
+		joinT := sql.Table(node.PrimaryPurposeTable)
+		s.Join(joinT).On(s.C(purpose.FieldID), joinT.C(node.PrimaryPurposePrimaryKey[1]))
+		s.Where(sql.InValues(joinT.C(node.PrimaryPurposePrimaryKey[0]), edgeIDs...))
+		columns := s.SelectedColumns()
+		s.Select(joinT.C(node.PrimaryPurposePrimaryKey[0]))
+		s.AppendSelect(columns...)
+		s.SetDistinct(false)
+	})
+	if err := query.prepareQuery(ctx); err != nil {
+		return err
 	}
-	query.Where(predicate.Purpose(func(s *sql.Selector) {
-		s.Where(sql.InValues(s.C(node.PrimaryPurposeColumn), fks...))
-	}))
-	neighbors, err := query.All(ctx)
+	qr := QuerierFunc(func(ctx context.Context, q Query) (Value, error) {
+		return query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
+			assign := spec.Assign
+			values := spec.ScanValues
+			spec.ScanValues = func(columns []string) ([]any, error) {
+				values, err := values(columns[1:])
+				if err != nil {
+					return nil, err
+				}
+				return append([]any{new(uuid.UUID)}, values...), nil
+			}
+			spec.Assign = func(columns []string, values []any) error {
+				outValue := *values[0].(*uuid.UUID)
+				inValue := int(values[1].(*sql.NullInt64).Int64)
+				if nids[inValue] == nil {
+					nids[inValue] = map[*Node]struct{}{byID[outValue]: {}}
+					return assign(columns[1:], values[1:])
+				}
+				nids[inValue][byID[outValue]] = struct{}{}
+				return nil
+			}
+		})
+	})
+	neighbors, err := withInterceptors[[]*Purpose](ctx, query, qr, query.inters)
 	if err != nil {
 		return err
 	}
 	for _, n := range neighbors {
-		fk := n.NodeID
-		node, ok := nodeids[fk]
+		nodes, ok := nids[n.ID]
 		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "node_id" returned %v for node %v`, fk, n.ID)
+			return fmt.Errorf(`unexpected "primary_purpose" node returned %v`, n.ID)
 		}
-		assign(node, n)
+		for kn := range nodes {
+			assign(kn, n)
+		}
 	}
 	return nil
 }
@@ -1395,32 +1458,124 @@ func (nq *NodeQuery) loadIdentifiers(ctx context.Context, query *IdentifiersEntr
 	return nil
 }
 func (nq *NodeQuery) loadProperties(ctx context.Context, query *PropertyQuery, nodes []*Node, init func(*Node), assign func(*Node, *Property)) error {
-	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[uuid.UUID]*Node)
-	for i := range nodes {
-		fks = append(fks, nodes[i].ID)
-		nodeids[nodes[i].ID] = nodes[i]
+	edgeIDs := make([]driver.Value, len(nodes))
+	byID := make(map[uuid.UUID]*Node)
+	nids := make(map[uuid.UUID]map[*Node]struct{})
+	for i, node := range nodes {
+		edgeIDs[i] = node.ID
+		byID[node.ID] = node
 		if init != nil {
-			init(nodes[i])
+			init(node)
 		}
 	}
-	if len(query.ctx.Fields) > 0 {
-		query.ctx.AppendFieldOnce(property.FieldNodeID)
+	query.Where(func(s *sql.Selector) {
+		joinT := sql.Table(node.PropertiesTable)
+		s.Join(joinT).On(s.C(property.FieldID), joinT.C(node.PropertiesPrimaryKey[1]))
+		s.Where(sql.InValues(joinT.C(node.PropertiesPrimaryKey[0]), edgeIDs...))
+		columns := s.SelectedColumns()
+		s.Select(joinT.C(node.PropertiesPrimaryKey[0]))
+		s.AppendSelect(columns...)
+		s.SetDistinct(false)
+	})
+	if err := query.prepareQuery(ctx); err != nil {
+		return err
 	}
-	query.Where(predicate.Property(func(s *sql.Selector) {
-		s.Where(sql.InValues(s.C(node.PropertiesColumn), fks...))
-	}))
-	neighbors, err := query.All(ctx)
+	qr := QuerierFunc(func(ctx context.Context, q Query) (Value, error) {
+		return query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
+			assign := spec.Assign
+			values := spec.ScanValues
+			spec.ScanValues = func(columns []string) ([]any, error) {
+				values, err := values(columns[1:])
+				if err != nil {
+					return nil, err
+				}
+				return append([]any{new(uuid.UUID)}, values...), nil
+			}
+			spec.Assign = func(columns []string, values []any) error {
+				outValue := *values[0].(*uuid.UUID)
+				inValue := *values[1].(*uuid.UUID)
+				if nids[inValue] == nil {
+					nids[inValue] = map[*Node]struct{}{byID[outValue]: {}}
+					return assign(columns[1:], values[1:])
+				}
+				nids[inValue][byID[outValue]] = struct{}{}
+				return nil
+			}
+		})
+	})
+	neighbors, err := withInterceptors[[]*Property](ctx, query, qr, query.inters)
 	if err != nil {
 		return err
 	}
 	for _, n := range neighbors {
-		fk := n.NodeID
-		node, ok := nodeids[fk]
+		nodes, ok := nids[n.ID]
 		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "node_id" returned %v for node %v`, fk, n.ID)
+			return fmt.Errorf(`unexpected "properties" node returned %v`, n.ID)
 		}
-		assign(node, n)
+		for kn := range nodes {
+			assign(kn, n)
+		}
+	}
+	return nil
+}
+func (nq *NodeQuery) loadDocuments(ctx context.Context, query *DocumentQuery, nodes []*Node, init func(*Node), assign func(*Node, *Document)) error {
+	edgeIDs := make([]driver.Value, len(nodes))
+	byID := make(map[uuid.UUID]*Node)
+	nids := make(map[uuid.UUID]map[*Node]struct{})
+	for i, node := range nodes {
+		edgeIDs[i] = node.ID
+		byID[node.ID] = node
+		if init != nil {
+			init(node)
+		}
+	}
+	query.Where(func(s *sql.Selector) {
+		joinT := sql.Table(node.DocumentsTable)
+		s.Join(joinT).On(s.C(document.FieldID), joinT.C(node.DocumentsPrimaryKey[0]))
+		s.Where(sql.InValues(joinT.C(node.DocumentsPrimaryKey[1]), edgeIDs...))
+		columns := s.SelectedColumns()
+		s.Select(joinT.C(node.DocumentsPrimaryKey[1]))
+		s.AppendSelect(columns...)
+		s.SetDistinct(false)
+	})
+	if err := query.prepareQuery(ctx); err != nil {
+		return err
+	}
+	qr := QuerierFunc(func(ctx context.Context, q Query) (Value, error) {
+		return query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
+			assign := spec.Assign
+			values := spec.ScanValues
+			spec.ScanValues = func(columns []string) ([]any, error) {
+				values, err := values(columns[1:])
+				if err != nil {
+					return nil, err
+				}
+				return append([]any{new(uuid.UUID)}, values...), nil
+			}
+			spec.Assign = func(columns []string, values []any) error {
+				outValue := *values[0].(*uuid.UUID)
+				inValue := *values[1].(*uuid.UUID)
+				if nids[inValue] == nil {
+					nids[inValue] = map[*Node]struct{}{byID[outValue]: {}}
+					return assign(columns[1:], values[1:])
+				}
+				nids[inValue][byID[outValue]] = struct{}{}
+				return nil
+			}
+		})
+	})
+	neighbors, err := withInterceptors[[]*Document](ctx, query, qr, query.inters)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected "documents" node returned %v`, n.ID)
+		}
+		for kn := range nodes {
+			assign(kn, n)
+		}
 	}
 	return nil
 }
@@ -1540,9 +1695,6 @@ func (nq *NodeQuery) querySpec() *sqlgraph.QuerySpec {
 			if fields[i] != node.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
-		}
-		if nq.withDocument != nil {
-			_spec.Node.AddColumnOnce(node.FieldDocumentID)
 		}
 	}
 	if ps := nq.predicates; len(ps) > 0 {

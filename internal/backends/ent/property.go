@@ -16,8 +16,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"github.com/google/uuid"
 	"github.com/protobom/protobom/pkg/sbom"
-	"github.com/protobom/storage/internal/backends/ent/document"
-	"github.com/protobom/storage/internal/backends/ent/node"
 	"github.com/protobom/storage/internal/backends/ent/property"
 )
 
@@ -26,12 +24,8 @@ type Property struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID uuid.UUID `json:"-"`
-	// DocumentID holds the value of the "document_id" field.
-	DocumentID uuid.UUID `json:"-"`
 	// ProtoMessage holds the value of the "proto_message" field.
 	ProtoMessage *sbom.Property `json:"-"`
-	// NodeID holds the value of the "node_id" field.
-	NodeID uuid.UUID `json:"-"`
 	// Name holds the value of the "name" field.
 	Name string `json:"name,omitempty"`
 	// Data holds the value of the "data" field.
@@ -44,35 +38,31 @@ type Property struct {
 
 // PropertyEdges holds the relations/edges for other nodes in the graph.
 type PropertyEdges struct {
-	// Document holds the value of the document edge.
-	Document *Document `json:"document,omitempty"`
-	// Node holds the value of the node edge.
-	Node *Node `json:"-"`
+	// Documents holds the value of the documents edge.
+	Documents []*Document `json:"-"`
+	// Nodes holds the value of the nodes edge.
+	Nodes []*Node `json:"-"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [2]bool
 }
 
-// DocumentOrErr returns the Document value or an error if the edge
-// was not loaded in eager-loading, or loaded but was not found.
-func (e PropertyEdges) DocumentOrErr() (*Document, error) {
-	if e.Document != nil {
-		return e.Document, nil
-	} else if e.loadedTypes[0] {
-		return nil, &NotFoundError{label: document.Label}
+// DocumentsOrErr returns the Documents value or an error if the edge
+// was not loaded in eager-loading.
+func (e PropertyEdges) DocumentsOrErr() ([]*Document, error) {
+	if e.loadedTypes[0] {
+		return e.Documents, nil
 	}
-	return nil, &NotLoadedError{edge: "document"}
+	return nil, &NotLoadedError{edge: "documents"}
 }
 
-// NodeOrErr returns the Node value or an error if the edge
-// was not loaded in eager-loading, or loaded but was not found.
-func (e PropertyEdges) NodeOrErr() (*Node, error) {
-	if e.Node != nil {
-		return e.Node, nil
-	} else if e.loadedTypes[1] {
-		return nil, &NotFoundError{label: node.Label}
+// NodesOrErr returns the Nodes value or an error if the edge
+// was not loaded in eager-loading.
+func (e PropertyEdges) NodesOrErr() ([]*Node, error) {
+	if e.loadedTypes[1] {
+		return e.Nodes, nil
 	}
-	return nil, &NotLoadedError{edge: "node"}
+	return nil, &NotLoadedError{edge: "nodes"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -84,7 +74,7 @@ func (*Property) scanValues(columns []string) ([]any, error) {
 			values[i] = &sql.NullScanner{S: new(sbom.Property)}
 		case property.FieldName, property.FieldData:
 			values[i] = new(sql.NullString)
-		case property.FieldID, property.FieldDocumentID, property.FieldNodeID:
+		case property.FieldID:
 			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -107,23 +97,11 @@ func (pr *Property) assignValues(columns []string, values []any) error {
 			} else if value != nil {
 				pr.ID = *value
 			}
-		case property.FieldDocumentID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
-				return fmt.Errorf("unexpected type %T for field document_id", values[i])
-			} else if value != nil {
-				pr.DocumentID = *value
-			}
 		case property.FieldProtoMessage:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
 				return fmt.Errorf("unexpected type %T for field proto_message", values[i])
 			} else if value.Valid {
 				pr.ProtoMessage = value.S.(*sbom.Property)
-			}
-		case property.FieldNodeID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
-				return fmt.Errorf("unexpected type %T for field node_id", values[i])
-			} else if value != nil {
-				pr.NodeID = *value
 			}
 		case property.FieldName:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -150,14 +128,14 @@ func (pr *Property) Value(name string) (ent.Value, error) {
 	return pr.selectValues.Get(name)
 }
 
-// QueryDocument queries the "document" edge of the Property entity.
-func (pr *Property) QueryDocument() *DocumentQuery {
-	return NewPropertyClient(pr.config).QueryDocument(pr)
+// QueryDocuments queries the "documents" edge of the Property entity.
+func (pr *Property) QueryDocuments() *DocumentQuery {
+	return NewPropertyClient(pr.config).QueryDocuments(pr)
 }
 
-// QueryNode queries the "node" edge of the Property entity.
-func (pr *Property) QueryNode() *NodeQuery {
-	return NewPropertyClient(pr.config).QueryNode(pr)
+// QueryNodes queries the "nodes" edge of the Property entity.
+func (pr *Property) QueryNodes() *NodeQuery {
+	return NewPropertyClient(pr.config).QueryNodes(pr)
 }
 
 // Update returns a builder for updating this Property.
@@ -183,16 +161,10 @@ func (pr *Property) String() string {
 	var builder strings.Builder
 	builder.WriteString("Property(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", pr.ID))
-	builder.WriteString("document_id=")
-	builder.WriteString(fmt.Sprintf("%v", pr.DocumentID))
-	builder.WriteString(", ")
 	if v := pr.ProtoMessage; v != nil {
 		builder.WriteString("proto_message=")
 		builder.WriteString(fmt.Sprintf("%v", *v))
 	}
-	builder.WriteString(", ")
-	builder.WriteString("node_id=")
-	builder.WriteString(fmt.Sprintf("%v", pr.NodeID))
 	builder.WriteString(", ")
 	builder.WriteString("name=")
 	builder.WriteString(pr.Name)

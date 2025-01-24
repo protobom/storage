@@ -31,29 +31,9 @@ type DocumentTypeCreate struct {
 	conflict []sql.ConflictOption
 }
 
-// SetDocumentID sets the "document_id" field.
-func (dtc *DocumentTypeCreate) SetDocumentID(u uuid.UUID) *DocumentTypeCreate {
-	dtc.mutation.SetDocumentID(u)
-	return dtc
-}
-
-// SetNillableDocumentID sets the "document_id" field if the given value is not nil.
-func (dtc *DocumentTypeCreate) SetNillableDocumentID(u *uuid.UUID) *DocumentTypeCreate {
-	if u != nil {
-		dtc.SetDocumentID(*u)
-	}
-	return dtc
-}
-
 // SetProtoMessage sets the "proto_message" field.
 func (dtc *DocumentTypeCreate) SetProtoMessage(st *sbom.DocumentType) *DocumentTypeCreate {
 	dtc.mutation.SetProtoMessage(st)
-	return dtc
-}
-
-// SetMetadataID sets the "metadata_id" field.
-func (dtc *DocumentTypeCreate) SetMetadataID(u uuid.UUID) *DocumentTypeCreate {
-	dtc.mutation.SetMetadataID(u)
 	return dtc
 }
 
@@ -113,14 +93,34 @@ func (dtc *DocumentTypeCreate) SetNillableID(u *uuid.UUID) *DocumentTypeCreate {
 	return dtc
 }
 
-// SetDocument sets the "document" edge to the Document entity.
-func (dtc *DocumentTypeCreate) SetDocument(d *Document) *DocumentTypeCreate {
-	return dtc.SetDocumentID(d.ID)
+// AddDocumentIDs adds the "documents" edge to the Document entity by IDs.
+func (dtc *DocumentTypeCreate) AddDocumentIDs(ids ...uuid.UUID) *DocumentTypeCreate {
+	dtc.mutation.AddDocumentIDs(ids...)
+	return dtc
 }
 
-// SetMetadata sets the "metadata" edge to the Metadata entity.
-func (dtc *DocumentTypeCreate) SetMetadata(m *Metadata) *DocumentTypeCreate {
-	return dtc.SetMetadataID(m.ID)
+// AddDocuments adds the "documents" edges to the Document entity.
+func (dtc *DocumentTypeCreate) AddDocuments(d ...*Document) *DocumentTypeCreate {
+	ids := make([]uuid.UUID, len(d))
+	for i := range d {
+		ids[i] = d[i].ID
+	}
+	return dtc.AddDocumentIDs(ids...)
+}
+
+// AddMetadatumIDs adds the "metadata" edge to the Metadata entity by IDs.
+func (dtc *DocumentTypeCreate) AddMetadatumIDs(ids ...uuid.UUID) *DocumentTypeCreate {
+	dtc.mutation.AddMetadatumIDs(ids...)
+	return dtc
+}
+
+// AddMetadata adds the "metadata" edges to the Metadata entity.
+func (dtc *DocumentTypeCreate) AddMetadata(m ...*Metadata) *DocumentTypeCreate {
+	ids := make([]uuid.UUID, len(m))
+	for i := range m {
+		ids[i] = m[i].ID
+	}
+	return dtc.AddMetadatumIDs(ids...)
 }
 
 // Mutation returns the DocumentTypeMutation object of the builder.
@@ -160,13 +160,6 @@ func (dtc *DocumentTypeCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (dtc *DocumentTypeCreate) defaults() error {
-	if _, ok := dtc.mutation.DocumentID(); !ok {
-		if documenttype.DefaultDocumentID == nil {
-			return fmt.Errorf("ent: uninitialized documenttype.DefaultDocumentID (forgotten import ent/runtime?)")
-		}
-		v := documenttype.DefaultDocumentID()
-		dtc.mutation.SetDocumentID(v)
-	}
 	if _, ok := dtc.mutation.ID(); !ok {
 		if documenttype.DefaultID == nil {
 			return fmt.Errorf("ent: uninitialized documenttype.DefaultID (forgotten import ent/runtime?)")
@@ -182,13 +175,13 @@ func (dtc *DocumentTypeCreate) check() error {
 	if _, ok := dtc.mutation.ProtoMessage(); !ok {
 		return &ValidationError{Name: "proto_message", err: errors.New(`ent: missing required field "DocumentType.proto_message"`)}
 	}
-	if _, ok := dtc.mutation.MetadataID(); !ok {
-		return &ValidationError{Name: "metadata_id", err: errors.New(`ent: missing required field "DocumentType.metadata_id"`)}
-	}
 	if v, ok := dtc.mutation.GetType(); ok {
 		if err := documenttype.TypeValidator(v); err != nil {
 			return &ValidationError{Name: "type", err: fmt.Errorf(`ent: validator failed for field "DocumentType.type": %w`, err)}
 		}
+	}
+	if len(dtc.mutation.DocumentsIDs()) == 0 {
+		return &ValidationError{Name: "documents", err: errors.New(`ent: missing required edge "DocumentType.documents"`)}
 	}
 	if len(dtc.mutation.MetadataIDs()) == 0 {
 		return &ValidationError{Name: "metadata", err: errors.New(`ent: missing required edge "DocumentType.metadata"`)}
@@ -245,12 +238,12 @@ func (dtc *DocumentTypeCreate) createSpec() (*DocumentType, *sqlgraph.CreateSpec
 		_spec.SetField(documenttype.FieldDescription, field.TypeString, value)
 		_node.Description = &value
 	}
-	if nodes := dtc.mutation.DocumentIDs(); len(nodes) > 0 {
+	if nodes := dtc.mutation.DocumentsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: false,
-			Table:   documenttype.DocumentTable,
-			Columns: []string{documenttype.DocumentColumn},
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   documenttype.DocumentsTable,
+			Columns: documenttype.DocumentsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(document.FieldID, field.TypeUUID),
@@ -259,15 +252,14 @@ func (dtc *DocumentTypeCreate) createSpec() (*DocumentType, *sqlgraph.CreateSpec
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.DocumentID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := dtc.mutation.MetadataIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.M2M,
 			Inverse: true,
 			Table:   documenttype.MetadataTable,
-			Columns: []string{documenttype.MetadataColumn},
+			Columns: documenttype.MetadataPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(metadata.FieldID, field.TypeUUID),
@@ -276,7 +268,6 @@ func (dtc *DocumentTypeCreate) createSpec() (*DocumentType, *sqlgraph.CreateSpec
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.MetadataID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
@@ -286,7 +277,7 @@ func (dtc *DocumentTypeCreate) createSpec() (*DocumentType, *sqlgraph.CreateSpec
 // of the `INSERT` statement. For example:
 //
 //	client.DocumentType.Create().
-//		SetDocumentID(v).
+//		SetProtoMessage(v).
 //		OnConflict(
 //			// Update the row with the new values
 //			// the was proposed for insertion.
@@ -295,7 +286,7 @@ func (dtc *DocumentTypeCreate) createSpec() (*DocumentType, *sqlgraph.CreateSpec
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.DocumentTypeUpsert) {
-//			SetDocumentID(v+v).
+//			SetProtoMessage(v+v).
 //		}).
 //		Exec(ctx)
 func (dtc *DocumentTypeCreate) OnConflict(opts ...sql.ConflictOption) *DocumentTypeUpsertOne {
@@ -330,18 +321,6 @@ type (
 		*sql.UpdateSet
 	}
 )
-
-// SetMetadataID sets the "metadata_id" field.
-func (u *DocumentTypeUpsert) SetMetadataID(v uuid.UUID) *DocumentTypeUpsert {
-	u.Set(documenttype.FieldMetadataID, v)
-	return u
-}
-
-// UpdateMetadataID sets the "metadata_id" field to the value that was provided on create.
-func (u *DocumentTypeUpsert) UpdateMetadataID() *DocumentTypeUpsert {
-	u.SetExcluded(documenttype.FieldMetadataID)
-	return u
-}
 
 // SetType sets the "type" field.
 func (u *DocumentTypeUpsert) SetType(v documenttype.Type) *DocumentTypeUpsert {
@@ -414,9 +393,6 @@ func (u *DocumentTypeUpsertOne) UpdateNewValues() *DocumentTypeUpsertOne {
 		if _, exists := u.create.mutation.ID(); exists {
 			s.SetIgnore(documenttype.FieldID)
 		}
-		if _, exists := u.create.mutation.DocumentID(); exists {
-			s.SetIgnore(documenttype.FieldDocumentID)
-		}
 		if _, exists := u.create.mutation.ProtoMessage(); exists {
 			s.SetIgnore(documenttype.FieldProtoMessage)
 		}
@@ -449,20 +425,6 @@ func (u *DocumentTypeUpsertOne) Update(set func(*DocumentTypeUpsert)) *DocumentT
 		set(&DocumentTypeUpsert{UpdateSet: update})
 	}))
 	return u
-}
-
-// SetMetadataID sets the "metadata_id" field.
-func (u *DocumentTypeUpsertOne) SetMetadataID(v uuid.UUID) *DocumentTypeUpsertOne {
-	return u.Update(func(s *DocumentTypeUpsert) {
-		s.SetMetadataID(v)
-	})
-}
-
-// UpdateMetadataID sets the "metadata_id" field to the value that was provided on create.
-func (u *DocumentTypeUpsertOne) UpdateMetadataID() *DocumentTypeUpsertOne {
-	return u.Update(func(s *DocumentTypeUpsert) {
-		s.UpdateMetadataID()
-	})
 }
 
 // SetType sets the "type" field.
@@ -664,7 +626,7 @@ func (dtcb *DocumentTypeCreateBulk) ExecX(ctx context.Context) {
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.DocumentTypeUpsert) {
-//			SetDocumentID(v+v).
+//			SetProtoMessage(v+v).
 //		}).
 //		Exec(ctx)
 func (dtcb *DocumentTypeCreateBulk) OnConflict(opts ...sql.ConflictOption) *DocumentTypeUpsertBulk {
@@ -711,9 +673,6 @@ func (u *DocumentTypeUpsertBulk) UpdateNewValues() *DocumentTypeUpsertBulk {
 			if _, exists := b.mutation.ID(); exists {
 				s.SetIgnore(documenttype.FieldID)
 			}
-			if _, exists := b.mutation.DocumentID(); exists {
-				s.SetIgnore(documenttype.FieldDocumentID)
-			}
 			if _, exists := b.mutation.ProtoMessage(); exists {
 				s.SetIgnore(documenttype.FieldProtoMessage)
 			}
@@ -747,20 +706,6 @@ func (u *DocumentTypeUpsertBulk) Update(set func(*DocumentTypeUpsert)) *Document
 		set(&DocumentTypeUpsert{UpdateSet: update})
 	}))
 	return u
-}
-
-// SetMetadataID sets the "metadata_id" field.
-func (u *DocumentTypeUpsertBulk) SetMetadataID(v uuid.UUID) *DocumentTypeUpsertBulk {
-	return u.Update(func(s *DocumentTypeUpsert) {
-		s.SetMetadataID(v)
-	})
-}
-
-// UpdateMetadataID sets the "metadata_id" field to the value that was provided on create.
-func (u *DocumentTypeUpsertBulk) UpdateMetadataID() *DocumentTypeUpsertBulk {
-	return u.Update(func(s *DocumentTypeUpsert) {
-		s.UpdateMetadataID()
-	})
 }
 
 // SetType sets the "type" field.

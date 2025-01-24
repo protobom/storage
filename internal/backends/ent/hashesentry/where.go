@@ -59,44 +59,9 @@ func IDLTE(id uuid.UUID) predicate.HashesEntry {
 	return predicate.HashesEntry(sql.FieldLTE(FieldID, id))
 }
 
-// DocumentID applies equality check predicate on the "document_id" field. It's identical to DocumentIDEQ.
-func DocumentID(v uuid.UUID) predicate.HashesEntry {
-	return predicate.HashesEntry(sql.FieldEQ(FieldDocumentID, v))
-}
-
 // HashData applies equality check predicate on the "hash_data" field. It's identical to HashDataEQ.
 func HashData(v string) predicate.HashesEntry {
 	return predicate.HashesEntry(sql.FieldEQ(FieldHashData, v))
-}
-
-// DocumentIDEQ applies the EQ predicate on the "document_id" field.
-func DocumentIDEQ(v uuid.UUID) predicate.HashesEntry {
-	return predicate.HashesEntry(sql.FieldEQ(FieldDocumentID, v))
-}
-
-// DocumentIDNEQ applies the NEQ predicate on the "document_id" field.
-func DocumentIDNEQ(v uuid.UUID) predicate.HashesEntry {
-	return predicate.HashesEntry(sql.FieldNEQ(FieldDocumentID, v))
-}
-
-// DocumentIDIn applies the In predicate on the "document_id" field.
-func DocumentIDIn(vs ...uuid.UUID) predicate.HashesEntry {
-	return predicate.HashesEntry(sql.FieldIn(FieldDocumentID, vs...))
-}
-
-// DocumentIDNotIn applies the NotIn predicate on the "document_id" field.
-func DocumentIDNotIn(vs ...uuid.UUID) predicate.HashesEntry {
-	return predicate.HashesEntry(sql.FieldNotIn(FieldDocumentID, vs...))
-}
-
-// DocumentIDIsNil applies the IsNil predicate on the "document_id" field.
-func DocumentIDIsNil() predicate.HashesEntry {
-	return predicate.HashesEntry(sql.FieldIsNull(FieldDocumentID))
-}
-
-// DocumentIDNotNil applies the NotNil predicate on the "document_id" field.
-func DocumentIDNotNil() predicate.HashesEntry {
-	return predicate.HashesEntry(sql.FieldNotNull(FieldDocumentID))
 }
 
 // HashAlgorithmEQ applies the EQ predicate on the "hash_algorithm" field.
@@ -184,21 +149,21 @@ func HashDataContainsFold(v string) predicate.HashesEntry {
 	return predicate.HashesEntry(sql.FieldContainsFold(FieldHashData, v))
 }
 
-// HasDocument applies the HasEdge predicate on the "document" edge.
-func HasDocument() predicate.HashesEntry {
+// HasDocuments applies the HasEdge predicate on the "documents" edge.
+func HasDocuments() predicate.HashesEntry {
 	return predicate.HashesEntry(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, DocumentTable, DocumentColumn),
+			sqlgraph.Edge(sqlgraph.M2M, true, DocumentsTable, DocumentsPrimaryKey...),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
 }
 
-// HasDocumentWith applies the HasEdge predicate on the "document" edge with a given conditions (other predicates).
-func HasDocumentWith(preds ...predicate.Document) predicate.HashesEntry {
+// HasDocumentsWith applies the HasEdge predicate on the "documents" edge with a given conditions (other predicates).
+func HasDocumentsWith(preds ...predicate.Document) predicate.HashesEntry {
 	return predicate.HashesEntry(func(s *sql.Selector) {
-		step := newDocumentStep()
+		step := newDocumentsStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)
@@ -245,6 +210,29 @@ func HasNodes() predicate.HashesEntry {
 func HasNodesWith(preds ...predicate.Node) predicate.HashesEntry {
 	return predicate.HashesEntry(func(s *sql.Selector) {
 		step := newNodesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasSourceData applies the HasEdge predicate on the "source_data" edge.
+func HasSourceData() predicate.HashesEntry {
+	return predicate.HashesEntry(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, SourceDataTable, SourceDataPrimaryKey...),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasSourceDataWith applies the HasEdge predicate on the "source_data" edge with a given conditions (other predicates).
+func HasSourceDataWith(preds ...predicate.SourceData) predicate.HashesEntry {
+	return predicate.HashesEntry(func(s *sql.Selector) {
+		step := newSourceDataStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

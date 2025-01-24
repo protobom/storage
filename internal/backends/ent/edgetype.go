@@ -16,7 +16,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"github.com/google/uuid"
 	"github.com/protobom/protobom/pkg/sbom"
-	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/edgetype"
 	"github.com/protobom/storage/internal/backends/ent/node"
 )
@@ -26,8 +25,6 @@ type EdgeType struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID uuid.UUID `json:"-"`
-	// DocumentID holds the value of the "document_id" field.
-	DocumentID uuid.UUID `json:"-"`
 	// ProtoMessage holds the value of the "proto_message" field.
 	ProtoMessage *sbom.Edge `json:"-"`
 	// Type holds the value of the "type" field.
@@ -44,12 +41,12 @@ type EdgeType struct {
 
 // EdgeTypeEdges holds the relations/edges for other nodes in the graph.
 type EdgeTypeEdges struct {
-	// Document holds the value of the document edge.
-	Document *Document `json:"document,omitempty"`
 	// From holds the value of the from edge.
 	From *Node `json:"from,omitempty"`
 	// To holds the value of the to edge.
 	To *Node `json:"to,omitempty"`
+	// Documents holds the value of the documents edge.
+	Documents []*Document `json:"-"`
 	// NodeLists holds the value of the node_lists edge.
 	NodeLists []*NodeList `json:"-"`
 	// loadedTypes holds the information for reporting if a
@@ -57,23 +54,12 @@ type EdgeTypeEdges struct {
 	loadedTypes [4]bool
 }
 
-// DocumentOrErr returns the Document value or an error if the edge
-// was not loaded in eager-loading, or loaded but was not found.
-func (e EdgeTypeEdges) DocumentOrErr() (*Document, error) {
-	if e.Document != nil {
-		return e.Document, nil
-	} else if e.loadedTypes[0] {
-		return nil, &NotFoundError{label: document.Label}
-	}
-	return nil, &NotLoadedError{edge: "document"}
-}
-
 // FromOrErr returns the From value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
 func (e EdgeTypeEdges) FromOrErr() (*Node, error) {
 	if e.From != nil {
 		return e.From, nil
-	} else if e.loadedTypes[1] {
+	} else if e.loadedTypes[0] {
 		return nil, &NotFoundError{label: node.Label}
 	}
 	return nil, &NotLoadedError{edge: "from"}
@@ -84,10 +70,19 @@ func (e EdgeTypeEdges) FromOrErr() (*Node, error) {
 func (e EdgeTypeEdges) ToOrErr() (*Node, error) {
 	if e.To != nil {
 		return e.To, nil
-	} else if e.loadedTypes[2] {
+	} else if e.loadedTypes[1] {
 		return nil, &NotFoundError{label: node.Label}
 	}
 	return nil, &NotLoadedError{edge: "to"}
+}
+
+// DocumentsOrErr returns the Documents value or an error if the edge
+// was not loaded in eager-loading.
+func (e EdgeTypeEdges) DocumentsOrErr() ([]*Document, error) {
+	if e.loadedTypes[2] {
+		return e.Documents, nil
+	}
+	return nil, &NotLoadedError{edge: "documents"}
 }
 
 // NodeListsOrErr returns the NodeLists value or an error if the edge
@@ -108,7 +103,7 @@ func (*EdgeType) scanValues(columns []string) ([]any, error) {
 			values[i] = &sql.NullScanner{S: new(sbom.Edge)}
 		case edgetype.FieldType:
 			values[i] = new(sql.NullString)
-		case edgetype.FieldID, edgetype.FieldDocumentID, edgetype.FieldNodeID, edgetype.FieldToNodeID:
+		case edgetype.FieldID, edgetype.FieldNodeID, edgetype.FieldToNodeID:
 			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -130,12 +125,6 @@ func (et *EdgeType) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value != nil {
 				et.ID = *value
-			}
-		case edgetype.FieldDocumentID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
-				return fmt.Errorf("unexpected type %T for field document_id", values[i])
-			} else if value != nil {
-				et.DocumentID = *value
 			}
 		case edgetype.FieldProtoMessage:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
@@ -174,11 +163,6 @@ func (et *EdgeType) Value(name string) (ent.Value, error) {
 	return et.selectValues.Get(name)
 }
 
-// QueryDocument queries the "document" edge of the EdgeType entity.
-func (et *EdgeType) QueryDocument() *DocumentQuery {
-	return NewEdgeTypeClient(et.config).QueryDocument(et)
-}
-
 // QueryFrom queries the "from" edge of the EdgeType entity.
 func (et *EdgeType) QueryFrom() *NodeQuery {
 	return NewEdgeTypeClient(et.config).QueryFrom(et)
@@ -187,6 +171,11 @@ func (et *EdgeType) QueryFrom() *NodeQuery {
 // QueryTo queries the "to" edge of the EdgeType entity.
 func (et *EdgeType) QueryTo() *NodeQuery {
 	return NewEdgeTypeClient(et.config).QueryTo(et)
+}
+
+// QueryDocuments queries the "documents" edge of the EdgeType entity.
+func (et *EdgeType) QueryDocuments() *DocumentQuery {
+	return NewEdgeTypeClient(et.config).QueryDocuments(et)
 }
 
 // QueryNodeLists queries the "node_lists" edge of the EdgeType entity.
@@ -217,9 +206,6 @@ func (et *EdgeType) String() string {
 	var builder strings.Builder
 	builder.WriteString("EdgeType(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", et.ID))
-	builder.WriteString("document_id=")
-	builder.WriteString(fmt.Sprintf("%v", et.DocumentID))
-	builder.WriteString(", ")
 	if v := et.ProtoMessage; v != nil {
 		builder.WriteString("proto_message=")
 		builder.WriteString(fmt.Sprintf("%v", *v))

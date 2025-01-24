@@ -60,19 +60,9 @@ func IDLTE(id uuid.UUID) predicate.DocumentType {
 	return predicate.DocumentType(sql.FieldLTE(FieldID, id))
 }
 
-// DocumentID applies equality check predicate on the "document_id" field. It's identical to DocumentIDEQ.
-func DocumentID(v uuid.UUID) predicate.DocumentType {
-	return predicate.DocumentType(sql.FieldEQ(FieldDocumentID, v))
-}
-
 // ProtoMessage applies equality check predicate on the "proto_message" field. It's identical to ProtoMessageEQ.
 func ProtoMessage(v *sbom.DocumentType) predicate.DocumentType {
 	return predicate.DocumentType(sql.FieldEQ(FieldProtoMessage, v))
-}
-
-// MetadataID applies equality check predicate on the "metadata_id" field. It's identical to MetadataIDEQ.
-func MetadataID(v uuid.UUID) predicate.DocumentType {
-	return predicate.DocumentType(sql.FieldEQ(FieldMetadataID, v))
 }
 
 // Name applies equality check predicate on the "name" field. It's identical to NameEQ.
@@ -83,36 +73,6 @@ func Name(v string) predicate.DocumentType {
 // Description applies equality check predicate on the "description" field. It's identical to DescriptionEQ.
 func Description(v string) predicate.DocumentType {
 	return predicate.DocumentType(sql.FieldEQ(FieldDescription, v))
-}
-
-// DocumentIDEQ applies the EQ predicate on the "document_id" field.
-func DocumentIDEQ(v uuid.UUID) predicate.DocumentType {
-	return predicate.DocumentType(sql.FieldEQ(FieldDocumentID, v))
-}
-
-// DocumentIDNEQ applies the NEQ predicate on the "document_id" field.
-func DocumentIDNEQ(v uuid.UUID) predicate.DocumentType {
-	return predicate.DocumentType(sql.FieldNEQ(FieldDocumentID, v))
-}
-
-// DocumentIDIn applies the In predicate on the "document_id" field.
-func DocumentIDIn(vs ...uuid.UUID) predicate.DocumentType {
-	return predicate.DocumentType(sql.FieldIn(FieldDocumentID, vs...))
-}
-
-// DocumentIDNotIn applies the NotIn predicate on the "document_id" field.
-func DocumentIDNotIn(vs ...uuid.UUID) predicate.DocumentType {
-	return predicate.DocumentType(sql.FieldNotIn(FieldDocumentID, vs...))
-}
-
-// DocumentIDIsNil applies the IsNil predicate on the "document_id" field.
-func DocumentIDIsNil() predicate.DocumentType {
-	return predicate.DocumentType(sql.FieldIsNull(FieldDocumentID))
-}
-
-// DocumentIDNotNil applies the NotNil predicate on the "document_id" field.
-func DocumentIDNotNil() predicate.DocumentType {
-	return predicate.DocumentType(sql.FieldNotNull(FieldDocumentID))
 }
 
 // ProtoMessageEQ applies the EQ predicate on the "proto_message" field.
@@ -153,26 +113,6 @@ func ProtoMessageLT(v *sbom.DocumentType) predicate.DocumentType {
 // ProtoMessageLTE applies the LTE predicate on the "proto_message" field.
 func ProtoMessageLTE(v *sbom.DocumentType) predicate.DocumentType {
 	return predicate.DocumentType(sql.FieldLTE(FieldProtoMessage, v))
-}
-
-// MetadataIDEQ applies the EQ predicate on the "metadata_id" field.
-func MetadataIDEQ(v uuid.UUID) predicate.DocumentType {
-	return predicate.DocumentType(sql.FieldEQ(FieldMetadataID, v))
-}
-
-// MetadataIDNEQ applies the NEQ predicate on the "metadata_id" field.
-func MetadataIDNEQ(v uuid.UUID) predicate.DocumentType {
-	return predicate.DocumentType(sql.FieldNEQ(FieldMetadataID, v))
-}
-
-// MetadataIDIn applies the In predicate on the "metadata_id" field.
-func MetadataIDIn(vs ...uuid.UUID) predicate.DocumentType {
-	return predicate.DocumentType(sql.FieldIn(FieldMetadataID, vs...))
-}
-
-// MetadataIDNotIn applies the NotIn predicate on the "metadata_id" field.
-func MetadataIDNotIn(vs ...uuid.UUID) predicate.DocumentType {
-	return predicate.DocumentType(sql.FieldNotIn(FieldMetadataID, vs...))
 }
 
 // TypeEQ applies the EQ predicate on the "type" field.
@@ -355,21 +295,21 @@ func DescriptionContainsFold(v string) predicate.DocumentType {
 	return predicate.DocumentType(sql.FieldContainsFold(FieldDescription, v))
 }
 
-// HasDocument applies the HasEdge predicate on the "document" edge.
-func HasDocument() predicate.DocumentType {
+// HasDocuments applies the HasEdge predicate on the "documents" edge.
+func HasDocuments() predicate.DocumentType {
 	return predicate.DocumentType(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, DocumentTable, DocumentColumn),
+			sqlgraph.Edge(sqlgraph.M2M, true, DocumentsTable, DocumentsPrimaryKey...),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
 }
 
-// HasDocumentWith applies the HasEdge predicate on the "document" edge with a given conditions (other predicates).
-func HasDocumentWith(preds ...predicate.Document) predicate.DocumentType {
+// HasDocumentsWith applies the HasEdge predicate on the "documents" edge with a given conditions (other predicates).
+func HasDocumentsWith(preds ...predicate.Document) predicate.DocumentType {
 	return predicate.DocumentType(func(s *sql.Selector) {
-		step := newDocumentStep()
+		step := newDocumentsStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)
@@ -383,7 +323,7 @@ func HasMetadata() predicate.DocumentType {
 	return predicate.DocumentType(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, MetadataTable, MetadataColumn),
+			sqlgraph.Edge(sqlgraph.M2M, true, MetadataTable, MetadataPrimaryKey...),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})

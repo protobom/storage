@@ -41,6 +41,20 @@ func (mc *MetadataCreate) SetProtoMessage(s *sbom.Metadata) *MetadataCreate {
 	return mc
 }
 
+// SetSourceDataID sets the "source_data_id" field.
+func (mc *MetadataCreate) SetSourceDataID(u uuid.UUID) *MetadataCreate {
+	mc.mutation.SetSourceDataID(u)
+	return mc
+}
+
+// SetNillableSourceDataID sets the "source_data_id" field if the given value is not nil.
+func (mc *MetadataCreate) SetNillableSourceDataID(u *uuid.UUID) *MetadataCreate {
+	if u != nil {
+		mc.SetSourceDataID(*u)
+	}
+	return mc
+}
+
 // SetNativeID sets the "native_id" field.
 func (mc *MetadataCreate) SetNativeID(s string) *MetadataCreate {
 	mc.mutation.SetNativeID(s)
@@ -83,17 +97,6 @@ func (mc *MetadataCreate) SetNillableID(u *uuid.UUID) *MetadataCreate {
 		mc.SetID(*u)
 	}
 	return mc
-}
-
-// SetDocumentID sets the "document" edge to the Document entity by ID.
-func (mc *MetadataCreate) SetDocumentID(id uuid.UUID) *MetadataCreate {
-	mc.mutation.SetDocumentID(id)
-	return mc
-}
-
-// SetDocument sets the "document" edge to the Document entity.
-func (mc *MetadataCreate) SetDocument(d *Document) *MetadataCreate {
-	return mc.SetDocumentID(d.ID)
 }
 
 // AddToolIDs adds the "tools" edge to the Tool entity by IDs.
@@ -141,19 +144,24 @@ func (mc *MetadataCreate) AddDocumentTypes(d ...*DocumentType) *MetadataCreate {
 	return mc.AddDocumentTypeIDs(ids...)
 }
 
-// AddSourceDatumIDs adds the "source_data" edge to the SourceData entity by IDs.
-func (mc *MetadataCreate) AddSourceDatumIDs(ids ...uuid.UUID) *MetadataCreate {
-	mc.mutation.AddSourceDatumIDs(ids...)
+// SetSourceData sets the "source_data" edge to the SourceData entity.
+func (mc *MetadataCreate) SetSourceData(s *SourceData) *MetadataCreate {
+	return mc.SetSourceDataID(s.ID)
+}
+
+// AddDocumentIDs adds the "documents" edge to the Document entity by IDs.
+func (mc *MetadataCreate) AddDocumentIDs(ids ...uuid.UUID) *MetadataCreate {
+	mc.mutation.AddDocumentIDs(ids...)
 	return mc
 }
 
-// AddSourceData adds the "source_data" edges to the SourceData entity.
-func (mc *MetadataCreate) AddSourceData(s ...*SourceData) *MetadataCreate {
-	ids := make([]uuid.UUID, len(s))
-	for i := range s {
-		ids[i] = s[i].ID
+// AddDocuments adds the "documents" edges to the Document entity.
+func (mc *MetadataCreate) AddDocuments(d ...*Document) *MetadataCreate {
+	ids := make([]uuid.UUID, len(d))
+	for i := range d {
+		ids[i] = d[i].ID
 	}
-	return mc.AddSourceDatumIDs(ids...)
+	return mc.AddDocumentIDs(ids...)
 }
 
 // Mutation returns the MetadataMutation object of the builder.
@@ -228,8 +236,8 @@ func (mc *MetadataCreate) check() error {
 	if _, ok := mc.mutation.Comment(); !ok {
 		return &ValidationError{Name: "comment", err: errors.New(`ent: missing required field "Metadata.comment"`)}
 	}
-	if len(mc.mutation.DocumentIDs()) == 0 {
-		return &ValidationError{Name: "document", err: errors.New(`ent: missing required edge "Metadata.document"`)}
+	if len(mc.mutation.DocumentsIDs()) == 0 {
+		return &ValidationError{Name: "documents", err: errors.New(`ent: missing required edge "Metadata.documents"`)}
 	}
 	return nil
 }
@@ -291,28 +299,12 @@ func (mc *MetadataCreate) createSpec() (*Metadata, *sqlgraph.CreateSpec) {
 		_spec.SetField(metadata.FieldComment, field.TypeString, value)
 		_node.Comment = value
 	}
-	if nodes := mc.mutation.DocumentIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2O,
-			Inverse: false,
-			Table:   metadata.DocumentTable,
-			Columns: []string{metadata.DocumentColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(document.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges = append(_spec.Edges, edge)
-	}
 	if nodes := mc.mutation.ToolsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   metadata.ToolsTable,
-			Columns: []string{metadata.ToolsColumn},
+			Columns: metadata.ToolsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(tool.FieldID, field.TypeUUID),
@@ -325,10 +317,10 @@ func (mc *MetadataCreate) createSpec() (*Metadata, *sqlgraph.CreateSpec) {
 	}
 	if nodes := mc.mutation.AuthorsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   metadata.AuthorsTable,
-			Columns: []string{metadata.AuthorsColumn},
+			Columns: metadata.AuthorsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
@@ -341,10 +333,10 @@ func (mc *MetadataCreate) createSpec() (*Metadata, *sqlgraph.CreateSpec) {
 	}
 	if nodes := mc.mutation.DocumentTypesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   metadata.DocumentTypesTable,
-			Columns: []string{metadata.DocumentTypesColumn},
+			Columns: metadata.DocumentTypesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(documenttype.FieldID, field.TypeUUID),
@@ -357,13 +349,30 @@ func (mc *MetadataCreate) createSpec() (*Metadata, *sqlgraph.CreateSpec) {
 	}
 	if nodes := mc.mutation.SourceDataIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2O,
 			Inverse: false,
 			Table:   metadata.SourceDataTable,
 			Columns: []string{metadata.SourceDataColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(sourcedata.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.SourceDataID = nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := mc.mutation.DocumentsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   metadata.DocumentsTable,
+			Columns: []string{metadata.DocumentsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(document.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -422,6 +431,24 @@ type (
 		*sql.UpdateSet
 	}
 )
+
+// SetSourceDataID sets the "source_data_id" field.
+func (u *MetadataUpsert) SetSourceDataID(v uuid.UUID) *MetadataUpsert {
+	u.Set(metadata.FieldSourceDataID, v)
+	return u
+}
+
+// UpdateSourceDataID sets the "source_data_id" field to the value that was provided on create.
+func (u *MetadataUpsert) UpdateSourceDataID() *MetadataUpsert {
+	u.SetExcluded(metadata.FieldSourceDataID)
+	return u
+}
+
+// ClearSourceDataID clears the value of the "source_data_id" field.
+func (u *MetadataUpsert) ClearSourceDataID() *MetadataUpsert {
+	u.SetNull(metadata.FieldSourceDataID)
+	return u
+}
 
 // SetVersion sets the "version" field.
 func (u *MetadataUpsert) SetVersion(v string) *MetadataUpsert {
@@ -523,6 +550,27 @@ func (u *MetadataUpsertOne) Update(set func(*MetadataUpsert)) *MetadataUpsertOne
 		set(&MetadataUpsert{UpdateSet: update})
 	}))
 	return u
+}
+
+// SetSourceDataID sets the "source_data_id" field.
+func (u *MetadataUpsertOne) SetSourceDataID(v uuid.UUID) *MetadataUpsertOne {
+	return u.Update(func(s *MetadataUpsert) {
+		s.SetSourceDataID(v)
+	})
+}
+
+// UpdateSourceDataID sets the "source_data_id" field to the value that was provided on create.
+func (u *MetadataUpsertOne) UpdateSourceDataID() *MetadataUpsertOne {
+	return u.Update(func(s *MetadataUpsert) {
+		s.UpdateSourceDataID()
+	})
+}
+
+// ClearSourceDataID clears the value of the "source_data_id" field.
+func (u *MetadataUpsertOne) ClearSourceDataID() *MetadataUpsertOne {
+	return u.Update(func(s *MetadataUpsert) {
+		s.ClearSourceDataID()
+	})
 }
 
 // SetVersion sets the "version" field.
@@ -800,6 +848,27 @@ func (u *MetadataUpsertBulk) Update(set func(*MetadataUpsert)) *MetadataUpsertBu
 		set(&MetadataUpsert{UpdateSet: update})
 	}))
 	return u
+}
+
+// SetSourceDataID sets the "source_data_id" field.
+func (u *MetadataUpsertBulk) SetSourceDataID(v uuid.UUID) *MetadataUpsertBulk {
+	return u.Update(func(s *MetadataUpsert) {
+		s.SetSourceDataID(v)
+	})
+}
+
+// UpdateSourceDataID sets the "source_data_id" field to the value that was provided on create.
+func (u *MetadataUpsertBulk) UpdateSourceDataID() *MetadataUpsertBulk {
+	return u.Update(func(s *MetadataUpsert) {
+		s.UpdateSourceDataID()
+	})
+}
+
+// ClearSourceDataID clears the value of the "source_data_id" field.
+func (u *MetadataUpsertBulk) ClearSourceDataID() *MetadataUpsertBulk {
+	return u.Update(func(s *MetadataUpsert) {
+		s.ClearSourceDataID()
+	})
 }
 
 // SetVersion sets the "version" field.

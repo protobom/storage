@@ -195,7 +195,7 @@ func (backend *Backend) saveExternalReferences(refs []*sbom.ExternalReference, o
 
 			fns = append(fns, backend.saveHashes(ref.GetHashes(), func(hec *ent.HashesEntryCreate) {
 				hec.AddExternalReferenceIDs(extRefID)
-				setDocumentID(backend.ctx, hec)
+				addDocumentIDs(backend.ctx, hec)
 			}))
 		}
 
@@ -290,7 +290,7 @@ func (backend *Backend) saveMetadata(metadata *sbom.Metadata) TxFunc {
 			SetComment(metadata.GetComment()).
 			SetDate(metadata.GetDate().AsTime())
 
-		setDocumentID(backend.ctx, newMetadata)
+		addDocumentIDs(backend.ctx, newMetadata)
 
 		if err := newMetadata.OnConflict().Ignore().Exec(backend.ctx); err != nil && !ent.IsConstraintError(err) {
 			return fmt.Errorf("saving metadata: %w", err)
@@ -298,20 +298,20 @@ func (backend *Backend) saveMetadata(metadata *sbom.Metadata) TxFunc {
 
 		for _, fn := range []TxFunc{
 			backend.savePersons(metadata.GetAuthors(), func(pc *ent.PersonCreate) {
-				pc.SetMetadataID(id)
-				setDocumentID(backend.ctx, pc)
+				pc.AddMetadatumIDs(id)
+				addDocumentIDs(backend.ctx, pc)
 			}),
 			backend.saveDocumentTypes(metadata.GetDocumentTypes(), func(dtc *ent.DocumentTypeCreate) {
-				dtc.SetMetadataID(id)
-				setDocumentID(backend.ctx, dtc)
+				dtc.AddMetadatumIDs(id)
+				addDocumentIDs(backend.ctx, dtc)
 			}),
 			backend.saveSourceData(metadata.GetSourceData(), func(sdc *ent.SourceDataCreate) {
-				sdc.SetMetadataID(id)
-				setDocumentID(backend.ctx, sdc)
+				sdc.AddMetadatumIDs(id)
+				addDocumentIDs(backend.ctx, sdc)
 			}),
 			backend.saveTools(metadata.GetTools(), func(tc *ent.ToolCreate) {
-				tc.SetMetadataID(id)
-				setDocumentID(backend.ctx, tc)
+				tc.AddMetadatumIDs(id)
+				addDocumentIDs(backend.ctx, tc)
 			}),
 		} {
 			if err := fn(tx); err != nil {
@@ -334,7 +334,7 @@ func (backend *Backend) saveNodeList(nodeList *sbom.NodeList) TxFunc {
 			SetProtoMessage(nodeList).
 			SetRootElements(nodeList.GetRootElements())
 
-		setDocumentID(backend.ctx, newNodeList)
+		addDocumentIDs(backend.ctx, newNodeList)
 
 		if err := newNodeList.OnConflict().Ignore().Exec(backend.ctx); err != nil && !ent.IsConstraintError(err) {
 			return fmt.Errorf("saving node list: %w", err)
@@ -343,11 +343,11 @@ func (backend *Backend) saveNodeList(nodeList *sbom.NodeList) TxFunc {
 		for _, fn := range []TxFunc{
 			backend.saveNodes(nodeList.GetNodes(), func(nc *ent.NodeCreate) {
 				nc.AddNodeListIDs(id)
-				setDocumentID(backend.ctx, nc)
+				addDocumentIDs(backend.ctx, nc)
 			}),
 			backend.saveEdges(nodeList.GetEdges(), func(etc *ent.EdgeTypeCreate) {
 				etc.AddNodeListIDs(id)
-				setDocumentID(backend.ctx, etc)
+				addDocumentIDs(backend.ctx, etc)
 			}),
 		} {
 			if err := fn(tx); err != nil {
@@ -405,31 +405,31 @@ func (backend *Backend) saveNodes(nodes []*sbom.Node, opts ...func(*ent.NodeCrea
 			fns = append(fns,
 				backend.saveExternalReferences(srcNode.GetExternalReferences(), func(erc *ent.ExternalReferenceCreate) {
 					erc.AddNodeIDs(nodeID)
-					setDocumentID(backend.ctx, erc)
+					addDocumentIDs(backend.ctx, erc)
 				}),
 				backend.saveHashes(srcNode.GetHashes(), func(hec *ent.HashesEntryCreate) {
 					hec.AddNodeIDs(nodeID)
-					setDocumentID(backend.ctx, hec)
+					addDocumentIDs(backend.ctx, hec)
 				}),
 				backend.saveIdentifiers(srcNode.GetIdentifiers(), func(iec *ent.IdentifiersEntryCreate) {
 					iec.AddNodeIDs(nodeID)
-					setDocumentID(backend.ctx, iec)
+					addDocumentIDs(backend.ctx, iec)
 				}),
 				backend.savePersons(srcNode.GetOriginators(), func(pc *ent.PersonCreate) {
-					pc.SetNodeID(nodeID)
-					setDocumentID(backend.ctx, pc)
+					pc.AddOriginatorNodeIDs(nodeID)
+					addDocumentIDs(backend.ctx, pc)
 				}),
 				backend.savePersons(srcNode.GetSuppliers(), func(pc *ent.PersonCreate) {
-					pc.SetNodeID(nodeID)
-					setDocumentID(backend.ctx, pc)
+					pc.AddSupplierNodeIDs(nodeID)
+					addDocumentIDs(backend.ctx, pc)
 				}),
 				backend.saveProperties(srcNode.GetProperties(), func(pc *ent.PropertyCreate) {
-					pc.SetNodeID(nodeID)
-					setDocumentID(backend.ctx, pc)
+					pc.AddNodeIDs(nodeID)
+					addDocumentIDs(backend.ctx, pc)
 				}),
 				backend.savePurposes(srcNode.GetPrimaryPurpose(), func(pc *ent.PurposeCreate) {
-					pc.SetNodeID(nodeID)
-					setDocumentID(backend.ctx, pc)
+					pc.AddNodeIDs(nodeID)
+					addDocumentIDs(backend.ctx, pc)
 				}),
 			)
 		}
@@ -479,8 +479,8 @@ func (backend *Backend) savePersons(persons []*sbom.Person, opts ...func(*ent.Pe
 			builders = append(builders, newPerson)
 
 			if err := backend.savePersons(person.GetContacts(), func(pc *ent.PersonCreate) {
-				pc.SetContactOwnerID(id)
-				setDocumentID(backend.ctx, pc)
+				pc.AddContactOwnerIDs(id)
+				addDocumentIDs(backend.ctx, pc)
 			})(tx); err != nil {
 				return err
 			}
@@ -558,7 +558,6 @@ func (backend *Backend) saveSourceData(sourceData *sbom.SourceData, opts ...func
 		newSourceData := tx.SourceData.Create().
 			SetProtoMessage(sourceData).
 			SetFormat(sourceData.GetFormat()).
-			SetHashes(sourceData.GetHashes()).
 			SetSize(sourceData.GetSize()).
 			SetURI(sourceData.GetUri())
 
@@ -566,9 +565,15 @@ func (backend *Backend) saveSourceData(sourceData *sbom.SourceData, opts ...func
 			fn(newSourceData)
 		}
 
-		if err := newSourceData.OnConflict().Ignore().Exec(backend.ctx); err != nil && !ent.IsConstraintError(err) {
+		id, err := newSourceData.OnConflict().Ignore().ID(backend.ctx)
+		if err != nil && !ent.IsConstraintError(err) {
 			return fmt.Errorf("saving source data: %w", err)
 		}
+
+		backend.saveHashes(sourceData.GetHashes(), func(hec *ent.HashesEntryCreate) {
+			hec.AddSourceDatumIDs(id)
+			addDocumentIDs(backend.ctx, hec)
+		})
 
 		return nil
 	}
@@ -614,8 +619,8 @@ func GenerateUUID(msg proto.Message) (uuid.UUID, error) {
 	return uuid.NewHash(sha256.New(), uuid.Max, data, int(uuid.Max.Version())), nil
 }
 
-func setDocumentID[T interface{ SetDocumentID(uuid.UUID) T }](ctx context.Context, builder T) {
+func addDocumentIDs[T interface{ AddDocumentIDs(...uuid.UUID) T }](ctx context.Context, builder T) {
 	if documentID, ok := ctx.Value(documentIDKey{}).(uuid.UUID); ok {
-		builder.SetDocumentID(documentID)
+		builder.AddDocumentIDs(documentID)
 	}
 }

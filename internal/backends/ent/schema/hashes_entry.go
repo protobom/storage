@@ -17,6 +17,7 @@ import (
 
 	entint "github.com/protobom/storage/internal/backends/ent"
 	"github.com/protobom/storage/internal/backends/ent/hook"
+	"github.com/protobom/storage/internal/backends/ent/schema/mixin"
 )
 
 type HashesEntry struct {
@@ -27,8 +28,7 @@ var errInvalidHashesEntry = errors.New("at least one of external_reference_id or
 
 func (HashesEntry) Mixin() []ent.Mixin {
 	return []ent.Mixin{
-		DocumentMixin{},
-		UUIDMixin{},
+		mixin.UUID{},
 	}
 }
 
@@ -41,8 +41,16 @@ func (HashesEntry) Fields() []ent.Field {
 
 func (HashesEntry) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("external_references", ExternalReference.Type).Ref("hashes"),
-		edge.From("nodes", Node.Type).Ref("hashes"),
+		edge.From("documents", Document.Type).
+			Ref("hashes").
+			Required().
+			Immutable(),
+		edge.From("external_references", ExternalReference.Type).
+			Ref("hashes"),
+		edge.From("nodes", Node.Type).
+			Ref("hashes"),
+		edge.From("source_data", SourceData.Type).
+			Ref("hashes"),
 	}
 }
 
@@ -63,11 +71,8 @@ func (HashesEntry) Indexes() []ent.Index {
 func hashesEntryHook(next ent.Mutator) ent.Mutator {
 	return hook.HashesEntryFunc(
 		func(ctx context.Context, mutation *entint.HashesEntryMutation) (entint.Value, error) {
-			extRefs := mutation.ExternalReferencesIDs()
-			nodes := mutation.NodesIDs()
-
 			// Fail validation if neither external_reference_id nor node_id are set.
-			if len(extRefs) == 0 && len(nodes) == 0 {
+			if len(mutation.ExternalReferencesIDs()) == 0 && len(mutation.NodesIDs()) == 0 {
 				return nil, errInvalidHashesEntry
 			}
 

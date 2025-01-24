@@ -15,7 +15,6 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/google/uuid"
-	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/identifiersentry"
 )
 
@@ -24,8 +23,6 @@ type IdentifiersEntry struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID uuid.UUID `json:"-"`
-	// DocumentID holds the value of the "document_id" field.
-	DocumentID uuid.UUID `json:"-"`
 	// Type holds the value of the "type" field.
 	Type identifiersentry.Type `json:"type,omitempty"`
 	// Value holds the value of the "value" field.
@@ -38,8 +35,8 @@ type IdentifiersEntry struct {
 
 // IdentifiersEntryEdges holds the relations/edges for other nodes in the graph.
 type IdentifiersEntryEdges struct {
-	// Document holds the value of the document edge.
-	Document *Document `json:"document,omitempty"`
+	// Documents holds the value of the documents edge.
+	Documents []*Document `json:"-"`
 	// Nodes holds the value of the nodes edge.
 	Nodes []*Node `json:"-"`
 	// loadedTypes holds the information for reporting if a
@@ -47,15 +44,13 @@ type IdentifiersEntryEdges struct {
 	loadedTypes [2]bool
 }
 
-// DocumentOrErr returns the Document value or an error if the edge
-// was not loaded in eager-loading, or loaded but was not found.
-func (e IdentifiersEntryEdges) DocumentOrErr() (*Document, error) {
-	if e.Document != nil {
-		return e.Document, nil
-	} else if e.loadedTypes[0] {
-		return nil, &NotFoundError{label: document.Label}
+// DocumentsOrErr returns the Documents value or an error if the edge
+// was not loaded in eager-loading.
+func (e IdentifiersEntryEdges) DocumentsOrErr() ([]*Document, error) {
+	if e.loadedTypes[0] {
+		return e.Documents, nil
 	}
-	return nil, &NotLoadedError{edge: "document"}
+	return nil, &NotLoadedError{edge: "documents"}
 }
 
 // NodesOrErr returns the Nodes value or an error if the edge
@@ -74,7 +69,7 @@ func (*IdentifiersEntry) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case identifiersentry.FieldType, identifiersentry.FieldValue:
 			values[i] = new(sql.NullString)
-		case identifiersentry.FieldID, identifiersentry.FieldDocumentID:
+		case identifiersentry.FieldID:
 			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -96,12 +91,6 @@ func (ie *IdentifiersEntry) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value != nil {
 				ie.ID = *value
-			}
-		case identifiersentry.FieldDocumentID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
-				return fmt.Errorf("unexpected type %T for field document_id", values[i])
-			} else if value != nil {
-				ie.DocumentID = *value
 			}
 		case identifiersentry.FieldType:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -128,9 +117,9 @@ func (ie *IdentifiersEntry) GetValue(name string) (ent.Value, error) {
 	return ie.selectValues.Get(name)
 }
 
-// QueryDocument queries the "document" edge of the IdentifiersEntry entity.
-func (ie *IdentifiersEntry) QueryDocument() *DocumentQuery {
-	return NewIdentifiersEntryClient(ie.config).QueryDocument(ie)
+// QueryDocuments queries the "documents" edge of the IdentifiersEntry entity.
+func (ie *IdentifiersEntry) QueryDocuments() *DocumentQuery {
+	return NewIdentifiersEntryClient(ie.config).QueryDocuments(ie)
 }
 
 // QueryNodes queries the "nodes" edge of the IdentifiersEntry entity.
@@ -161,9 +150,6 @@ func (ie *IdentifiersEntry) String() string {
 	var builder strings.Builder
 	builder.WriteString("IdentifiersEntry(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", ie.ID))
-	builder.WriteString("document_id=")
-	builder.WriteString(fmt.Sprintf("%v", ie.DocumentID))
-	builder.WriteString(", ")
 	builder.WriteString("type=")
 	builder.WriteString(fmt.Sprintf("%v", ie.Type))
 	builder.WriteString(", ")

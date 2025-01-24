@@ -16,9 +16,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"github.com/google/uuid"
 	"github.com/protobom/protobom/pkg/sbom"
-	"github.com/protobom/storage/internal/backends/ent/document"
-	"github.com/protobom/storage/internal/backends/ent/metadata"
-	"github.com/protobom/storage/internal/backends/ent/node"
 	"github.com/protobom/storage/internal/backends/ent/person"
 )
 
@@ -27,14 +24,8 @@ type Person struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID uuid.UUID `json:"-"`
-	// DocumentID holds the value of the "document_id" field.
-	DocumentID uuid.UUID `json:"-"`
 	// ProtoMessage holds the value of the "proto_message" field.
 	ProtoMessage *sbom.Person `json:"-"`
-	// MetadataID holds the value of the "metadata_id" field.
-	MetadataID uuid.UUID `json:"-"`
-	// NodeID holds the value of the "node_id" field.
-	NodeID uuid.UUID `json:"-"`
 	// Name holds the value of the "name" field.
 	Name string `json:"name,omitempty"`
 	// IsOrg holds the value of the "is_org" field.
@@ -47,47 +38,34 @@ type Person struct {
 	Phone string `json:"phone,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the PersonQuery when eager-loading is set.
-	Edges           PersonEdges `json:"-"`
-	node_suppliers  *uuid.UUID
-	person_contacts *uuid.UUID
-	selectValues    sql.SelectValues
+	Edges        PersonEdges `json:"-"`
+	selectValues sql.SelectValues
 }
 
 // PersonEdges holds the relations/edges for other nodes in the graph.
 type PersonEdges struct {
-	// Document holds the value of the document edge.
-	Document *Document `json:"document,omitempty"`
 	// ContactOwner holds the value of the contact_owner edge.
-	ContactOwner *Person `json:"-"`
+	ContactOwner []*Person `json:"-"`
 	// Contacts holds the value of the contacts edge.
 	Contacts []*Person `json:"contacts,omitempty"`
+	// Documents holds the value of the documents edge.
+	Documents []*Document `json:"-"`
 	// Metadata holds the value of the metadata edge.
-	Metadata *Metadata `json:"-"`
-	// Node holds the value of the node edge.
-	Node *Node `json:"-"`
+	Metadata []*Metadata `json:"-"`
+	// OriginatorNodes holds the value of the originator_nodes edge.
+	OriginatorNodes []*Node `json:"-"`
+	// SupplierNodes holds the value of the supplier_nodes edge.
+	SupplierNodes []*Node `json:"-"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [5]bool
-}
-
-// DocumentOrErr returns the Document value or an error if the edge
-// was not loaded in eager-loading, or loaded but was not found.
-func (e PersonEdges) DocumentOrErr() (*Document, error) {
-	if e.Document != nil {
-		return e.Document, nil
-	} else if e.loadedTypes[0] {
-		return nil, &NotFoundError{label: document.Label}
-	}
-	return nil, &NotLoadedError{edge: "document"}
+	loadedTypes [6]bool
 }
 
 // ContactOwnerOrErr returns the ContactOwner value or an error if the edge
-// was not loaded in eager-loading, or loaded but was not found.
-func (e PersonEdges) ContactOwnerOrErr() (*Person, error) {
-	if e.ContactOwner != nil {
+// was not loaded in eager-loading.
+func (e PersonEdges) ContactOwnerOrErr() ([]*Person, error) {
+	if e.loadedTypes[0] {
 		return e.ContactOwner, nil
-	} else if e.loadedTypes[1] {
-		return nil, &NotFoundError{label: person.Label}
 	}
 	return nil, &NotLoadedError{edge: "contact_owner"}
 }
@@ -95,32 +73,46 @@ func (e PersonEdges) ContactOwnerOrErr() (*Person, error) {
 // ContactsOrErr returns the Contacts value or an error if the edge
 // was not loaded in eager-loading.
 func (e PersonEdges) ContactsOrErr() ([]*Person, error) {
-	if e.loadedTypes[2] {
+	if e.loadedTypes[1] {
 		return e.Contacts, nil
 	}
 	return nil, &NotLoadedError{edge: "contacts"}
 }
 
+// DocumentsOrErr returns the Documents value or an error if the edge
+// was not loaded in eager-loading.
+func (e PersonEdges) DocumentsOrErr() ([]*Document, error) {
+	if e.loadedTypes[2] {
+		return e.Documents, nil
+	}
+	return nil, &NotLoadedError{edge: "documents"}
+}
+
 // MetadataOrErr returns the Metadata value or an error if the edge
-// was not loaded in eager-loading, or loaded but was not found.
-func (e PersonEdges) MetadataOrErr() (*Metadata, error) {
-	if e.Metadata != nil {
+// was not loaded in eager-loading.
+func (e PersonEdges) MetadataOrErr() ([]*Metadata, error) {
+	if e.loadedTypes[3] {
 		return e.Metadata, nil
-	} else if e.loadedTypes[3] {
-		return nil, &NotFoundError{label: metadata.Label}
 	}
 	return nil, &NotLoadedError{edge: "metadata"}
 }
 
-// NodeOrErr returns the Node value or an error if the edge
-// was not loaded in eager-loading, or loaded but was not found.
-func (e PersonEdges) NodeOrErr() (*Node, error) {
-	if e.Node != nil {
-		return e.Node, nil
-	} else if e.loadedTypes[4] {
-		return nil, &NotFoundError{label: node.Label}
+// OriginatorNodesOrErr returns the OriginatorNodes value or an error if the edge
+// was not loaded in eager-loading.
+func (e PersonEdges) OriginatorNodesOrErr() ([]*Node, error) {
+	if e.loadedTypes[4] {
+		return e.OriginatorNodes, nil
 	}
-	return nil, &NotLoadedError{edge: "node"}
+	return nil, &NotLoadedError{edge: "originator_nodes"}
+}
+
+// SupplierNodesOrErr returns the SupplierNodes value or an error if the edge
+// was not loaded in eager-loading.
+func (e PersonEdges) SupplierNodesOrErr() ([]*Node, error) {
+	if e.loadedTypes[5] {
+		return e.SupplierNodes, nil
+	}
+	return nil, &NotLoadedError{edge: "supplier_nodes"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -134,12 +126,8 @@ func (*Person) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullBool)
 		case person.FieldName, person.FieldEmail, person.FieldURL, person.FieldPhone:
 			values[i] = new(sql.NullString)
-		case person.FieldID, person.FieldDocumentID, person.FieldMetadataID, person.FieldNodeID:
+		case person.FieldID:
 			values[i] = new(uuid.UUID)
-		case person.ForeignKeys[0]: // node_suppliers
-			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
-		case person.ForeignKeys[1]: // person_contacts
-			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -161,29 +149,11 @@ func (pe *Person) assignValues(columns []string, values []any) error {
 			} else if value != nil {
 				pe.ID = *value
 			}
-		case person.FieldDocumentID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
-				return fmt.Errorf("unexpected type %T for field document_id", values[i])
-			} else if value != nil {
-				pe.DocumentID = *value
-			}
 		case person.FieldProtoMessage:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
 				return fmt.Errorf("unexpected type %T for field proto_message", values[i])
 			} else if value.Valid {
 				pe.ProtoMessage = value.S.(*sbom.Person)
-			}
-		case person.FieldMetadataID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
-				return fmt.Errorf("unexpected type %T for field metadata_id", values[i])
-			} else if value != nil {
-				pe.MetadataID = *value
-			}
-		case person.FieldNodeID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
-				return fmt.Errorf("unexpected type %T for field node_id", values[i])
-			} else if value != nil {
-				pe.NodeID = *value
 			}
 		case person.FieldName:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -215,20 +185,6 @@ func (pe *Person) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				pe.Phone = value.String
 			}
-		case person.ForeignKeys[0]:
-			if value, ok := values[i].(*sql.NullScanner); !ok {
-				return fmt.Errorf("unexpected type %T for field node_suppliers", values[i])
-			} else if value.Valid {
-				pe.node_suppliers = new(uuid.UUID)
-				*pe.node_suppliers = *value.S.(*uuid.UUID)
-			}
-		case person.ForeignKeys[1]:
-			if value, ok := values[i].(*sql.NullScanner); !ok {
-				return fmt.Errorf("unexpected type %T for field person_contacts", values[i])
-			} else if value.Valid {
-				pe.person_contacts = new(uuid.UUID)
-				*pe.person_contacts = *value.S.(*uuid.UUID)
-			}
 		default:
 			pe.selectValues.Set(columns[i], values[i])
 		}
@@ -242,11 +198,6 @@ func (pe *Person) Value(name string) (ent.Value, error) {
 	return pe.selectValues.Get(name)
 }
 
-// QueryDocument queries the "document" edge of the Person entity.
-func (pe *Person) QueryDocument() *DocumentQuery {
-	return NewPersonClient(pe.config).QueryDocument(pe)
-}
-
 // QueryContactOwner queries the "contact_owner" edge of the Person entity.
 func (pe *Person) QueryContactOwner() *PersonQuery {
 	return NewPersonClient(pe.config).QueryContactOwner(pe)
@@ -257,14 +208,24 @@ func (pe *Person) QueryContacts() *PersonQuery {
 	return NewPersonClient(pe.config).QueryContacts(pe)
 }
 
+// QueryDocuments queries the "documents" edge of the Person entity.
+func (pe *Person) QueryDocuments() *DocumentQuery {
+	return NewPersonClient(pe.config).QueryDocuments(pe)
+}
+
 // QueryMetadata queries the "metadata" edge of the Person entity.
 func (pe *Person) QueryMetadata() *MetadataQuery {
 	return NewPersonClient(pe.config).QueryMetadata(pe)
 }
 
-// QueryNode queries the "node" edge of the Person entity.
-func (pe *Person) QueryNode() *NodeQuery {
-	return NewPersonClient(pe.config).QueryNode(pe)
+// QueryOriginatorNodes queries the "originator_nodes" edge of the Person entity.
+func (pe *Person) QueryOriginatorNodes() *NodeQuery {
+	return NewPersonClient(pe.config).QueryOriginatorNodes(pe)
+}
+
+// QuerySupplierNodes queries the "supplier_nodes" edge of the Person entity.
+func (pe *Person) QuerySupplierNodes() *NodeQuery {
+	return NewPersonClient(pe.config).QuerySupplierNodes(pe)
 }
 
 // Update returns a builder for updating this Person.
@@ -290,19 +251,10 @@ func (pe *Person) String() string {
 	var builder strings.Builder
 	builder.WriteString("Person(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", pe.ID))
-	builder.WriteString("document_id=")
-	builder.WriteString(fmt.Sprintf("%v", pe.DocumentID))
-	builder.WriteString(", ")
 	if v := pe.ProtoMessage; v != nil {
 		builder.WriteString("proto_message=")
 		builder.WriteString(fmt.Sprintf("%v", *v))
 	}
-	builder.WriteString(", ")
-	builder.WriteString("metadata_id=")
-	builder.WriteString(fmt.Sprintf("%v", pe.MetadataID))
-	builder.WriteString(", ")
-	builder.WriteString("node_id=")
-	builder.WriteString(fmt.Sprintf("%v", pe.NodeID))
 	builder.WriteString(", ")
 	builder.WriteString("name=")
 	builder.WriteString(pe.Name)

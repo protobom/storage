@@ -21,6 +21,8 @@ const (
 	FieldID = "id"
 	// FieldProtoMessage holds the string denoting the proto_message field in the database.
 	FieldProtoMessage = "proto_message"
+	// FieldSourceDataID holds the string denoting the source_data_id field in the database.
+	FieldSourceDataID = "source_data_id"
 	// FieldNativeID holds the string denoting the native_id field in the database.
 	FieldNativeID = "native_id"
 	// FieldVersion holds the string denoting the version field in the database.
@@ -31,8 +33,6 @@ const (
 	FieldDate = "date"
 	// FieldComment holds the string denoting the comment field in the database.
 	FieldComment = "comment"
-	// EdgeDocument holds the string denoting the document edge name in mutations.
-	EdgeDocument = "document"
 	// EdgeTools holds the string denoting the tools edge name in mutations.
 	EdgeTools = "tools"
 	// EdgeAuthors holds the string denoting the authors edge name in mutations.
@@ -41,55 +41,64 @@ const (
 	EdgeDocumentTypes = "document_types"
 	// EdgeSourceData holds the string denoting the source_data edge name in mutations.
 	EdgeSourceData = "source_data"
+	// EdgeDocuments holds the string denoting the documents edge name in mutations.
+	EdgeDocuments = "documents"
 	// Table holds the table name of the metadata in the database.
 	Table = "metadata"
-	// DocumentTable is the table that holds the document relation/edge.
-	DocumentTable = "documents"
-	// DocumentInverseTable is the table name for the Document entity.
-	// It exists in this package in order to avoid circular dependency with the "document" package.
-	DocumentInverseTable = "documents"
-	// DocumentColumn is the table column denoting the document relation/edge.
-	DocumentColumn = "metadata_id"
-	// ToolsTable is the table that holds the tools relation/edge.
-	ToolsTable = "tools"
+	// ToolsTable is the table that holds the tools relation/edge. The primary key declared below.
+	ToolsTable = "metadata_tools"
 	// ToolsInverseTable is the table name for the Tool entity.
 	// It exists in this package in order to avoid circular dependency with the "tool" package.
 	ToolsInverseTable = "tools"
-	// ToolsColumn is the table column denoting the tools relation/edge.
-	ToolsColumn = "metadata_id"
-	// AuthorsTable is the table that holds the authors relation/edge.
-	AuthorsTable = "persons"
+	// AuthorsTable is the table that holds the authors relation/edge. The primary key declared below.
+	AuthorsTable = "metadata_authors"
 	// AuthorsInverseTable is the table name for the Person entity.
 	// It exists in this package in order to avoid circular dependency with the "person" package.
 	AuthorsInverseTable = "persons"
-	// AuthorsColumn is the table column denoting the authors relation/edge.
-	AuthorsColumn = "metadata_id"
-	// DocumentTypesTable is the table that holds the document_types relation/edge.
-	DocumentTypesTable = "document_types"
+	// DocumentTypesTable is the table that holds the document_types relation/edge. The primary key declared below.
+	DocumentTypesTable = "metadata_document_types"
 	// DocumentTypesInverseTable is the table name for the DocumentType entity.
 	// It exists in this package in order to avoid circular dependency with the "documenttype" package.
 	DocumentTypesInverseTable = "document_types"
-	// DocumentTypesColumn is the table column denoting the document_types relation/edge.
-	DocumentTypesColumn = "metadata_id"
 	// SourceDataTable is the table that holds the source_data relation/edge.
-	SourceDataTable = "source_data"
+	SourceDataTable = "metadata"
 	// SourceDataInverseTable is the table name for the SourceData entity.
 	// It exists in this package in order to avoid circular dependency with the "sourcedata" package.
 	SourceDataInverseTable = "source_data"
 	// SourceDataColumn is the table column denoting the source_data relation/edge.
-	SourceDataColumn = "metadata_id"
+	SourceDataColumn = "source_data_id"
+	// DocumentsTable is the table that holds the documents relation/edge.
+	DocumentsTable = "documents"
+	// DocumentsInverseTable is the table name for the Document entity.
+	// It exists in this package in order to avoid circular dependency with the "document" package.
+	DocumentsInverseTable = "documents"
+	// DocumentsColumn is the table column denoting the documents relation/edge.
+	DocumentsColumn = "metadata_id"
 )
 
 // Columns holds all SQL columns for metadata fields.
 var Columns = []string{
 	FieldID,
 	FieldProtoMessage,
+	FieldSourceDataID,
 	FieldNativeID,
 	FieldVersion,
 	FieldName,
 	FieldDate,
 	FieldComment,
 }
+
+var (
+	// ToolsPrimaryKey and ToolsColumn2 are the table columns denoting the
+	// primary key for the tools relation (M2M).
+	ToolsPrimaryKey = []string{"metadata_id", "tool_id"}
+	// AuthorsPrimaryKey and AuthorsColumn2 are the table columns denoting the
+	// primary key for the authors relation (M2M).
+	AuthorsPrimaryKey = []string{"metadata_id", "person_id"}
+	// DocumentTypesPrimaryKey and DocumentTypesColumn2 are the table columns denoting the
+	// primary key for the document_types relation (M2M).
+	DocumentTypesPrimaryKey = []string{"metadata_id", "document_type_id"}
+)
 
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {
@@ -122,6 +131,11 @@ func ByID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldID, opts...).ToFunc()
 }
 
+// BySourceDataID orders the results by the source_data_id field.
+func BySourceDataID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldSourceDataID, opts...).ToFunc()
+}
+
 // ByNativeID orders the results by the native_id field.
 func ByNativeID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldNativeID, opts...).ToFunc()
@@ -145,13 +159,6 @@ func ByDate(opts ...sql.OrderTermOption) OrderOption {
 // ByComment orders the results by the comment field.
 func ByComment(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldComment, opts...).ToFunc()
-}
-
-// ByDocumentField orders the results by document field.
-func ByDocumentField(field string, opts ...sql.OrderTermOption) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newDocumentStep(), sql.OrderByField(field, opts...))
-	}
 }
 
 // ByToolsCount orders the results by tools count.
@@ -196,51 +203,58 @@ func ByDocumentTypes(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	}
 }
 
-// BySourceDataCount orders the results by source_data count.
-func BySourceDataCount(opts ...sql.OrderTermOption) OrderOption {
+// BySourceDataField orders the results by source_data field.
+func BySourceDataField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborsCount(s, newSourceDataStep(), opts...)
+		sqlgraph.OrderByNeighborTerms(s, newSourceDataStep(), sql.OrderByField(field, opts...))
 	}
 }
 
-// BySourceData orders the results by source_data terms.
-func BySourceData(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+// ByDocumentsCount orders the results by documents count.
+func ByDocumentsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newSourceDataStep(), append([]sql.OrderTerm{term}, terms...)...)
+		sqlgraph.OrderByNeighborsCount(s, newDocumentsStep(), opts...)
 	}
 }
-func newDocumentStep() *sqlgraph.Step {
-	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(DocumentInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2O, false, DocumentTable, DocumentColumn),
-	)
+
+// ByDocuments orders the results by documents terms.
+func ByDocuments(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newDocumentsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
 }
 func newToolsStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(ToolsInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2M, false, ToolsTable, ToolsColumn),
+		sqlgraph.Edge(sqlgraph.M2M, false, ToolsTable, ToolsPrimaryKey...),
 	)
 }
 func newAuthorsStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(AuthorsInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2M, false, AuthorsTable, AuthorsColumn),
+		sqlgraph.Edge(sqlgraph.M2M, false, AuthorsTable, AuthorsPrimaryKey...),
 	)
 }
 func newDocumentTypesStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(DocumentTypesInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2M, false, DocumentTypesTable, DocumentTypesColumn),
+		sqlgraph.Edge(sqlgraph.M2M, false, DocumentTypesTable, DocumentTypesPrimaryKey...),
 	)
 }
 func newSourceDataStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(SourceDataInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2M, false, SourceDataTable, SourceDataColumn),
+		sqlgraph.Edge(sqlgraph.M2O, false, SourceDataTable, SourceDataColumn),
+	)
+}
+func newDocumentsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(DocumentsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, true, DocumentsTable, DocumentsColumn),
 	)
 }

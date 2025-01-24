@@ -20,21 +20,43 @@ import (
 	"github.com/google/uuid"
 	"github.com/protobom/storage/internal/backends/ent/annotation"
 	"github.com/protobom/storage/internal/backends/ent/document"
+	"github.com/protobom/storage/internal/backends/ent/documenttype"
+	"github.com/protobom/storage/internal/backends/ent/edgetype"
+	"github.com/protobom/storage/internal/backends/ent/externalreference"
+	"github.com/protobom/storage/internal/backends/ent/hashesentry"
+	"github.com/protobom/storage/internal/backends/ent/identifiersentry"
 	"github.com/protobom/storage/internal/backends/ent/metadata"
+	"github.com/protobom/storage/internal/backends/ent/node"
 	"github.com/protobom/storage/internal/backends/ent/nodelist"
+	"github.com/protobom/storage/internal/backends/ent/person"
 	"github.com/protobom/storage/internal/backends/ent/predicate"
+	"github.com/protobom/storage/internal/backends/ent/property"
+	"github.com/protobom/storage/internal/backends/ent/purpose"
+	"github.com/protobom/storage/internal/backends/ent/sourcedata"
+	"github.com/protobom/storage/internal/backends/ent/tool"
 )
 
 // DocumentQuery is the builder for querying Document entities.
 type DocumentQuery struct {
 	config
-	ctx             *QueryContext
-	order           []document.OrderOption
-	inters          []Interceptor
-	predicates      []predicate.Document
-	withAnnotations *AnnotationQuery
-	withMetadata    *MetadataQuery
-	withNodeList    *NodeListQuery
+	ctx                    *QueryContext
+	order                  []document.OrderOption
+	inters                 []Interceptor
+	predicates             []predicate.Document
+	withAnnotations        *AnnotationQuery
+	withMetadata           *MetadataQuery
+	withNodeList           *NodeListQuery
+	withDocumentTypes      *DocumentTypeQuery
+	withEdgeTypes          *EdgeTypeQuery
+	withExternalReferences *ExternalReferenceQuery
+	withHashes             *HashesEntryQuery
+	withIdentifiers        *IdentifiersEntryQuery
+	withNodes              *NodeQuery
+	withPersons            *PersonQuery
+	withProperties         *PropertyQuery
+	withPurposes           *PurposeQuery
+	withSourceData         *SourceDataQuery
+	withTools              *ToolQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -107,7 +129,7 @@ func (dq *DocumentQuery) QueryMetadata() *MetadataQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(document.Table, document.FieldID, selector),
 			sqlgraph.To(metadata.Table, metadata.FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, true, document.MetadataTable, document.MetadataColumn),
+			sqlgraph.Edge(sqlgraph.M2O, false, document.MetadataTable, document.MetadataColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(dq.driver.Dialect(), step)
 		return fromU, nil
@@ -129,7 +151,249 @@ func (dq *DocumentQuery) QueryNodeList() *NodeListQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(document.Table, document.FieldID, selector),
 			sqlgraph.To(nodelist.Table, nodelist.FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, true, document.NodeListTable, document.NodeListColumn),
+			sqlgraph.Edge(sqlgraph.M2O, false, document.NodeListTable, document.NodeListColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(dq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryDocumentTypes chains the current query on the "document_types" edge.
+func (dq *DocumentQuery) QueryDocumentTypes() *DocumentTypeQuery {
+	query := (&DocumentTypeClient{config: dq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := dq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := dq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(document.Table, document.FieldID, selector),
+			sqlgraph.To(documenttype.Table, documenttype.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, document.DocumentTypesTable, document.DocumentTypesPrimaryKey...),
+		)
+		fromU = sqlgraph.SetNeighbors(dq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryEdgeTypes chains the current query on the "edge_types" edge.
+func (dq *DocumentQuery) QueryEdgeTypes() *EdgeTypeQuery {
+	query := (&EdgeTypeClient{config: dq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := dq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := dq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(document.Table, document.FieldID, selector),
+			sqlgraph.To(edgetype.Table, edgetype.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, document.EdgeTypesTable, document.EdgeTypesPrimaryKey...),
+		)
+		fromU = sqlgraph.SetNeighbors(dq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryExternalReferences chains the current query on the "external_references" edge.
+func (dq *DocumentQuery) QueryExternalReferences() *ExternalReferenceQuery {
+	query := (&ExternalReferenceClient{config: dq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := dq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := dq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(document.Table, document.FieldID, selector),
+			sqlgraph.To(externalreference.Table, externalreference.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, document.ExternalReferencesTable, document.ExternalReferencesPrimaryKey...),
+		)
+		fromU = sqlgraph.SetNeighbors(dq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryHashes chains the current query on the "hashes" edge.
+func (dq *DocumentQuery) QueryHashes() *HashesEntryQuery {
+	query := (&HashesEntryClient{config: dq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := dq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := dq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(document.Table, document.FieldID, selector),
+			sqlgraph.To(hashesentry.Table, hashesentry.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, document.HashesTable, document.HashesPrimaryKey...),
+		)
+		fromU = sqlgraph.SetNeighbors(dq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryIdentifiers chains the current query on the "identifiers" edge.
+func (dq *DocumentQuery) QueryIdentifiers() *IdentifiersEntryQuery {
+	query := (&IdentifiersEntryClient{config: dq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := dq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := dq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(document.Table, document.FieldID, selector),
+			sqlgraph.To(identifiersentry.Table, identifiersentry.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, document.IdentifiersTable, document.IdentifiersPrimaryKey...),
+		)
+		fromU = sqlgraph.SetNeighbors(dq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryNodes chains the current query on the "nodes" edge.
+func (dq *DocumentQuery) QueryNodes() *NodeQuery {
+	query := (&NodeClient{config: dq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := dq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := dq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(document.Table, document.FieldID, selector),
+			sqlgraph.To(node.Table, node.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, document.NodesTable, document.NodesPrimaryKey...),
+		)
+		fromU = sqlgraph.SetNeighbors(dq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryPersons chains the current query on the "persons" edge.
+func (dq *DocumentQuery) QueryPersons() *PersonQuery {
+	query := (&PersonClient{config: dq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := dq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := dq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(document.Table, document.FieldID, selector),
+			sqlgraph.To(person.Table, person.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, document.PersonsTable, document.PersonsPrimaryKey...),
+		)
+		fromU = sqlgraph.SetNeighbors(dq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryProperties chains the current query on the "properties" edge.
+func (dq *DocumentQuery) QueryProperties() *PropertyQuery {
+	query := (&PropertyClient{config: dq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := dq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := dq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(document.Table, document.FieldID, selector),
+			sqlgraph.To(property.Table, property.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, document.PropertiesTable, document.PropertiesPrimaryKey...),
+		)
+		fromU = sqlgraph.SetNeighbors(dq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryPurposes chains the current query on the "purposes" edge.
+func (dq *DocumentQuery) QueryPurposes() *PurposeQuery {
+	query := (&PurposeClient{config: dq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := dq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := dq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(document.Table, document.FieldID, selector),
+			sqlgraph.To(purpose.Table, purpose.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, document.PurposesTable, document.PurposesPrimaryKey...),
+		)
+		fromU = sqlgraph.SetNeighbors(dq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QuerySourceData chains the current query on the "source_data" edge.
+func (dq *DocumentQuery) QuerySourceData() *SourceDataQuery {
+	query := (&SourceDataClient{config: dq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := dq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := dq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(document.Table, document.FieldID, selector),
+			sqlgraph.To(sourcedata.Table, sourcedata.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, document.SourceDataTable, document.SourceDataPrimaryKey...),
+		)
+		fromU = sqlgraph.SetNeighbors(dq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryTools chains the current query on the "tools" edge.
+func (dq *DocumentQuery) QueryTools() *ToolQuery {
+	query := (&ToolClient{config: dq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := dq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := dq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(document.Table, document.FieldID, selector),
+			sqlgraph.To(tool.Table, tool.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, document.ToolsTable, document.ToolsPrimaryKey...),
 		)
 		fromU = sqlgraph.SetNeighbors(dq.driver.Dialect(), step)
 		return fromU, nil
@@ -324,14 +588,25 @@ func (dq *DocumentQuery) Clone() *DocumentQuery {
 		return nil
 	}
 	return &DocumentQuery{
-		config:          dq.config,
-		ctx:             dq.ctx.Clone(),
-		order:           append([]document.OrderOption{}, dq.order...),
-		inters:          append([]Interceptor{}, dq.inters...),
-		predicates:      append([]predicate.Document{}, dq.predicates...),
-		withAnnotations: dq.withAnnotations.Clone(),
-		withMetadata:    dq.withMetadata.Clone(),
-		withNodeList:    dq.withNodeList.Clone(),
+		config:                 dq.config,
+		ctx:                    dq.ctx.Clone(),
+		order:                  append([]document.OrderOption{}, dq.order...),
+		inters:                 append([]Interceptor{}, dq.inters...),
+		predicates:             append([]predicate.Document{}, dq.predicates...),
+		withAnnotations:        dq.withAnnotations.Clone(),
+		withMetadata:           dq.withMetadata.Clone(),
+		withNodeList:           dq.withNodeList.Clone(),
+		withDocumentTypes:      dq.withDocumentTypes.Clone(),
+		withEdgeTypes:          dq.withEdgeTypes.Clone(),
+		withExternalReferences: dq.withExternalReferences.Clone(),
+		withHashes:             dq.withHashes.Clone(),
+		withIdentifiers:        dq.withIdentifiers.Clone(),
+		withNodes:              dq.withNodes.Clone(),
+		withPersons:            dq.withPersons.Clone(),
+		withProperties:         dq.withProperties.Clone(),
+		withPurposes:           dq.withPurposes.Clone(),
+		withSourceData:         dq.withSourceData.Clone(),
+		withTools:              dq.withTools.Clone(),
 		// clone intermediate query.
 		sql:  dq.sql.Clone(),
 		path: dq.path,
@@ -368,6 +643,127 @@ func (dq *DocumentQuery) WithNodeList(opts ...func(*NodeListQuery)) *DocumentQue
 		opt(query)
 	}
 	dq.withNodeList = query
+	return dq
+}
+
+// WithDocumentTypes tells the query-builder to eager-load the nodes that are connected to
+// the "document_types" edge. The optional arguments are used to configure the query builder of the edge.
+func (dq *DocumentQuery) WithDocumentTypes(opts ...func(*DocumentTypeQuery)) *DocumentQuery {
+	query := (&DocumentTypeClient{config: dq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	dq.withDocumentTypes = query
+	return dq
+}
+
+// WithEdgeTypes tells the query-builder to eager-load the nodes that are connected to
+// the "edge_types" edge. The optional arguments are used to configure the query builder of the edge.
+func (dq *DocumentQuery) WithEdgeTypes(opts ...func(*EdgeTypeQuery)) *DocumentQuery {
+	query := (&EdgeTypeClient{config: dq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	dq.withEdgeTypes = query
+	return dq
+}
+
+// WithExternalReferences tells the query-builder to eager-load the nodes that are connected to
+// the "external_references" edge. The optional arguments are used to configure the query builder of the edge.
+func (dq *DocumentQuery) WithExternalReferences(opts ...func(*ExternalReferenceQuery)) *DocumentQuery {
+	query := (&ExternalReferenceClient{config: dq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	dq.withExternalReferences = query
+	return dq
+}
+
+// WithHashes tells the query-builder to eager-load the nodes that are connected to
+// the "hashes" edge. The optional arguments are used to configure the query builder of the edge.
+func (dq *DocumentQuery) WithHashes(opts ...func(*HashesEntryQuery)) *DocumentQuery {
+	query := (&HashesEntryClient{config: dq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	dq.withHashes = query
+	return dq
+}
+
+// WithIdentifiers tells the query-builder to eager-load the nodes that are connected to
+// the "identifiers" edge. The optional arguments are used to configure the query builder of the edge.
+func (dq *DocumentQuery) WithIdentifiers(opts ...func(*IdentifiersEntryQuery)) *DocumentQuery {
+	query := (&IdentifiersEntryClient{config: dq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	dq.withIdentifiers = query
+	return dq
+}
+
+// WithNodes tells the query-builder to eager-load the nodes that are connected to
+// the "nodes" edge. The optional arguments are used to configure the query builder of the edge.
+func (dq *DocumentQuery) WithNodes(opts ...func(*NodeQuery)) *DocumentQuery {
+	query := (&NodeClient{config: dq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	dq.withNodes = query
+	return dq
+}
+
+// WithPersons tells the query-builder to eager-load the nodes that are connected to
+// the "persons" edge. The optional arguments are used to configure the query builder of the edge.
+func (dq *DocumentQuery) WithPersons(opts ...func(*PersonQuery)) *DocumentQuery {
+	query := (&PersonClient{config: dq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	dq.withPersons = query
+	return dq
+}
+
+// WithProperties tells the query-builder to eager-load the nodes that are connected to
+// the "properties" edge. The optional arguments are used to configure the query builder of the edge.
+func (dq *DocumentQuery) WithProperties(opts ...func(*PropertyQuery)) *DocumentQuery {
+	query := (&PropertyClient{config: dq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	dq.withProperties = query
+	return dq
+}
+
+// WithPurposes tells the query-builder to eager-load the nodes that are connected to
+// the "purposes" edge. The optional arguments are used to configure the query builder of the edge.
+func (dq *DocumentQuery) WithPurposes(opts ...func(*PurposeQuery)) *DocumentQuery {
+	query := (&PurposeClient{config: dq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	dq.withPurposes = query
+	return dq
+}
+
+// WithSourceData tells the query-builder to eager-load the nodes that are connected to
+// the "source_data" edge. The optional arguments are used to configure the query builder of the edge.
+func (dq *DocumentQuery) WithSourceData(opts ...func(*SourceDataQuery)) *DocumentQuery {
+	query := (&SourceDataClient{config: dq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	dq.withSourceData = query
+	return dq
+}
+
+// WithTools tells the query-builder to eager-load the nodes that are connected to
+// the "tools" edge. The optional arguments are used to configure the query builder of the edge.
+func (dq *DocumentQuery) WithTools(opts ...func(*ToolQuery)) *DocumentQuery {
+	query := (&ToolClient{config: dq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	dq.withTools = query
 	return dq
 }
 
@@ -449,10 +845,21 @@ func (dq *DocumentQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Doc
 	var (
 		nodes       = []*Document{}
 		_spec       = dq.querySpec()
-		loadedTypes = [3]bool{
+		loadedTypes = [14]bool{
 			dq.withAnnotations != nil,
 			dq.withMetadata != nil,
 			dq.withNodeList != nil,
+			dq.withDocumentTypes != nil,
+			dq.withEdgeTypes != nil,
+			dq.withExternalReferences != nil,
+			dq.withHashes != nil,
+			dq.withIdentifiers != nil,
+			dq.withNodes != nil,
+			dq.withPersons != nil,
+			dq.withProperties != nil,
+			dq.withPurposes != nil,
+			dq.withSourceData != nil,
+			dq.withTools != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -489,6 +896,85 @@ func (dq *DocumentQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Doc
 	if query := dq.withNodeList; query != nil {
 		if err := dq.loadNodeList(ctx, query, nodes, nil,
 			func(n *Document, e *NodeList) { n.Edges.NodeList = e }); err != nil {
+			return nil, err
+		}
+	}
+	if query := dq.withDocumentTypes; query != nil {
+		if err := dq.loadDocumentTypes(ctx, query, nodes,
+			func(n *Document) { n.Edges.DocumentTypes = []*DocumentType{} },
+			func(n *Document, e *DocumentType) { n.Edges.DocumentTypes = append(n.Edges.DocumentTypes, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := dq.withEdgeTypes; query != nil {
+		if err := dq.loadEdgeTypes(ctx, query, nodes,
+			func(n *Document) { n.Edges.EdgeTypes = []*EdgeType{} },
+			func(n *Document, e *EdgeType) { n.Edges.EdgeTypes = append(n.Edges.EdgeTypes, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := dq.withExternalReferences; query != nil {
+		if err := dq.loadExternalReferences(ctx, query, nodes,
+			func(n *Document) { n.Edges.ExternalReferences = []*ExternalReference{} },
+			func(n *Document, e *ExternalReference) {
+				n.Edges.ExternalReferences = append(n.Edges.ExternalReferences, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
+	if query := dq.withHashes; query != nil {
+		if err := dq.loadHashes(ctx, query, nodes,
+			func(n *Document) { n.Edges.Hashes = []*HashesEntry{} },
+			func(n *Document, e *HashesEntry) { n.Edges.Hashes = append(n.Edges.Hashes, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := dq.withIdentifiers; query != nil {
+		if err := dq.loadIdentifiers(ctx, query, nodes,
+			func(n *Document) { n.Edges.Identifiers = []*IdentifiersEntry{} },
+			func(n *Document, e *IdentifiersEntry) { n.Edges.Identifiers = append(n.Edges.Identifiers, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := dq.withNodes; query != nil {
+		if err := dq.loadNodes(ctx, query, nodes,
+			func(n *Document) { n.Edges.Nodes = []*Node{} },
+			func(n *Document, e *Node) { n.Edges.Nodes = append(n.Edges.Nodes, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := dq.withPersons; query != nil {
+		if err := dq.loadPersons(ctx, query, nodes,
+			func(n *Document) { n.Edges.Persons = []*Person{} },
+			func(n *Document, e *Person) { n.Edges.Persons = append(n.Edges.Persons, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := dq.withProperties; query != nil {
+		if err := dq.loadProperties(ctx, query, nodes,
+			func(n *Document) { n.Edges.Properties = []*Property{} },
+			func(n *Document, e *Property) { n.Edges.Properties = append(n.Edges.Properties, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := dq.withPurposes; query != nil {
+		if err := dq.loadPurposes(ctx, query, nodes,
+			func(n *Document) { n.Edges.Purposes = []*Purpose{} },
+			func(n *Document, e *Purpose) { n.Edges.Purposes = append(n.Edges.Purposes, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := dq.withSourceData; query != nil {
+		if err := dq.loadSourceData(ctx, query, nodes,
+			func(n *Document) { n.Edges.SourceData = []*SourceData{} },
+			func(n *Document, e *SourceData) { n.Edges.SourceData = append(n.Edges.SourceData, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := dq.withTools; query != nil {
+		if err := dq.loadTools(ctx, query, nodes,
+			func(n *Document) { n.Edges.Tools = []*Tool{} },
+			func(n *Document, e *Tool) { n.Edges.Tools = append(n.Edges.Tools, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -582,6 +1068,677 @@ func (dq *DocumentQuery) loadNodeList(ctx context.Context, query *NodeListQuery,
 		}
 		for i := range nodes {
 			assign(nodes[i], n)
+		}
+	}
+	return nil
+}
+func (dq *DocumentQuery) loadDocumentTypes(ctx context.Context, query *DocumentTypeQuery, nodes []*Document, init func(*Document), assign func(*Document, *DocumentType)) error {
+	edgeIDs := make([]driver.Value, len(nodes))
+	byID := make(map[uuid.UUID]*Document)
+	nids := make(map[uuid.UUID]map[*Document]struct{})
+	for i, node := range nodes {
+		edgeIDs[i] = node.ID
+		byID[node.ID] = node
+		if init != nil {
+			init(node)
+		}
+	}
+	query.Where(func(s *sql.Selector) {
+		joinT := sql.Table(document.DocumentTypesTable)
+		s.Join(joinT).On(s.C(documenttype.FieldID), joinT.C(document.DocumentTypesPrimaryKey[1]))
+		s.Where(sql.InValues(joinT.C(document.DocumentTypesPrimaryKey[0]), edgeIDs...))
+		columns := s.SelectedColumns()
+		s.Select(joinT.C(document.DocumentTypesPrimaryKey[0]))
+		s.AppendSelect(columns...)
+		s.SetDistinct(false)
+	})
+	if err := query.prepareQuery(ctx); err != nil {
+		return err
+	}
+	qr := QuerierFunc(func(ctx context.Context, q Query) (Value, error) {
+		return query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
+			assign := spec.Assign
+			values := spec.ScanValues
+			spec.ScanValues = func(columns []string) ([]any, error) {
+				values, err := values(columns[1:])
+				if err != nil {
+					return nil, err
+				}
+				return append([]any{new(uuid.UUID)}, values...), nil
+			}
+			spec.Assign = func(columns []string, values []any) error {
+				outValue := *values[0].(*uuid.UUID)
+				inValue := *values[1].(*uuid.UUID)
+				if nids[inValue] == nil {
+					nids[inValue] = map[*Document]struct{}{byID[outValue]: {}}
+					return assign(columns[1:], values[1:])
+				}
+				nids[inValue][byID[outValue]] = struct{}{}
+				return nil
+			}
+		})
+	})
+	neighbors, err := withInterceptors[[]*DocumentType](ctx, query, qr, query.inters)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected "document_types" node returned %v`, n.ID)
+		}
+		for kn := range nodes {
+			assign(kn, n)
+		}
+	}
+	return nil
+}
+func (dq *DocumentQuery) loadEdgeTypes(ctx context.Context, query *EdgeTypeQuery, nodes []*Document, init func(*Document), assign func(*Document, *EdgeType)) error {
+	edgeIDs := make([]driver.Value, len(nodes))
+	byID := make(map[uuid.UUID]*Document)
+	nids := make(map[uuid.UUID]map[*Document]struct{})
+	for i, node := range nodes {
+		edgeIDs[i] = node.ID
+		byID[node.ID] = node
+		if init != nil {
+			init(node)
+		}
+	}
+	query.Where(func(s *sql.Selector) {
+		joinT := sql.Table(document.EdgeTypesTable)
+		s.Join(joinT).On(s.C(edgetype.FieldID), joinT.C(document.EdgeTypesPrimaryKey[1]))
+		s.Where(sql.InValues(joinT.C(document.EdgeTypesPrimaryKey[0]), edgeIDs...))
+		columns := s.SelectedColumns()
+		s.Select(joinT.C(document.EdgeTypesPrimaryKey[0]))
+		s.AppendSelect(columns...)
+		s.SetDistinct(false)
+	})
+	if err := query.prepareQuery(ctx); err != nil {
+		return err
+	}
+	qr := QuerierFunc(func(ctx context.Context, q Query) (Value, error) {
+		return query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
+			assign := spec.Assign
+			values := spec.ScanValues
+			spec.ScanValues = func(columns []string) ([]any, error) {
+				values, err := values(columns[1:])
+				if err != nil {
+					return nil, err
+				}
+				return append([]any{new(uuid.UUID)}, values...), nil
+			}
+			spec.Assign = func(columns []string, values []any) error {
+				outValue := *values[0].(*uuid.UUID)
+				inValue := *values[1].(*uuid.UUID)
+				if nids[inValue] == nil {
+					nids[inValue] = map[*Document]struct{}{byID[outValue]: {}}
+					return assign(columns[1:], values[1:])
+				}
+				nids[inValue][byID[outValue]] = struct{}{}
+				return nil
+			}
+		})
+	})
+	neighbors, err := withInterceptors[[]*EdgeType](ctx, query, qr, query.inters)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected "edge_types" node returned %v`, n.ID)
+		}
+		for kn := range nodes {
+			assign(kn, n)
+		}
+	}
+	return nil
+}
+func (dq *DocumentQuery) loadExternalReferences(ctx context.Context, query *ExternalReferenceQuery, nodes []*Document, init func(*Document), assign func(*Document, *ExternalReference)) error {
+	edgeIDs := make([]driver.Value, len(nodes))
+	byID := make(map[uuid.UUID]*Document)
+	nids := make(map[uuid.UUID]map[*Document]struct{})
+	for i, node := range nodes {
+		edgeIDs[i] = node.ID
+		byID[node.ID] = node
+		if init != nil {
+			init(node)
+		}
+	}
+	query.Where(func(s *sql.Selector) {
+		joinT := sql.Table(document.ExternalReferencesTable)
+		s.Join(joinT).On(s.C(externalreference.FieldID), joinT.C(document.ExternalReferencesPrimaryKey[1]))
+		s.Where(sql.InValues(joinT.C(document.ExternalReferencesPrimaryKey[0]), edgeIDs...))
+		columns := s.SelectedColumns()
+		s.Select(joinT.C(document.ExternalReferencesPrimaryKey[0]))
+		s.AppendSelect(columns...)
+		s.SetDistinct(false)
+	})
+	if err := query.prepareQuery(ctx); err != nil {
+		return err
+	}
+	qr := QuerierFunc(func(ctx context.Context, q Query) (Value, error) {
+		return query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
+			assign := spec.Assign
+			values := spec.ScanValues
+			spec.ScanValues = func(columns []string) ([]any, error) {
+				values, err := values(columns[1:])
+				if err != nil {
+					return nil, err
+				}
+				return append([]any{new(uuid.UUID)}, values...), nil
+			}
+			spec.Assign = func(columns []string, values []any) error {
+				outValue := *values[0].(*uuid.UUID)
+				inValue := *values[1].(*uuid.UUID)
+				if nids[inValue] == nil {
+					nids[inValue] = map[*Document]struct{}{byID[outValue]: {}}
+					return assign(columns[1:], values[1:])
+				}
+				nids[inValue][byID[outValue]] = struct{}{}
+				return nil
+			}
+		})
+	})
+	neighbors, err := withInterceptors[[]*ExternalReference](ctx, query, qr, query.inters)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected "external_references" node returned %v`, n.ID)
+		}
+		for kn := range nodes {
+			assign(kn, n)
+		}
+	}
+	return nil
+}
+func (dq *DocumentQuery) loadHashes(ctx context.Context, query *HashesEntryQuery, nodes []*Document, init func(*Document), assign func(*Document, *HashesEntry)) error {
+	edgeIDs := make([]driver.Value, len(nodes))
+	byID := make(map[uuid.UUID]*Document)
+	nids := make(map[uuid.UUID]map[*Document]struct{})
+	for i, node := range nodes {
+		edgeIDs[i] = node.ID
+		byID[node.ID] = node
+		if init != nil {
+			init(node)
+		}
+	}
+	query.Where(func(s *sql.Selector) {
+		joinT := sql.Table(document.HashesTable)
+		s.Join(joinT).On(s.C(hashesentry.FieldID), joinT.C(document.HashesPrimaryKey[1]))
+		s.Where(sql.InValues(joinT.C(document.HashesPrimaryKey[0]), edgeIDs...))
+		columns := s.SelectedColumns()
+		s.Select(joinT.C(document.HashesPrimaryKey[0]))
+		s.AppendSelect(columns...)
+		s.SetDistinct(false)
+	})
+	if err := query.prepareQuery(ctx); err != nil {
+		return err
+	}
+	qr := QuerierFunc(func(ctx context.Context, q Query) (Value, error) {
+		return query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
+			assign := spec.Assign
+			values := spec.ScanValues
+			spec.ScanValues = func(columns []string) ([]any, error) {
+				values, err := values(columns[1:])
+				if err != nil {
+					return nil, err
+				}
+				return append([]any{new(uuid.UUID)}, values...), nil
+			}
+			spec.Assign = func(columns []string, values []any) error {
+				outValue := *values[0].(*uuid.UUID)
+				inValue := *values[1].(*uuid.UUID)
+				if nids[inValue] == nil {
+					nids[inValue] = map[*Document]struct{}{byID[outValue]: {}}
+					return assign(columns[1:], values[1:])
+				}
+				nids[inValue][byID[outValue]] = struct{}{}
+				return nil
+			}
+		})
+	})
+	neighbors, err := withInterceptors[[]*HashesEntry](ctx, query, qr, query.inters)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected "hashes" node returned %v`, n.ID)
+		}
+		for kn := range nodes {
+			assign(kn, n)
+		}
+	}
+	return nil
+}
+func (dq *DocumentQuery) loadIdentifiers(ctx context.Context, query *IdentifiersEntryQuery, nodes []*Document, init func(*Document), assign func(*Document, *IdentifiersEntry)) error {
+	edgeIDs := make([]driver.Value, len(nodes))
+	byID := make(map[uuid.UUID]*Document)
+	nids := make(map[uuid.UUID]map[*Document]struct{})
+	for i, node := range nodes {
+		edgeIDs[i] = node.ID
+		byID[node.ID] = node
+		if init != nil {
+			init(node)
+		}
+	}
+	query.Where(func(s *sql.Selector) {
+		joinT := sql.Table(document.IdentifiersTable)
+		s.Join(joinT).On(s.C(identifiersentry.FieldID), joinT.C(document.IdentifiersPrimaryKey[1]))
+		s.Where(sql.InValues(joinT.C(document.IdentifiersPrimaryKey[0]), edgeIDs...))
+		columns := s.SelectedColumns()
+		s.Select(joinT.C(document.IdentifiersPrimaryKey[0]))
+		s.AppendSelect(columns...)
+		s.SetDistinct(false)
+	})
+	if err := query.prepareQuery(ctx); err != nil {
+		return err
+	}
+	qr := QuerierFunc(func(ctx context.Context, q Query) (Value, error) {
+		return query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
+			assign := spec.Assign
+			values := spec.ScanValues
+			spec.ScanValues = func(columns []string) ([]any, error) {
+				values, err := values(columns[1:])
+				if err != nil {
+					return nil, err
+				}
+				return append([]any{new(uuid.UUID)}, values...), nil
+			}
+			spec.Assign = func(columns []string, values []any) error {
+				outValue := *values[0].(*uuid.UUID)
+				inValue := *values[1].(*uuid.UUID)
+				if nids[inValue] == nil {
+					nids[inValue] = map[*Document]struct{}{byID[outValue]: {}}
+					return assign(columns[1:], values[1:])
+				}
+				nids[inValue][byID[outValue]] = struct{}{}
+				return nil
+			}
+		})
+	})
+	neighbors, err := withInterceptors[[]*IdentifiersEntry](ctx, query, qr, query.inters)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected "identifiers" node returned %v`, n.ID)
+		}
+		for kn := range nodes {
+			assign(kn, n)
+		}
+	}
+	return nil
+}
+func (dq *DocumentQuery) loadNodes(ctx context.Context, query *NodeQuery, nodes []*Document, init func(*Document), assign func(*Document, *Node)) error {
+	edgeIDs := make([]driver.Value, len(nodes))
+	byID := make(map[uuid.UUID]*Document)
+	nids := make(map[uuid.UUID]map[*Document]struct{})
+	for i, node := range nodes {
+		edgeIDs[i] = node.ID
+		byID[node.ID] = node
+		if init != nil {
+			init(node)
+		}
+	}
+	query.Where(func(s *sql.Selector) {
+		joinT := sql.Table(document.NodesTable)
+		s.Join(joinT).On(s.C(node.FieldID), joinT.C(document.NodesPrimaryKey[1]))
+		s.Where(sql.InValues(joinT.C(document.NodesPrimaryKey[0]), edgeIDs...))
+		columns := s.SelectedColumns()
+		s.Select(joinT.C(document.NodesPrimaryKey[0]))
+		s.AppendSelect(columns...)
+		s.SetDistinct(false)
+	})
+	if err := query.prepareQuery(ctx); err != nil {
+		return err
+	}
+	qr := QuerierFunc(func(ctx context.Context, q Query) (Value, error) {
+		return query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
+			assign := spec.Assign
+			values := spec.ScanValues
+			spec.ScanValues = func(columns []string) ([]any, error) {
+				values, err := values(columns[1:])
+				if err != nil {
+					return nil, err
+				}
+				return append([]any{new(uuid.UUID)}, values...), nil
+			}
+			spec.Assign = func(columns []string, values []any) error {
+				outValue := *values[0].(*uuid.UUID)
+				inValue := *values[1].(*uuid.UUID)
+				if nids[inValue] == nil {
+					nids[inValue] = map[*Document]struct{}{byID[outValue]: {}}
+					return assign(columns[1:], values[1:])
+				}
+				nids[inValue][byID[outValue]] = struct{}{}
+				return nil
+			}
+		})
+	})
+	neighbors, err := withInterceptors[[]*Node](ctx, query, qr, query.inters)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected "nodes" node returned %v`, n.ID)
+		}
+		for kn := range nodes {
+			assign(kn, n)
+		}
+	}
+	return nil
+}
+func (dq *DocumentQuery) loadPersons(ctx context.Context, query *PersonQuery, nodes []*Document, init func(*Document), assign func(*Document, *Person)) error {
+	edgeIDs := make([]driver.Value, len(nodes))
+	byID := make(map[uuid.UUID]*Document)
+	nids := make(map[uuid.UUID]map[*Document]struct{})
+	for i, node := range nodes {
+		edgeIDs[i] = node.ID
+		byID[node.ID] = node
+		if init != nil {
+			init(node)
+		}
+	}
+	query.Where(func(s *sql.Selector) {
+		joinT := sql.Table(document.PersonsTable)
+		s.Join(joinT).On(s.C(person.FieldID), joinT.C(document.PersonsPrimaryKey[1]))
+		s.Where(sql.InValues(joinT.C(document.PersonsPrimaryKey[0]), edgeIDs...))
+		columns := s.SelectedColumns()
+		s.Select(joinT.C(document.PersonsPrimaryKey[0]))
+		s.AppendSelect(columns...)
+		s.SetDistinct(false)
+	})
+	if err := query.prepareQuery(ctx); err != nil {
+		return err
+	}
+	qr := QuerierFunc(func(ctx context.Context, q Query) (Value, error) {
+		return query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
+			assign := spec.Assign
+			values := spec.ScanValues
+			spec.ScanValues = func(columns []string) ([]any, error) {
+				values, err := values(columns[1:])
+				if err != nil {
+					return nil, err
+				}
+				return append([]any{new(uuid.UUID)}, values...), nil
+			}
+			spec.Assign = func(columns []string, values []any) error {
+				outValue := *values[0].(*uuid.UUID)
+				inValue := *values[1].(*uuid.UUID)
+				if nids[inValue] == nil {
+					nids[inValue] = map[*Document]struct{}{byID[outValue]: {}}
+					return assign(columns[1:], values[1:])
+				}
+				nids[inValue][byID[outValue]] = struct{}{}
+				return nil
+			}
+		})
+	})
+	neighbors, err := withInterceptors[[]*Person](ctx, query, qr, query.inters)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected "persons" node returned %v`, n.ID)
+		}
+		for kn := range nodes {
+			assign(kn, n)
+		}
+	}
+	return nil
+}
+func (dq *DocumentQuery) loadProperties(ctx context.Context, query *PropertyQuery, nodes []*Document, init func(*Document), assign func(*Document, *Property)) error {
+	edgeIDs := make([]driver.Value, len(nodes))
+	byID := make(map[uuid.UUID]*Document)
+	nids := make(map[uuid.UUID]map[*Document]struct{})
+	for i, node := range nodes {
+		edgeIDs[i] = node.ID
+		byID[node.ID] = node
+		if init != nil {
+			init(node)
+		}
+	}
+	query.Where(func(s *sql.Selector) {
+		joinT := sql.Table(document.PropertiesTable)
+		s.Join(joinT).On(s.C(property.FieldID), joinT.C(document.PropertiesPrimaryKey[1]))
+		s.Where(sql.InValues(joinT.C(document.PropertiesPrimaryKey[0]), edgeIDs...))
+		columns := s.SelectedColumns()
+		s.Select(joinT.C(document.PropertiesPrimaryKey[0]))
+		s.AppendSelect(columns...)
+		s.SetDistinct(false)
+	})
+	if err := query.prepareQuery(ctx); err != nil {
+		return err
+	}
+	qr := QuerierFunc(func(ctx context.Context, q Query) (Value, error) {
+		return query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
+			assign := spec.Assign
+			values := spec.ScanValues
+			spec.ScanValues = func(columns []string) ([]any, error) {
+				values, err := values(columns[1:])
+				if err != nil {
+					return nil, err
+				}
+				return append([]any{new(uuid.UUID)}, values...), nil
+			}
+			spec.Assign = func(columns []string, values []any) error {
+				outValue := *values[0].(*uuid.UUID)
+				inValue := *values[1].(*uuid.UUID)
+				if nids[inValue] == nil {
+					nids[inValue] = map[*Document]struct{}{byID[outValue]: {}}
+					return assign(columns[1:], values[1:])
+				}
+				nids[inValue][byID[outValue]] = struct{}{}
+				return nil
+			}
+		})
+	})
+	neighbors, err := withInterceptors[[]*Property](ctx, query, qr, query.inters)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected "properties" node returned %v`, n.ID)
+		}
+		for kn := range nodes {
+			assign(kn, n)
+		}
+	}
+	return nil
+}
+func (dq *DocumentQuery) loadPurposes(ctx context.Context, query *PurposeQuery, nodes []*Document, init func(*Document), assign func(*Document, *Purpose)) error {
+	edgeIDs := make([]driver.Value, len(nodes))
+	byID := make(map[uuid.UUID]*Document)
+	nids := make(map[int]map[*Document]struct{})
+	for i, node := range nodes {
+		edgeIDs[i] = node.ID
+		byID[node.ID] = node
+		if init != nil {
+			init(node)
+		}
+	}
+	query.Where(func(s *sql.Selector) {
+		joinT := sql.Table(document.PurposesTable)
+		s.Join(joinT).On(s.C(purpose.FieldID), joinT.C(document.PurposesPrimaryKey[1]))
+		s.Where(sql.InValues(joinT.C(document.PurposesPrimaryKey[0]), edgeIDs...))
+		columns := s.SelectedColumns()
+		s.Select(joinT.C(document.PurposesPrimaryKey[0]))
+		s.AppendSelect(columns...)
+		s.SetDistinct(false)
+	})
+	if err := query.prepareQuery(ctx); err != nil {
+		return err
+	}
+	qr := QuerierFunc(func(ctx context.Context, q Query) (Value, error) {
+		return query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
+			assign := spec.Assign
+			values := spec.ScanValues
+			spec.ScanValues = func(columns []string) ([]any, error) {
+				values, err := values(columns[1:])
+				if err != nil {
+					return nil, err
+				}
+				return append([]any{new(uuid.UUID)}, values...), nil
+			}
+			spec.Assign = func(columns []string, values []any) error {
+				outValue := *values[0].(*uuid.UUID)
+				inValue := int(values[1].(*sql.NullInt64).Int64)
+				if nids[inValue] == nil {
+					nids[inValue] = map[*Document]struct{}{byID[outValue]: {}}
+					return assign(columns[1:], values[1:])
+				}
+				nids[inValue][byID[outValue]] = struct{}{}
+				return nil
+			}
+		})
+	})
+	neighbors, err := withInterceptors[[]*Purpose](ctx, query, qr, query.inters)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected "purposes" node returned %v`, n.ID)
+		}
+		for kn := range nodes {
+			assign(kn, n)
+		}
+	}
+	return nil
+}
+func (dq *DocumentQuery) loadSourceData(ctx context.Context, query *SourceDataQuery, nodes []*Document, init func(*Document), assign func(*Document, *SourceData)) error {
+	edgeIDs := make([]driver.Value, len(nodes))
+	byID := make(map[uuid.UUID]*Document)
+	nids := make(map[uuid.UUID]map[*Document]struct{})
+	for i, node := range nodes {
+		edgeIDs[i] = node.ID
+		byID[node.ID] = node
+		if init != nil {
+			init(node)
+		}
+	}
+	query.Where(func(s *sql.Selector) {
+		joinT := sql.Table(document.SourceDataTable)
+		s.Join(joinT).On(s.C(sourcedata.FieldID), joinT.C(document.SourceDataPrimaryKey[1]))
+		s.Where(sql.InValues(joinT.C(document.SourceDataPrimaryKey[0]), edgeIDs...))
+		columns := s.SelectedColumns()
+		s.Select(joinT.C(document.SourceDataPrimaryKey[0]))
+		s.AppendSelect(columns...)
+		s.SetDistinct(false)
+	})
+	if err := query.prepareQuery(ctx); err != nil {
+		return err
+	}
+	qr := QuerierFunc(func(ctx context.Context, q Query) (Value, error) {
+		return query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
+			assign := spec.Assign
+			values := spec.ScanValues
+			spec.ScanValues = func(columns []string) ([]any, error) {
+				values, err := values(columns[1:])
+				if err != nil {
+					return nil, err
+				}
+				return append([]any{new(uuid.UUID)}, values...), nil
+			}
+			spec.Assign = func(columns []string, values []any) error {
+				outValue := *values[0].(*uuid.UUID)
+				inValue := *values[1].(*uuid.UUID)
+				if nids[inValue] == nil {
+					nids[inValue] = map[*Document]struct{}{byID[outValue]: {}}
+					return assign(columns[1:], values[1:])
+				}
+				nids[inValue][byID[outValue]] = struct{}{}
+				return nil
+			}
+		})
+	})
+	neighbors, err := withInterceptors[[]*SourceData](ctx, query, qr, query.inters)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected "source_data" node returned %v`, n.ID)
+		}
+		for kn := range nodes {
+			assign(kn, n)
+		}
+	}
+	return nil
+}
+func (dq *DocumentQuery) loadTools(ctx context.Context, query *ToolQuery, nodes []*Document, init func(*Document), assign func(*Document, *Tool)) error {
+	edgeIDs := make([]driver.Value, len(nodes))
+	byID := make(map[uuid.UUID]*Document)
+	nids := make(map[uuid.UUID]map[*Document]struct{})
+	for i, node := range nodes {
+		edgeIDs[i] = node.ID
+		byID[node.ID] = node
+		if init != nil {
+			init(node)
+		}
+	}
+	query.Where(func(s *sql.Selector) {
+		joinT := sql.Table(document.ToolsTable)
+		s.Join(joinT).On(s.C(tool.FieldID), joinT.C(document.ToolsPrimaryKey[1]))
+		s.Where(sql.InValues(joinT.C(document.ToolsPrimaryKey[0]), edgeIDs...))
+		columns := s.SelectedColumns()
+		s.Select(joinT.C(document.ToolsPrimaryKey[0]))
+		s.AppendSelect(columns...)
+		s.SetDistinct(false)
+	})
+	if err := query.prepareQuery(ctx); err != nil {
+		return err
+	}
+	qr := QuerierFunc(func(ctx context.Context, q Query) (Value, error) {
+		return query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
+			assign := spec.Assign
+			values := spec.ScanValues
+			spec.ScanValues = func(columns []string) ([]any, error) {
+				values, err := values(columns[1:])
+				if err != nil {
+					return nil, err
+				}
+				return append([]any{new(uuid.UUID)}, values...), nil
+			}
+			spec.Assign = func(columns []string, values []any) error {
+				outValue := *values[0].(*uuid.UUID)
+				inValue := *values[1].(*uuid.UUID)
+				if nids[inValue] == nil {
+					nids[inValue] = map[*Document]struct{}{byID[outValue]: {}}
+					return assign(columns[1:], values[1:])
+				}
+				nids[inValue][byID[outValue]] = struct{}{}
+				return nil
+			}
+		})
+	})
+	neighbors, err := withInterceptors[[]*Tool](ctx, query, qr, query.inters)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected "tools" node returned %v`, n.ID)
+		}
+		for kn := range nodes {
+			assign(kn, n)
 		}
 	}
 	return nil

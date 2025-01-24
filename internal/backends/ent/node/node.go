@@ -21,14 +21,10 @@ const (
 	Label = "node"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
-	// FieldDocumentID holds the string denoting the document_id field in the database.
-	FieldDocumentID = "document_id"
 	// FieldProtoMessage holds the string denoting the proto_message field in the database.
 	FieldProtoMessage = "proto_message"
 	// FieldNativeID holds the string denoting the native_id field in the database.
 	FieldNativeID = "native_id"
-	// FieldNodeListID holds the string denoting the node_list_id field in the database.
-	FieldNodeListID = "node_list_id"
 	// FieldType holds the string denoting the type field in the database.
 	FieldType = "type"
 	// FieldName holds the string denoting the name field in the database.
@@ -67,8 +63,6 @@ const (
 	FieldAttribution = "attribution"
 	// FieldFileTypes holds the string denoting the file_types field in the database.
 	FieldFileTypes = "file_types"
-	// EdgeDocument holds the string denoting the document edge name in mutations.
-	EdgeDocument = "document"
 	// EdgeAnnotations holds the string denoting the annotations edge name in mutations.
 	EdgeAnnotations = "annotations"
 	// EdgeSuppliers holds the string denoting the suppliers edge name in mutations.
@@ -89,19 +83,14 @@ const (
 	EdgeIdentifiers = "identifiers"
 	// EdgeProperties holds the string denoting the properties edge name in mutations.
 	EdgeProperties = "properties"
+	// EdgeDocuments holds the string denoting the documents edge name in mutations.
+	EdgeDocuments = "documents"
 	// EdgeNodeLists holds the string denoting the node_lists edge name in mutations.
 	EdgeNodeLists = "node_lists"
 	// EdgeEdgeTypes holds the string denoting the edge_types edge name in mutations.
 	EdgeEdgeTypes = "edge_types"
 	// Table holds the table name of the node in the database.
 	Table = "nodes"
-	// DocumentTable is the table that holds the document relation/edge.
-	DocumentTable = "nodes"
-	// DocumentInverseTable is the table name for the Document entity.
-	// It exists in this package in order to avoid circular dependency with the "document" package.
-	DocumentInverseTable = "documents"
-	// DocumentColumn is the table column denoting the document relation/edge.
-	DocumentColumn = "document_id"
 	// AnnotationsTable is the table that holds the annotations relation/edge.
 	AnnotationsTable = "annotations"
 	// AnnotationsInverseTable is the table name for the Annotation entity.
@@ -109,32 +98,26 @@ const (
 	AnnotationsInverseTable = "annotations"
 	// AnnotationsColumn is the table column denoting the annotations relation/edge.
 	AnnotationsColumn = "node_id"
-	// SuppliersTable is the table that holds the suppliers relation/edge.
-	SuppliersTable = "persons"
+	// SuppliersTable is the table that holds the suppliers relation/edge. The primary key declared below.
+	SuppliersTable = "node_suppliers"
 	// SuppliersInverseTable is the table name for the Person entity.
 	// It exists in this package in order to avoid circular dependency with the "person" package.
 	SuppliersInverseTable = "persons"
-	// SuppliersColumn is the table column denoting the suppliers relation/edge.
-	SuppliersColumn = "node_suppliers"
-	// OriginatorsTable is the table that holds the originators relation/edge.
-	OriginatorsTable = "persons"
+	// OriginatorsTable is the table that holds the originators relation/edge. The primary key declared below.
+	OriginatorsTable = "node_originators"
 	// OriginatorsInverseTable is the table name for the Person entity.
 	// It exists in this package in order to avoid circular dependency with the "person" package.
 	OriginatorsInverseTable = "persons"
-	// OriginatorsColumn is the table column denoting the originators relation/edge.
-	OriginatorsColumn = "node_id"
 	// ExternalReferencesTable is the table that holds the external_references relation/edge. The primary key declared below.
 	ExternalReferencesTable = "node_external_references"
 	// ExternalReferencesInverseTable is the table name for the ExternalReference entity.
 	// It exists in this package in order to avoid circular dependency with the "externalreference" package.
 	ExternalReferencesInverseTable = "external_references"
-	// PrimaryPurposeTable is the table that holds the primary_purpose relation/edge.
-	PrimaryPurposeTable = "purposes"
+	// PrimaryPurposeTable is the table that holds the primary_purpose relation/edge. The primary key declared below.
+	PrimaryPurposeTable = "node_primary_purposes"
 	// PrimaryPurposeInverseTable is the table name for the Purpose entity.
 	// It exists in this package in order to avoid circular dependency with the "purpose" package.
 	PrimaryPurposeInverseTable = "purposes"
-	// PrimaryPurposeColumn is the table column denoting the primary_purpose relation/edge.
-	PrimaryPurposeColumn = "node_id"
 	// ToNodesTable is the table that holds the to_nodes relation/edge. The primary key declared below.
 	ToNodesTable = "edge_types"
 	// NodesTable is the table that holds the nodes relation/edge. The primary key declared below.
@@ -149,13 +132,16 @@ const (
 	// IdentifiersInverseTable is the table name for the IdentifiersEntry entity.
 	// It exists in this package in order to avoid circular dependency with the "identifiersentry" package.
 	IdentifiersInverseTable = "identifiers_entries"
-	// PropertiesTable is the table that holds the properties relation/edge.
-	PropertiesTable = "properties"
+	// PropertiesTable is the table that holds the properties relation/edge. The primary key declared below.
+	PropertiesTable = "node_properties"
 	// PropertiesInverseTable is the table name for the Property entity.
 	// It exists in this package in order to avoid circular dependency with the "property" package.
 	PropertiesInverseTable = "properties"
-	// PropertiesColumn is the table column denoting the properties relation/edge.
-	PropertiesColumn = "node_id"
+	// DocumentsTable is the table that holds the documents relation/edge. The primary key declared below.
+	DocumentsTable = "document_nodes"
+	// DocumentsInverseTable is the table name for the Document entity.
+	// It exists in this package in order to avoid circular dependency with the "document" package.
+	DocumentsInverseTable = "documents"
 	// NodeListsTable is the table that holds the node_lists relation/edge. The primary key declared below.
 	NodeListsTable = "node_list_nodes"
 	// NodeListsInverseTable is the table name for the NodeList entity.
@@ -173,10 +159,8 @@ const (
 // Columns holds all SQL columns for node fields.
 var Columns = []string{
 	FieldID,
-	FieldDocumentID,
 	FieldProtoMessage,
 	FieldNativeID,
-	FieldNodeListID,
 	FieldType,
 	FieldName,
 	FieldVersion,
@@ -199,9 +183,18 @@ var Columns = []string{
 }
 
 var (
+	// SuppliersPrimaryKey and SuppliersColumn2 are the table columns denoting the
+	// primary key for the suppliers relation (M2M).
+	SuppliersPrimaryKey = []string{"node_id", "person_id"}
+	// OriginatorsPrimaryKey and OriginatorsColumn2 are the table columns denoting the
+	// primary key for the originators relation (M2M).
+	OriginatorsPrimaryKey = []string{"node_id", "person_id"}
 	// ExternalReferencesPrimaryKey and ExternalReferencesColumn2 are the table columns denoting the
 	// primary key for the external_references relation (M2M).
 	ExternalReferencesPrimaryKey = []string{"node_id", "external_reference_id"}
+	// PrimaryPurposePrimaryKey and PrimaryPurposeColumn2 are the table columns denoting the
+	// primary key for the primary_purpose relation (M2M).
+	PrimaryPurposePrimaryKey = []string{"node_id", "purpose_id"}
 	// ToNodesPrimaryKey and ToNodesColumn2 are the table columns denoting the
 	// primary key for the to_nodes relation (M2M).
 	ToNodesPrimaryKey = []string{"node_id", "to_node_id"}
@@ -214,6 +207,12 @@ var (
 	// IdentifiersPrimaryKey and IdentifiersColumn2 are the table columns denoting the
 	// primary key for the identifiers relation (M2M).
 	IdentifiersPrimaryKey = []string{"node_id", "identifier_entry_id"}
+	// PropertiesPrimaryKey and PropertiesColumn2 are the table columns denoting the
+	// primary key for the properties relation (M2M).
+	PropertiesPrimaryKey = []string{"node_id", "property_id"}
+	// DocumentsPrimaryKey and DocumentsColumn2 are the table columns denoting the
+	// primary key for the documents relation (M2M).
+	DocumentsPrimaryKey = []string{"document_id", "node_id"}
 	// NodeListsPrimaryKey and NodeListsColumn2 are the table columns denoting the
 	// primary key for the node_lists relation (M2M).
 	NodeListsPrimaryKey = []string{"node_list_id", "node_id"}
@@ -236,8 +235,6 @@ func ValidColumn(column string) bool {
 //	import _ "github.com/protobom/storage/internal/backends/ent/runtime"
 var (
 	Hooks [1]ent.Hook
-	// DefaultDocumentID holds the default value on creation for the "document_id" field.
-	DefaultDocumentID func() uuid.UUID
 	// NativeIDValidator is a validator for the "native_id" field. It is called by the builders before save.
 	NativeIDValidator func(string) error
 	// DefaultID holds the default value on creation for the "id" field.
@@ -275,19 +272,9 @@ func ByID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldID, opts...).ToFunc()
 }
 
-// ByDocumentID orders the results by the document_id field.
-func ByDocumentID(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldDocumentID, opts...).ToFunc()
-}
-
 // ByNativeID orders the results by the native_id field.
 func ByNativeID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldNativeID, opts...).ToFunc()
-}
-
-// ByNodeListID orders the results by the node_list_id field.
-func ByNodeListID(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldNodeListID, opts...).ToFunc()
 }
 
 // ByType orders the results by the type field.
@@ -368,13 +355,6 @@ func ByBuildDate(opts ...sql.OrderTermOption) OrderOption {
 // ByValidUntilDate orders the results by the valid_until_date field.
 func ByValidUntilDate(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldValidUntilDate, opts...).ToFunc()
-}
-
-// ByDocumentField orders the results by document field.
-func ByDocumentField(field string, opts ...sql.OrderTermOption) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newDocumentStep(), sql.OrderByField(field, opts...))
-	}
 }
 
 // ByAnnotationsCount orders the results by annotations count.
@@ -517,6 +497,20 @@ func ByProperties(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	}
 }
 
+// ByDocumentsCount orders the results by documents count.
+func ByDocumentsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newDocumentsStep(), opts...)
+	}
+}
+
+// ByDocuments orders the results by documents terms.
+func ByDocuments(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newDocumentsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
 // ByNodeListsCount orders the results by node_lists count.
 func ByNodeListsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -544,13 +538,6 @@ func ByEdgeTypes(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newEdgeTypesStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
-func newDocumentStep() *sqlgraph.Step {
-	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(DocumentInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.M2O, false, DocumentTable, DocumentColumn),
-	)
-}
 func newAnnotationsStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -562,14 +549,14 @@ func newSuppliersStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(SuppliersInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2M, false, SuppliersTable, SuppliersColumn),
+		sqlgraph.Edge(sqlgraph.M2M, false, SuppliersTable, SuppliersPrimaryKey...),
 	)
 }
 func newOriginatorsStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(OriginatorsInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2M, false, OriginatorsTable, OriginatorsColumn),
+		sqlgraph.Edge(sqlgraph.M2M, false, OriginatorsTable, OriginatorsPrimaryKey...),
 	)
 }
 func newExternalReferencesStep() *sqlgraph.Step {
@@ -583,7 +570,7 @@ func newPrimaryPurposeStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(PrimaryPurposeInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2M, false, PrimaryPurposeTable, PrimaryPurposeColumn),
+		sqlgraph.Edge(sqlgraph.M2M, false, PrimaryPurposeTable, PrimaryPurposePrimaryKey...),
 	)
 }
 func newToNodesStep() *sqlgraph.Step {
@@ -618,7 +605,14 @@ func newPropertiesStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(PropertiesInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2M, false, PropertiesTable, PropertiesColumn),
+		sqlgraph.Edge(sqlgraph.M2M, false, PropertiesTable, PropertiesPrimaryKey...),
+	)
+}
+func newDocumentsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(DocumentsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2M, true, DocumentsTable, DocumentsPrimaryKey...),
 	)
 }
 func newNodeListsStep() *sqlgraph.Step {

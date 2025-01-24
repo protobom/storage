@@ -28,16 +28,16 @@ import (
 // PersonQuery is the builder for querying Person entities.
 type PersonQuery struct {
 	config
-	ctx              *QueryContext
-	order            []person.OrderOption
-	inters           []Interceptor
-	predicates       []predicate.Person
-	withDocument     *DocumentQuery
-	withContactOwner *PersonQuery
-	withContacts     *PersonQuery
-	withMetadata     *MetadataQuery
-	withNode         *NodeQuery
-	withFKs          bool
+	ctx                 *QueryContext
+	order               []person.OrderOption
+	inters              []Interceptor
+	predicates          []predicate.Person
+	withContactOwner    *PersonQuery
+	withContacts        *PersonQuery
+	withDocuments       *DocumentQuery
+	withMetadata        *MetadataQuery
+	withOriginatorNodes *NodeQuery
+	withSupplierNodes   *NodeQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -74,28 +74,6 @@ func (pq *PersonQuery) Order(o ...person.OrderOption) *PersonQuery {
 	return pq
 }
 
-// QueryDocument chains the current query on the "document" edge.
-func (pq *PersonQuery) QueryDocument() *DocumentQuery {
-	query := (&DocumentClient{config: pq.config}).Query()
-	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := pq.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		selector := pq.sqlQuery(ctx)
-		if err := selector.Err(); err != nil {
-			return nil, err
-		}
-		step := sqlgraph.NewStep(
-			sqlgraph.From(person.Table, person.FieldID, selector),
-			sqlgraph.To(document.Table, document.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, person.DocumentTable, person.DocumentColumn),
-		)
-		fromU = sqlgraph.SetNeighbors(pq.driver.Dialect(), step)
-		return fromU, nil
-	}
-	return query
-}
-
 // QueryContactOwner chains the current query on the "contact_owner" edge.
 func (pq *PersonQuery) QueryContactOwner() *PersonQuery {
 	query := (&PersonClient{config: pq.config}).Query()
@@ -110,7 +88,7 @@ func (pq *PersonQuery) QueryContactOwner() *PersonQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(person.Table, person.FieldID, selector),
 			sqlgraph.To(person.Table, person.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, person.ContactOwnerTable, person.ContactOwnerColumn),
+			sqlgraph.Edge(sqlgraph.M2M, true, person.ContactOwnerTable, person.ContactOwnerPrimaryKey...),
 		)
 		fromU = sqlgraph.SetNeighbors(pq.driver.Dialect(), step)
 		return fromU, nil
@@ -132,7 +110,29 @@ func (pq *PersonQuery) QueryContacts() *PersonQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(person.Table, person.FieldID, selector),
 			sqlgraph.To(person.Table, person.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, person.ContactsTable, person.ContactsColumn),
+			sqlgraph.Edge(sqlgraph.M2M, false, person.ContactsTable, person.ContactsPrimaryKey...),
+		)
+		fromU = sqlgraph.SetNeighbors(pq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryDocuments chains the current query on the "documents" edge.
+func (pq *PersonQuery) QueryDocuments() *DocumentQuery {
+	query := (&DocumentClient{config: pq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := pq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := pq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(person.Table, person.FieldID, selector),
+			sqlgraph.To(document.Table, document.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, person.DocumentsTable, person.DocumentsPrimaryKey...),
 		)
 		fromU = sqlgraph.SetNeighbors(pq.driver.Dialect(), step)
 		return fromU, nil
@@ -154,7 +154,7 @@ func (pq *PersonQuery) QueryMetadata() *MetadataQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(person.Table, person.FieldID, selector),
 			sqlgraph.To(metadata.Table, metadata.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, person.MetadataTable, person.MetadataColumn),
+			sqlgraph.Edge(sqlgraph.M2M, true, person.MetadataTable, person.MetadataPrimaryKey...),
 		)
 		fromU = sqlgraph.SetNeighbors(pq.driver.Dialect(), step)
 		return fromU, nil
@@ -162,8 +162,8 @@ func (pq *PersonQuery) QueryMetadata() *MetadataQuery {
 	return query
 }
 
-// QueryNode chains the current query on the "node" edge.
-func (pq *PersonQuery) QueryNode() *NodeQuery {
+// QueryOriginatorNodes chains the current query on the "originator_nodes" edge.
+func (pq *PersonQuery) QueryOriginatorNodes() *NodeQuery {
 	query := (&NodeClient{config: pq.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := pq.prepareQuery(ctx); err != nil {
@@ -176,7 +176,29 @@ func (pq *PersonQuery) QueryNode() *NodeQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(person.Table, person.FieldID, selector),
 			sqlgraph.To(node.Table, node.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, person.NodeTable, person.NodeColumn),
+			sqlgraph.Edge(sqlgraph.M2M, true, person.OriginatorNodesTable, person.OriginatorNodesPrimaryKey...),
+		)
+		fromU = sqlgraph.SetNeighbors(pq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QuerySupplierNodes chains the current query on the "supplier_nodes" edge.
+func (pq *PersonQuery) QuerySupplierNodes() *NodeQuery {
+	query := (&NodeClient{config: pq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := pq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := pq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(person.Table, person.FieldID, selector),
+			sqlgraph.To(node.Table, node.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, person.SupplierNodesTable, person.SupplierNodesPrimaryKey...),
 		)
 		fromU = sqlgraph.SetNeighbors(pq.driver.Dialect(), step)
 		return fromU, nil
@@ -371,31 +393,21 @@ func (pq *PersonQuery) Clone() *PersonQuery {
 		return nil
 	}
 	return &PersonQuery{
-		config:           pq.config,
-		ctx:              pq.ctx.Clone(),
-		order:            append([]person.OrderOption{}, pq.order...),
-		inters:           append([]Interceptor{}, pq.inters...),
-		predicates:       append([]predicate.Person{}, pq.predicates...),
-		withDocument:     pq.withDocument.Clone(),
-		withContactOwner: pq.withContactOwner.Clone(),
-		withContacts:     pq.withContacts.Clone(),
-		withMetadata:     pq.withMetadata.Clone(),
-		withNode:         pq.withNode.Clone(),
+		config:              pq.config,
+		ctx:                 pq.ctx.Clone(),
+		order:               append([]person.OrderOption{}, pq.order...),
+		inters:              append([]Interceptor{}, pq.inters...),
+		predicates:          append([]predicate.Person{}, pq.predicates...),
+		withContactOwner:    pq.withContactOwner.Clone(),
+		withContacts:        pq.withContacts.Clone(),
+		withDocuments:       pq.withDocuments.Clone(),
+		withMetadata:        pq.withMetadata.Clone(),
+		withOriginatorNodes: pq.withOriginatorNodes.Clone(),
+		withSupplierNodes:   pq.withSupplierNodes.Clone(),
 		// clone intermediate query.
 		sql:  pq.sql.Clone(),
 		path: pq.path,
 	}
-}
-
-// WithDocument tells the query-builder to eager-load the nodes that are connected to
-// the "document" edge. The optional arguments are used to configure the query builder of the edge.
-func (pq *PersonQuery) WithDocument(opts ...func(*DocumentQuery)) *PersonQuery {
-	query := (&DocumentClient{config: pq.config}).Query()
-	for _, opt := range opts {
-		opt(query)
-	}
-	pq.withDocument = query
-	return pq
 }
 
 // WithContactOwner tells the query-builder to eager-load the nodes that are connected to
@@ -420,6 +432,17 @@ func (pq *PersonQuery) WithContacts(opts ...func(*PersonQuery)) *PersonQuery {
 	return pq
 }
 
+// WithDocuments tells the query-builder to eager-load the nodes that are connected to
+// the "documents" edge. The optional arguments are used to configure the query builder of the edge.
+func (pq *PersonQuery) WithDocuments(opts ...func(*DocumentQuery)) *PersonQuery {
+	query := (&DocumentClient{config: pq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	pq.withDocuments = query
+	return pq
+}
+
 // WithMetadata tells the query-builder to eager-load the nodes that are connected to
 // the "metadata" edge. The optional arguments are used to configure the query builder of the edge.
 func (pq *PersonQuery) WithMetadata(opts ...func(*MetadataQuery)) *PersonQuery {
@@ -431,14 +454,25 @@ func (pq *PersonQuery) WithMetadata(opts ...func(*MetadataQuery)) *PersonQuery {
 	return pq
 }
 
-// WithNode tells the query-builder to eager-load the nodes that are connected to
-// the "node" edge. The optional arguments are used to configure the query builder of the edge.
-func (pq *PersonQuery) WithNode(opts ...func(*NodeQuery)) *PersonQuery {
+// WithOriginatorNodes tells the query-builder to eager-load the nodes that are connected to
+// the "originator_nodes" edge. The optional arguments are used to configure the query builder of the edge.
+func (pq *PersonQuery) WithOriginatorNodes(opts ...func(*NodeQuery)) *PersonQuery {
 	query := (&NodeClient{config: pq.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	pq.withNode = query
+	pq.withOriginatorNodes = query
+	return pq
+}
+
+// WithSupplierNodes tells the query-builder to eager-load the nodes that are connected to
+// the "supplier_nodes" edge. The optional arguments are used to configure the query builder of the edge.
+func (pq *PersonQuery) WithSupplierNodes(opts ...func(*NodeQuery)) *PersonQuery {
+	query := (&NodeClient{config: pq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	pq.withSupplierNodes = query
 	return pq
 }
 
@@ -448,12 +482,12 @@ func (pq *PersonQuery) WithNode(opts ...func(*NodeQuery)) *PersonQuery {
 // Example:
 //
 //	var v []struct {
-//		DocumentID uuid.UUID `json:"-"`
+//		ProtoMessage *sbom.Person `json:"-"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.Person.Query().
-//		GroupBy(person.FieldDocumentID).
+//		GroupBy(person.FieldProtoMessage).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (pq *PersonQuery) GroupBy(field string, fields ...string) *PersonGroupBy {
@@ -471,11 +505,11 @@ func (pq *PersonQuery) GroupBy(field string, fields ...string) *PersonGroupBy {
 // Example:
 //
 //	var v []struct {
-//		DocumentID uuid.UUID `json:"-"`
+//		ProtoMessage *sbom.Person `json:"-"`
 //	}
 //
 //	client.Person.Query().
-//		Select(person.FieldDocumentID).
+//		Select(person.FieldProtoMessage).
 //		Scan(ctx, &v)
 func (pq *PersonQuery) Select(fields ...string) *PersonSelect {
 	pq.ctx.Fields = append(pq.ctx.Fields, fields...)
@@ -519,22 +553,16 @@ func (pq *PersonQuery) prepareQuery(ctx context.Context) error {
 func (pq *PersonQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Person, error) {
 	var (
 		nodes       = []*Person{}
-		withFKs     = pq.withFKs
 		_spec       = pq.querySpec()
-		loadedTypes = [5]bool{
-			pq.withDocument != nil,
+		loadedTypes = [6]bool{
 			pq.withContactOwner != nil,
 			pq.withContacts != nil,
+			pq.withDocuments != nil,
 			pq.withMetadata != nil,
-			pq.withNode != nil,
+			pq.withOriginatorNodes != nil,
+			pq.withSupplierNodes != nil,
 		}
 	)
-	if pq.withContactOwner != nil {
-		withFKs = true
-	}
-	if withFKs {
-		_spec.Node.Columns = append(_spec.Node.Columns, person.ForeignKeys...)
-	}
 	_spec.ScanValues = func(columns []string) ([]any, error) {
 		return (*Person).scanValues(nil, columns)
 	}
@@ -553,15 +581,10 @@ func (pq *PersonQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Perso
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
-	if query := pq.withDocument; query != nil {
-		if err := pq.loadDocument(ctx, query, nodes, nil,
-			func(n *Person, e *Document) { n.Edges.Document = e }); err != nil {
-			return nil, err
-		}
-	}
 	if query := pq.withContactOwner; query != nil {
-		if err := pq.loadContactOwner(ctx, query, nodes, nil,
-			func(n *Person, e *Person) { n.Edges.ContactOwner = e }); err != nil {
+		if err := pq.loadContactOwner(ctx, query, nodes,
+			func(n *Person) { n.Edges.ContactOwner = []*Person{} },
+			func(n *Person, e *Person) { n.Edges.ContactOwner = append(n.Edges.ContactOwner, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -572,167 +595,399 @@ func (pq *PersonQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Perso
 			return nil, err
 		}
 	}
-	if query := pq.withMetadata; query != nil {
-		if err := pq.loadMetadata(ctx, query, nodes, nil,
-			func(n *Person, e *Metadata) { n.Edges.Metadata = e }); err != nil {
+	if query := pq.withDocuments; query != nil {
+		if err := pq.loadDocuments(ctx, query, nodes,
+			func(n *Person) { n.Edges.Documents = []*Document{} },
+			func(n *Person, e *Document) { n.Edges.Documents = append(n.Edges.Documents, e) }); err != nil {
 			return nil, err
 		}
 	}
-	if query := pq.withNode; query != nil {
-		if err := pq.loadNode(ctx, query, nodes, nil,
-			func(n *Person, e *Node) { n.Edges.Node = e }); err != nil {
+	if query := pq.withMetadata; query != nil {
+		if err := pq.loadMetadata(ctx, query, nodes,
+			func(n *Person) { n.Edges.Metadata = []*Metadata{} },
+			func(n *Person, e *Metadata) { n.Edges.Metadata = append(n.Edges.Metadata, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := pq.withOriginatorNodes; query != nil {
+		if err := pq.loadOriginatorNodes(ctx, query, nodes,
+			func(n *Person) { n.Edges.OriginatorNodes = []*Node{} },
+			func(n *Person, e *Node) { n.Edges.OriginatorNodes = append(n.Edges.OriginatorNodes, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := pq.withSupplierNodes; query != nil {
+		if err := pq.loadSupplierNodes(ctx, query, nodes,
+			func(n *Person) { n.Edges.SupplierNodes = []*Node{} },
+			func(n *Person, e *Node) { n.Edges.SupplierNodes = append(n.Edges.SupplierNodes, e) }); err != nil {
 			return nil, err
 		}
 	}
 	return nodes, nil
 }
 
-func (pq *PersonQuery) loadDocument(ctx context.Context, query *DocumentQuery, nodes []*Person, init func(*Person), assign func(*Person, *Document)) error {
-	ids := make([]uuid.UUID, 0, len(nodes))
-	nodeids := make(map[uuid.UUID][]*Person)
-	for i := range nodes {
-		fk := nodes[i].DocumentID
-		if _, ok := nodeids[fk]; !ok {
-			ids = append(ids, fk)
-		}
-		nodeids[fk] = append(nodeids[fk], nodes[i])
-	}
-	if len(ids) == 0 {
-		return nil
-	}
-	query.Where(document.IDIn(ids...))
-	neighbors, err := query.All(ctx)
-	if err != nil {
-		return err
-	}
-	for _, n := range neighbors {
-		nodes, ok := nodeids[n.ID]
-		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "document_id" returned %v`, n.ID)
-		}
-		for i := range nodes {
-			assign(nodes[i], n)
-		}
-	}
-	return nil
-}
 func (pq *PersonQuery) loadContactOwner(ctx context.Context, query *PersonQuery, nodes []*Person, init func(*Person), assign func(*Person, *Person)) error {
-	ids := make([]uuid.UUID, 0, len(nodes))
-	nodeids := make(map[uuid.UUID][]*Person)
-	for i := range nodes {
-		if nodes[i].person_contacts == nil {
-			continue
+	edgeIDs := make([]driver.Value, len(nodes))
+	byID := make(map[uuid.UUID]*Person)
+	nids := make(map[uuid.UUID]map[*Person]struct{})
+	for i, node := range nodes {
+		edgeIDs[i] = node.ID
+		byID[node.ID] = node
+		if init != nil {
+			init(node)
 		}
-		fk := *nodes[i].person_contacts
-		if _, ok := nodeids[fk]; !ok {
-			ids = append(ids, fk)
-		}
-		nodeids[fk] = append(nodeids[fk], nodes[i])
 	}
-	if len(ids) == 0 {
-		return nil
+	query.Where(func(s *sql.Selector) {
+		joinT := sql.Table(person.ContactOwnerTable)
+		s.Join(joinT).On(s.C(person.FieldID), joinT.C(person.ContactOwnerPrimaryKey[0]))
+		s.Where(sql.InValues(joinT.C(person.ContactOwnerPrimaryKey[1]), edgeIDs...))
+		columns := s.SelectedColumns()
+		s.Select(joinT.C(person.ContactOwnerPrimaryKey[1]))
+		s.AppendSelect(columns...)
+		s.SetDistinct(false)
+	})
+	if err := query.prepareQuery(ctx); err != nil {
+		return err
 	}
-	query.Where(person.IDIn(ids...))
-	neighbors, err := query.All(ctx)
+	qr := QuerierFunc(func(ctx context.Context, q Query) (Value, error) {
+		return query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
+			assign := spec.Assign
+			values := spec.ScanValues
+			spec.ScanValues = func(columns []string) ([]any, error) {
+				values, err := values(columns[1:])
+				if err != nil {
+					return nil, err
+				}
+				return append([]any{new(uuid.UUID)}, values...), nil
+			}
+			spec.Assign = func(columns []string, values []any) error {
+				outValue := *values[0].(*uuid.UUID)
+				inValue := *values[1].(*uuid.UUID)
+				if nids[inValue] == nil {
+					nids[inValue] = map[*Person]struct{}{byID[outValue]: {}}
+					return assign(columns[1:], values[1:])
+				}
+				nids[inValue][byID[outValue]] = struct{}{}
+				return nil
+			}
+		})
+	})
+	neighbors, err := withInterceptors[[]*Person](ctx, query, qr, query.inters)
 	if err != nil {
 		return err
 	}
 	for _, n := range neighbors {
-		nodes, ok := nodeids[n.ID]
+		nodes, ok := nids[n.ID]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "person_contacts" returned %v`, n.ID)
+			return fmt.Errorf(`unexpected "contact_owner" node returned %v`, n.ID)
 		}
-		for i := range nodes {
-			assign(nodes[i], n)
+		for kn := range nodes {
+			assign(kn, n)
 		}
 	}
 	return nil
 }
 func (pq *PersonQuery) loadContacts(ctx context.Context, query *PersonQuery, nodes []*Person, init func(*Person), assign func(*Person, *Person)) error {
-	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[uuid.UUID]*Person)
-	for i := range nodes {
-		fks = append(fks, nodes[i].ID)
-		nodeids[nodes[i].ID] = nodes[i]
+	edgeIDs := make([]driver.Value, len(nodes))
+	byID := make(map[uuid.UUID]*Person)
+	nids := make(map[uuid.UUID]map[*Person]struct{})
+	for i, node := range nodes {
+		edgeIDs[i] = node.ID
+		byID[node.ID] = node
 		if init != nil {
-			init(nodes[i])
+			init(node)
 		}
 	}
-	query.withFKs = true
-	query.Where(predicate.Person(func(s *sql.Selector) {
-		s.Where(sql.InValues(s.C(person.ContactsColumn), fks...))
-	}))
-	neighbors, err := query.All(ctx)
+	query.Where(func(s *sql.Selector) {
+		joinT := sql.Table(person.ContactsTable)
+		s.Join(joinT).On(s.C(person.FieldID), joinT.C(person.ContactsPrimaryKey[1]))
+		s.Where(sql.InValues(joinT.C(person.ContactsPrimaryKey[0]), edgeIDs...))
+		columns := s.SelectedColumns()
+		s.Select(joinT.C(person.ContactsPrimaryKey[0]))
+		s.AppendSelect(columns...)
+		s.SetDistinct(false)
+	})
+	if err := query.prepareQuery(ctx); err != nil {
+		return err
+	}
+	qr := QuerierFunc(func(ctx context.Context, q Query) (Value, error) {
+		return query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
+			assign := spec.Assign
+			values := spec.ScanValues
+			spec.ScanValues = func(columns []string) ([]any, error) {
+				values, err := values(columns[1:])
+				if err != nil {
+					return nil, err
+				}
+				return append([]any{new(uuid.UUID)}, values...), nil
+			}
+			spec.Assign = func(columns []string, values []any) error {
+				outValue := *values[0].(*uuid.UUID)
+				inValue := *values[1].(*uuid.UUID)
+				if nids[inValue] == nil {
+					nids[inValue] = map[*Person]struct{}{byID[outValue]: {}}
+					return assign(columns[1:], values[1:])
+				}
+				nids[inValue][byID[outValue]] = struct{}{}
+				return nil
+			}
+		})
+	})
+	neighbors, err := withInterceptors[[]*Person](ctx, query, qr, query.inters)
 	if err != nil {
 		return err
 	}
 	for _, n := range neighbors {
-		fk := n.person_contacts
-		if fk == nil {
-			return fmt.Errorf(`foreign-key "person_contacts" is nil for node %v`, n.ID)
-		}
-		node, ok := nodeids[*fk]
+		nodes, ok := nids[n.ID]
 		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "person_contacts" returned %v for node %v`, *fk, n.ID)
+			return fmt.Errorf(`unexpected "contacts" node returned %v`, n.ID)
 		}
-		assign(node, n)
+		for kn := range nodes {
+			assign(kn, n)
+		}
+	}
+	return nil
+}
+func (pq *PersonQuery) loadDocuments(ctx context.Context, query *DocumentQuery, nodes []*Person, init func(*Person), assign func(*Person, *Document)) error {
+	edgeIDs := make([]driver.Value, len(nodes))
+	byID := make(map[uuid.UUID]*Person)
+	nids := make(map[uuid.UUID]map[*Person]struct{})
+	for i, node := range nodes {
+		edgeIDs[i] = node.ID
+		byID[node.ID] = node
+		if init != nil {
+			init(node)
+		}
+	}
+	query.Where(func(s *sql.Selector) {
+		joinT := sql.Table(person.DocumentsTable)
+		s.Join(joinT).On(s.C(document.FieldID), joinT.C(person.DocumentsPrimaryKey[0]))
+		s.Where(sql.InValues(joinT.C(person.DocumentsPrimaryKey[1]), edgeIDs...))
+		columns := s.SelectedColumns()
+		s.Select(joinT.C(person.DocumentsPrimaryKey[1]))
+		s.AppendSelect(columns...)
+		s.SetDistinct(false)
+	})
+	if err := query.prepareQuery(ctx); err != nil {
+		return err
+	}
+	qr := QuerierFunc(func(ctx context.Context, q Query) (Value, error) {
+		return query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
+			assign := spec.Assign
+			values := spec.ScanValues
+			spec.ScanValues = func(columns []string) ([]any, error) {
+				values, err := values(columns[1:])
+				if err != nil {
+					return nil, err
+				}
+				return append([]any{new(uuid.UUID)}, values...), nil
+			}
+			spec.Assign = func(columns []string, values []any) error {
+				outValue := *values[0].(*uuid.UUID)
+				inValue := *values[1].(*uuid.UUID)
+				if nids[inValue] == nil {
+					nids[inValue] = map[*Person]struct{}{byID[outValue]: {}}
+					return assign(columns[1:], values[1:])
+				}
+				nids[inValue][byID[outValue]] = struct{}{}
+				return nil
+			}
+		})
+	})
+	neighbors, err := withInterceptors[[]*Document](ctx, query, qr, query.inters)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected "documents" node returned %v`, n.ID)
+		}
+		for kn := range nodes {
+			assign(kn, n)
+		}
 	}
 	return nil
 }
 func (pq *PersonQuery) loadMetadata(ctx context.Context, query *MetadataQuery, nodes []*Person, init func(*Person), assign func(*Person, *Metadata)) error {
-	ids := make([]uuid.UUID, 0, len(nodes))
-	nodeids := make(map[uuid.UUID][]*Person)
-	for i := range nodes {
-		fk := nodes[i].MetadataID
-		if _, ok := nodeids[fk]; !ok {
-			ids = append(ids, fk)
+	edgeIDs := make([]driver.Value, len(nodes))
+	byID := make(map[uuid.UUID]*Person)
+	nids := make(map[uuid.UUID]map[*Person]struct{})
+	for i, node := range nodes {
+		edgeIDs[i] = node.ID
+		byID[node.ID] = node
+		if init != nil {
+			init(node)
 		}
-		nodeids[fk] = append(nodeids[fk], nodes[i])
 	}
-	if len(ids) == 0 {
-		return nil
+	query.Where(func(s *sql.Selector) {
+		joinT := sql.Table(person.MetadataTable)
+		s.Join(joinT).On(s.C(metadata.FieldID), joinT.C(person.MetadataPrimaryKey[0]))
+		s.Where(sql.InValues(joinT.C(person.MetadataPrimaryKey[1]), edgeIDs...))
+		columns := s.SelectedColumns()
+		s.Select(joinT.C(person.MetadataPrimaryKey[1]))
+		s.AppendSelect(columns...)
+		s.SetDistinct(false)
+	})
+	if err := query.prepareQuery(ctx); err != nil {
+		return err
 	}
-	query.Where(metadata.IDIn(ids...))
-	neighbors, err := query.All(ctx)
+	qr := QuerierFunc(func(ctx context.Context, q Query) (Value, error) {
+		return query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
+			assign := spec.Assign
+			values := spec.ScanValues
+			spec.ScanValues = func(columns []string) ([]any, error) {
+				values, err := values(columns[1:])
+				if err != nil {
+					return nil, err
+				}
+				return append([]any{new(uuid.UUID)}, values...), nil
+			}
+			spec.Assign = func(columns []string, values []any) error {
+				outValue := *values[0].(*uuid.UUID)
+				inValue := *values[1].(*uuid.UUID)
+				if nids[inValue] == nil {
+					nids[inValue] = map[*Person]struct{}{byID[outValue]: {}}
+					return assign(columns[1:], values[1:])
+				}
+				nids[inValue][byID[outValue]] = struct{}{}
+				return nil
+			}
+		})
+	})
+	neighbors, err := withInterceptors[[]*Metadata](ctx, query, qr, query.inters)
 	if err != nil {
 		return err
 	}
 	for _, n := range neighbors {
-		nodes, ok := nodeids[n.ID]
+		nodes, ok := nids[n.ID]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "metadata_id" returned %v`, n.ID)
+			return fmt.Errorf(`unexpected "metadata" node returned %v`, n.ID)
 		}
-		for i := range nodes {
-			assign(nodes[i], n)
+		for kn := range nodes {
+			assign(kn, n)
 		}
 	}
 	return nil
 }
-func (pq *PersonQuery) loadNode(ctx context.Context, query *NodeQuery, nodes []*Person, init func(*Person), assign func(*Person, *Node)) error {
-	ids := make([]uuid.UUID, 0, len(nodes))
-	nodeids := make(map[uuid.UUID][]*Person)
-	for i := range nodes {
-		fk := nodes[i].NodeID
-		if _, ok := nodeids[fk]; !ok {
-			ids = append(ids, fk)
+func (pq *PersonQuery) loadOriginatorNodes(ctx context.Context, query *NodeQuery, nodes []*Person, init func(*Person), assign func(*Person, *Node)) error {
+	edgeIDs := make([]driver.Value, len(nodes))
+	byID := make(map[uuid.UUID]*Person)
+	nids := make(map[uuid.UUID]map[*Person]struct{})
+	for i, node := range nodes {
+		edgeIDs[i] = node.ID
+		byID[node.ID] = node
+		if init != nil {
+			init(node)
 		}
-		nodeids[fk] = append(nodeids[fk], nodes[i])
 	}
-	if len(ids) == 0 {
-		return nil
+	query.Where(func(s *sql.Selector) {
+		joinT := sql.Table(person.OriginatorNodesTable)
+		s.Join(joinT).On(s.C(node.FieldID), joinT.C(person.OriginatorNodesPrimaryKey[0]))
+		s.Where(sql.InValues(joinT.C(person.OriginatorNodesPrimaryKey[1]), edgeIDs...))
+		columns := s.SelectedColumns()
+		s.Select(joinT.C(person.OriginatorNodesPrimaryKey[1]))
+		s.AppendSelect(columns...)
+		s.SetDistinct(false)
+	})
+	if err := query.prepareQuery(ctx); err != nil {
+		return err
 	}
-	query.Where(node.IDIn(ids...))
-	neighbors, err := query.All(ctx)
+	qr := QuerierFunc(func(ctx context.Context, q Query) (Value, error) {
+		return query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
+			assign := spec.Assign
+			values := spec.ScanValues
+			spec.ScanValues = func(columns []string) ([]any, error) {
+				values, err := values(columns[1:])
+				if err != nil {
+					return nil, err
+				}
+				return append([]any{new(uuid.UUID)}, values...), nil
+			}
+			spec.Assign = func(columns []string, values []any) error {
+				outValue := *values[0].(*uuid.UUID)
+				inValue := *values[1].(*uuid.UUID)
+				if nids[inValue] == nil {
+					nids[inValue] = map[*Person]struct{}{byID[outValue]: {}}
+					return assign(columns[1:], values[1:])
+				}
+				nids[inValue][byID[outValue]] = struct{}{}
+				return nil
+			}
+		})
+	})
+	neighbors, err := withInterceptors[[]*Node](ctx, query, qr, query.inters)
 	if err != nil {
 		return err
 	}
 	for _, n := range neighbors {
-		nodes, ok := nodeids[n.ID]
+		nodes, ok := nids[n.ID]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "node_id" returned %v`, n.ID)
+			return fmt.Errorf(`unexpected "originator_nodes" node returned %v`, n.ID)
 		}
-		for i := range nodes {
-			assign(nodes[i], n)
+		for kn := range nodes {
+			assign(kn, n)
+		}
+	}
+	return nil
+}
+func (pq *PersonQuery) loadSupplierNodes(ctx context.Context, query *NodeQuery, nodes []*Person, init func(*Person), assign func(*Person, *Node)) error {
+	edgeIDs := make([]driver.Value, len(nodes))
+	byID := make(map[uuid.UUID]*Person)
+	nids := make(map[uuid.UUID]map[*Person]struct{})
+	for i, node := range nodes {
+		edgeIDs[i] = node.ID
+		byID[node.ID] = node
+		if init != nil {
+			init(node)
+		}
+	}
+	query.Where(func(s *sql.Selector) {
+		joinT := sql.Table(person.SupplierNodesTable)
+		s.Join(joinT).On(s.C(node.FieldID), joinT.C(person.SupplierNodesPrimaryKey[0]))
+		s.Where(sql.InValues(joinT.C(person.SupplierNodesPrimaryKey[1]), edgeIDs...))
+		columns := s.SelectedColumns()
+		s.Select(joinT.C(person.SupplierNodesPrimaryKey[1]))
+		s.AppendSelect(columns...)
+		s.SetDistinct(false)
+	})
+	if err := query.prepareQuery(ctx); err != nil {
+		return err
+	}
+	qr := QuerierFunc(func(ctx context.Context, q Query) (Value, error) {
+		return query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
+			assign := spec.Assign
+			values := spec.ScanValues
+			spec.ScanValues = func(columns []string) ([]any, error) {
+				values, err := values(columns[1:])
+				if err != nil {
+					return nil, err
+				}
+				return append([]any{new(uuid.UUID)}, values...), nil
+			}
+			spec.Assign = func(columns []string, values []any) error {
+				outValue := *values[0].(*uuid.UUID)
+				inValue := *values[1].(*uuid.UUID)
+				if nids[inValue] == nil {
+					nids[inValue] = map[*Person]struct{}{byID[outValue]: {}}
+					return assign(columns[1:], values[1:])
+				}
+				nids[inValue][byID[outValue]] = struct{}{}
+				return nil
+			}
+		})
+	})
+	neighbors, err := withInterceptors[[]*Node](ctx, query, qr, query.inters)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected "supplier_nodes" node returned %v`, n.ID)
+		}
+		for kn := range nodes {
+			assign(kn, n)
 		}
 	}
 	return nil
@@ -762,15 +1017,6 @@ func (pq *PersonQuery) querySpec() *sqlgraph.QuerySpec {
 			if fields[i] != person.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
-		}
-		if pq.withDocument != nil {
-			_spec.Node.AddColumnOnce(person.FieldDocumentID)
-		}
-		if pq.withMetadata != nil {
-			_spec.Node.AddColumnOnce(person.FieldMetadataID)
-		}
-		if pq.withNode != nil {
-			_spec.Node.AddColumnOnce(person.FieldNodeID)
 		}
 	}
 	if ps := pq.predicates; len(ps) > 0 {

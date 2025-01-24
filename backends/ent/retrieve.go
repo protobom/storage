@@ -53,9 +53,9 @@ func (backend *Backend) GetDocumentsByID(ids ...string) ([]*sbom.Document, error
 	documents := []*sbom.Document{}
 
 	docUUIDs, err := backend.client.Metadata.Query().
-		WithDocument().
+		WithDocuments().
 		Where(metadata.NativeIDIn(ids...)).
-		QueryDocument().
+		QueryDocuments().
 		IDs(backend.ctx)
 	if err != nil {
 		return nil, fmt.Errorf("querying documents IDs: %w", err)
@@ -89,7 +89,7 @@ func (backend *Backend) GetExternalReferencesByDocumentID(
 	id string, types ...string,
 ) ([]*sbom.ExternalReference, error) {
 	predicates := []predicate.ExternalReference{
-		externalreference.HasDocumentWith(document.HasMetadataWith(metadata.NativeIDEQ(id))),
+		externalreference.HasDocumentsWith(document.HasMetadataWith(metadata.NativeIDEQ(id))),
 	}
 
 	extRefTypes := []externalreference.Type{}

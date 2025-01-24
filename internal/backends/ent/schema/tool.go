@@ -11,8 +11,9 @@ import (
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
-	"github.com/google/uuid"
 	"github.com/protobom/protobom/pkg/sbom"
+
+	"github.com/protobom/storage/internal/backends/ent/schema/mixin"
 )
 
 type Tool struct {
@@ -21,14 +22,12 @@ type Tool struct {
 
 func (Tool) Mixin() []ent.Mixin {
 	return []ent.Mixin{
-		DocumentMixin{},
-		ProtoMessageMixin[*sbom.Tool]{},
+		mixin.ProtoMessage[*sbom.Tool]{},
 	}
 }
 
 func (Tool) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("metadata_id", uuid.UUID{}),
 		field.String("name"),
 		field.String("version"),
 		field.String("vendor"),
@@ -37,17 +36,19 @@ func (Tool) Fields() []ent.Field {
 
 func (Tool) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("metadata", Metadata.Type).
+		edge.From("documents", Document.Type).
 			Ref("tools").
 			Required().
-			Unique().
-			Field("metadata_id"),
+			Immutable(),
+		edge.From("metadata", Metadata.Type).
+			Ref("tools").
+			Required(),
 	}
 }
 
 func (Tool) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("metadata_id", "name", "version", "vendor").
+		index.Fields("name", "version", "vendor").
 			Unique().
 			StorageKey("idx_tools"),
 	}

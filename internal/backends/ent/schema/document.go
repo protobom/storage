@@ -11,7 +11,10 @@ import (
 	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
+	"entgo.io/ent/schema/index"
 	"github.com/google/uuid"
+
+	"github.com/protobom/storage/internal/backends/ent/schema/mixin"
 )
 
 type Document struct {
@@ -20,7 +23,7 @@ type Document struct {
 
 func (Document) Mixin() []ent.Mixin {
 	return []ent.Mixin{
-		UUIDMixin{},
+		mixin.UUID{},
 	}
 }
 
@@ -38,23 +41,37 @@ func (Document) Fields() []ent.Field {
 }
 
 func (Document) Edges() []ent.Edge {
-	const edgeRef = "document"
-
 	return []ent.Edge{
 		edge.To("annotations", Annotation.Type).
 			StructTag(`json:"-"`).
 			Annotations(entsql.OnDelete(entsql.Cascade)),
-		edge.From("metadata", Metadata.Type).
-			Ref(edgeRef).
+		edge.To("metadata", Metadata.Type).
 			Unique().
 			Immutable().
 			Annotations(entsql.OnDelete(entsql.Cascade)).
 			Field("metadata_id"),
-		edge.From("node_list", NodeList.Type).
-			Ref(edgeRef).
+		edge.To("node_list", NodeList.Type).
 			Unique().
 			Immutable().
 			Annotations(entsql.OnDelete(entsql.Cascade)).
 			Field("node_list_id"),
+		edge.To("document_types", DocumentType.Type),
+		edge.To("edge_types", EdgeType.Type),
+		edge.To("external_references", ExternalReference.Type),
+		edge.To("hashes", HashesEntry.Type),
+		edge.To("identifiers", IdentifiersEntry.Type),
+		edge.To("nodes", Node.Type),
+		edge.To("persons", Person.Type),
+		edge.To("properties", Property.Type),
+		edge.To("purposes", Purpose.Type),
+		edge.To("source_data", SourceData.Type),
+		edge.To("tools", Tool.Type),
+	}
+}
+
+func (Document) Indexes() []ent.Index {
+	return []ent.Index{
+		index.Edges("metadata").StorageKey("idx_documents_metadata_id"),
+		index.Edges("node_list").StorageKey("idx_documents_node_list_id"),
 	}
 }

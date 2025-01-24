@@ -12,6 +12,8 @@ import (
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"github.com/protobom/protobom/pkg/sbom"
+
+	"github.com/protobom/storage/internal/backends/ent/schema/mixin"
 )
 
 type NodeList struct {
@@ -20,7 +22,7 @@ type NodeList struct {
 
 func (NodeList) Mixin() []ent.Mixin {
 	return []ent.Mixin{
-		ProtoMessageMixin[*sbom.NodeList]{},
+		mixin.ProtoMessage[*sbom.NodeList]{},
 	}
 }
 
@@ -32,15 +34,15 @@ func (NodeList) Fields() []ent.Field {
 
 func (NodeList) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.To("document", Document.Type).
-			Required().
-			Unique().
-			Immutable(),
 		edge.To("edge_types", EdgeType.Type).
 			StorageKey(edge.Table("node_list_edges"), edge.Columns("node_list_id", "edge_type_id")).
 			Annotations(entsql.OnDelete(entsql.Cascade)),
 		edge.To("nodes", Node.Type).
 			StorageKey(edge.Table("node_list_nodes"), edge.Columns("node_list_id", "node_id")).
 			Annotations(entsql.OnDelete(entsql.Cascade)),
+		edge.From("documents", Document.Type).
+			Ref("node_list").
+			Required().
+			Immutable(),
 	}
 }

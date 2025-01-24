@@ -15,7 +15,6 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/google/uuid"
-	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/hashesentry"
 )
 
@@ -24,8 +23,6 @@ type HashesEntry struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID uuid.UUID `json:"-"`
-	// DocumentID holds the value of the "document_id" field.
-	DocumentID uuid.UUID `json:"-"`
 	// HashAlgorithm holds the value of the "hash_algorithm" field.
 	HashAlgorithm hashesentry.HashAlgorithm `json:"hash_algorithm,omitempty"`
 	// HashData holds the value of the "hash_data" field.
@@ -38,26 +35,26 @@ type HashesEntry struct {
 
 // HashesEntryEdges holds the relations/edges for other nodes in the graph.
 type HashesEntryEdges struct {
-	// Document holds the value of the document edge.
-	Document *Document `json:"document,omitempty"`
+	// Documents holds the value of the documents edge.
+	Documents []*Document `json:"-"`
 	// ExternalReferences holds the value of the external_references edge.
 	ExternalReferences []*ExternalReference `json:"-"`
 	// Nodes holds the value of the nodes edge.
 	Nodes []*Node `json:"-"`
+	// SourceData holds the value of the source_data edge.
+	SourceData []*SourceData `json:"-"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [3]bool
+	loadedTypes [4]bool
 }
 
-// DocumentOrErr returns the Document value or an error if the edge
-// was not loaded in eager-loading, or loaded but was not found.
-func (e HashesEntryEdges) DocumentOrErr() (*Document, error) {
-	if e.Document != nil {
-		return e.Document, nil
-	} else if e.loadedTypes[0] {
-		return nil, &NotFoundError{label: document.Label}
+// DocumentsOrErr returns the Documents value or an error if the edge
+// was not loaded in eager-loading.
+func (e HashesEntryEdges) DocumentsOrErr() ([]*Document, error) {
+	if e.loadedTypes[0] {
+		return e.Documents, nil
 	}
-	return nil, &NotLoadedError{edge: "document"}
+	return nil, &NotLoadedError{edge: "documents"}
 }
 
 // ExternalReferencesOrErr returns the ExternalReferences value or an error if the edge
@@ -78,6 +75,15 @@ func (e HashesEntryEdges) NodesOrErr() ([]*Node, error) {
 	return nil, &NotLoadedError{edge: "nodes"}
 }
 
+// SourceDataOrErr returns the SourceData value or an error if the edge
+// was not loaded in eager-loading.
+func (e HashesEntryEdges) SourceDataOrErr() ([]*SourceData, error) {
+	if e.loadedTypes[3] {
+		return e.SourceData, nil
+	}
+	return nil, &NotLoadedError{edge: "source_data"}
+}
+
 // scanValues returns the types for scanning values from sql.Rows.
 func (*HashesEntry) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
@@ -85,7 +91,7 @@ func (*HashesEntry) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case hashesentry.FieldHashAlgorithm, hashesentry.FieldHashData:
 			values[i] = new(sql.NullString)
-		case hashesentry.FieldID, hashesentry.FieldDocumentID:
+		case hashesentry.FieldID:
 			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -107,12 +113,6 @@ func (he *HashesEntry) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value != nil {
 				he.ID = *value
-			}
-		case hashesentry.FieldDocumentID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
-				return fmt.Errorf("unexpected type %T for field document_id", values[i])
-			} else if value != nil {
-				he.DocumentID = *value
 			}
 		case hashesentry.FieldHashAlgorithm:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -139,9 +139,9 @@ func (he *HashesEntry) Value(name string) (ent.Value, error) {
 	return he.selectValues.Get(name)
 }
 
-// QueryDocument queries the "document" edge of the HashesEntry entity.
-func (he *HashesEntry) QueryDocument() *DocumentQuery {
-	return NewHashesEntryClient(he.config).QueryDocument(he)
+// QueryDocuments queries the "documents" edge of the HashesEntry entity.
+func (he *HashesEntry) QueryDocuments() *DocumentQuery {
+	return NewHashesEntryClient(he.config).QueryDocuments(he)
 }
 
 // QueryExternalReferences queries the "external_references" edge of the HashesEntry entity.
@@ -152,6 +152,11 @@ func (he *HashesEntry) QueryExternalReferences() *ExternalReferenceQuery {
 // QueryNodes queries the "nodes" edge of the HashesEntry entity.
 func (he *HashesEntry) QueryNodes() *NodeQuery {
 	return NewHashesEntryClient(he.config).QueryNodes(he)
+}
+
+// QuerySourceData queries the "source_data" edge of the HashesEntry entity.
+func (he *HashesEntry) QuerySourceData() *SourceDataQuery {
+	return NewHashesEntryClient(he.config).QuerySourceData(he)
 }
 
 // Update returns a builder for updating this HashesEntry.
@@ -177,9 +182,6 @@ func (he *HashesEntry) String() string {
 	var builder strings.Builder
 	builder.WriteString("HashesEntry(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", he.ID))
-	builder.WriteString("document_id=")
-	builder.WriteString(fmt.Sprintf("%v", he.DocumentID))
-	builder.WriteString(", ")
 	builder.WriteString("hash_algorithm=")
 	builder.WriteString(fmt.Sprintf("%v", he.HashAlgorithm))
 	builder.WriteString(", ")

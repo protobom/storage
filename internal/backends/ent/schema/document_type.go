@@ -11,8 +11,9 @@ import (
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
-	"github.com/google/uuid"
 	"github.com/protobom/protobom/pkg/sbom"
+
+	"github.com/protobom/storage/internal/backends/ent/schema/mixin"
 )
 
 type DocumentType struct {
@@ -21,14 +22,12 @@ type DocumentType struct {
 
 func (DocumentType) Mixin() []ent.Mixin {
 	return []ent.Mixin{
-		DocumentMixin{},
-		ProtoMessageMixin[*sbom.DocumentType]{},
+		mixin.ProtoMessage[*sbom.DocumentType]{},
 	}
 }
 
 func (DocumentType) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("metadata_id", uuid.UUID{}),
 		field.Enum("type").
 			Values(enumValues(new(sbom.DocumentType_SBOMType))...).
 			Optional().
@@ -40,17 +39,19 @@ func (DocumentType) Fields() []ent.Field {
 
 func (DocumentType) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("metadata", Metadata.Type).
+		edge.From("documents", Document.Type).
 			Ref("document_types").
 			Required().
-			Unique().
-			Field("metadata_id"),
+			Immutable(),
+		edge.From("metadata", Metadata.Type).
+			Ref("document_types").
+			Required(),
 	}
 }
 
 func (DocumentType) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("metadata_id", "type", "name", "description").
+		index.Fields("type", "name", "description").
 			Unique().
 			StorageKey("idx_document_types"),
 	}

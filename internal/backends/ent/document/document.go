@@ -8,6 +8,7 @@
 package document
 
 import (
+	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/google/uuid"
@@ -28,6 +29,28 @@ const (
 	EdgeMetadata = "metadata"
 	// EdgeNodeList holds the string denoting the node_list edge name in mutations.
 	EdgeNodeList = "node_list"
+	// EdgeDocumentTypes holds the string denoting the document_types edge name in mutations.
+	EdgeDocumentTypes = "document_types"
+	// EdgeEdgeTypes holds the string denoting the edge_types edge name in mutations.
+	EdgeEdgeTypes = "edge_types"
+	// EdgeExternalReferences holds the string denoting the external_references edge name in mutations.
+	EdgeExternalReferences = "external_references"
+	// EdgeHashes holds the string denoting the hashes edge name in mutations.
+	EdgeHashes = "hashes"
+	// EdgeIdentifiers holds the string denoting the identifiers edge name in mutations.
+	EdgeIdentifiers = "identifiers"
+	// EdgeNodes holds the string denoting the nodes edge name in mutations.
+	EdgeNodes = "nodes"
+	// EdgePersons holds the string denoting the persons edge name in mutations.
+	EdgePersons = "persons"
+	// EdgeProperties holds the string denoting the properties edge name in mutations.
+	EdgeProperties = "properties"
+	// EdgePurposes holds the string denoting the purposes edge name in mutations.
+	EdgePurposes = "purposes"
+	// EdgeSourceData holds the string denoting the source_data edge name in mutations.
+	EdgeSourceData = "source_data"
+	// EdgeTools holds the string denoting the tools edge name in mutations.
+	EdgeTools = "tools"
 	// Table holds the table name of the document in the database.
 	Table = "documents"
 	// AnnotationsTable is the table that holds the annotations relation/edge.
@@ -51,6 +74,61 @@ const (
 	NodeListInverseTable = "node_lists"
 	// NodeListColumn is the table column denoting the node_list relation/edge.
 	NodeListColumn = "node_list_id"
+	// DocumentTypesTable is the table that holds the document_types relation/edge. The primary key declared below.
+	DocumentTypesTable = "document_document_types"
+	// DocumentTypesInverseTable is the table name for the DocumentType entity.
+	// It exists in this package in order to avoid circular dependency with the "documenttype" package.
+	DocumentTypesInverseTable = "document_types"
+	// EdgeTypesTable is the table that holds the edge_types relation/edge. The primary key declared below.
+	EdgeTypesTable = "document_edge_types"
+	// EdgeTypesInverseTable is the table name for the EdgeType entity.
+	// It exists in this package in order to avoid circular dependency with the "edgetype" package.
+	EdgeTypesInverseTable = "edge_types"
+	// ExternalReferencesTable is the table that holds the external_references relation/edge. The primary key declared below.
+	ExternalReferencesTable = "document_external_references"
+	// ExternalReferencesInverseTable is the table name for the ExternalReference entity.
+	// It exists in this package in order to avoid circular dependency with the "externalreference" package.
+	ExternalReferencesInverseTable = "external_references"
+	// HashesTable is the table that holds the hashes relation/edge. The primary key declared below.
+	HashesTable = "document_hashes"
+	// HashesInverseTable is the table name for the HashesEntry entity.
+	// It exists in this package in order to avoid circular dependency with the "hashesentry" package.
+	HashesInverseTable = "hashes_entries"
+	// IdentifiersTable is the table that holds the identifiers relation/edge. The primary key declared below.
+	IdentifiersTable = "document_identifiers"
+	// IdentifiersInverseTable is the table name for the IdentifiersEntry entity.
+	// It exists in this package in order to avoid circular dependency with the "identifiersentry" package.
+	IdentifiersInverseTable = "identifiers_entries"
+	// NodesTable is the table that holds the nodes relation/edge. The primary key declared below.
+	NodesTable = "document_nodes"
+	// NodesInverseTable is the table name for the Node entity.
+	// It exists in this package in order to avoid circular dependency with the "node" package.
+	NodesInverseTable = "nodes"
+	// PersonsTable is the table that holds the persons relation/edge. The primary key declared below.
+	PersonsTable = "document_persons"
+	// PersonsInverseTable is the table name for the Person entity.
+	// It exists in this package in order to avoid circular dependency with the "person" package.
+	PersonsInverseTable = "persons"
+	// PropertiesTable is the table that holds the properties relation/edge. The primary key declared below.
+	PropertiesTable = "document_properties"
+	// PropertiesInverseTable is the table name for the Property entity.
+	// It exists in this package in order to avoid circular dependency with the "property" package.
+	PropertiesInverseTable = "properties"
+	// PurposesTable is the table that holds the purposes relation/edge. The primary key declared below.
+	PurposesTable = "document_purposes"
+	// PurposesInverseTable is the table name for the Purpose entity.
+	// It exists in this package in order to avoid circular dependency with the "purpose" package.
+	PurposesInverseTable = "purposes"
+	// SourceDataTable is the table that holds the source_data relation/edge. The primary key declared below.
+	SourceDataTable = "document_source_data"
+	// SourceDataInverseTable is the table name for the SourceData entity.
+	// It exists in this package in order to avoid circular dependency with the "sourcedata" package.
+	SourceDataInverseTable = "source_data"
+	// ToolsTable is the table that holds the tools relation/edge. The primary key declared below.
+	ToolsTable = "document_tools"
+	// ToolsInverseTable is the table name for the Tool entity.
+	// It exists in this package in order to avoid circular dependency with the "tool" package.
+	ToolsInverseTable = "tools"
 )
 
 // Columns holds all SQL columns for document fields.
@@ -59,6 +137,42 @@ var Columns = []string{
 	FieldMetadataID,
 	FieldNodeListID,
 }
+
+var (
+	// DocumentTypesPrimaryKey and DocumentTypesColumn2 are the table columns denoting the
+	// primary key for the document_types relation (M2M).
+	DocumentTypesPrimaryKey = []string{"document_id", "document_type_id"}
+	// EdgeTypesPrimaryKey and EdgeTypesColumn2 are the table columns denoting the
+	// primary key for the edge_types relation (M2M).
+	EdgeTypesPrimaryKey = []string{"document_id", "edge_type_id"}
+	// ExternalReferencesPrimaryKey and ExternalReferencesColumn2 are the table columns denoting the
+	// primary key for the external_references relation (M2M).
+	ExternalReferencesPrimaryKey = []string{"document_id", "external_reference_id"}
+	// HashesPrimaryKey and HashesColumn2 are the table columns denoting the
+	// primary key for the hashes relation (M2M).
+	HashesPrimaryKey = []string{"document_id", "hashes_entry_id"}
+	// IdentifiersPrimaryKey and IdentifiersColumn2 are the table columns denoting the
+	// primary key for the identifiers relation (M2M).
+	IdentifiersPrimaryKey = []string{"document_id", "identifiers_entry_id"}
+	// NodesPrimaryKey and NodesColumn2 are the table columns denoting the
+	// primary key for the nodes relation (M2M).
+	NodesPrimaryKey = []string{"document_id", "node_id"}
+	// PersonsPrimaryKey and PersonsColumn2 are the table columns denoting the
+	// primary key for the persons relation (M2M).
+	PersonsPrimaryKey = []string{"document_id", "person_id"}
+	// PropertiesPrimaryKey and PropertiesColumn2 are the table columns denoting the
+	// primary key for the properties relation (M2M).
+	PropertiesPrimaryKey = []string{"document_id", "property_id"}
+	// PurposesPrimaryKey and PurposesColumn2 are the table columns denoting the
+	// primary key for the purposes relation (M2M).
+	PurposesPrimaryKey = []string{"document_id", "purpose_id"}
+	// SourceDataPrimaryKey and SourceDataColumn2 are the table columns denoting the
+	// primary key for the source_data relation (M2M).
+	SourceDataPrimaryKey = []string{"document_id", "source_data_id"}
+	// ToolsPrimaryKey and ToolsColumn2 are the table columns denoting the
+	// primary key for the tools relation (M2M).
+	ToolsPrimaryKey = []string{"document_id", "tool_id"}
+)
 
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {
@@ -70,7 +184,13 @@ func ValidColumn(column string) bool {
 	return false
 }
 
+// Note that the variables below are initialized by the runtime
+// package on the initialization of the application. Therefore,
+// it should be imported in the main as follows:
+//
+//	import _ "github.com/protobom/storage/internal/backends/ent/runtime"
 var (
+	Hooks [1]ent.Hook
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() uuid.UUID
 )
@@ -120,6 +240,160 @@ func ByNodeListField(field string, opts ...sql.OrderTermOption) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newNodeListStep(), sql.OrderByField(field, opts...))
 	}
 }
+
+// ByDocumentTypesCount orders the results by document_types count.
+func ByDocumentTypesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newDocumentTypesStep(), opts...)
+	}
+}
+
+// ByDocumentTypes orders the results by document_types terms.
+func ByDocumentTypes(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newDocumentTypesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByEdgeTypesCount orders the results by edge_types count.
+func ByEdgeTypesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newEdgeTypesStep(), opts...)
+	}
+}
+
+// ByEdgeTypes orders the results by edge_types terms.
+func ByEdgeTypes(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newEdgeTypesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByExternalReferencesCount orders the results by external_references count.
+func ByExternalReferencesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newExternalReferencesStep(), opts...)
+	}
+}
+
+// ByExternalReferences orders the results by external_references terms.
+func ByExternalReferences(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newExternalReferencesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByHashesCount orders the results by hashes count.
+func ByHashesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newHashesStep(), opts...)
+	}
+}
+
+// ByHashes orders the results by hashes terms.
+func ByHashes(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newHashesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByIdentifiersCount orders the results by identifiers count.
+func ByIdentifiersCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newIdentifiersStep(), opts...)
+	}
+}
+
+// ByIdentifiers orders the results by identifiers terms.
+func ByIdentifiers(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newIdentifiersStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByNodesCount orders the results by nodes count.
+func ByNodesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newNodesStep(), opts...)
+	}
+}
+
+// ByNodes orders the results by nodes terms.
+func ByNodes(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newNodesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByPersonsCount orders the results by persons count.
+func ByPersonsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newPersonsStep(), opts...)
+	}
+}
+
+// ByPersons orders the results by persons terms.
+func ByPersons(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newPersonsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByPropertiesCount orders the results by properties count.
+func ByPropertiesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newPropertiesStep(), opts...)
+	}
+}
+
+// ByProperties orders the results by properties terms.
+func ByProperties(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newPropertiesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByPurposesCount orders the results by purposes count.
+func ByPurposesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newPurposesStep(), opts...)
+	}
+}
+
+// ByPurposes orders the results by purposes terms.
+func ByPurposes(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newPurposesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// BySourceDataCount orders the results by source_data count.
+func BySourceDataCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newSourceDataStep(), opts...)
+	}
+}
+
+// BySourceData orders the results by source_data terms.
+func BySourceData(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newSourceDataStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByToolsCount orders the results by tools count.
+func ByToolsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newToolsStep(), opts...)
+	}
+}
+
+// ByTools orders the results by tools terms.
+func ByTools(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newToolsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newAnnotationsStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -131,13 +405,90 @@ func newMetadataStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(MetadataInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2O, true, MetadataTable, MetadataColumn),
+		sqlgraph.Edge(sqlgraph.M2O, false, MetadataTable, MetadataColumn),
 	)
 }
 func newNodeListStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(NodeListInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2O, true, NodeListTable, NodeListColumn),
+		sqlgraph.Edge(sqlgraph.M2O, false, NodeListTable, NodeListColumn),
+	)
+}
+func newDocumentTypesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(DocumentTypesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2M, false, DocumentTypesTable, DocumentTypesPrimaryKey...),
+	)
+}
+func newEdgeTypesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(EdgeTypesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2M, false, EdgeTypesTable, EdgeTypesPrimaryKey...),
+	)
+}
+func newExternalReferencesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(ExternalReferencesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2M, false, ExternalReferencesTable, ExternalReferencesPrimaryKey...),
+	)
+}
+func newHashesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(HashesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2M, false, HashesTable, HashesPrimaryKey...),
+	)
+}
+func newIdentifiersStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(IdentifiersInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2M, false, IdentifiersTable, IdentifiersPrimaryKey...),
+	)
+}
+func newNodesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(NodesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2M, false, NodesTable, NodesPrimaryKey...),
+	)
+}
+func newPersonsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(PersonsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2M, false, PersonsTable, PersonsPrimaryKey...),
+	)
+}
+func newPropertiesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(PropertiesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2M, false, PropertiesTable, PropertiesPrimaryKey...),
+	)
+}
+func newPurposesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(PurposesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2M, false, PurposesTable, PurposesPrimaryKey...),
+	)
+}
+func newSourceDataStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(SourceDataInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2M, false, SourceDataTable, SourceDataPrimaryKey...),
+	)
+}
+func newToolsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(ToolsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2M, false, ToolsTable, ToolsPrimaryKey...),
 	)
 }

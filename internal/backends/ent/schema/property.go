@@ -11,8 +11,9 @@ import (
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
-	"github.com/google/uuid"
 	"github.com/protobom/protobom/pkg/sbom"
+
+	"github.com/protobom/storage/internal/backends/ent/schema/mixin"
 )
 
 type Property struct {
@@ -21,14 +22,12 @@ type Property struct {
 
 func (Property) Mixin() []ent.Mixin {
 	return []ent.Mixin{
-		DocumentMixin{},
-		ProtoMessageMixin[*sbom.Property]{},
+		mixin.ProtoMessage[*sbom.Property]{},
 	}
 }
 
 func (Property) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("node_id", uuid.UUID{}),
 		field.String("name"),
 		field.String("data"),
 	}
@@ -36,11 +35,13 @@ func (Property) Fields() []ent.Field {
 
 func (Property) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("node", Node.Type).
+		edge.From("documents", Document.Type).
 			Ref("properties").
 			Required().
-			Unique().
-			Field("node_id"),
+			Immutable(),
+		edge.From("nodes", Node.Type).
+			Ref("properties").
+			Required(),
 	}
 }
 

@@ -67,6 +67,11 @@ func ProtoMessage(v *sbom.Metadata) predicate.Metadata {
 	return predicate.Metadata(sql.FieldEQ(FieldProtoMessage, v))
 }
 
+// SourceDataID applies equality check predicate on the "source_data_id" field. It's identical to SourceDataIDEQ.
+func SourceDataID(v uuid.UUID) predicate.Metadata {
+	return predicate.Metadata(sql.FieldEQ(FieldSourceDataID, v))
+}
+
 // NativeID applies equality check predicate on the "native_id" field. It's identical to NativeIDEQ.
 func NativeID(v string) predicate.Metadata {
 	return predicate.Metadata(sql.FieldEQ(FieldNativeID, v))
@@ -130,6 +135,36 @@ func ProtoMessageLT(v *sbom.Metadata) predicate.Metadata {
 // ProtoMessageLTE applies the LTE predicate on the "proto_message" field.
 func ProtoMessageLTE(v *sbom.Metadata) predicate.Metadata {
 	return predicate.Metadata(sql.FieldLTE(FieldProtoMessage, v))
+}
+
+// SourceDataIDEQ applies the EQ predicate on the "source_data_id" field.
+func SourceDataIDEQ(v uuid.UUID) predicate.Metadata {
+	return predicate.Metadata(sql.FieldEQ(FieldSourceDataID, v))
+}
+
+// SourceDataIDNEQ applies the NEQ predicate on the "source_data_id" field.
+func SourceDataIDNEQ(v uuid.UUID) predicate.Metadata {
+	return predicate.Metadata(sql.FieldNEQ(FieldSourceDataID, v))
+}
+
+// SourceDataIDIn applies the In predicate on the "source_data_id" field.
+func SourceDataIDIn(vs ...uuid.UUID) predicate.Metadata {
+	return predicate.Metadata(sql.FieldIn(FieldSourceDataID, vs...))
+}
+
+// SourceDataIDNotIn applies the NotIn predicate on the "source_data_id" field.
+func SourceDataIDNotIn(vs ...uuid.UUID) predicate.Metadata {
+	return predicate.Metadata(sql.FieldNotIn(FieldSourceDataID, vs...))
+}
+
+// SourceDataIDIsNil applies the IsNil predicate on the "source_data_id" field.
+func SourceDataIDIsNil() predicate.Metadata {
+	return predicate.Metadata(sql.FieldIsNull(FieldSourceDataID))
+}
+
+// SourceDataIDNotNil applies the NotNil predicate on the "source_data_id" field.
+func SourceDataIDNotNil() predicate.Metadata {
+	return predicate.Metadata(sql.FieldNotNull(FieldSourceDataID))
 }
 
 // NativeIDEQ applies the EQ predicate on the "native_id" field.
@@ -432,35 +467,12 @@ func CommentContainsFold(v string) predicate.Metadata {
 	return predicate.Metadata(sql.FieldContainsFold(FieldComment, v))
 }
 
-// HasDocument applies the HasEdge predicate on the "document" edge.
-func HasDocument() predicate.Metadata {
-	return predicate.Metadata(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, false, DocumentTable, DocumentColumn),
-		)
-		sqlgraph.HasNeighbors(s, step)
-	})
-}
-
-// HasDocumentWith applies the HasEdge predicate on the "document" edge with a given conditions (other predicates).
-func HasDocumentWith(preds ...predicate.Document) predicate.Metadata {
-	return predicate.Metadata(func(s *sql.Selector) {
-		step := newDocumentStep()
-		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
-			for _, p := range preds {
-				p(s)
-			}
-		})
-	})
-}
-
 // HasTools applies the HasEdge predicate on the "tools" edge.
 func HasTools() predicate.Metadata {
 	return predicate.Metadata(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, ToolsTable, ToolsColumn),
+			sqlgraph.Edge(sqlgraph.M2M, false, ToolsTable, ToolsPrimaryKey...),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
@@ -483,7 +495,7 @@ func HasAuthors() predicate.Metadata {
 	return predicate.Metadata(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, AuthorsTable, AuthorsColumn),
+			sqlgraph.Edge(sqlgraph.M2M, false, AuthorsTable, AuthorsPrimaryKey...),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
@@ -506,7 +518,7 @@ func HasDocumentTypes() predicate.Metadata {
 	return predicate.Metadata(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, DocumentTypesTable, DocumentTypesColumn),
+			sqlgraph.Edge(sqlgraph.M2M, false, DocumentTypesTable, DocumentTypesPrimaryKey...),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
@@ -529,7 +541,7 @@ func HasSourceData() predicate.Metadata {
 	return predicate.Metadata(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, SourceDataTable, SourceDataColumn),
+			sqlgraph.Edge(sqlgraph.M2O, false, SourceDataTable, SourceDataColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
@@ -539,6 +551,29 @@ func HasSourceData() predicate.Metadata {
 func HasSourceDataWith(preds ...predicate.SourceData) predicate.Metadata {
 	return predicate.Metadata(func(s *sql.Selector) {
 		step := newSourceDataStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasDocuments applies the HasEdge predicate on the "documents" edge.
+func HasDocuments() predicate.Metadata {
+	return predicate.Metadata(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, DocumentsTable, DocumentsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasDocumentsWith applies the HasEdge predicate on the "documents" edge with a given conditions (other predicates).
+func HasDocumentsWith(preds ...predicate.Document) predicate.Metadata {
+	return predicate.Metadata(func(s *sql.Selector) {
+		step := newDocumentsStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

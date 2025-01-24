@@ -21,6 +21,7 @@ import (
 	"github.com/protobom/storage/internal/backends/ent/externalreference"
 	"github.com/protobom/storage/internal/backends/ent/hashesentry"
 	"github.com/protobom/storage/internal/backends/ent/node"
+	"github.com/protobom/storage/internal/backends/ent/sourcedata"
 )
 
 // HashesEntryCreate is the builder for creating a HashesEntry entity.
@@ -29,20 +30,6 @@ type HashesEntryCreate struct {
 	mutation *HashesEntryMutation
 	hooks    []Hook
 	conflict []sql.ConflictOption
-}
-
-// SetDocumentID sets the "document_id" field.
-func (hec *HashesEntryCreate) SetDocumentID(u uuid.UUID) *HashesEntryCreate {
-	hec.mutation.SetDocumentID(u)
-	return hec
-}
-
-// SetNillableDocumentID sets the "document_id" field if the given value is not nil.
-func (hec *HashesEntryCreate) SetNillableDocumentID(u *uuid.UUID) *HashesEntryCreate {
-	if u != nil {
-		hec.SetDocumentID(*u)
-	}
-	return hec
 }
 
 // SetHashAlgorithm sets the "hash_algorithm" field.
@@ -71,9 +58,19 @@ func (hec *HashesEntryCreate) SetNillableID(u *uuid.UUID) *HashesEntryCreate {
 	return hec
 }
 
-// SetDocument sets the "document" edge to the Document entity.
-func (hec *HashesEntryCreate) SetDocument(d *Document) *HashesEntryCreate {
-	return hec.SetDocumentID(d.ID)
+// AddDocumentIDs adds the "documents" edge to the Document entity by IDs.
+func (hec *HashesEntryCreate) AddDocumentIDs(ids ...uuid.UUID) *HashesEntryCreate {
+	hec.mutation.AddDocumentIDs(ids...)
+	return hec
+}
+
+// AddDocuments adds the "documents" edges to the Document entity.
+func (hec *HashesEntryCreate) AddDocuments(d ...*Document) *HashesEntryCreate {
+	ids := make([]uuid.UUID, len(d))
+	for i := range d {
+		ids[i] = d[i].ID
+	}
+	return hec.AddDocumentIDs(ids...)
 }
 
 // AddExternalReferenceIDs adds the "external_references" edge to the ExternalReference entity by IDs.
@@ -104,6 +101,21 @@ func (hec *HashesEntryCreate) AddNodes(n ...*Node) *HashesEntryCreate {
 		ids[i] = n[i].ID
 	}
 	return hec.AddNodeIDs(ids...)
+}
+
+// AddSourceDatumIDs adds the "source_data" edge to the SourceData entity by IDs.
+func (hec *HashesEntryCreate) AddSourceDatumIDs(ids ...uuid.UUID) *HashesEntryCreate {
+	hec.mutation.AddSourceDatumIDs(ids...)
+	return hec
+}
+
+// AddSourceData adds the "source_data" edges to the SourceData entity.
+func (hec *HashesEntryCreate) AddSourceData(s ...*SourceData) *HashesEntryCreate {
+	ids := make([]uuid.UUID, len(s))
+	for i := range s {
+		ids[i] = s[i].ID
+	}
+	return hec.AddSourceDatumIDs(ids...)
 }
 
 // Mutation returns the HashesEntryMutation object of the builder.
@@ -143,13 +155,6 @@ func (hec *HashesEntryCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (hec *HashesEntryCreate) defaults() error {
-	if _, ok := hec.mutation.DocumentID(); !ok {
-		if hashesentry.DefaultDocumentID == nil {
-			return fmt.Errorf("ent: uninitialized hashesentry.DefaultDocumentID (forgotten import ent/runtime?)")
-		}
-		v := hashesentry.DefaultDocumentID()
-		hec.mutation.SetDocumentID(v)
-	}
 	if _, ok := hec.mutation.ID(); !ok {
 		if hashesentry.DefaultID == nil {
 			return fmt.Errorf("ent: uninitialized hashesentry.DefaultID (forgotten import ent/runtime?)")
@@ -172,6 +177,9 @@ func (hec *HashesEntryCreate) check() error {
 	}
 	if _, ok := hec.mutation.HashData(); !ok {
 		return &ValidationError{Name: "hash_data", err: errors.New(`ent: missing required field "HashesEntry.hash_data"`)}
+	}
+	if len(hec.mutation.DocumentsIDs()) == 0 {
+		return &ValidationError{Name: "documents", err: errors.New(`ent: missing required edge "HashesEntry.documents"`)}
 	}
 	return nil
 }
@@ -217,12 +225,12 @@ func (hec *HashesEntryCreate) createSpec() (*HashesEntry, *sqlgraph.CreateSpec) 
 		_spec.SetField(hashesentry.FieldHashData, field.TypeString, value)
 		_node.HashData = value
 	}
-	if nodes := hec.mutation.DocumentIDs(); len(nodes) > 0 {
+	if nodes := hec.mutation.DocumentsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: false,
-			Table:   hashesentry.DocumentTable,
-			Columns: []string{hashesentry.DocumentColumn},
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   hashesentry.DocumentsTable,
+			Columns: hashesentry.DocumentsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(document.FieldID, field.TypeUUID),
@@ -231,7 +239,6 @@ func (hec *HashesEntryCreate) createSpec() (*HashesEntry, *sqlgraph.CreateSpec) 
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.DocumentID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := hec.mutation.ExternalReferencesIDs(); len(nodes) > 0 {
@@ -266,6 +273,22 @@ func (hec *HashesEntryCreate) createSpec() (*HashesEntry, *sqlgraph.CreateSpec) 
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
+	if nodes := hec.mutation.SourceDataIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   hashesentry.SourceDataTable,
+			Columns: hashesentry.SourceDataPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(sourcedata.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
 	return _node, _spec
 }
 
@@ -273,7 +296,7 @@ func (hec *HashesEntryCreate) createSpec() (*HashesEntry, *sqlgraph.CreateSpec) 
 // of the `INSERT` statement. For example:
 //
 //	client.HashesEntry.Create().
-//		SetDocumentID(v).
+//		SetHashAlgorithm(v).
 //		OnConflict(
 //			// Update the row with the new values
 //			// the was proposed for insertion.
@@ -282,7 +305,7 @@ func (hec *HashesEntryCreate) createSpec() (*HashesEntry, *sqlgraph.CreateSpec) 
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.HashesEntryUpsert) {
-//			SetDocumentID(v+v).
+//			SetHashAlgorithm(v+v).
 //		}).
 //		Exec(ctx)
 func (hec *HashesEntryCreate) OnConflict(opts ...sql.ConflictOption) *HashesEntryUpsertOne {
@@ -358,9 +381,6 @@ func (u *HashesEntryUpsertOne) UpdateNewValues() *HashesEntryUpsertOne {
 	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
 		if _, exists := u.create.mutation.ID(); exists {
 			s.SetIgnore(hashesentry.FieldID)
-		}
-		if _, exists := u.create.mutation.DocumentID(); exists {
-			s.SetIgnore(hashesentry.FieldDocumentID)
 		}
 	}))
 	return u
@@ -557,7 +577,7 @@ func (hecb *HashesEntryCreateBulk) ExecX(ctx context.Context) {
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.HashesEntryUpsert) {
-//			SetDocumentID(v+v).
+//			SetHashAlgorithm(v+v).
 //		}).
 //		Exec(ctx)
 func (hecb *HashesEntryCreateBulk) OnConflict(opts ...sql.ConflictOption) *HashesEntryUpsertBulk {
@@ -603,9 +623,6 @@ func (u *HashesEntryUpsertBulk) UpdateNewValues() *HashesEntryUpsertBulk {
 		for _, b := range u.create.builders {
 			if _, exists := b.mutation.ID(); exists {
 				s.SetIgnore(hashesentry.FieldID)
-			}
-			if _, exists := b.mutation.DocumentID(); exists {
-				s.SetIgnore(hashesentry.FieldDocumentID)
 			}
 		}
 	}))
