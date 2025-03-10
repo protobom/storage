@@ -3,10 +3,10 @@ module github.com/protobom/storage
 go 1.23.0
 
 require (
-	entgo.io/ent v0.14.2
+	entgo.io/ent v0.14.3
 	github.com/glebarez/go-sqlite v1.22.0
 	github.com/google/uuid v1.6.0
-	github.com/protobom/protobom v0.5.0
+	github.com/protobom/protobom v0.5.2
 	github.com/stretchr/testify v1.10.0
 	google.golang.org/protobuf v1.36.5
 )
@@ -22,7 +22,7 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/go-openapi/inflect v0.21.0 // indirect
-	github.com/google/go-cmp v0.6.0 // indirect
+	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/hashicorp/hcl/v2 v2.23.0 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mitchellh/go-wordwrap v1.0.1 // indirect
@@ -44,5 +44,5 @@ require (
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.8.2 // indirect
 	modernc.org/sqlite v1.34.5 // indirect
-	sigs.k8s.io/release-utils v0.9.0 // indirect
+	sigs.k8s.io/release-utils v0.11.0 // indirect
 )
