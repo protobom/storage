@@ -25,7 +25,7 @@ type retrieveSuite struct {
 // SetupSuite runs before the tests in the suite are run.
 func (rs *retrieveSuite) SetupSuite() {
 	rs.Backend = ent.NewBackend(ent.WithDatabaseFile(":memory:"))
-	rs.Require().NoError(rs.Backend.InitClient())
+	rs.Require().NoError(rs.InitClient())
 
 	cwd, err := os.Getwd()
 	rs.Require().NoError(err)
@@ -40,13 +40,13 @@ func (rs *retrieveSuite) SetupSuite() {
 		document, err := rdr.ParseFile(filepath.Join(testdataDir, entries[idx].Name()))
 		rs.Require().NoError(err)
 
-		rs.Require().NoError(rs.Backend.Store(document, nil))
+		rs.Require().NoError(rs.Store(document, nil))
 	}
 }
 
 // TearDownSuite runs after all the tests in the suite have been run.
 func (rs *retrieveSuite) TearDownSuite() {
-	rs.Backend.CloseClient()
+	rs.CloseClient()
 }
 
 func (rs *retrieveSuite) TestBackend_GetExternalReferencesByDocumentID() {

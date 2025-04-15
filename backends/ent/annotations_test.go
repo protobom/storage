@@ -52,16 +52,16 @@ func (as *annotationsSuite) SetupSuite() {
 // SetupTest runs before each test in the suite.
 func (as *annotationsSuite) SetupTest() {
 	as.Backend = ent.NewBackend(ent.WithDatabaseFile(":memory:"))
-	as.Require().NoError(as.Backend.InitClient())
+	as.Require().NoError(as.InitClient())
 
 	for _, document := range as.documents {
-		as.Require().NoError(as.Backend.Store(document, nil))
+		as.Require().NoError(as.Store(document, nil))
 	}
 }
 
 // TearDownTest runs after each test in the suite.
 func (as *annotationsSuite) TearDownTest() {
-	as.Backend.CloseClient()
+	as.CloseClient()
 	as.Backend = nil
 }
 
@@ -70,7 +70,7 @@ func (as *annotationsSuite) TestBackend_AddDocumentAnnotations() {
 	annotationName := "add_annotation_test"
 
 	as.Require().NoError(
-		as.Backend.AddDocumentAnnotations(id, annotationName, "test-value-1", "test-value-2", "test-value-3"),
+		as.AddDocumentAnnotations(id, annotationName, "test-value-1", "test-value-2", "test-value-3"),
 	)
 
 	annotations := as.getTestResult(annotationName)
@@ -91,7 +91,7 @@ func (as *annotationsSuite) TestBackend_AddNodeAnnotations() {
 	as.Require().NoError(err)
 
 	as.Require().NoError(
-		as.Backend.AddNodeAnnotations(id, annotationName, "test-node-value-1", "test-node-value-2", "test-node-value-3"),
+		as.AddNodeAnnotations(id, annotationName, "test-node-value-1", "test-node-value-2", "test-node-value-3"),
 	)
 
 	annotations := as.getTestResult(annotationName)
@@ -113,7 +113,7 @@ func (as *annotationsSuite) TestBackend_AddAnnotationToDocuments() {
 		documentIDs = append(documentIDs, document.GetMetadata().GetId())
 	}
 
-	as.Require().NoError(as.Backend.AddAnnotationToDocuments(annotationName, "test-value", documentIDs...))
+	as.Require().NoError(as.AddAnnotationToDocuments(annotationName, "test-value", documentIDs...))
 
 	annotations := as.getTestResult(annotationName)
 
@@ -138,7 +138,7 @@ func (as *annotationsSuite) TestBackend_AddAnnotationToNodes() {
 		nodeIDs = append(nodeIDs, document.GetNodeList().GetNodes()[0].GetId())
 	}
 
-	as.Require().NoError(as.Backend.AddAnnotationToNodes(annotationName, "test-node-value", nodeIDs...))
+	as.Require().NoError(as.AddAnnotationToNodes(annotationName, "test-node-value", nodeIDs...))
 
 	annotations := as.getTestResult(annotationName)
 	as.Len(annotations, 3)
@@ -154,13 +154,13 @@ func (as *annotationsSuite) TestBackend_ClearDocumentAnnotations() {
 	annotationName := "clear_document_annotations_test"
 	documentIDs := []string{}
 
-	as.Require().NoError(as.Backend.AddAnnotationToDocuments(annotationName, "test-value", documentIDs...))
+	as.Require().NoError(as.AddAnnotationToDocuments(annotationName, "test-value", documentIDs...))
 
 	for _, document := range as.documents {
 		documentIDs = append(documentIDs, document.GetMetadata().GetId())
 	}
 
-	as.Require().NoError(as.Backend.ClearDocumentAnnotations(documentIDs...))
+	as.Require().NoError(as.ClearDocumentAnnotations(documentIDs...))
 
 	annotations := as.getTestResult(annotationName)
 
@@ -171,13 +171,13 @@ func (as *annotationsSuite) TestBackend_ClearNodeAnnotations() {
 	annotationName := "clear_node_annotations_test"
 	nodeIDs := []string{}
 
-	as.Require().NoError(as.Backend.AddAnnotationToNodes(annotationName, "test-node-value", nodeIDs...))
+	as.Require().NoError(as.AddAnnotationToNodes(annotationName, "test-node-value", nodeIDs...))
 
 	for _, node := range as.nodes {
 		nodeIDs = append(nodeIDs, node.GetId())
 	}
 
-	as.Require().NoError(as.Backend.ClearNodeAnnotations(nodeIDs...))
+	as.Require().NoError(as.ClearNodeAnnotations(nodeIDs...))
 
 	annotations := as.getTestResult(annotationName)
 
@@ -188,11 +188,11 @@ func (as *annotationsSuite) TestBackend_GetDocumentAnnotations() {
 	id := as.documents[0].GetMetadata().GetId()
 	annotationName := "get_document_annotations_test"
 
-	as.Require().NoError(as.Backend.AddDocumentAnnotations(
+	as.Require().NoError(as.AddDocumentAnnotations(
 		id, annotationName, "test-value-1", "test-value-2", "test-value-3"),
 	)
 
-	annotations, err := as.Backend.GetDocumentAnnotations(id, annotationName)
+	annotations, err := as.GetDocumentAnnotations(id, annotationName)
 	as.Require().NoError(err)
 
 	as.Len(annotations, 3)
@@ -210,11 +210,11 @@ func (as *annotationsSuite) TestBackend_GetNodeAnnotations() {
 	uniqueID, err := ent.GenerateUUID(as.nodes[0])
 	as.Require().NoError(err)
 
-	as.Require().NoError(as.Backend.AddNodeAnnotations(
+	as.Require().NoError(as.AddNodeAnnotations(
 		id, annotationName, "test-node-value-1", "test-node-value-2", "test-node-value-3"),
 	)
 
-	annotations, err := as.Backend.GetNodeAnnotations(id, annotationName)
+	annotations, err := as.GetNodeAnnotations(id, annotationName)
 	as.Require().NoError(err)
 
 	as.Len(annotations, 3)
@@ -243,7 +243,7 @@ func (as *annotationsSuite) TestBackend_GetDocumentsByAnnotation() {
 			"test-value-" + strconv.Itoa(idx+2),
 			"test-value-" + strconv.Itoa(idx+3),
 		} {
-			_, err = as.Backend.Ent().ExecContext(as.Backend.Context(), query, uniqueID, false, annotationName, value)
+			_, err = as.Backend.Ent().ExecContext(as.Context(), query, uniqueID, false, annotationName, value)
 			as.Require().NoError(err)
 		}
 	}
@@ -272,7 +272,7 @@ func (as *annotationsSuite) TestBackend_GetDocumentsByAnnotation() {
 		name := fmt.Sprintf("%s--expecting-%d-document(s)", prefix, len(subtest.expected))
 
 		as.Run(name, func() {
-			documents, err := as.Backend.GetDocumentsByAnnotation(annotationName, subtest.values...)
+			documents, err := as.GetDocumentsByAnnotation(annotationName, subtest.values...)
 			as.Require().NoError(err)
 
 			as.Len(documents, len(subtest.expected))
@@ -308,7 +308,7 @@ func (as *annotationsSuite) TestBackend_GetNodesByAnnotation() {
 			"test-node-value-" + strconv.Itoa(idx+3),
 		} {
 			_, err := as.Backend.Ent().ExecContext(
-				as.Backend.Context(), query, uniqueID, nodeUUID, false, annotationName, value,
+				as.Context(), query, uniqueID, nodeUUID, false, annotationName, value,
 			)
 			as.Require().NoError(err)
 		}
@@ -338,7 +338,7 @@ func (as *annotationsSuite) TestBackend_GetNodesByAnnotation() {
 		name := fmt.Sprintf("%s--expecting-%d-node(s)", prefix, len(subtest.expected))
 
 		as.Run(name, func() {
-			nodes, err := as.Backend.GetNodesByAnnotation(annotationName, subtest.values...)
+			nodes, err := as.GetNodesByAnnotation(annotationName, subtest.values...)
 			as.Require().NoError(err)
 
 			as.Len(nodes, len(subtest.expected))
@@ -362,10 +362,10 @@ func (as *annotationsSuite) TestBackend_GetDocumentUniqueAnnotation() {
 	annotationValue := "unique-value"
 	query := "INSERT INTO annotations (document_id, is_unique, name, value) VALUES (?, ?, ?, ?)"
 
-	_, err = as.Backend.Ent().ExecContext(as.Backend.Context(), query, id, true, annotationName, annotationValue)
+	_, err = as.Ent().ExecContext(as.Context(), query, id, true, annotationName, annotationValue)
 	as.Require().NoError(err)
 
-	got, err := as.Backend.GetDocumentUniqueAnnotation(as.documents[0].GetMetadata().GetId(), annotationName)
+	got, err := as.GetDocumentUniqueAnnotation(as.documents[0].GetMetadata().GetId(), annotationName)
 	as.Require().NoError(err)
 
 	as.Equal(annotationValue, got)
@@ -383,11 +383,11 @@ func (as *annotationsSuite) TestBackend_GetNodeUniqueAnnotation() {
 	query := "INSERT INTO annotations (document_id, node_id, is_unique, name, value) VALUES (?, ?, ?, ?, ?)"
 
 	_, err = as.Backend.Ent().ExecContext(
-		as.Backend.Context(), query, docUUID, nodeUUID, true, annotationName, annotationValue,
+		as.Context(), query, docUUID, nodeUUID, true, annotationName, annotationValue,
 	)
 	as.Require().NoError(err)
 
-	got, err := as.Backend.GetNodeUniqueAnnotation(as.nodes[0].GetId(), annotationName)
+	got, err := as.GetNodeUniqueAnnotation(as.nodes[0].GetId(), annotationName)
 	as.Require().NoError(err)
 
 	as.Equal(annotationValue, got)
@@ -419,7 +419,7 @@ func (as *annotationsSuite) TestBackend_RemoveDocumentAnnotations() {
 		}
 
 		name := fmt.Sprintf("%s--expecting-%d-values(s)", prefix, len(subtest.expected))
-		ctx := as.Backend.Context()
+		ctx := as.Context()
 
 		as.Run(name, func() {
 			for _, value := range []string{"test-value-1", "test-value-2", "test-value-3"} {
@@ -427,7 +427,7 @@ func (as *annotationsSuite) TestBackend_RemoveDocumentAnnotations() {
 				as.Require().NoError(err)
 			}
 
-			as.Require().NoError(as.Backend.RemoveDocumentAnnotations(documentID, annotationName, subtest.values...))
+			as.Require().NoError(as.RemoveDocumentAnnotations(documentID, annotationName, subtest.values...))
 
 			values := []string{}
 
@@ -472,7 +472,7 @@ func (as *annotationsSuite) TestBackend_RemoveNodeAnnotations() {
 		}
 
 		name := fmt.Sprintf("%s--expecting-%d-values(s)", prefix, len(subtest.expected))
-		ctx := as.Backend.Context()
+		ctx := as.Context()
 
 		as.Run(name, func() {
 			for _, value := range []string{"test-node-value-1", "test-node-value-2", "test-node-value-3"} {
@@ -480,7 +480,7 @@ func (as *annotationsSuite) TestBackend_RemoveNodeAnnotations() {
 				as.Require().NoError(err)
 			}
 
-			as.Require().NoError(as.Backend.RemoveNodeAnnotations(as.nodes[0].GetId(), annotationName, subtest.values...))
+			as.Require().NoError(as.RemoveNodeAnnotations(as.nodes[0].GetId(), annotationName, subtest.values...))
 
 			values := []string{}
 
@@ -510,18 +510,18 @@ func (as *annotationsSuite) TestBackend_SetDocumentAnnotations() {
 		as.ElementsMatch(values, expected)
 	}
 
-	as.Require().NoError(as.Backend.SetDocumentAnnotations(documentID, annotationName, "test-value-1", "test-value-2"))
+	as.Require().NoError(as.SetDocumentAnnotations(documentID, annotationName, "test-value-1", "test-value-2"))
 	validateResults(annotationName, []string{"test-value-1", "test-value-2"})
 
 	// Replace annotation with different name, same values.
 	// Verify previous annotation name is absent.
-	as.Require().NoError(as.Backend.SetDocumentAnnotations(documentID, updatedName, "test-value-1", "test-value-2"))
+	as.Require().NoError(as.SetDocumentAnnotations(documentID, updatedName, "test-value-1", "test-value-2"))
 	validateResults(updatedName, []string{"test-value-1", "test-value-2"})
 	validateResults(annotationName, []string{})
 
 	// Replace annotation with original name, different values.
 	// Verify previous annotation name and previous values are absent.
-	as.Require().NoError(as.Backend.SetDocumentAnnotations(documentID, annotationName, "test-value-3"))
+	as.Require().NoError(as.SetDocumentAnnotations(documentID, annotationName, "test-value-3"))
 	validateResults(annotationName, []string{"test-value-3"})
 	validateResults(updatedName, []string{})
 }
@@ -543,18 +543,18 @@ func (as *annotationsSuite) TestBackend_SetNodeAnnotations() {
 		as.ElementsMatch(values, expected)
 	}
 
-	as.Require().NoError(as.Backend.SetNodeAnnotations(nodeID, annotationName, "test-node-value-1", "test-node-value-2"))
+	as.Require().NoError(as.SetNodeAnnotations(nodeID, annotationName, "test-node-value-1", "test-node-value-2"))
 	validateResults(annotationName, []string{"test-node-value-1", "test-node-value-2"})
 
 	// Replace annotation with different name, same values.
 	// Verify previous annotation name is absent.
-	as.Require().NoError(as.Backend.SetNodeAnnotations(nodeID, updatedName, "test-node-value-1", "test-node-value-2"))
+	as.Require().NoError(as.SetNodeAnnotations(nodeID, updatedName, "test-node-value-1", "test-node-value-2"))
 	validateResults(updatedName, []string{"test-node-value-1", "test-node-value-2"})
 	validateResults(annotationName, []string{})
 
 	// Replace annotation with original name, different values.
 	// Verify previous annotation name and previous values are absent.
-	as.Require().NoError(as.Backend.SetNodeAnnotations(nodeID, annotationName, "test-node-value-3"))
+	as.Require().NoError(as.SetNodeAnnotations(nodeID, annotationName, "test-node-value-3"))
 	validateResults(annotationName, []string{"test-node-value-3"})
 	validateResults(updatedName, []string{})
 }
@@ -582,7 +582,7 @@ func (as *annotationsSuite) TestBackend_SetDocumentUniqueAnnotation() { //nolint
 			uniqueID, err := ent.GenerateUUID(as.documents[subtest.documentIdx])
 			as.Require().NoError(err)
 
-			as.Require().NoError(as.Backend.SetDocumentUniqueAnnotation(documentID, annotationName, subtest.value))
+			as.Require().NoError(as.SetDocumentUniqueAnnotation(documentID, annotationName, subtest.value))
 
 			annotations := as.getTestResult(annotationName)
 
@@ -617,7 +617,7 @@ func (as *annotationsSuite) TestBackend_SetNodeUniqueAnnotation() { //nolint:dup
 			uniqueID, err := ent.GenerateUUID(as.documents[subtest.nodeIdx])
 			as.Require().NoError(err)
 
-			as.Require().NoError(as.Backend.SetDocumentUniqueAnnotation(nodeID, annotationName, subtest.value))
+			as.Require().NoError(as.SetDocumentUniqueAnnotation(nodeID, annotationName, subtest.value))
 
 			annotations := as.getTestResult(annotationName)
 
@@ -633,7 +633,7 @@ func (as *annotationsSuite) getTestResult(annotationName string) ent.Annotations
 	as.T().Helper()
 
 	result, err := as.Backend.Ent().QueryContext(
-		as.Backend.Context(),
+		as.Context(),
 		"SELECT * FROM annotations WHERE name == ?",
 		annotationName,
 	)

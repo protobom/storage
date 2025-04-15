@@ -55,7 +55,7 @@ func uuidHook(next ent.Mutator) ent.Mutator {
 
 		// Assert that the value of the field has type `proto.Message`.
 		protoMessage, ok := value.(proto.Message)
-		if !(fieldSet && ok) {
+		if !fieldSet || !ok {
 			return next.Mutate(ctx, mutation)
 		}
 
