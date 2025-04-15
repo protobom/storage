@@ -1,37 +1,8 @@
-# ------------------------------------------------------------------------
-# SPDX-FileCopyrightText: Copyright © 2024 The Protobom Authors
-# SPDX-FileType: SOURCE
-# SPDX-License-Identifier: Apache-2.0
-# ------------------------------------------------------------------------
----
-# yaml-language-server: $schema=https://golangci-lint.run/jsonschema/golangci.jsonschema.json
-
+version: "2"
 run:
   concurrency: 6
-  timeout: 5m
-
-issues:
-  exclude-rules:
-    - path: _test\.go
-      linters:
-        - funlen
-        - goconst
-        - gocyclo
-
-  # Maximum issues count per one linter.
-  # Set to 0 to disable.
-  # Default: 50
-  max-issues-per-linter: 0
-
-  # Maximum count of issues with the same text.
-  # Set to 0 to disable.
-  # Default: 3
-  max-same-issues: 0
-
-  new-from-rev: ""
-
 linters:
-  disable-all: true
+  default: none
   enable:
     - asciicheck
     - bodyclose
@@ -40,14 +11,13 @@ linters:
     - dogsled
     - dupl
     - durationcheck
+    - err113
     - errcheck
     - errorlint
-    - err113
     - exhaustive
     - forbidigo
     - forcetypeassert
     - funlen
-    - gci
     - gochecknoglobals
     - gochecknoinits
     - gocognit
@@ -56,15 +26,11 @@ linters:
     - gocyclo
     - godot
     - godox
-    - gofmt
-    - gofumpt
     - goheader
-    - goimports
     - gomoddirectives
     - gomodguard
     - goprintffuncname
     - gosec
-    - gosimple
     - govet
     - importas
     - ineffassign
@@ -85,13 +51,11 @@ linters:
     - protogetter
     - revive
     - staticcheck
-    - stylecheck
     - tagliatelle
-    - testpackage
     - testifylint
+    - testpackage
     - thelper
     - tparallel
-    - typecheck
     - unconvert
     - unparam
     - unused
@@ -100,131 +64,139 @@ linters:
     - whitespace
     - wrapcheck
     - wsl
-
-linters-settings:
-  errcheck:
-    check-type-assertions: true
-    check-blank: true
-
-  exhaustive:
-    # https://golangci-lint.run/usage/linters/#exhaustive
-    default-signifies-exhaustive: true
-
-  funlen:
-    ignore-comments: true
-
-  gci:
-    sections:
-      - standard
-      - default
-      - prefix(github.com/protobom/storage)
-
-  gocognit:
-    min-complexity: 10
-
-  gocritic:
-    enabled-checks:
-      # Diagnostic
-      - commentedOutCode
-      - nilValReturn
-      - sloppyReassign
-      - weakCond
-      - octalLiteral
-
-      # Performance
-      - appendCombine
-      - equalFold
-      - hugeParam
-      - indexAlloc
-      - rangeExprCopy
-      - rangeValCopy
-
-      # Style
-      - boolExprSimplify
-      - commentedOutImport
-      - docStub
-      - emptyFallthrough
-      - emptyStringTest
-      - hexLiteral
-      - methodExprCall
-      - stringXbytes
-      - typeAssertChain
-      - unlabelStmt
-      - yodaStyleExpr
-
-      # Opinionated
-      - builtinShadow
-      - importShadow
-      - initClause
-      - nestingReduce
-      - paramTypeCombine
-      - ptrToRefParam
-      - typeUnparen
-      - unnamedResult
-      - unnecessaryBlock
-
-  godox:
-    keywords:
-      - BUG
-      - FIXME
-      - HACK
-
-  govet:
-    enable:
-      - fieldalignment
-
-  nolintlint:
-    allow-unused: false
-    require-specific: true
-
-  revive:
-    enable-all-rules: true
-
+  settings:
+    errcheck:
+      check-type-assertions: true
+      check-blank: true
+    exhaustive:
+      default-signifies-exhaustive: true
+    funlen:
+      ignore-comments: true
+    gocognit:
+      min-complexity: 10
+    gocritic:
+      enabled-checks:
+        - commentedOutCode
+        - nilValReturn
+        - sloppyReassign
+        - weakCond
+        - octalLiteral
+        - appendCombine
+        - equalFold
+        - hugeParam
+        - indexAlloc
+        - rangeExprCopy
+        - rangeValCopy
+        - boolExprSimplify
+        - commentedOutImport
+        - docStub
+        - emptyFallthrough
+        - emptyStringTest
+        - hexLiteral
+        - methodExprCall
+        - stringXbytes
+        - typeAssertChain
+        - unlabelStmt
+        - yodaStyleExpr
+        - builtinShadow
+        - importShadow
+        - initClause
+        - nestingReduce
+        - paramTypeCombine
+        - ptrToRefParam
+        - typeUnparen
+        - unnamedResult
+        - unnecessaryBlock
+    godox:
+      keywords:
+        - BUG
+        - FIXME
+        - HACK
+    govet:
+      enable:
+        - fieldalignment
+    nolintlint:
+      require-specific: true
+      allow-unused: false
+    revive:
+      enable-all-rules: true
+      rules:
+        - name: add-constant
+          arguments:
+            - allowFloats: 0.0,0.,1.0,1.,2.0,2.
+              allowInts: 0,1,2
+              allowStrs: '""'
+              ignoreFuncs: os\.*,fmt\.*,make,viper\.*
+              maxLitCount: "5"
+          exclude:
+            - TEST
+        - name: cognitive-complexity
+          disabled: true
+        - name: confusing-naming
+          exclude:
+            - TEST
+        - name: cyclomatic
+          disabled: true
+        - name: exported
+          arguments:
+            - checkPrivateReceivers
+            - sayRepetitiveInsteadOfStutters
+        - name: function-length
+          disabled: true
+        - name: line-length-limit
+          disabled: true
+        - name: max-public-structs
+          exclude:
+            - TEST
+        - name: unhandled-error
+          arguments:
+            - fmt\..*
+        - name: unused-parameter
+          arguments:
+            - allowRegex: ^_
+    testifylint:
+      enable-all: true
+    varnamelen:
+      ignore-names:
+        - fn
+        - id
+        - tx
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
     rules:
-      - name: add-constant
-        exclude: [TEST]
-        arguments:
-          - maxLitCount: "5"
-            allowStrs: '""'
-            allowInts: 0,1,2
-            allowFloats: 0.0,0.,1.0,1.,2.0,2.
-            ignoreFuncs: os\.*,fmt\.*,make,viper\.*
-
-      # Handled by the `gocognit` linter
-      - name: cognitive-complexity
-        disabled: true
-
-      - name: confusing-naming
-        exclude: [TEST]
-
-      # Handled by the `cyclop` linter
-      - name: cyclomatic
-        disabled: true
-
-      - name: exported
-        arguments: [checkPrivateReceivers, sayRepetitiveInsteadOfStutters]
-
-      # Handled by the `funlen` linter
-      - name: function-length
-        disabled: true
-
-      # Handled by the `lll` linter
-      - name: line-length-limit
-        disabled: true
-
-      - name: max-public-structs
-        exclude: [TEST]
-
-      - name: unhandled-error
-        arguments: [fmt\..*]
-
-      - name: unused-parameter
-        arguments:
-          # Ignore all parameters beginning with "_"
-          - allowRegex: ^_
-
-  testifylint:
-    enable-all: true
-
-  varnamelen:
-    ignore-names: [fn, id, tx]
+      - linters:
+          - funlen
+          - goconst
+          - gocyclo
+        path: _test\.go
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+  new-from-rev: ""
+formatters:
+  enable:
+    - gci
+    - gofmt
+    - gofumpt
+    - goimports
+  settings:
+    gci:
+      sections:
+        - standard
+        - default
+        - prefix(github.com/protobom/storage)
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
