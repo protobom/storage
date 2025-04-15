@@ -45,11 +45,11 @@ func (ss *storeSuite) SetupSuite() {
 
 func (ss *storeSuite) BeforeTest(_suiteName, _testName string) {
 	ss.Backend = ent.NewBackend(ent.WithDatabaseFile(":memory:"))
-	ss.Require().NoError(ss.Backend.InitClient())
+	ss.Require().NoError(ss.InitClient())
 }
 
 func (ss *storeSuite) AfterTest(_suiteName, _testName string) {
-	ss.Backend.CloseClient()
+	ss.CloseClient()
 }
 
 func (ss *storeSuite) TestBackend_Store() {
@@ -61,14 +61,14 @@ func (ss *storeSuite) TestBackend_Store() {
 
 		messages = append(messages, msg)
 
-		ss.Require().NoError(ss.Backend.Store(document, nil))
+		ss.Require().NoError(ss.Store(document, nil))
 	}
 
 	results, err := ss.Backend.Ent().Document.
 		Query().
 		WithMetadata().
 		WithNodeList().
-		All(ss.Backend.Context())
+		All(ss.Context())
 
 	ss.Require().NoError(err)
 	ss.Len(results, len(ss.documents))
