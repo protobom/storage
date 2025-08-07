@@ -323,9 +323,9 @@ func (backend *Backend) saveMetadata(metadata *sbom.Metadata) TxFunc {
 	}
 }
 
-func (backend *Backend) saveNodeList(nodeList *sbom.NodeList, documentID uuid.UUID) TxFunc {
+func (backend *Backend) saveNodeList(nodeList *sbom.NodeList) TxFunc {
 	return func(tx *ent.Tx) error {
-		id, err := GenerateUUIDWithPrefix(documentID[:], nodeList)
+		id, err := GenerateUUID(nodeList)
 		if err != nil {
 			return fmt.Errorf("generating node list UUID: %w", err)
 		}
@@ -341,7 +341,7 @@ func (backend *Backend) saveNodeList(nodeList *sbom.NodeList, documentID uuid.UU
 			return fmt.Errorf("saving node list: %w", err)
 		}
 
-		for _, fn := range []TxFunc{
+		for i, fn := range []TxFunc{
 			backend.saveNodes(nodeList.GetNodes(), func(nc *ent.NodeCreate) {
 				nc.AddNodeListIDs(id)
 				addDocumentIDs(backend.ctx, nc)
@@ -618,19 +618,6 @@ func GenerateUUID(msg proto.Message) (uuid.UUID, error) {
 	}
 
 	return uuid.NewHash(sha256.New(), uuid.Max, data, int(uuid.Max.Version())), nil
-}
-
-// GenerateUUIDWithPrefix returns a deterministic UUID derived from the hash of a protobuf message
-// with a prefix prepended to ensure uniqueness in different contexts.
-func GenerateUUIDWithPrefix(prefix []byte, msg proto.Message) (uuid.UUID, error) {
-	data, err := proto.MarshalOptions{Deterministic: true}.Marshal(msg)
-	if err != nil {
-		return uuid.Nil, fmt.Errorf("marshaling proto: %w", err)
-	}
-
-	// Combine prefix with message data to create a unique hash
-	combinedData := append(prefix, data...)
-	return uuid.NewHash(sha256.New(), uuid.Max, combinedData, int(uuid.Max.Version())), nil
 }
 
 func addDocumentIDs[T interface{ AddDocumentIDs(...uuid.UUID) T }](ctx context.Context, builder T) {
