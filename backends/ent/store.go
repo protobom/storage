@@ -82,7 +82,7 @@ func (backend *Backend) Store(doc *sbom.Document, opts *storage.StoreOptions) er
 		},
 		backend.saveAnnotations(annotations...),
 		backend.saveMetadata(doc.GetMetadata()),
-		backend.saveNodeList(doc.GetNodeList(), id),
+		backend.saveNodeList(doc.GetNodeList()),
 	)
 }
 
@@ -341,7 +341,7 @@ func (backend *Backend) saveNodeList(nodeList *sbom.NodeList) TxFunc {
 			return fmt.Errorf("saving node list: %w", err)
 		}
 
-		for i, fn := range []TxFunc{
+		for _, fn := range []TxFunc{
 			backend.saveNodes(nodeList.GetNodes(), func(nc *ent.NodeCreate) {
 				nc.AddNodeListIDs(id)
 				addDocumentIDs(backend.ctx, nc)
