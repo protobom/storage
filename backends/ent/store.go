@@ -327,7 +327,7 @@ func (backend *Backend) saveNodeList(nodeList *sbom.NodeList) TxFunc {
 	return func(tx *ent.Tx) error {
 		id, err := GenerateUUID(nodeList)
 		if err != nil {
-			return fmt.Errorf("generating node list UUID: %w", err)
+			return err
 		}
 
 		newNodeList := tx.NodeList.Create().
