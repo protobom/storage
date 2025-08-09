@@ -331,6 +331,7 @@ func (backend *Backend) saveNodeList(nodeList *sbom.NodeList) TxFunc {
 		}
 
 		newNodeList := tx.NodeList.Create().
+			SetID(id).
 			SetProtoMessage(nodeList).
 			SetRootElements(nodeList.GetRootElements())
 

@@ -15,6 +15,7 @@ import (
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql/schema"
 	sqlite "github.com/glebarez/go-sqlite"
+	_ "github.com/lib/pq" // PostgreSQL driver
 	"github.com/protobom/protobom/pkg/storage"
 
 	"github.com/protobom/storage/internal/backends/ent"
@@ -54,19 +55,35 @@ func (backend *Backend) InitClient() error {
 		backend.Options = NewBackendOptions()
 	}
 
-	// Register the SQLite driver as "sqlite3".
-	if !slices.Contains(sql.Drivers(), dialect.SQLite) {
-		sqlite.RegisterAsSQLITE3()
-	}
-
 	clientOpts := []ent.Option{}
 	if backend.Options.Debug {
 		clientOpts = append(clientOpts, ent.Debug())
 	}
 
-	client, err := ent.Open(dialect.SQLite, backend.Options.DatabaseFile+dsnParams, clientOpts...)
-	if err != nil {
-		return fmt.Errorf("failed opening connection to sqlite: %w", err)
+	var client *ent.Client
+	var err error
+
+	switch backend.Options.Dialect {
+	case SQLiteDialect:
+		// Register the SQLite driver as "sqlite3".
+		if !slices.Contains(sql.Drivers(), dialect.SQLite) {
+			sqlite.RegisterAsSQLITE3()
+		}
+
+		dsn := backend.Options.DatabaseURL + dsnParams
+		client, err = ent.Open(dialect.SQLite, dsn, clientOpts...)
+		if err != nil {
+			return fmt.Errorf("failed opening connection to sqlite: %w", err)
+		}
+
+	case PostgresDialect:
+		client, err = ent.Open(dialect.Postgres, backend.Options.DatabaseURL, clientOpts...)
+		if err != nil {
+			return fmt.Errorf("failed opening connection to postgres: %w", err)
+		}
+
+	default:
+		return fmt.Errorf("%w: %s", errUnsupportedDialect, backend.Options.Dialect)
 	}
 
 	backend.client = client
@@ -114,7 +131,19 @@ func (backend *Backend) WithBackendOptions(opts *BackendOptions) *Backend {
 }
 
 func (backend *Backend) WithDatabaseFile(file string) *Backend {
-	backend.Options.DatabaseFile = file
+	backend.Options.DatabaseURL = file
+
+	return backend
+}
+
+func (backend *Backend) WithDatabaseURL(url string) *Backend {
+	backend.Options.DatabaseURL = url
+
+	return backend
+}
+
+func (backend *Backend) WithDialect(dialect DatabaseDialect) *Backend {
+	backend.Options.Dialect = dialect
 
 	return backend
 }

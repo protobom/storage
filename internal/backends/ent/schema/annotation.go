@@ -68,19 +68,19 @@ func (Annotation) Indexes() []ent.Index {
 			StorageKey("idx_annotations_document_id"),
 		index.Fields("node_id", "name", "value").
 			Unique().
-			Annotations(entsql.IndexWhere("node_id IS NOT NULL AND TRIM(node_id) != ''")).
+			Annotations(entsql.IndexWhere("node_id IS NOT NULL")).
 			StorageKey("idx_node_annotations"),
 		index.Fields("node_id", "name").
 			Unique().
-			Annotations(entsql.IndexWhere("node_id IS NOT NULL AND TRIM(node_id) != '' AND is_unique")).
+			Annotations(entsql.IndexWhere("node_id IS NOT NULL AND is_unique")).
 			StorageKey("idx_node_unique_annotations"),
 		index.Fields("document_id", "name", "value").
 			Unique().
-			Annotations(entsql.IndexWhere("document_id IS NOT NULL AND TRIM(document_id) != ''")).
+			Annotations(entsql.IndexWhere("document_id IS NOT NULL")).
 			StorageKey("idx_document_annotations"),
 		index.Fields("document_id", "name").
 			Unique().
-			Annotations(entsql.IndexWhere("document_id IS NOT NULL AND TRIM(document_id) != '' AND is_unique")).
+			Annotations(entsql.IndexWhere("document_id IS NOT NULL AND is_unique")).
 			StorageKey("idx_document_unique_annotations"),
 	}
 }
