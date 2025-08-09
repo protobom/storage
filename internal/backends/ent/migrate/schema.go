@@ -58,7 +58,7 @@ var (
 				Unique:  true,
 				Columns: []*schema.Column{AnnotationsColumns[5], AnnotationsColumns[1], AnnotationsColumns[2]},
 				Annotation: &entsql.IndexAnnotation{
-					Where: "node_id IS NOT NULL AND TRIM(node_id) != ''",
+					Where: "node_id IS NOT NULL",
 				},
 			},
 			{
@@ -66,7 +66,7 @@ var (
 				Unique:  true,
 				Columns: []*schema.Column{AnnotationsColumns[5], AnnotationsColumns[1]},
 				Annotation: &entsql.IndexAnnotation{
-					Where: "node_id IS NOT NULL AND TRIM(node_id) != '' AND is_unique",
+					Where: "node_id IS NOT NULL AND is_unique",
 				},
 			},
 			{
@@ -74,7 +74,7 @@ var (
 				Unique:  true,
 				Columns: []*schema.Column{AnnotationsColumns[4], AnnotationsColumns[1], AnnotationsColumns[2]},
 				Annotation: &entsql.IndexAnnotation{
-					Where: "document_id IS NOT NULL AND TRIM(document_id) != ''",
+					Where: "document_id IS NOT NULL",
 				},
 			},
 			{
@@ -82,7 +82,7 @@ var (
 				Unique:  true,
 				Columns: []*schema.Column{AnnotationsColumns[4], AnnotationsColumns[1]},
 				Annotation: &entsql.IndexAnnotation{
-					Where: "document_id IS NOT NULL AND TRIM(document_id) != '' AND is_unique",
+					Where: "document_id IS NOT NULL AND is_unique",
 				},
 			},
 		},
