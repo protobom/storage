@@ -19,6 +19,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"github.com/protobom/storage/internal/backends/ent"
+	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/documenttype"
 	"github.com/protobom/storage/internal/backends/ent/edgetype"
 	"github.com/protobom/storage/internal/backends/ent/externalreference"
@@ -72,12 +73,26 @@ func (backend *Backend) Store(doc *sbom.Document, opts *storage.StoreOptions) er
 		}
 	}
 
+	// NOTE: @mrsufgi we need to check if the document already exists, for performance reasons
+	// this needs to be outside the transaction, moreover, if a documentId already exists, applying OnConflict/OnConflictColumns
+	// will not work as intended, as it will create a new document with the same ID.
+	// moreover, there is an edgecase where serialNumber is not used correctly, which will end with different Nodelist and Metadata
+	// but with the same ID, even though its user error, we should account for it.
+	exists, err := backend.client.Document.Query().
+		Where(document.IDEQ(id)).
+		Exist(backend.ctx)
+	if err != nil {
+		return err
+	}
+
+	if exists {
+		return nil
+	}
+
 	return backend.withTx(
 		func(tx *ent.Tx) error {
 			return tx.Document.Create().
 				SetID(id).
-				OnConflict().
-				Ignore().
 				Exec(backend.ctx)
 		},
 		backend.saveAnnotations(annotations...),
@@ -102,7 +117,7 @@ func (backend *Backend) saveAnnotations(annotations ...*ent.Annotation) TxFunc {
 		}
 
 		err := tx.Annotation.CreateBulk(builders...).
-			OnConflict().
+			OnConflictColumns("document_id", "node_id", "name", "value").
 			UpdateNewValues().
 			Exec(backend.ctx)
 		if err != nil && !ent.IsConstraintError(err) {
@@ -128,7 +143,7 @@ func (backend *Backend) saveDocumentTypes(docTypes []*sbom.DocumentType, opts ..
 				fn(newDocType)
 			}
 
-			if err := newDocType.OnConflict().Ignore().Exec(backend.ctx); err != nil && !ent.IsConstraintError(err) {
+			if err := newDocType.OnConflictColumns("type", "name", "description").Ignore().Exec(backend.ctx); err != nil && !ent.IsConstraintError(err) {
 				return fmt.Errorf("saving document type: %w", err)
 			}
 		}
@@ -157,7 +172,7 @@ func (backend *Backend) saveEdges(edges []*sbom.Edge, opts ...func(*ent.EdgeType
 				}
 
 				if err := newEdgeType.
-					OnConflict().
+					OnConflictColumns("id").
 					Ignore().
 					Exec(backend.ctx); err != nil && !ent.IsConstraintError(err) {
 					return fmt.Errorf("saving edge: %w", err)
@@ -200,7 +215,7 @@ func (backend *Backend) saveExternalReferences(refs []*sbom.ExternalReference, o
 		}
 
 		err := tx.ExternalReference.CreateBulk(builders...).
-			OnConflict().
+			OnConflictColumns("id").
 			Ignore().
 			Exec(backend.ctx)
 		if err != nil && !ent.IsConstraintError(err) {
@@ -236,7 +251,7 @@ func (backend *Backend) saveHashes(hashes map[int32]string, opts ...func(*ent.Ha
 		}
 
 		if err := tx.HashesEntry.CreateBulk(builders...).
-			OnConflict().
+			OnConflictColumns("hash_algorithm", "hash_data").
 			Ignore().
 			Exec(backend.ctx); err != nil && !ent.IsConstraintError(err) {
 			return fmt.Errorf("saving hashes: %w", err)
@@ -265,7 +280,7 @@ func (backend *Backend) saveIdentifiers(idents map[int32]string, opts ...func(*e
 		}
 
 		if err := tx.IdentifiersEntry.CreateBulk(builders...).
-			OnConflict().
+			OnConflictColumns("type", "value").
 			Ignore().
 			Exec(backend.ctx); err != nil && !ent.IsConstraintError(err) {
 			return fmt.Errorf("saving identifiers: %w", err)
@@ -292,7 +307,7 @@ func (backend *Backend) saveMetadata(metadata *sbom.Metadata) TxFunc {
 
 		addDocumentIDs(backend.ctx, newMetadata)
 
-		if err := newMetadata.OnConflict().Ignore().Exec(backend.ctx); err != nil && !ent.IsConstraintError(err) {
+		if err := newMetadata.OnConflictColumns("id").Ignore().Exec(backend.ctx); err != nil && !ent.IsConstraintError(err) {
 			return fmt.Errorf("saving metadata: %w", err)
 		}
 
@@ -337,7 +352,7 @@ func (backend *Backend) saveNodeList(nodeList *sbom.NodeList) TxFunc {
 
 		addDocumentIDs(backend.ctx, newNodeList)
 
-		if err := newNodeList.OnConflict().Ignore().Exec(backend.ctx); err != nil && !ent.IsConstraintError(err) {
+		if err := newNodeList.OnConflictColumns("id").Ignore().Exec(backend.ctx); err != nil && !ent.IsConstraintError(err) {
 			return fmt.Errorf("saving node list: %w", err)
 		}
 
@@ -436,7 +451,7 @@ func (backend *Backend) saveNodes(nodes []*sbom.Node, opts ...func(*ent.NodeCrea
 		}
 
 		err := tx.Node.CreateBulk(builders...).
-			OnConflict().
+			OnConflictColumns("id").
 			Ignore().
 			Exec(backend.ctx)
 		if err != nil && !ent.IsConstraintError(err) {
@@ -488,7 +503,7 @@ func (backend *Backend) savePersons(persons []*sbom.Person, opts ...func(*ent.Pe
 		}
 
 		if err := tx.Person.CreateBulk(builders...).
-			OnConflict().
+			OnConflictColumns("name", "is_org", "email", "url", "phone").
 			Ignore().
 			Exec(backend.ctx); err != nil && !ent.IsConstraintError(err) {
 			return fmt.Errorf("saving persons: %w", err)
@@ -516,7 +531,7 @@ func (backend *Backend) saveProperties(properties []*sbom.Property, opts ...func
 		}
 
 		err := tx.Property.CreateBulk(builders...).
-			OnConflict().
+			OnConflictColumns("name", "data").
 			Ignore().
 			Exec(backend.ctx)
 		if err != nil && !ent.IsConstraintError(err) {
@@ -543,7 +558,7 @@ func (backend *Backend) savePurposes(purposes []sbom.Purpose, opts ...func(*ent.
 		}
 
 		err := tx.Purpose.CreateBulk(builders...).
-			OnConflict().
+			OnConflictColumns("id").
 			Ignore().
 			Exec(backend.ctx)
 		if err != nil && !ent.IsConstraintError(err) {
@@ -566,7 +581,7 @@ func (backend *Backend) saveSourceData(sourceData *sbom.SourceData, opts ...func
 			fn(newSourceData)
 		}
 
-		id, err := newSourceData.OnConflict().Ignore().ID(backend.ctx)
+		id, err := newSourceData.OnConflictColumns("format", "size", "uri").Ignore().ID(backend.ctx)
 		if err != nil && !ent.IsConstraintError(err) {
 			return fmt.Errorf("saving source data: %w", err)
 		}
@@ -599,7 +614,7 @@ func (backend *Backend) saveTools(tools []*sbom.Tool, opts ...func(*ent.ToolCrea
 		}
 
 		err := tx.Tool.CreateBulk(builders...).
-			OnConflict().
+			OnConflictColumns("name", "version", "vendor").
 			Ignore().
 			Exec(backend.ctx)
 		if err != nil && !ent.IsConstraintError(err) {

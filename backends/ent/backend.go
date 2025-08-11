@@ -90,6 +90,7 @@ func (backend *Backend) InitClient() error {
 	backend.ctx = ent.NewContext(context.Background(), client)
 
 	// Run the auto migration tool.
+	// TODO: need to migrate to new global unique ID feature
 	migrateOpts := []schema.MigrateOption{migrate.WithGlobalUniqueID(true), migrate.WithDropIndex(true)}
 	if err := backend.client.Schema.Create(backend.ctx, migrateOpts...); err != nil {
 		return fmt.Errorf("failed creating schema resources: %w", err)

@@ -29,7 +29,6 @@ func (pm ProtoMessage[T]) Fields() []ent.Field {
 		field.Bytes(protoMessageField).
 			GoType(goType).
 			Nillable().
-			Unique().
 			Immutable().
 			StructTag(`json:"-"`),
 	)

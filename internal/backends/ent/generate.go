@@ -7,5 +7,4 @@
 package ent
 
 //go:generate go run -mod=mod entc.go
-//go:generate go run -mod=mod migrate/main.go
 //go:generate go mod tidy
