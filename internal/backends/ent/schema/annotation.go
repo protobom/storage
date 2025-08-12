@@ -11,7 +11,6 @@ import (
 	"errors"
 
 	"entgo.io/ent"
-	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
@@ -38,6 +37,10 @@ func (Annotation) Fields() []ent.Field {
 		field.String("name"),
 		field.String("value"),
 		field.Bool("is_unique").Default(false),
+		field.String("value_key").
+			Optional().
+			Immutable().
+			StorageKey("value_key"),
 	}
 }
 
@@ -66,22 +69,12 @@ func (Annotation) Indexes() []ent.Index {
 			StorageKey("idx_annotations_node_id"),
 		index.Fields("document_id").
 			StorageKey("idx_annotations_document_id"),
-		index.Fields("node_id", "name", "value").
+		index.Fields("node_id", "name", "value_key").
 			Unique().
-			Annotations(entsql.IndexWhere("node_id IS NOT NULL")).
 			StorageKey("idx_node_annotations"),
-		index.Fields("node_id", "name").
+		index.Fields("document_id", "name", "value_key").
 			Unique().
-			Annotations(entsql.IndexWhere("node_id IS NOT NULL AND is_unique")).
-			StorageKey("idx_node_unique_annotations"),
-		index.Fields("document_id", "name", "value").
-			Unique().
-			Annotations(entsql.IndexWhere("document_id IS NOT NULL")).
 			StorageKey("idx_document_annotations"),
-		index.Fields("document_id", "name").
-			Unique().
-			Annotations(entsql.IndexWhere("document_id IS NOT NULL AND is_unique")).
-			StorageKey("idx_document_unique_annotations"),
 	}
 }
 
@@ -96,6 +89,11 @@ func annotationHook(next ent.Mutator) ent.Mutator {
 				return nil, errInvalidAnnotation
 			}
 
+			if u, ok := mutation.IsUnique(); ok && u {
+				mutation.SetValueKey("")
+			} else if v, ok := mutation.Value(); ok {
+				mutation.SetValueKey(v)
+			}
 			return next.Mutate(ctx, mutation)
 		},
 	)

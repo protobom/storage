@@ -19,6 +19,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"github.com/protobom/storage/internal/backends/ent"
+	"github.com/protobom/storage/internal/backends/ent/annotation"
 	"github.com/protobom/storage/internal/backends/ent/document"
 	"github.com/protobom/storage/internal/backends/ent/documenttype"
 	"github.com/protobom/storage/internal/backends/ent/edgetype"
@@ -103,25 +104,72 @@ func (backend *Backend) Store(doc *sbom.Document, opts *storage.StoreOptions) er
 
 func (backend *Backend) saveAnnotations(annotations ...*ent.Annotation) TxFunc {
 	return func(tx *ent.Tx) error {
-		builders := []*ent.AnnotationCreate{}
+		var (
+			nodeKV []*ent.AnnotationCreate
+			nodeK  []*ent.AnnotationCreate
+			docKV  []*ent.AnnotationCreate
+			docK   []*ent.AnnotationCreate
+		)
 
-		for idx := range annotations {
-			builder := tx.Annotation.Create().
-				SetNillableDocumentID(annotations[idx].DocumentID).
-				SetNillableNodeID(annotations[idx].NodeID).
-				SetName(annotations[idx].Name).
-				SetValue(annotations[idx].Value).
-				SetIsUnique(annotations[idx].IsUnique)
+		for _, a := range annotations {
+			b := tx.Annotation.Create().
+				SetNillableDocumentID(a.DocumentID).
+				SetNillableNodeID(a.NodeID).
+				SetName(a.Name).
+				SetValue(a.Value).
+				SetIsUnique(a.IsUnique)
 
-			builders = append(builders, builder)
+			if a.NodeID != nil {
+				if a.IsUnique {
+					nodeK = append(nodeK, b)
+				} else {
+					nodeKV = append(nodeKV, b)
+				}
+				continue
+			}
+			if a.DocumentID != nil {
+				if a.IsUnique {
+					docK = append(docK, b)
+				} else {
+					docKV = append(docKV, b)
+				}
+				continue
+			}
+			return errors.New("invalid annotation")
 		}
 
-		err := tx.Annotation.CreateBulk(builders...).
-			OnConflictColumns("document_id", "node_id", "name", "value").
-			UpdateNewValues().
-			Exec(backend.ctx)
-		if err != nil && !ent.IsConstraintError(err) {
-			return fmt.Errorf("creating annotations: %w", err)
+		ctx := backend.ctx
+		if len(nodeKV) > 0 {
+			if err := tx.Annotation.CreateBulk(nodeKV...).
+				OnConflictColumns(annotation.FieldNodeID, annotation.FieldName, annotation.FieldValueKey).
+				UpdateNewValues().
+				Exec(ctx); err != nil && !ent.IsConstraintError(err) {
+				return err
+			}
+		}
+		if len(nodeK) > 0 {
+			if err := tx.Annotation.CreateBulk(nodeK...).
+				OnConflictColumns(annotation.FieldNodeID, annotation.FieldName, annotation.FieldValueKey).
+				UpdateNewValues().
+				Exec(ctx); err != nil && !ent.IsConstraintError(err) {
+				return err
+			}
+		}
+		if len(docKV) > 0 {
+			if err := tx.Annotation.CreateBulk(docKV...).
+				OnConflictColumns(annotation.FieldDocumentID, annotation.FieldName, annotation.FieldValueKey).
+				UpdateNewValues().
+				Exec(ctx); err != nil && !ent.IsConstraintError(err) {
+				return err
+			}
+		}
+		if len(docK) > 0 {
+			if err := tx.Annotation.CreateBulk(docK...).
+				OnConflictColumns(annotation.FieldDocumentID, annotation.FieldName, annotation.FieldValueKey).
+				UpdateNewValues().
+				Exec(ctx); err != nil && !ent.IsConstraintError(err) {
+				return err
+			}
 		}
 
 		return nil
@@ -297,8 +345,13 @@ func (backend *Backend) saveMetadata(metadata *sbom.Metadata) TxFunc {
 	}
 
 	return func(tx *ent.Tx) error {
+		nativeID := metadata.GetId()
+		if len(nativeID) == 0 {
+			nativeID = id.String()
+		}
+
 		newMetadata := tx.Metadata.Create().
-			SetNativeID(metadata.GetId()).
+			SetNativeID(nativeID).
 			SetProtoMessage(metadata).
 			SetVersion(metadata.GetVersion()).
 			SetName(metadata.GetName()).

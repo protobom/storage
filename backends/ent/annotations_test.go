@@ -7,6 +7,7 @@
 package ent_test
 
 import (
+	"database/sql"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -422,6 +423,9 @@ func (as *annotationsSuite) TestBackend_RemoveDocumentAnnotations() {
 		ctx := as.Context()
 
 		as.Run(name, func() {
+			// Clear any existing annotations for this test to ensure clean state
+			as.Require().NoError(as.ClearDocumentAnnotations(documentID, annotationName))
+
 			for _, value := range []string{"test-value-1", "test-value-2", "test-value-3"} {
 				_, err = as.Backend.Ent().ExecContext(ctx, query, uniqueID, false, annotationName, value)
 				as.Require().NoError(err)
@@ -475,6 +479,9 @@ func (as *annotationsSuite) TestBackend_RemoveNodeAnnotations() {
 		ctx := as.Context()
 
 		as.Run(name, func() {
+			// Clear any existing annotations for this test to ensure clean state
+			as.Require().NoError(as.ClearNodeAnnotations(as.nodes[0].GetId(), annotationName))
+
 			for _, value := range []string{"test-node-value-1", "test-node-value-2", "test-node-value-3"} {
 				_, err = as.Backend.Ent().ExecContext(ctx, query, docUUID, nodeID, false, annotationName, value)
 				as.Require().NoError(err)
@@ -634,7 +641,7 @@ func (as *annotationsSuite) getTestResult(annotationName string) ent.Annotations
 
 	result, err := as.Backend.Ent().QueryContext(
 		as.Context(),
-		"SELECT * FROM annotations WHERE name == ?",
+		"SELECT id, document_id, node_id, name, value, is_unique, value_key FROM annotations WHERE name = ?",
 		annotationName,
 	)
 	as.Require().NoError(err)
@@ -645,15 +652,21 @@ func (as *annotationsSuite) getTestResult(annotationName string) ent.Annotations
 
 	for result.Next() {
 		annotation := &ent.Annotation{}
+		var valueKey sql.NullString
 
 		as.Require().NoError(result.Scan(
 			&annotation.ID,
+			&annotation.DocumentID,
+			&annotation.NodeID,
 			&annotation.Name,
 			&annotation.Value,
 			&annotation.IsUnique,
-			&annotation.DocumentID,
-			&annotation.NodeID,
+			&valueKey,
 		))
+
+		if valueKey.Valid {
+			annotation.ValueKey = valueKey.String
+		}
 
 		annotations = append(annotations, annotation)
 	}

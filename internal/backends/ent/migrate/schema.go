@@ -20,6 +20,7 @@ var (
 		{Name: "name", Type: field.TypeString},
 		{Name: "value", Type: field.TypeString},
 		{Name: "is_unique", Type: field.TypeBool, Default: false},
+		{Name: "value_key", Type: field.TypeString, Nullable: true},
 		{Name: "document_id", Type: field.TypeUUID, Nullable: true},
 		{Name: "node_id", Type: field.TypeUUID, Nullable: true},
 	}
@@ -31,13 +32,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "annotations_documents_annotations",
-				Columns:    []*schema.Column{AnnotationsColumns[4]},
+				Columns:    []*schema.Column{AnnotationsColumns[5]},
 				RefColumns: []*schema.Column{DocumentsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "annotations_nodes_annotations",
-				Columns:    []*schema.Column{AnnotationsColumns[5]},
+				Columns:    []*schema.Column{AnnotationsColumns[6]},
 				RefColumns: []*schema.Column{NodesColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
@@ -46,44 +47,22 @@ var (
 			{
 				Name:    "idx_annotations_node_id",
 				Unique:  false,
-				Columns: []*schema.Column{AnnotationsColumns[5]},
+				Columns: []*schema.Column{AnnotationsColumns[6]},
 			},
 			{
 				Name:    "idx_annotations_document_id",
 				Unique:  false,
-				Columns: []*schema.Column{AnnotationsColumns[4]},
+				Columns: []*schema.Column{AnnotationsColumns[5]},
 			},
 			{
 				Name:    "idx_node_annotations",
 				Unique:  true,
-				Columns: []*schema.Column{AnnotationsColumns[5], AnnotationsColumns[1], AnnotationsColumns[2]},
-				Annotation: &entsql.IndexAnnotation{
-					Where: "node_id IS NOT NULL",
-				},
-			},
-			{
-				Name:    "idx_node_unique_annotations",
-				Unique:  true,
-				Columns: []*schema.Column{AnnotationsColumns[5], AnnotationsColumns[1]},
-				Annotation: &entsql.IndexAnnotation{
-					Where: "node_id IS NOT NULL AND is_unique",
-				},
+				Columns: []*schema.Column{AnnotationsColumns[6], AnnotationsColumns[1], AnnotationsColumns[4]},
 			},
 			{
 				Name:    "idx_document_annotations",
 				Unique:  true,
-				Columns: []*schema.Column{AnnotationsColumns[4], AnnotationsColumns[1], AnnotationsColumns[2]},
-				Annotation: &entsql.IndexAnnotation{
-					Where: "document_id IS NOT NULL",
-				},
-			},
-			{
-				Name:    "idx_document_unique_annotations",
-				Unique:  true,
-				Columns: []*schema.Column{AnnotationsColumns[4], AnnotationsColumns[1]},
-				Annotation: &entsql.IndexAnnotation{
-					Where: "document_id IS NOT NULL AND is_unique",
-				},
+				Columns: []*schema.Column{AnnotationsColumns[5], AnnotationsColumns[1], AnnotationsColumns[4]},
 			},
 		},
 	}
