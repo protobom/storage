@@ -452,20 +452,12 @@ func (backend *Backend) SetNodeUniqueAnnotation(nodeID, name, value string) erro
 	annotations := ent.Annotations{}
 
 	for idx := range nodes {
-		documentID, err := nodes[idx].
-			QueryNodeLists().
-			QueryDocuments().
-			OnlyID(backend.ctx)
-		if err != nil {
-			return fmt.Errorf("querying node edges for document ID: %w", err)
-		}
 
 		annotations = append(annotations, &ent.Annotation{
-			DocumentID: &documentID,
-			NodeID:     &nodes[idx].ID,
-			Name:       name,
-			Value:      value,
-			IsUnique:   true,
+			NodeID:   &nodes[idx].ID,
+			Name:     name,
+			Value:    value,
+			IsUnique: true,
 		})
 	}
 
