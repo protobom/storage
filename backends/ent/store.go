@@ -65,7 +65,9 @@ func (backend *Backend) Store(doc *sbom.Document, opts *storage.StoreOptions) er
 		return err
 	}
 
-	backend.ctx = context.WithValue(backend.ctx, documentIDKey{}, id)
+	// Create a local context for this Store operation instead of modifying shared backend.ctx
+	// This prevents race conditions when multiple goroutines call Store concurrently
+	localCtx := context.WithValue(backend.ctx, documentIDKey{}, id)
 
 	// Set each annotation's document ID if not specified.
 	for _, a := range annotations {
@@ -81,7 +83,7 @@ func (backend *Backend) Store(doc *sbom.Document, opts *storage.StoreOptions) er
 	// but with the same ID, even though its user error, we should account for it.
 	exists, err := backend.client.Document.Query().
 		Where(document.IDEQ(id)).
-		Exist(backend.ctx)
+		Exist(localCtx)
 	if err != nil {
 		return err
 	}
@@ -90,15 +92,19 @@ func (backend *Backend) Store(doc *sbom.Document, opts *storage.StoreOptions) er
 		return nil
 	}
 
-	return backend.withTx(
+	// Create a context-isolated backend that shares the client but has its own context
+	b := *backend
+	b.ctx = localCtx
+
+	return b.withTx(
 		func(tx *ent.Tx) error {
 			return tx.Document.Create().
 				SetID(id).
-				Exec(backend.ctx)
+				Exec(b.ctx)
 		},
-		backend.saveAnnotations(annotations...),
-		backend.saveMetadata(doc.GetMetadata()),
-		backend.saveNodeList(doc.GetNodeList()),
+		b.saveAnnotations(annotations...),
+		b.saveMetadata(doc.GetMetadata()),
+		b.saveNodeList(doc.GetNodeList()),
 	)
 }
 

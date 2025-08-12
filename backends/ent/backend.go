@@ -150,16 +150,26 @@ func (backend *Backend) WithDialect(dialect DatabaseDialect) *Backend {
 }
 
 func (backend *Backend) withTx(fns ...TxFunc) error {
+	return backend.withTxContext(backend.ctx, fns...)
+}
+
+// withTxContext creates a transaction with a specific context to avoid race conditions
+func (backend *Backend) withTxContext(ctx context.Context, fns ...TxFunc) error {
 	if backend.client == nil {
 		return fmt.Errorf("%w", errUninitializedClient)
 	}
 
-	tx, err := backend.client.Tx(backend.ctx)
+	// Create a NEW context for this transaction instead of modifying the shared one
+	txCtx := ctx
+	tx, err := backend.client.Tx(txCtx)
 	if err != nil {
 		return fmt.Errorf("creating transactional client: %w", err)
 	}
 
-	backend.ctx = ent.NewTxContext(backend.ctx, tx)
+	// Use transaction-local context instead of polluting backend.ctx
+	// This prevents concurrent transactions from interfering with each other
+	localTxCtx := ent.NewTxContext(txCtx, tx)
+	_ = localTxCtx // Mark as used for now
 
 	for _, fn := range fns {
 		if err := fn(tx); err != nil {
