@@ -9,11 +9,15 @@ package ent_test
 import (
 	"testing"
 
-	"github.com/protobom/storage/backends/ent"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/protobom/storage/backends/ent"
 )
 
 func TestDialectConfiguration(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name        string
 		dialect     ent.DatabaseDialect
@@ -46,28 +50,47 @@ func TestDialectConfiguration(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, testCase := range tests {
+		testCaseCopy := testCase
+		t.Run(testCaseCopy.name, func(t *testing.T) {
+			t.Parallel()
+
 			backend := ent.NewBackend(
-				ent.WithDialect(tt.dialect),
-				ent.WithDatabaseURL(tt.databaseURL),
+				ent.WithDialect(testCaseCopy.dialect),
+				ent.WithDatabaseURL(testCaseCopy.databaseURL),
 			)
 
 			err := backend.InitClient()
-			if tt.expectInit {
-				assert.NoError(t, err, "Expected no error for dialect %s with URL %s", tt.dialect, tt.databaseURL)
+			if testCaseCopy.expectInit {
+				require.NoError(
+					t,
+					err,
+					"Expected no error for dialect %s with URL %s",
+					testCaseCopy.dialect,
+					testCaseCopy.databaseURL,
+				)
+
 				if err == nil {
 					backend.CloseClient()
 				}
 			} else {
-				assert.Error(t, err, "Expected error for dialect %s with URL %s", tt.dialect, tt.databaseURL)
+				require.Error(
+					t,
+					err,
+					"Expected error for dialect %s with URL %s",
+					testCaseCopy.dialect,
+					testCaseCopy.databaseURL,
+				)
 			}
 		})
 	}
 }
 
 func TestBackendOptions(t *testing.T) {
+	t.Parallel()
 	t.Run("Default options", func(t *testing.T) {
+		t.Parallel()
+
 		opts := ent.NewBackendOptions()
 		assert.Equal(t, ent.SQLiteDialect, opts.Dialect)
 		assert.Equal(t, ":memory:", opts.DatabaseURL)
@@ -75,6 +98,8 @@ func TestBackendOptions(t *testing.T) {
 	})
 
 	t.Run("PostgreSQL helper", func(t *testing.T) {
+		t.Parallel()
+
 		backend := ent.NewBackend(
 			ent.WithPostgresConnection("postgres://localhost/test"),
 		)
@@ -83,6 +108,8 @@ func TestBackendOptions(t *testing.T) {
 	})
 
 	t.Run("Individual options", func(t *testing.T) {
+		t.Parallel()
+
 		backend := ent.NewBackend(
 			ent.WithDialect(ent.PostgresDialect),
 			ent.WithDatabaseURL("postgres://localhost/mydb"),
@@ -94,6 +121,8 @@ func TestBackendOptions(t *testing.T) {
 	})
 
 	t.Run("Backward compatibility", func(t *testing.T) {
+		t.Parallel()
+
 		backend := ent.NewBackend(
 			ent.WithDatabaseFile("/tmp/test.db"),
 		)

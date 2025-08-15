@@ -28,7 +28,7 @@ type (
 	// Annotations is a parsable slice of Annotation.
 	Annotations = ent.Annotations
 
-	// DatabaseDialect represents the database dialect to use
+	// DatabaseDialect represents the database dialect to use.
 	DatabaseDialect string
 
 	// BackendOptions contains options specific to the protobom ent backend.
@@ -53,9 +53,9 @@ type (
 )
 
 const (
-	// SQLiteDialect represents SQLite database dialect
+	// SQLiteDialect represents SQLite database dialect.
 	SQLiteDialect DatabaseDialect = "sqlite"
-	// PostgresDialect represents PostgreSQL database dialect
+	// PostgresDialect represents PostgreSQL database dialect.
 	PostgresDialect DatabaseDialect = "postgres"
 )
 

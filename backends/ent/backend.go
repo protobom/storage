@@ -61,6 +61,7 @@ func (backend *Backend) InitClient() error {
 	}
 
 	var client *ent.Client
+
 	var err error
 
 	switch backend.Options.Dialect {
@@ -71,6 +72,7 @@ func (backend *Backend) InitClient() error {
 		}
 
 		dsn := backend.Options.DatabaseURL + dsnParams
+
 		client, err = ent.Open(dialect.SQLite, dsn, clientOpts...)
 		if err != nil {
 			return fmt.Errorf("failed opening connection to sqlite: %w", err)
@@ -143,8 +145,8 @@ func (backend *Backend) WithDatabaseURL(url string) *Backend {
 	return backend
 }
 
-func (backend *Backend) WithDialect(dialect DatabaseDialect) *Backend {
-	backend.Options.Dialect = dialect
+func (backend *Backend) WithDialect(dbDialect DatabaseDialect) *Backend {
+	backend.Options.Dialect = dbDialect
 
 	return backend
 }
@@ -153,7 +155,7 @@ func (backend *Backend) withTx(fns ...TxFunc) error {
 	return backend.withTxContext(backend.ctx, fns...)
 }
 
-// withTxContext creates a transaction with a specific context to avoid race conditions
+// withTxContext creates a transaction with a specific context to avoid race conditions.
 func (backend *Backend) withTxContext(ctx context.Context, fns ...TxFunc) error {
 	if backend.client == nil {
 		return fmt.Errorf("%w", errUninitializedClient)
@@ -161,6 +163,7 @@ func (backend *Backend) withTxContext(ctx context.Context, fns ...TxFunc) error 
 
 	// Create a NEW context for this transaction instead of modifying the shared one
 	txCtx := ctx
+
 	tx, err := backend.client.Tx(txCtx)
 	if err != nil {
 		return fmt.Errorf("creating transactional client: %w", err)

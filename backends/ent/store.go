@@ -26,7 +26,9 @@ import (
 	"github.com/protobom/storage/internal/backends/ent/externalreference"
 	"github.com/protobom/storage/internal/backends/ent/hashesentry"
 	"github.com/protobom/storage/internal/backends/ent/identifiersentry"
+	entmetadata "github.com/protobom/storage/internal/backends/ent/metadata"
 	"github.com/protobom/storage/internal/backends/ent/node"
+	entnodelist "github.com/protobom/storage/internal/backends/ent/nodelist"
 	"github.com/protobom/storage/internal/backends/ent/purpose"
 )
 
@@ -37,7 +39,13 @@ type (
 	TxFunc func(*ent.Tx) error
 )
 
-var errNativeIDMap = errors.New("retrieving node map from context")
+var (
+	errInvalidAnnotation   = errors.New("invalid annotation")
+	errNativeIDMap         = errors.New("retrieving node map from context")
+	errMissingEdgeFromNode = errors.New("edge references missing from-node")
+	errMissingEdgeToNode   = errors.New("edge references missing to-node")
+	errSavingAnnotations   = errors.New("saving annotations")
+)
 
 // Store implements the storage.Storer interface.
 func (backend *Backend) Store(doc *sbom.Document, opts *storage.StoreOptions) error {
@@ -76,38 +84,42 @@ func (backend *Backend) Store(doc *sbom.Document, opts *storage.StoreOptions) er
 		}
 	}
 
-	// NOTE: @mrsufgi we need to check if the document already exists, for performance reasons
-	// this needs to be outside the transaction, moreover, if a documentId already exists, applying OnConflict/OnConflictColumns
-	// will not work as intended, as it will create a new document with the same ID.
-	// moreover, there is an edgecase where serialNumber is not used correctly, which will end with different Nodelist and Metadata
-	// but with the same ID, even though its user error, we should account for it.
+	// NOTE: @mrsufgi we need to check if the document already exists. For performance
+	// reasons this must be done outside the transaction. If a document ID already
+	// exists, applying OnConflict/OnConflictColumns will not work as intended and
+	// may create duplicate entries with the same ID.
+	//
+	// There is also an edge case where serialNumber is not used correctly which can
+	// result in different NodeList and Metadata under the same ID. This is a
+	// user error, but we should attempt to account for it here.
 	exists, err := backend.client.Document.Query().
 		Where(document.IDEQ(id)).
 		Exist(localCtx)
 	if err != nil {
-		return err
+		return fmt.Errorf("checking document existence: %w", err)
 	}
 
 	if exists {
 		return nil
 	}
 
-	// Create a context-isolated backend that shares the client but has its own context
-	b := *backend
-	b.ctx = localCtx
+	// Create a context-isolated backend that shares the client but has its own context.
+	backendCopy := *backend
+	backendCopy.ctx = localCtx
 
-	return b.withTx(
+	return backendCopy.withTx(
 		func(tx *ent.Tx) error {
 			return tx.Document.Create().
 				SetID(id).
-				Exec(b.ctx)
+				Exec(backendCopy.ctx)
 		},
-		b.saveAnnotations(annotations...),
-		b.saveMetadata(doc.GetMetadata()),
-		b.saveNodeList(doc.GetNodeList()),
+		backendCopy.saveAnnotations(annotations...),
+		backendCopy.saveMetadata(doc.GetMetadata()),
+		backendCopy.saveNodeList(doc.GetNodeList()),
 	)
 }
 
+//nolint:gocognit,cyclop,funlen
 func (backend *Backend) saveAnnotations(annotations ...*ent.Annotation) TxFunc {
 	return func(tx *ent.Tx) error {
 		var (
@@ -117,31 +129,36 @@ func (backend *Backend) saveAnnotations(annotations ...*ent.Annotation) TxFunc {
 			docK   []*ent.AnnotationCreate
 		)
 
-		for _, a := range annotations {
-			b := tx.Annotation.Create().
-				SetNillableDocumentID(a.DocumentID).
-				SetNillableNodeID(a.NodeID).
-				SetName(a.Name).
-				SetValue(a.Value).
-				SetIsUnique(a.IsUnique)
+		for idx := range annotations {
+			ann := annotations[idx]
+			createBuilder := tx.Annotation.Create().
+				SetNillableDocumentID(ann.DocumentID).
+				SetNillableNodeID(ann.NodeID).
+				SetName(ann.Name).
+				SetValue(ann.Value).
+				SetIsUnique(ann.IsUnique)
 
-			if a.NodeID != nil {
-				if a.IsUnique {
-					nodeK = append(nodeK, b)
+			if ann.NodeID != nil {
+				if ann.IsUnique {
+					nodeK = append(nodeK, createBuilder)
 				} else {
-					nodeKV = append(nodeKV, b)
+					nodeKV = append(nodeKV, createBuilder)
 				}
+
 				continue
 			}
-			if a.DocumentID != nil {
-				if a.IsUnique {
-					docK = append(docK, b)
+
+			if ann.DocumentID != nil {
+				if ann.IsUnique {
+					docK = append(docK, createBuilder)
 				} else {
-					docKV = append(docKV, b)
+					docKV = append(docKV, createBuilder)
 				}
+
 				continue
 			}
-			return errors.New("invalid annotation")
+
+			return errInvalidAnnotation
 		}
 
 		ctx := backend.ctx
@@ -150,31 +167,34 @@ func (backend *Backend) saveAnnotations(annotations ...*ent.Annotation) TxFunc {
 				OnConflictColumns(annotation.FieldNodeID, annotation.FieldName, annotation.FieldValueKey).
 				UpdateNewValues().
 				Exec(ctx); err != nil && !ent.IsConstraintError(err) {
-				return err
+				return fmt.Errorf("%w: nodeKV: %w", errSavingAnnotations, err)
 			}
 		}
+
 		if len(nodeK) > 0 {
 			if err := tx.Annotation.CreateBulk(nodeK...).
 				OnConflictColumns(annotation.FieldNodeID, annotation.FieldName, annotation.FieldValueKey).
 				UpdateNewValues().
 				Exec(ctx); err != nil && !ent.IsConstraintError(err) {
-				return err
+				return fmt.Errorf("%w: nodeK: %w", errSavingAnnotations, err)
 			}
 		}
+
 		if len(docKV) > 0 {
 			if err := tx.Annotation.CreateBulk(docKV...).
 				OnConflictColumns(annotation.FieldDocumentID, annotation.FieldName, annotation.FieldValueKey).
 				UpdateNewValues().
 				Exec(ctx); err != nil && !ent.IsConstraintError(err) {
-				return err
+				return fmt.Errorf("%w: docKV: %w", errSavingAnnotations, err)
 			}
 		}
+
 		if len(docK) > 0 {
 			if err := tx.Annotation.CreateBulk(docK...).
 				OnConflictColumns(annotation.FieldDocumentID, annotation.FieldName, annotation.FieldValueKey).
 				UpdateNewValues().
 				Exec(ctx); err != nil && !ent.IsConstraintError(err) {
-				return err
+				return fmt.Errorf("%w: docK: %w", errSavingAnnotations, err)
 			}
 		}
 
@@ -197,7 +217,14 @@ func (backend *Backend) saveDocumentTypes(docTypes []*sbom.DocumentType, opts ..
 				fn(newDocType)
 			}
 
-			if err := newDocType.OnConflictColumns("type", "name", "description").Ignore().Exec(backend.ctx); err != nil && !ent.IsConstraintError(err) {
+			if err := newDocType.
+				OnConflictColumns(
+					documenttype.FieldType,
+					documenttype.FieldName,
+					documenttype.FieldDescription,
+				).
+				Ignore().
+				Exec(backend.ctx); err != nil && !ent.IsConstraintError(err) {
 				return fmt.Errorf("saving document type: %w", err)
 			}
 		}
@@ -214,19 +241,29 @@ func (backend *Backend) saveEdges(edges []*sbom.Edge, opts ...func(*ent.EdgeType
 		}
 
 		for _, edge := range edges {
+			fromID, ok := nativeIDMap[edge.GetFrom()]
+			if !ok {
+				return fmt.Errorf("%w: %q", errMissingEdgeFromNode, edge.GetFrom())
+			}
+
 			for _, toID := range edge.GetTo() {
+				toUUID, ok2 := nativeIDMap[toID]
+				if !ok2 {
+					return fmt.Errorf("%w: %q", errMissingEdgeToNode, toID)
+				}
+
 				newEdgeType := tx.EdgeType.Create().
 					SetProtoMessage(edge).
 					SetType(edgetype.Type(edge.GetType().String())).
-					SetFromID(nativeIDMap[edge.GetFrom()]).
-					SetToID(nativeIDMap[toID])
+					SetFromID(fromID).
+					SetToID(toUUID)
 
 				for _, fn := range opts {
 					fn(newEdgeType)
 				}
 
 				if err := newEdgeType.
-					OnConflictColumns("id").
+					OnConflictColumns(edgetype.FieldID).
 					Ignore().
 					Exec(backend.ctx); err != nil && !ent.IsConstraintError(err) {
 					return fmt.Errorf("saving edge: %w", err)
@@ -269,7 +306,7 @@ func (backend *Backend) saveExternalReferences(refs []*sbom.ExternalReference, o
 		}
 
 		err := tx.ExternalReference.CreateBulk(builders...).
-			OnConflictColumns("id").
+			OnConflictColumns(externalreference.FieldID).
 			Ignore().
 			Exec(backend.ctx)
 		if err != nil && !ent.IsConstraintError(err) {
@@ -305,7 +342,7 @@ func (backend *Backend) saveHashes(hashes map[int32]string, opts ...func(*ent.Ha
 		}
 
 		if err := tx.HashesEntry.CreateBulk(builders...).
-			OnConflictColumns("hash_algorithm", "hash_data").
+			OnConflictColumns(hashesentry.FieldHashAlgorithm, hashesentry.FieldHashData).
 			Ignore().
 			Exec(backend.ctx); err != nil && !ent.IsConstraintError(err) {
 			return fmt.Errorf("saving hashes: %w", err)
@@ -344,6 +381,7 @@ func (backend *Backend) saveIdentifiers(idents map[int32]string, opts ...func(*e
 	}
 }
 
+//nolint:gocognit
 func (backend *Backend) saveMetadata(metadata *sbom.Metadata) TxFunc {
 	id, err := GenerateUUID(metadata)
 	if err != nil {
@@ -352,7 +390,7 @@ func (backend *Backend) saveMetadata(metadata *sbom.Metadata) TxFunc {
 
 	return func(tx *ent.Tx) error {
 		nativeID := metadata.GetId()
-		if len(nativeID) == 0 {
+		if nativeID == "" {
 			nativeID = id.String()
 		}
 
@@ -366,7 +404,10 @@ func (backend *Backend) saveMetadata(metadata *sbom.Metadata) TxFunc {
 
 		addDocumentIDs(backend.ctx, newMetadata)
 
-		if err := newMetadata.OnConflictColumns("id").Ignore().Exec(backend.ctx); err != nil && !ent.IsConstraintError(err) {
+		if err := newMetadata.
+			OnConflictColumns(entmetadata.FieldID).
+			Ignore().
+			Exec(backend.ctx); err != nil && !ent.IsConstraintError(err) {
 			return fmt.Errorf("saving metadata: %w", err)
 		}
 
@@ -411,7 +452,10 @@ func (backend *Backend) saveNodeList(nodeList *sbom.NodeList) TxFunc {
 
 		addDocumentIDs(backend.ctx, newNodeList)
 
-		if err := newNodeList.OnConflictColumns("id").Ignore().Exec(backend.ctx); err != nil && !ent.IsConstraintError(err) {
+		if err := newNodeList.
+			OnConflictColumns(entnodelist.FieldID).
+			Ignore().
+			Exec(backend.ctx); err != nil && !ent.IsConstraintError(err) {
 			return fmt.Errorf("saving node list: %w", err)
 		}
 
@@ -510,7 +554,7 @@ func (backend *Backend) saveNodes(nodes []*sbom.Node, opts ...func(*ent.NodeCrea
 		}
 
 		err := tx.Node.CreateBulk(builders...).
-			OnConflictColumns("id").
+			OnConflictColumns(node.FieldID).
 			Ignore().
 			Exec(backend.ctx)
 		if err != nil && !ent.IsConstraintError(err) {
@@ -617,7 +661,7 @@ func (backend *Backend) savePurposes(purposes []sbom.Purpose, opts ...func(*ent.
 		}
 
 		err := tx.Purpose.CreateBulk(builders...).
-			OnConflictColumns("id").
+			OnConflictColumns(purpose.FieldID).
 			Ignore().
 			Exec(backend.ctx)
 		if err != nil && !ent.IsConstraintError(err) {
@@ -688,7 +732,7 @@ func (backend *Backend) saveTools(tools []*sbom.Tool, opts ...func(*ent.ToolCrea
 func GenerateUUID(msg proto.Message) (uuid.UUID, error) {
 	data, err := proto.MarshalOptions{Deterministic: true}.Marshal(msg)
 	if err != nil {
-		return uuid.Nil, fmt.Errorf("marshaling proto: %w", err)
+		return uuid.UUID{}, fmt.Errorf("marshalling proto message: %w", err)
 	}
 
 	return uuid.NewHash(sha256.New(), uuid.Max, data, int(uuid.Max.Version())), nil

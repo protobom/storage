@@ -652,6 +652,7 @@ func (as *annotationsSuite) getTestResult(annotationName string) ent.Annotations
 
 	for result.Next() {
 		annotation := &ent.Annotation{}
+
 		var valueKey sql.NullString
 
 		as.Require().NoError(result.Scan(

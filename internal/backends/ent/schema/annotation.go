@@ -94,6 +94,7 @@ func annotationHook(next ent.Mutator) ent.Mutator {
 			} else if v, ok := mutation.Value(); ok {
 				mutation.SetValueKey(v)
 			}
+
 			return next.Mutate(ctx, mutation)
 		},
 	)
