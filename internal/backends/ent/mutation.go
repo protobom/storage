@@ -71,6 +71,7 @@ type AnnotationMutation struct {
 	name            *string
 	value           *string
 	is_unique       *bool
+	value_key       *string
 	clearedFields   map[string]struct{}
 	document        *uuid.UUID
 	cleareddocument bool
@@ -385,6 +386,55 @@ func (m *AnnotationMutation) ResetIsUnique() {
 	m.is_unique = nil
 }
 
+// SetValueKey sets the "value_key" field.
+func (m *AnnotationMutation) SetValueKey(s string) {
+	m.value_key = &s
+}
+
+// ValueKey returns the value of the "value_key" field in the mutation.
+func (m *AnnotationMutation) ValueKey() (r string, exists bool) {
+	v := m.value_key
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldValueKey returns the old "value_key" field's value of the Annotation entity.
+// If the Annotation object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AnnotationMutation) OldValueKey(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldValueKey is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldValueKey requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldValueKey: %w", err)
+	}
+	return oldValue.ValueKey, nil
+}
+
+// ClearValueKey clears the value of the "value_key" field.
+func (m *AnnotationMutation) ClearValueKey() {
+	m.value_key = nil
+	m.clearedFields[annotation.FieldValueKey] = struct{}{}
+}
+
+// ValueKeyCleared returns if the "value_key" field was cleared in this mutation.
+func (m *AnnotationMutation) ValueKeyCleared() bool {
+	_, ok := m.clearedFields[annotation.FieldValueKey]
+	return ok
+}
+
+// ResetValueKey resets all changes to the "value_key" field.
+func (m *AnnotationMutation) ResetValueKey() {
+	m.value_key = nil
+	delete(m.clearedFields, annotation.FieldValueKey)
+}
+
 // ClearDocument clears the "document" edge to the Document entity.
 func (m *AnnotationMutation) ClearDocument() {
 	m.cleareddocument = true
@@ -473,7 +523,7 @@ func (m *AnnotationMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *AnnotationMutation) Fields() []string {
-	fields := make([]string, 0, 5)
+	fields := make([]string, 0, 6)
 	if m.document != nil {
 		fields = append(fields, annotation.FieldDocumentID)
 	}
@@ -488,6 +538,9 @@ func (m *AnnotationMutation) Fields() []string {
 	}
 	if m.is_unique != nil {
 		fields = append(fields, annotation.FieldIsUnique)
+	}
+	if m.value_key != nil {
+		fields = append(fields, annotation.FieldValueKey)
 	}
 	return fields
 }
@@ -507,6 +560,8 @@ func (m *AnnotationMutation) Field(name string) (ent.Value, bool) {
 		return m.Value()
 	case annotation.FieldIsUnique:
 		return m.IsUnique()
+	case annotation.FieldValueKey:
+		return m.ValueKey()
 	}
 	return nil, false
 }
@@ -526,6 +581,8 @@ func (m *AnnotationMutation) OldField(ctx context.Context, name string) (ent.Val
 		return m.OldValue(ctx)
 	case annotation.FieldIsUnique:
 		return m.OldIsUnique(ctx)
+	case annotation.FieldValueKey:
+		return m.OldValueKey(ctx)
 	}
 	return nil, fmt.Errorf("unknown Annotation field %s", name)
 }
@@ -570,6 +627,13 @@ func (m *AnnotationMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetIsUnique(v)
 		return nil
+	case annotation.FieldValueKey:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetValueKey(v)
+		return nil
 	}
 	return fmt.Errorf("unknown Annotation field %s", name)
 }
@@ -606,6 +670,9 @@ func (m *AnnotationMutation) ClearedFields() []string {
 	if m.FieldCleared(annotation.FieldNodeID) {
 		fields = append(fields, annotation.FieldNodeID)
 	}
+	if m.FieldCleared(annotation.FieldValueKey) {
+		fields = append(fields, annotation.FieldValueKey)
+	}
 	return fields
 }
 
@@ -625,6 +692,9 @@ func (m *AnnotationMutation) ClearField(name string) error {
 		return nil
 	case annotation.FieldNodeID:
 		m.ClearNodeID()
+		return nil
+	case annotation.FieldValueKey:
+		m.ClearValueKey()
 		return nil
 	}
 	return fmt.Errorf("unknown Annotation nullable field %s", name)
@@ -648,6 +718,9 @@ func (m *AnnotationMutation) ResetField(name string) error {
 		return nil
 	case annotation.FieldIsUnique:
 		m.ResetIsUnique()
+		return nil
+	case annotation.FieldValueKey:
+		m.ResetValueKey()
 		return nil
 	}
 	return fmt.Errorf("unknown Annotation field %s", name)
