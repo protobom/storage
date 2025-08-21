@@ -145,8 +145,8 @@ func (backend *Backend) WithDatabaseURL(url string) *Backend {
 	return backend
 }
 
-func (backend *Backend) WithDialect(dbDialect DatabaseDialect) *Backend {
-	backend.Options.Dialect = dbDialect
+func (backend *Backend) WithDialect(dialect DatabaseDialect) *Backend {
+	backend.Options.Dialect = dialect
 
 	return backend
 }
