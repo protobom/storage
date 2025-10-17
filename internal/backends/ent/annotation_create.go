@@ -83,6 +83,20 @@ func (ac *AnnotationCreate) SetNillableIsUnique(b *bool) *AnnotationCreate {
 	return ac
 }
 
+// SetValueKey sets the "value_key" field.
+func (ac *AnnotationCreate) SetValueKey(s string) *AnnotationCreate {
+	ac.mutation.SetValueKey(s)
+	return ac
+}
+
+// SetNillableValueKey sets the "value_key" field if the given value is not nil.
+func (ac *AnnotationCreate) SetNillableValueKey(s *string) *AnnotationCreate {
+	if s != nil {
+		ac.SetValueKey(*s)
+	}
+	return ac
+}
+
 // SetDocument sets the "document" edge to the Document entity.
 func (ac *AnnotationCreate) SetDocument(d *Document) *AnnotationCreate {
 	return ac.SetDocumentID(d.ID)
@@ -186,6 +200,10 @@ func (ac *AnnotationCreate) createSpec() (*Annotation, *sqlgraph.CreateSpec) {
 	if value, ok := ac.mutation.IsUnique(); ok {
 		_spec.SetField(annotation.FieldIsUnique, field.TypeBool, value)
 		_node.IsUnique = value
+	}
+	if value, ok := ac.mutation.ValueKey(); ok {
+		_spec.SetField(annotation.FieldValueKey, field.TypeString, value)
+		_node.ValueKey = value
 	}
 	if nodes := ac.mutation.DocumentIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -355,6 +373,11 @@ func (u *AnnotationUpsert) UpdateIsUnique() *AnnotationUpsert {
 //		Exec(ctx)
 func (u *AnnotationUpsertOne) UpdateNewValues() *AnnotationUpsertOne {
 	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
+		if _, exists := u.create.mutation.ValueKey(); exists {
+			s.SetIgnore(annotation.FieldValueKey)
+		}
+	}))
 	return u
 }
 
@@ -643,6 +666,13 @@ type AnnotationUpsertBulk struct {
 //		Exec(ctx)
 func (u *AnnotationUpsertBulk) UpdateNewValues() *AnnotationUpsertBulk {
 	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
+		for _, b := range u.create.builders {
+			if _, exists := b.mutation.ValueKey(); exists {
+				s.SetIgnore(annotation.FieldValueKey)
+			}
+		}
+	}))
 	return u
 }
 

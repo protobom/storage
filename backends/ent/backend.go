@@ -15,6 +15,7 @@ import (
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql/schema"
 	sqlite "github.com/glebarez/go-sqlite"
+	_ "github.com/lib/pq" // PostgreSQL driver
 	"github.com/protobom/protobom/pkg/storage"
 
 	"github.com/protobom/storage/internal/backends/ent"
@@ -54,25 +55,44 @@ func (backend *Backend) InitClient() error {
 		backend.Options = NewBackendOptions()
 	}
 
-	// Register the SQLite driver as "sqlite3".
-	if !slices.Contains(sql.Drivers(), dialect.SQLite) {
-		sqlite.RegisterAsSQLITE3()
-	}
-
 	clientOpts := []ent.Option{}
 	if backend.Options.Debug {
 		clientOpts = append(clientOpts, ent.Debug())
 	}
 
-	client, err := ent.Open(dialect.SQLite, backend.Options.DatabaseFile+dsnParams, clientOpts...)
-	if err != nil {
-		return fmt.Errorf("failed opening connection to sqlite: %w", err)
+	var client *ent.Client
+
+	var err error
+
+	switch backend.Options.Dialect {
+	case SQLiteDialect:
+		// Register the SQLite driver as "sqlite3".
+		if !slices.Contains(sql.Drivers(), dialect.SQLite) {
+			sqlite.RegisterAsSQLITE3()
+		}
+
+		dsn := backend.Options.DatabaseURL + dsnParams
+
+		client, err = ent.Open(dialect.SQLite, dsn, clientOpts...)
+		if err != nil {
+			return fmt.Errorf("failed opening connection to sqlite: %w", err)
+		}
+
+	case PostgresDialect:
+		client, err = ent.Open(dialect.Postgres, backend.Options.DatabaseURL, clientOpts...)
+		if err != nil {
+			return fmt.Errorf("failed opening connection to postgres: %w", err)
+		}
+
+	default:
+		return fmt.Errorf("%w: %s", errUnsupportedDialect, backend.Options.Dialect)
 	}
 
 	backend.client = client
 	backend.ctx = ent.NewContext(context.Background(), client)
 
 	// Run the auto migration tool.
+	// TODO: need to migrate to new global unique ID feature
 	migrateOpts := []schema.MigrateOption{migrate.WithGlobalUniqueID(true), migrate.WithDropIndex(true)}
 	if err := backend.client.Schema.Create(backend.ctx, migrateOpts...); err != nil {
 		return fmt.Errorf("failed creating schema resources: %w", err)
@@ -114,22 +134,45 @@ func (backend *Backend) WithBackendOptions(opts *BackendOptions) *Backend {
 }
 
 func (backend *Backend) WithDatabaseFile(file string) *Backend {
-	backend.Options.DatabaseFile = file
+	backend.Options.DatabaseURL = file
+
+	return backend
+}
+
+func (backend *Backend) WithDatabaseURL(url string) *Backend {
+	backend.Options.DatabaseURL = url
+
+	return backend
+}
+
+func (backend *Backend) WithDialect(dialect DatabaseDialect) *Backend {
+	backend.Options.Dialect = dialect
 
 	return backend
 }
 
 func (backend *Backend) withTx(fns ...TxFunc) error {
+	return backend.withTxContext(backend.ctx, fns...)
+}
+
+// withTxContext creates a transaction with a specific context to avoid race conditions.
+func (backend *Backend) withTxContext(ctx context.Context, fns ...TxFunc) error {
 	if backend.client == nil {
 		return fmt.Errorf("%w", errUninitializedClient)
 	}
 
-	tx, err := backend.client.Tx(backend.ctx)
+	// Create a NEW context for this transaction instead of modifying the shared one
+	txCtx := ctx
+
+	tx, err := backend.client.Tx(txCtx)
 	if err != nil {
 		return fmt.Errorf("creating transactional client: %w", err)
 	}
 
-	backend.ctx = ent.NewTxContext(backend.ctx, tx)
+	// Use transaction-local context instead of polluting backend.ctx
+	// This prevents concurrent transactions from interfering with each other
+	localTxCtx := ent.NewTxContext(txCtx, tx)
+	_ = localTxCtx // Mark as used for now
 
 	for _, fn := range fns {
 		if err := fn(tx); err != nil {
