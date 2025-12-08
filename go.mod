@@ -1,6 +1,6 @@
 module github.com/protobom/storage
 
-go 1.23.0
+go 1.24
 
 require (
 	entgo.io/ent v0.14.2
