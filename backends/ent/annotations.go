@@ -109,7 +109,7 @@ func (backend *Backend) AddNodeAnnotations(nodeID, name string, values ...string
 		Where(node.NativeIDEQ(nodeID)).
 		All(backend.ctx)
 	if err != nil {
-		return fmt.Errorf("querying documents: %w", err)
+		return fmt.Errorf("querying nodes: %w", err)
 	}
 
 	for idx := range nodes {
@@ -452,20 +452,11 @@ func (backend *Backend) SetNodeUniqueAnnotation(nodeID, name, value string) erro
 	annotations := ent.Annotations{}
 
 	for idx := range nodes {
-		documentID, err := nodes[idx].
-			QueryNodeLists().
-			QueryDocuments().
-			OnlyID(backend.ctx)
-		if err != nil {
-			return fmt.Errorf("querying node edges for document ID: %w", err)
-		}
-
 		annotations = append(annotations, &ent.Annotation{
-			DocumentID: &documentID,
-			NodeID:     &nodes[idx].ID,
-			Name:       name,
-			Value:      value,
-			IsUnique:   true,
+			NodeID:   &nodes[idx].ID,
+			Name:     name,
+			Value:    value,
+			IsUnique: true,
 		})
 	}
 

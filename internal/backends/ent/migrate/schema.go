@@ -20,6 +20,7 @@ var (
 		{Name: "name", Type: field.TypeString},
 		{Name: "value", Type: field.TypeString},
 		{Name: "is_unique", Type: field.TypeBool, Default: false},
+		{Name: "value_key", Type: field.TypeString, Nullable: true},
 		{Name: "document_id", Type: field.TypeUUID, Nullable: true},
 		{Name: "node_id", Type: field.TypeUUID, Nullable: true},
 	}
@@ -31,13 +32,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "annotations_documents_annotations",
-				Columns:    []*schema.Column{AnnotationsColumns[4]},
+				Columns:    []*schema.Column{AnnotationsColumns[5]},
 				RefColumns: []*schema.Column{DocumentsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "annotations_nodes_annotations",
-				Columns:    []*schema.Column{AnnotationsColumns[5]},
+				Columns:    []*schema.Column{AnnotationsColumns[6]},
 				RefColumns: []*schema.Column{NodesColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
@@ -46,44 +47,22 @@ var (
 			{
 				Name:    "idx_annotations_node_id",
 				Unique:  false,
-				Columns: []*schema.Column{AnnotationsColumns[5]},
+				Columns: []*schema.Column{AnnotationsColumns[6]},
 			},
 			{
 				Name:    "idx_annotations_document_id",
 				Unique:  false,
-				Columns: []*schema.Column{AnnotationsColumns[4]},
+				Columns: []*schema.Column{AnnotationsColumns[5]},
 			},
 			{
 				Name:    "idx_node_annotations",
 				Unique:  true,
-				Columns: []*schema.Column{AnnotationsColumns[5], AnnotationsColumns[1], AnnotationsColumns[2]},
-				Annotation: &entsql.IndexAnnotation{
-					Where: "node_id IS NOT NULL AND TRIM(node_id) != ''",
-				},
-			},
-			{
-				Name:    "idx_node_unique_annotations",
-				Unique:  true,
-				Columns: []*schema.Column{AnnotationsColumns[5], AnnotationsColumns[1]},
-				Annotation: &entsql.IndexAnnotation{
-					Where: "node_id IS NOT NULL AND TRIM(node_id) != '' AND is_unique",
-				},
+				Columns: []*schema.Column{AnnotationsColumns[6], AnnotationsColumns[1], AnnotationsColumns[4]},
 			},
 			{
 				Name:    "idx_document_annotations",
 				Unique:  true,
-				Columns: []*schema.Column{AnnotationsColumns[4], AnnotationsColumns[1], AnnotationsColumns[2]},
-				Annotation: &entsql.IndexAnnotation{
-					Where: "document_id IS NOT NULL AND TRIM(document_id) != ''",
-				},
-			},
-			{
-				Name:    "idx_document_unique_annotations",
-				Unique:  true,
-				Columns: []*schema.Column{AnnotationsColumns[4], AnnotationsColumns[1]},
-				Annotation: &entsql.IndexAnnotation{
-					Where: "document_id IS NOT NULL AND TRIM(document_id) != '' AND is_unique",
-				},
+				Columns: []*schema.Column{AnnotationsColumns[5], AnnotationsColumns[1], AnnotationsColumns[4]},
 			},
 		},
 	}
@@ -128,7 +107,7 @@ var (
 	// DocumentTypesColumns holds the columns for the "document_types" table.
 	DocumentTypesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID, Unique: true},
-		{Name: "proto_message", Type: field.TypeBytes, Unique: true},
+		{Name: "proto_message", Type: field.TypeBytes},
 		{Name: "type", Type: field.TypeEnum, Nullable: true, Enums: []string{"OTHER", "DESIGN", "SOURCE", "BUILD", "ANALYZED", "DEPLOYED", "RUNTIME", "DISCOVERY", "DECOMISSION"}},
 		{Name: "name", Type: field.TypeString, Nullable: true},
 		{Name: "description", Type: field.TypeString, Nullable: true},
@@ -149,7 +128,7 @@ var (
 	// EdgeTypesColumns holds the columns for the "edge_types" table.
 	EdgeTypesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID, Unique: true},
-		{Name: "proto_message", Type: field.TypeBytes, Unique: true},
+		{Name: "proto_message", Type: field.TypeBytes},
 		{Name: "type", Type: field.TypeEnum, Enums: []string{"UNKNOWN", "amends", "ancestor", "buildDependency", "buildTool", "contains", "contained_by", "copy", "dataFile", "dependencyManifest", "dependsOn", "dependencyOf", "descendant", "describes", "describedBy", "devDependency", "devTool", "distributionArtifact", "documentation", "dynamicLink", "example", "expandedFromArchive", "fileAdded", "fileDeleted", "fileModified", "generates", "generatedFrom", "metafile", "optionalComponent", "optionalDependency", "other", "packages", "patch", "prerequisite", "prerequisiteFor", "providedDependency", "requirementFor", "runtimeDependency", "specificationFor", "staticLink", "test", "testCase", "testDependency", "testTool", "variant"}},
 		{Name: "node_id", Type: field.TypeUUID},
 		{Name: "to_node_id", Type: field.TypeUUID},
@@ -189,7 +168,7 @@ var (
 	// ExternalReferencesColumns holds the columns for the "external_references" table.
 	ExternalReferencesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID, Unique: true},
-		{Name: "proto_message", Type: field.TypeBytes, Unique: true},
+		{Name: "proto_message", Type: field.TypeBytes},
 		{Name: "url", Type: field.TypeString},
 		{Name: "comment", Type: field.TypeString},
 		{Name: "authority", Type: field.TypeString, Nullable: true},
@@ -242,7 +221,7 @@ var (
 	// MetadataColumns holds the columns for the "metadata" table.
 	MetadataColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID, Unique: true},
-		{Name: "proto_message", Type: field.TypeBytes, Unique: true},
+		{Name: "proto_message", Type: field.TypeBytes},
 		{Name: "native_id", Type: field.TypeString},
 		{Name: "version", Type: field.TypeString},
 		{Name: "name", Type: field.TypeString},
@@ -267,7 +246,7 @@ var (
 	// NodesColumns holds the columns for the "nodes" table.
 	NodesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID, Unique: true},
-		{Name: "proto_message", Type: field.TypeBytes, Unique: true},
+		{Name: "proto_message", Type: field.TypeBytes},
 		{Name: "native_id", Type: field.TypeString},
 		{Name: "type", Type: field.TypeEnum, Enums: []string{"PACKAGE", "FILE"}},
 		{Name: "name", Type: field.TypeString},
@@ -298,7 +277,7 @@ var (
 	// NodeListsColumns holds the columns for the "node_lists" table.
 	NodeListsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID, Unique: true},
-		{Name: "proto_message", Type: field.TypeBytes, Unique: true},
+		{Name: "proto_message", Type: field.TypeBytes},
 		{Name: "root_elements", Type: field.TypeJSON},
 	}
 	// NodeListsTable holds the schema information for the "node_lists" table.
@@ -310,7 +289,7 @@ var (
 	// PersonsColumns holds the columns for the "persons" table.
 	PersonsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID, Unique: true},
-		{Name: "proto_message", Type: field.TypeBytes, Unique: true},
+		{Name: "proto_message", Type: field.TypeBytes},
 		{Name: "name", Type: field.TypeString},
 		{Name: "is_org", Type: field.TypeBool},
 		{Name: "email", Type: field.TypeString},
@@ -333,7 +312,7 @@ var (
 	// PropertiesColumns holds the columns for the "properties" table.
 	PropertiesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID, Unique: true},
-		{Name: "proto_message", Type: field.TypeBytes, Unique: true},
+		{Name: "proto_message", Type: field.TypeBytes},
 		{Name: "name", Type: field.TypeString},
 		{Name: "data", Type: field.TypeString},
 	}
@@ -364,7 +343,7 @@ var (
 	// SourceDataColumns holds the columns for the "source_data" table.
 	SourceDataColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID, Unique: true},
-		{Name: "proto_message", Type: field.TypeBytes, Unique: true},
+		{Name: "proto_message", Type: field.TypeBytes},
 		{Name: "format", Type: field.TypeString},
 		{Name: "size", Type: field.TypeInt64},
 		{Name: "uri", Type: field.TypeString, Nullable: true},
@@ -385,7 +364,7 @@ var (
 	// ToolsColumns holds the columns for the "tools" table.
 	ToolsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID, Unique: true},
-		{Name: "proto_message", Type: field.TypeBytes, Unique: true},
+		{Name: "proto_message", Type: field.TypeBytes},
 		{Name: "name", Type: field.TypeString},
 		{Name: "version", Type: field.TypeString},
 		{Name: "vendor", Type: field.TypeString},

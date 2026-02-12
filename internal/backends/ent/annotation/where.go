@@ -84,6 +84,11 @@ func IsUnique(v bool) predicate.Annotation {
 	return predicate.Annotation(sql.FieldEQ(FieldIsUnique, v))
 }
 
+// ValueKey applies equality check predicate on the "value_key" field. It's identical to ValueKeyEQ.
+func ValueKey(v string) predicate.Annotation {
+	return predicate.Annotation(sql.FieldEQ(FieldValueKey, v))
+}
+
 // DocumentIDEQ applies the EQ predicate on the "document_id" field.
 func DocumentIDEQ(v uuid.UUID) predicate.Annotation {
 	return predicate.Annotation(sql.FieldEQ(FieldDocumentID, v))
@@ -282,6 +287,81 @@ func IsUniqueEQ(v bool) predicate.Annotation {
 // IsUniqueNEQ applies the NEQ predicate on the "is_unique" field.
 func IsUniqueNEQ(v bool) predicate.Annotation {
 	return predicate.Annotation(sql.FieldNEQ(FieldIsUnique, v))
+}
+
+// ValueKeyEQ applies the EQ predicate on the "value_key" field.
+func ValueKeyEQ(v string) predicate.Annotation {
+	return predicate.Annotation(sql.FieldEQ(FieldValueKey, v))
+}
+
+// ValueKeyNEQ applies the NEQ predicate on the "value_key" field.
+func ValueKeyNEQ(v string) predicate.Annotation {
+	return predicate.Annotation(sql.FieldNEQ(FieldValueKey, v))
+}
+
+// ValueKeyIn applies the In predicate on the "value_key" field.
+func ValueKeyIn(vs ...string) predicate.Annotation {
+	return predicate.Annotation(sql.FieldIn(FieldValueKey, vs...))
+}
+
+// ValueKeyNotIn applies the NotIn predicate on the "value_key" field.
+func ValueKeyNotIn(vs ...string) predicate.Annotation {
+	return predicate.Annotation(sql.FieldNotIn(FieldValueKey, vs...))
+}
+
+// ValueKeyGT applies the GT predicate on the "value_key" field.
+func ValueKeyGT(v string) predicate.Annotation {
+	return predicate.Annotation(sql.FieldGT(FieldValueKey, v))
+}
+
+// ValueKeyGTE applies the GTE predicate on the "value_key" field.
+func ValueKeyGTE(v string) predicate.Annotation {
+	return predicate.Annotation(sql.FieldGTE(FieldValueKey, v))
+}
+
+// ValueKeyLT applies the LT predicate on the "value_key" field.
+func ValueKeyLT(v string) predicate.Annotation {
+	return predicate.Annotation(sql.FieldLT(FieldValueKey, v))
+}
+
+// ValueKeyLTE applies the LTE predicate on the "value_key" field.
+func ValueKeyLTE(v string) predicate.Annotation {
+	return predicate.Annotation(sql.FieldLTE(FieldValueKey, v))
+}
+
+// ValueKeyContains applies the Contains predicate on the "value_key" field.
+func ValueKeyContains(v string) predicate.Annotation {
+	return predicate.Annotation(sql.FieldContains(FieldValueKey, v))
+}
+
+// ValueKeyHasPrefix applies the HasPrefix predicate on the "value_key" field.
+func ValueKeyHasPrefix(v string) predicate.Annotation {
+	return predicate.Annotation(sql.FieldHasPrefix(FieldValueKey, v))
+}
+
+// ValueKeyHasSuffix applies the HasSuffix predicate on the "value_key" field.
+func ValueKeyHasSuffix(v string) predicate.Annotation {
+	return predicate.Annotation(sql.FieldHasSuffix(FieldValueKey, v))
+}
+
+// ValueKeyIsNil applies the IsNil predicate on the "value_key" field.
+func ValueKeyIsNil() predicate.Annotation {
+	return predicate.Annotation(sql.FieldIsNull(FieldValueKey))
+}
+
+// ValueKeyNotNil applies the NotNil predicate on the "value_key" field.
+func ValueKeyNotNil() predicate.Annotation {
+	return predicate.Annotation(sql.FieldNotNull(FieldValueKey))
+}
+
+// ValueKeyEqualFold applies the EqualFold predicate on the "value_key" field.
+func ValueKeyEqualFold(v string) predicate.Annotation {
+	return predicate.Annotation(sql.FieldEqualFold(FieldValueKey, v))
+}
+
+// ValueKeyContainsFold applies the ContainsFold predicate on the "value_key" field.
+func ValueKeyContainsFold(v string) predicate.Annotation {
+	return predicate.Annotation(sql.FieldContainsFold(FieldValueKey, v))
 }
 
 // HasDocument applies the HasEdge predicate on the "document" edge.

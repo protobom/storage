@@ -189,6 +189,9 @@ func (au *AnnotationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := au.mutation.IsUnique(); ok {
 		_spec.SetField(annotation.FieldIsUnique, field.TypeBool, value)
 	}
+	if au.mutation.ValueKeyCleared() {
+		_spec.ClearField(annotation.FieldValueKey, field.TypeString)
+	}
 	if au.mutation.DocumentCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -450,6 +453,9 @@ func (auo *AnnotationUpdateOne) sqlSave(ctx context.Context) (_node *Annotation,
 	}
 	if value, ok := auo.mutation.IsUnique(); ok {
 		_spec.SetField(annotation.FieldIsUnique, field.TypeBool, value)
+	}
+	if auo.mutation.ValueKeyCleared() {
+		_spec.ClearField(annotation.FieldValueKey, field.TypeString)
 	}
 	if auo.mutation.DocumentCleared() {
 		edge := &sqlgraph.EdgeSpec{

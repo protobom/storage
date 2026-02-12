@@ -28,6 +28,8 @@ const (
 	FieldValue = "value"
 	// FieldIsUnique holds the string denoting the is_unique field in the database.
 	FieldIsUnique = "is_unique"
+	// FieldValueKey holds the string denoting the value_key field in the database.
+	FieldValueKey = "value_key"
 	// EdgeDocument holds the string denoting the document edge name in mutations.
 	EdgeDocument = "document"
 	// EdgeNode holds the string denoting the node edge name in mutations.
@@ -58,6 +60,7 @@ var Columns = []string{
 	FieldName,
 	FieldValue,
 	FieldIsUnique,
+	FieldValueKey,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -112,6 +115,11 @@ func ByValue(opts ...sql.OrderTermOption) OrderOption {
 // ByIsUnique orders the results by the is_unique field.
 func ByIsUnique(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldIsUnique, opts...).ToFunc()
+}
+
+// ByValueKey orders the results by the value_key field.
+func ByValueKey(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldValueKey, opts...).ToFunc()
 }
 
 // ByDocumentField orders the results by document field.
