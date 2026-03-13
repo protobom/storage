@@ -55,3 +55,10 @@ test-unit: # Run unit tests
 	@printf "${GREEN}DONE${RESET}\n\n"
 
 	${call coverage-report}
+
+test-integration: # Run integration tests
+	@printf "Running integration tests for ${CYAN}backends/ent${RESET}...\n"
+	@go test -failfast -v -tags=integration -coverprofile=coverage.out -covermode=atomic ./backends/ent/...
+	@printf "${GREEN}DONE${RESET}\n\n"
+
+	${call coverage-report}
