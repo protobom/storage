@@ -80,7 +80,7 @@ func Example() {
 	//   "metadata": {
 	//     "id": "urn:uuid:3e671687-395b-41f5-a30f-a58921a69b79",
 	//     "version": "1",
-	//     "date": "1970-01-01T00:00:00Z",
+	//     "date": "2020-04-13T20:20:39Z",
 	//     "source_data": {
 	//       "format": "application/vnd.cyclonedx+json;version=1.5",
 	//       "hashes": {
@@ -138,6 +138,13 @@ func Example() {
 	//         "to": [
 	//           "pkg:npm/acme/component@1.0.0",
 	//           "protobom-auto--000000003"
+	//         ]
+	//       },
+	//       {
+	//         "type": "dependsOn",
+	//         "from": "pkg:npm/acme/component@1.0.0",
+	//         "to": [
+	//           "pkg:npm/acme/component@1.0.0"
 	//         ]
 	//       }
 	//     ],
