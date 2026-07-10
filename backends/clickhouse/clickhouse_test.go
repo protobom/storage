@@ -38,10 +38,16 @@ func testAddr() string {
 func newBackend(t *testing.T) *clickhouse.Backend {
 	t.Helper()
 
-	backend := clickhouse.NewBackend(
+	opts := []clickhouse.Option{
 		clickhouse.WithAddr(testAddr()),
 		clickhouse.WithDatabase(testDatabase),
-	)
+	}
+
+	if user := os.Getenv("CLICKHOUSE_USER"); user != "" {
+		opts = append(opts, clickhouse.WithCredentials(user, os.Getenv("CLICKHOUSE_PASSWORD")))
+	}
+
+	backend := clickhouse.NewBackend(opts...)
 
 	if err := backend.InitClient(); err != nil {
 		t.Skipf("clickhouse not available at %s: %v", testAddr(), err)
