@@ -11,15 +11,9 @@ import (
 	"errors"
 )
 
-var (
-	// errUninitializedClient is returned when the backend is used before its
-	// client has been initialized with InitClient.
-	errUninitializedClient = errors.New("backend client must be initialized")
-
-	// errNotImplemented is a placeholder returned by stubs until they are
-	// implemented in a following step.
-	errNotImplemented = errors.New("not implemented")
-)
+// errUninitializedClient is returned when the backend is used before its client
+// has been initialized with InitClient.
+var errUninitializedClient = errors.New("backend client must be initialized")
 
 // Default connection settings used when a BackendOptions field is left unset.
 const (
