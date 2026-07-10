@@ -27,23 +27,22 @@ func (backend *Backend) createTables(ctx context.Context) error {
 }
 
 // splitStatements breaks a multi-statement DDL string into individual,
-// executable statements, dropping blank statements and full-line comments.
-// Inline (trailing) comments are preserved; ClickHouse parses them.
+// executable statements. Comments are stripped first (a `--` comment runs to the
+// end of its line) so that a semicolon inside a comment cannot split a
+// statement; the comment-free text is then split on semicolons.
 func splitStatements(ddl string) []string {
-	statements := []string{}
-
-	for _, raw := range strings.Split(ddl, ";") {
-		lines := make([]string, 0, strings.Count(raw, "\n")+1)
-
-		for _, line := range strings.Split(raw, "\n") {
-			if strings.HasPrefix(strings.TrimSpace(line), "--") {
-				continue
-			}
-
-			lines = append(lines, line)
+	lines := strings.Split(ddl, "\n")
+	for idx, line := range lines {
+		if before, _, found := strings.Cut(line, "--"); found {
+			lines[idx] = before
 		}
+	}
 
-		if stmt := strings.TrimSpace(strings.Join(lines, "\n")); stmt != "" {
+	parts := strings.Split(strings.Join(lines, "\n"), ";")
+	statements := make([]string, 0, len(parts))
+
+	for _, raw := range parts {
+		if stmt := strings.TrimSpace(raw); stmt != "" {
 			statements = append(statements, stmt)
 		}
 	}
