@@ -16,11 +16,11 @@ import (
 	"github.com/protobom/protobom/pkg/storage"
 )
 
-// bootstrapDatabase is the always-present ClickHouse database used to create the
-// backend's target database before connecting to it.
+// bootstrapDatabase is the always present ClickHouse database used to create
+// the backend's target database before connecting to it.
 const bootstrapDatabase = "default"
 
-// Backend implements the protobom.pkg.storage.Backend interface backed by ClickHouse.
+// Backend implements the protobom/storage.Backend interface backed by ClickHouse.
 type Backend struct {
 	conn driver.Conn
 	ctx  context.Context

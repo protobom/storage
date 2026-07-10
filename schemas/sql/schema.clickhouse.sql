@@ -47,7 +47,7 @@ CREATE TABLE IF NOT EXISTS documents
     comment        String,        -- Metadata.comment
     document_types Array(Tuple(type Int16, name String, description String)),
     tools          Array(Tuple(name String, version String, vendor String)),
-    authors        Array(Tuple(name String, is_org UInt8, email String, url String, phone String)),
+    authors        Array(Tuple(name String, is_org Bool, email String, url String, phone String)),
     source_format  String,        -- Metadata.sourceData.format
     source_size    Int64,         -- Metadata.sourceData.size
     source_uri     String,        -- Metadata.sourceData.uri
@@ -90,8 +90,8 @@ CREATE TABLE IF NOT EXISTS nodes
     properties        Array(Tuple(name String, data String)),
     external_references Array(Tuple(url String, comment String, authority String,
                                     type Int16, hashes Map(Int16, String))),
-    suppliers         Array(Tuple(name String, is_org UInt8, email String, url String, phone String)),
-    originators       Array(Tuple(name String, is_org UInt8, email String, url String, phone String)),
+    suppliers         Array(Tuple(name String, is_org Bool, email String, url String, phone String)),
+    originators       Array(Tuple(name String, is_org Bool, email String, url String, phone String)),
     stored_at         DateTime64(3),
     INDEX idx_name       name                   TYPE bloom_filter GRANULARITY 1,
     INDEX idx_hash_vals  mapValues(hashes)       TYPE bloom_filter GRANULARITY 1,
