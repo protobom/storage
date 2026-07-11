@@ -19,7 +19,53 @@ on:
 permissions: {}
 
 jobs:
+  changes:
+    name: detect changes
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    outputs:
+      ent: ${{ steps.filter.outputs.ent }}
+      gcs: ${{ steps.filter.outputs.gcs }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Detect changed areas
+        id: filter
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          files="$(git diff --name-only "${BASE_SHA}...${HEAD_SHA}")"
+          echo "Changed files:"
+          echo "${files}"
+
+          ent=false
+          gcs=false
+
+          while IFS= read -r file; do
+            [ -z "${file}" ] && continue
+            case "${file}" in
+              backends/ent/*|internal/backends/ent/*|go.mod|go.sum|.github/workflows/test.yml) ent=true ;;
+            esac
+            case "${file}" in
+              backends/gcs/*|backends/objectstore/*|go.mod|go.sum|.github/workflows/test.yml) gcs=true ;;
+            esac
+          done <<< "${files}"
+
+          echo "ent=${ent}" >> "${GITHUB_OUTPUT}"
+          echo "gcs=${gcs}" >> "${GITHUB_OUTPUT}"
+
   test:
+    needs: changes
+    if: ${{ needs.changes.outputs.ent == 'true' }}
     runs-on: ubuntu-latest
 
     permissions:
@@ -43,6 +89,8 @@ jobs:
 
   gcs:
     name: gcs integration
+    needs: changes
+    if: ${{ needs.changes.outputs.gcs == 'true' }}
     runs-on: ubuntu-latest
 
     permissions:
