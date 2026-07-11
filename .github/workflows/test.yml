@@ -40,3 +40,41 @@ jobs:
 
       - name: Run tests
         run: make test-unit
+
+  gcs:
+    name: gcs integration
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        with:
+          go-version: '1.25'
+          check-latest: true
+          cache: false
+
+      - name: Start fake-gcs-server
+        run: |
+          docker run -d --name fake-gcs -p 4443:4443 \
+            fsouza/fake-gcs-server@sha256:3730da0e31f7e5186a90ec4899dc2c336104e7599df400411392ef17e684c31f \
+            -scheme http -port 4443 -public-host localhost:4443
+          for _ in $(seq 1 30); do
+            if curl -sf "http://localhost:4443/storage/v1/b?project=test" >/dev/null; then
+              echo "fake-gcs-server ready"; exit 0
+            fi
+            sleep 1
+          done
+          echo "fake-gcs-server did not become ready" >&2; exit 1
+
+      - name: Run GCS integration tests
+        env:
+          STORAGE_EMULATOR_HOST: localhost:4443
+        run: make test-gcs

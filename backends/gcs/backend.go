@@ -172,8 +172,13 @@ func ensureBucket(ctx context.Context, bucket *gstorage.BucketHandle, projectID 
 		return fmt.Errorf("checking bucket: %w", err)
 	}
 
-	if err := bucket.Create(ctx, projectID, nil); err != nil {
-		return fmt.Errorf("creating bucket: %w", err)
+	if createErr := bucket.Create(ctx, projectID, nil); createErr != nil {
+		// Tolerate a concurrent creation by another client.
+		if _, attrsErr := bucket.Attrs(ctx); attrsErr == nil {
+			return nil
+		}
+
+		return fmt.Errorf("creating bucket: %w", createErr)
 	}
 
 	return nil
