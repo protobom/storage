@@ -114,6 +114,53 @@ func (backend *Backend) Retrieve(id string, _ *storage.RetrieveOptions) (*sbom.D
 	return doc, nil
 }
 
+// FindDocumentIDsByIdentifier returns the ids of stored documents that contain a
+// node with the given software identifier (purl, cpe or gitoid).
+func (backend *Backend) FindDocumentIDsByIdentifier(ctx context.Context, value string) ([]string, error) {
+	if backend.inner == nil {
+		return nil, errUninitializedClient
+	}
+
+	ids, err := backend.inner.FindDocumentIDsByIdentifier(ctx, value)
+	if err != nil {
+		return nil, fmt.Errorf("gcs query: %w", err)
+	}
+
+	return ids, nil
+}
+
+// FindDocumentIDsByHash returns the ids of stored documents that contain a node
+// with the given hash.
+func (backend *Backend) FindDocumentIDsByHash(
+	ctx context.Context, algorithm sbom.HashAlgorithm, value string,
+) ([]string, error) {
+	if backend.inner == nil {
+		return nil, errUninitializedClient
+	}
+
+	ids, err := backend.inner.FindDocumentIDsByHash(ctx, algorithm, value)
+	if err != nil {
+		return nil, fmt.Errorf("gcs query: %w", err)
+	}
+
+	return ids, nil
+}
+
+// FindDocumentIDsByName returns the ids of stored documents that contain a node
+// with the given name (matched case-insensitively).
+func (backend *Backend) FindDocumentIDsByName(ctx context.Context, name string) ([]string, error) {
+	if backend.inner == nil {
+		return nil, errUninitializedClient
+	}
+
+	ids, err := backend.inner.FindDocumentIDsByName(ctx, name)
+	if err != nil {
+		return nil, fmt.Errorf("gcs query: %w", err)
+	}
+
+	return ids, nil
+}
+
 // ensureBucket creates the bucket if it does not already exist.
 func ensureBucket(ctx context.Context, bucket *gstorage.BucketHandle, projectID string) error {
 	_, err := bucket.Attrs(ctx)

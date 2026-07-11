@@ -10,6 +10,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/protobom/protobom/pkg/sbom"
 	"github.com/protobom/protobom/pkg/storage"
@@ -22,14 +23,19 @@ var ErrMissingDocument = errors.New("document not found")
 // Backend implements protobom document storage on top of an ObjectStore. It is
 // provider agnostic; concrete backends (GCS, S3, ...) supply the ObjectStore.
 type Backend struct {
-	store  ObjectStore
-	prefix string
+	store   ObjectStore
+	indexer *Indexer
+	prefix  string
 }
 
 // NewBackend returns a Backend that reads and writes objects through store,
 // placing every key under the given prefix (which may be empty).
 func NewBackend(store ObjectStore, prefix string) *Backend {
-	return &Backend{store: store, prefix: prefix}
+	return &Backend{
+		store:   store,
+		indexer: NewIndexer(store, prefix),
+		prefix:  prefix,
+	}
 }
 
 // Store serializes doc and writes it as a single object keyed by its document id.
@@ -63,7 +69,31 @@ func (backend *Backend) Store(ctx context.Context, doc *sbom.Document, opts *sto
 		return fmt.Errorf("storing document %q: %w", id, err)
 	}
 
+	if err := backend.indexer.Index(ctx, id, doc); err != nil {
+		return fmt.Errorf("indexing document %q: %w", id, err)
+	}
+
 	return nil
+}
+
+// FindDocumentIDsByIdentifier returns the ids of documents that contain a node
+// with the given software identifier (purl, cpe or gitoid).
+func (backend *Backend) FindDocumentIDsByIdentifier(ctx context.Context, value string) ([]string, error) {
+	return backend.indexer.FindDocumentIDs(ctx, DimensionIdentifier, value)
+}
+
+// FindDocumentIDsByHash returns the ids of documents that contain a node with
+// the given hash.
+func (backend *Backend) FindDocumentIDsByHash(
+	ctx context.Context, algorithm sbom.HashAlgorithm, value string,
+) ([]string, error) {
+	return backend.indexer.FindDocumentIDs(ctx, DimensionHash, hashIndexValue(int32(algorithm), value))
+}
+
+// FindDocumentIDsByName returns the ids of documents that contain a node with
+// the given name (matched case-insensitively).
+func (backend *Backend) FindDocumentIDsByName(ctx context.Context, name string) ([]string, error) {
+	return backend.indexer.FindDocumentIDs(ctx, DimensionName, strings.ToLower(name))
 }
 
 // Retrieve reads and deserializes the document stored under id.
