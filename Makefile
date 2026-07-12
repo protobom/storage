@@ -55,3 +55,9 @@ test-unit: # Run unit tests
 	@printf "${GREEN}DONE${RESET}\n\n"
 
 	${call coverage-report}
+
+.PHONY: test-gcs
+test-gcs: # Run GCS backend integration tests (needs STORAGE_EMULATOR_HOST or GCS credentials)
+	@printf "Running tests for ${CYAN}backends/gcs${RESET}...\n"
+	@go test -failfast -count=1 ./backends/gcs/... ./backends/objectstore/...
+	@printf "${GREEN}DONE${RESET}\n\n"
