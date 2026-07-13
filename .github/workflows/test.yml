@@ -29,6 +29,7 @@ jobs:
     outputs:
       ent: ${{ steps.filter.outputs.ent }}
       gcs: ${{ steps.filter.outputs.gcs }}
+      clickhouse: ${{ steps.filter.outputs.clickhouse }}
 
     steps:
       - name: Checkout code
@@ -49,6 +50,7 @@ jobs:
 
           ent=false
           gcs=false
+          clickhouse=false
 
           while IFS= read -r file; do
             [ -z "${file}" ] && continue
@@ -58,10 +60,14 @@ jobs:
             case "${file}" in
               backends/gcs/*|backends/objectstore/*|go.mod|go.sum|.github/workflows/test.yml) gcs=true ;;
             esac
+            case "${file}" in
+              backends/clickhouse/*|schemas/*|go.mod|go.sum|.github/workflows/test.yml) clickhouse=true ;;
+            esac
           done <<< "${files}"
 
           echo "ent=${ent}" >> "${GITHUB_OUTPUT}"
           echo "gcs=${gcs}" >> "${GITHUB_OUTPUT}"
+          echo "clickhouse=${clickhouse}" >> "${GITHUB_OUTPUT}"
 
   test:
     needs: changes
@@ -126,3 +132,46 @@ jobs:
         env:
           STORAGE_EMULATOR_HOST: localhost:4443
         run: make test-gcs
+
+  clickhouse:
+    name: clickhouse integration
+    needs: changes
+    if: ${{ needs.changes.outputs.clickhouse == 'true' }}
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    services:
+      clickhouse:
+        image: clickhouse/clickhouse-server@sha256:1d1f6508eba2dccce2cee9913907c5f7766327debc57a6b1991f2c9e3176c163 # 26.6.1.1193
+        ports:
+          - 9000:9000
+        env:
+          CLICKHOUSE_USER: protobom
+          CLICKHOUSE_PASSWORD: protobom
+        options: >-
+          --health-cmd "clickhouse-client --user protobom --password protobom --query 'SELECT 1'"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        with:
+          go-version: '1.25'
+          check-latest: true
+          cache: false
+
+      - name: Run ClickHouse integration tests
+        env:
+          CLICKHOUSE_ADDR: localhost:9000
+          CLICKHOUSE_USER: protobom
+          CLICKHOUSE_PASSWORD: protobom
+        run: make test-clickhouse

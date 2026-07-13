@@ -61,3 +61,9 @@ test-gcs: # Run GCS backend integration tests (needs STORAGE_EMULATOR_HOST or GC
 	@printf "Running tests for ${CYAN}backends/gcs${RESET}...\n"
 	@go test -failfast -count=1 ./backends/gcs/... ./backends/objectstore/...
 	@printf "${GREEN}DONE${RESET}\n\n"
+
+.PHONY: test-clickhouse
+test-clickhouse: # Run ClickHouse backend integration tests (needs a ClickHouse server; see CLICKHOUSE_ADDR/USER/PASSWORD)
+	@printf "Running tests for ${CYAN}backends/clickhouse${RESET}...\n"
+	@go test -failfast -count=1 ./backends/clickhouse/...
+	@printf "${GREEN}DONE${RESET}\n\n"
