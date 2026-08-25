@@ -11,7 +11,7 @@ require (
 	github.com/protobom/protobom v0.5.8
 	github.com/stretchr/testify v1.12.1
 	google.golang.org/api v0.293.0
-	google.golang.org/protobuf v1.36.11
+	google.golang.org/protobuf v1.36.12
 )
 
 require (
