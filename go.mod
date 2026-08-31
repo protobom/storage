@@ -8,7 +8,7 @@ require (
 	github.com/ClickHouse/clickhouse-go/v2 v2.48.0
 	github.com/glebarez/go-sqlite v1.23.0
 	github.com/google/uuid v1.6.0
-	github.com/protobom/protobom v0.5.8
+	github.com/protobom/protobom v0.6.0
 	github.com/stretchr/testify v1.12.1
 	google.golang.org/api v0.293.0
 	google.golang.org/protobuf v1.36.12
@@ -34,6 +34,7 @@ require (
 	github.com/apparentlymart/go-textseg/v15 v15.0.0 // indirect
 	github.com/blang/semver/v4 v4.0.0 // indirect
 	github.com/bmatcuk/doublestar v1.3.4 // indirect
+	github.com/carabiner-dev/spdx3 v0.1.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/clipperhouse/displaywidth v0.10.0 // indirect
 	github.com/clipperhouse/uax29/v2 v2.6.0 // indirect
@@ -70,7 +71,7 @@ require (
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	github.com/segmentio/asm v1.2.1 // indirect
 	github.com/shopspring/decimal v1.4.0 // indirect
-	github.com/sirupsen/logrus v1.9.4 // indirect
+	github.com/sirupsen/logrus v1.10.1 // indirect
 	github.com/spdx/tools-golang v0.5.7 // indirect
 	github.com/spiffe/go-spiffe/v2 v2.7.0 // indirect
 	github.com/zclconf/go-cty v1.16.1 // indirect
