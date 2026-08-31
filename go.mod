@@ -3,7 +3,7 @@ module github.com/protobom/storage
 go 1.25.11
 
 require (
-	cloud.google.com/go/storage v1.64.0
+	cloud.google.com/go/storage v1.66.0
 	entgo.io/ent v0.14.6
 	github.com/ClickHouse/clickhouse-go/v2 v2.48.0
 	github.com/glebarez/go-sqlite v1.23.0
