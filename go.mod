@@ -1,6 +1,6 @@
 module github.com/protobom/storage
 
-go 1.25.11
+go 1.26.0
 
 require (
 	cloud.google.com/go/storage v1.67.0
@@ -10,7 +10,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/protobom/protobom v0.6.0
 	github.com/stretchr/testify v1.12.1
-	google.golang.org/api v0.295.0
+	google.golang.org/api v0.297.0
 	google.golang.org/protobuf v1.36.12
 )
 
