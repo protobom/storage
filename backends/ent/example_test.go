@@ -81,6 +81,20 @@ func Example() {
 	//     "id": "urn:uuid:3e671687-395b-41f5-a30f-a58921a69b79",
 	//     "version": "1",
 	//     "date": "2020-04-13T20:20:39Z",
+	//     "tools": [
+	//       {
+	//         "name": "Awesome Tool",
+	//         "version": "9.1.2",
+	//         "vendor": "Awesome Vendor"
+	//       }
+	//     ],
+	//     "authors": [
+	//       {
+	//         "name": "Samantha Wright",
+	//         "email": "samantha.wright@example.com",
+	//         "phone": "800-555-1212"
+	//       }
+	//     ],
 	//     "source_data": {
 	//       "format": "application/vnd.cyclonedx+json;version=1.5",
 	//       "hashes": {
@@ -94,7 +108,7 @@ func Example() {
 	//   "node_list": {
 	//     "nodes": [
 	//       {
-	//         "id": "protobom-auto--000000001",
+	//         "id": "protobom-auto--8046b0dda1038ced",
 	//         "name": "Acme Application",
 	//         "version": "9.1.1",
 	//         "primary_purpose": [
@@ -123,9 +137,27 @@ func Example() {
 	//         ]
 	//       },
 	//       {
-	//         "id": "protobom-auto--000000003",
+	//         "id": "protobom-auto--ea967fe80f36775d",
 	//         "name": "mylibrary",
 	//         "version": "1.0.0",
+	//         "suppliers": [
+	//           {
+	//             "name": "Example, Inc.",
+	//             "is_org": true,
+	//             "url": "https://example.com",
+	//             "contacts": [
+	//               {
+	//                 "name": "Example Support AMER Distribution",
+	//                 "email": "support@example.com",
+	//                 "phone": "800-555-1212"
+	//               },
+	//               {
+	//                 "name": "Example Support APAC",
+	//                 "email": "support@apac.example.com"
+	//               }
+	//             ]
+	//           }
+	//         ],
 	//         "primary_purpose": [
 	//           "LIBRARY"
 	//         ]
@@ -134,10 +166,10 @@ func Example() {
 	//     "edges": [
 	//       {
 	//         "type": "contains",
-	//         "from": "protobom-auto--000000001",
+	//         "from": "protobom-auto--8046b0dda1038ced",
 	//         "to": [
 	//           "pkg:npm/acme/component@1.0.0",
-	//           "protobom-auto--000000003"
+	//           "protobom-auto--ea967fe80f36775d"
 	//         ]
 	//       },
 	//       {
@@ -149,7 +181,7 @@ func Example() {
 	//       }
 	//     ],
 	//     "root_elements": [
-	//       "protobom-auto--000000001"
+	//       "protobom-auto--8046b0dda1038ced"
 	//     ]
 	//   }
 	// }
