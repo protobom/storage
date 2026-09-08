@@ -10,6 +10,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
+	"os"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
@@ -53,7 +55,7 @@ func (backend *Backend) Conn() driver.Conn {
 // clickhouseOptions builds the driver options for a connection to the given
 // database using the backend's configured address, credentials and settings.
 func (backend *Backend) clickhouseOptions(database string) *clickhouse.Options {
-	return &clickhouse.Options{
+	opts := &clickhouse.Options{
 		Addr: backend.Options.Addr,
 		Auth: clickhouse.Auth{
 			Database: database,
@@ -62,8 +64,13 @@ func (backend *Backend) clickhouseOptions(database string) *clickhouse.Options {
 		},
 		TLS:      backend.Options.TLS,
 		Settings: clickhouse.Settings(backend.Options.Settings),
-		Debug:    backend.Options.Debug,
 	}
+
+	if backend.Options.Debug {
+		opts.Logger = slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}))
+	}
+
+	return opts
 }
 
 // InitClient connects to ClickHouse, ensures the target database exists and

@@ -88,7 +88,7 @@ func (backend *Backend) Store(doc *sbom.Document, opts *storage.StoreOptions) er
 
 func (backend *Backend) saveAnnotations(annotations ...*ent.Annotation) TxFunc {
 	return func(tx *ent.Tx) error {
-		builders := []*ent.AnnotationCreate{}
+		builders := make([]*ent.AnnotationCreate, 0, len(annotations))
 
 		for idx := range annotations {
 			builder := tx.Annotation.Create().
@@ -121,8 +121,8 @@ func (backend *Backend) saveDocumentTypes(docTypes []*sbom.DocumentType, opts ..
 			newDocType := tx.DocumentType.Create().
 				SetProtoMessage(docType).
 				SetNillableType(&typeName).
-				SetNillableName(docType.Name).              //nolint:protogetter
-				SetNillableDescription(docType.Description) //nolint:protogetter
+				SetNillableName(docType.Name).
+				SetNillableDescription(docType.Description)
 
 			for _, fn := range opts {
 				fn(newDocType)
@@ -219,7 +219,7 @@ func (backend *Backend) saveExternalReferences(refs []*sbom.ExternalReference, o
 
 func (backend *Backend) saveHashes(hashes map[int32]string, opts ...func(*ent.HashesEntryCreate)) TxFunc {
 	return func(tx *ent.Tx) error {
-		builders := []*ent.HashesEntryCreate{}
+		builders := make([]*ent.HashesEntryCreate, 0, len(hashes))
 
 		for key, value := range hashes {
 			alg := sbom.HashAlgorithm(key)
@@ -248,7 +248,7 @@ func (backend *Backend) saveHashes(hashes map[int32]string, opts ...func(*ent.Ha
 
 func (backend *Backend) saveIdentifiers(idents map[int32]string, opts ...func(*ent.IdentifiersEntryCreate)) TxFunc {
 	return func(tx *ent.Tx) error {
-		builders := []*ent.IdentifiersEntryCreate{}
+		builders := make([]*ent.IdentifiersEntryCreate, 0, len(idents))
 
 		for key, value := range idents {
 			identType := sbom.SoftwareIdentifierType(key)
@@ -499,7 +499,7 @@ func (backend *Backend) savePersons(persons []*sbom.Person, opts ...func(*ent.Pe
 
 func (backend *Backend) saveProperties(properties []*sbom.Property, opts ...func(*ent.PropertyCreate)) TxFunc {
 	return func(tx *ent.Tx) error {
-		builders := []*ent.PropertyCreate{}
+		builders := make([]*ent.PropertyCreate, 0, len(properties))
 
 		for _, prop := range properties {
 			newProp := tx.Property.Create().
@@ -528,7 +528,7 @@ func (backend *Backend) saveProperties(properties []*sbom.Property, opts ...func
 
 func (backend *Backend) savePurposes(purposes []sbom.Purpose, opts ...func(*ent.PurposeCreate)) TxFunc {
 	return func(tx *ent.Tx) error {
-		builders := []*ent.PurposeCreate{}
+		builders := make([]*ent.PurposeCreate, 0, len(purposes))
 
 		for idx := range purposes {
 			newPurpose := tx.Purpose.Create().
@@ -581,7 +581,7 @@ func (backend *Backend) saveSourceData(sourceData *sbom.SourceData, opts ...func
 
 func (backend *Backend) saveTools(tools []*sbom.Tool, opts ...func(*ent.ToolCreate)) TxFunc {
 	return func(tx *ent.Tx) error {
-		builders := []*ent.ToolCreate{}
+		builders := make([]*ent.ToolCreate, 0, len(tools))
 
 		for _, tool := range tools {
 			newTool := tx.Tool.Create().
