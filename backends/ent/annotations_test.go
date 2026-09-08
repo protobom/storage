@@ -107,7 +107,7 @@ func (as *annotationsSuite) TestBackend_AddNodeAnnotations() {
 
 func (as *annotationsSuite) TestBackend_AddAnnotationToDocuments() {
 	annotationName := "add_annotation_to_documents_test"
-	documentIDs := []string{}
+	documentIDs := make([]string, 0, len(as.documents))
 
 	for _, document := range as.documents {
 		documentIDs = append(documentIDs, document.GetMetadata().GetId())
@@ -127,8 +127,8 @@ func (as *annotationsSuite) TestBackend_AddAnnotationToDocuments() {
 
 func (as *annotationsSuite) TestBackend_AddAnnotationToNodes() {
 	annotationName := "add_annotation_to_documents_test"
-	nodeIDs := []string{}
-	nodeUUIDs := []uuid.UUID{}
+	nodeIDs := make([]string, 0, len(as.documents))
+	nodeUUIDs := make([]uuid.UUID, 0, len(as.documents))
 
 	for _, document := range as.documents {
 		uniqueID, err := ent.GenerateUUID(document.GetNodeList().GetNodes()[0])
@@ -152,7 +152,7 @@ func (as *annotationsSuite) TestBackend_AddAnnotationToNodes() {
 
 func (as *annotationsSuite) TestBackend_ClearDocumentAnnotations() {
 	annotationName := "clear_document_annotations_test"
-	documentIDs := []string{}
+	documentIDs := make([]string, 0, len(as.documents))
 
 	as.Require().NoError(as.AddAnnotationToDocuments(annotationName, "test-value", documentIDs...))
 
@@ -169,7 +169,7 @@ func (as *annotationsSuite) TestBackend_ClearDocumentAnnotations() {
 
 func (as *annotationsSuite) TestBackend_ClearNodeAnnotations() {
 	annotationName := "clear_node_annotations_test"
-	nodeIDs := []string{}
+	nodeIDs := make([]string, 0, len(as.nodes))
 
 	as.Require().NoError(as.AddAnnotationToNodes(annotationName, "test-node-value", nodeIDs...))
 
@@ -429,9 +429,10 @@ func (as *annotationsSuite) TestBackend_RemoveDocumentAnnotations() {
 
 			as.Require().NoError(as.RemoveDocumentAnnotations(documentID, annotationName, subtest.values...))
 
-			values := []string{}
+			annotations := as.getTestResult(annotationName)
+			values := make([]string, 0, len(annotations))
 
-			for _, annotation := range as.getTestResult(annotationName) {
+			for _, annotation := range annotations {
 				values = append(values, annotation.Value)
 			}
 
@@ -482,9 +483,10 @@ func (as *annotationsSuite) TestBackend_RemoveNodeAnnotations() {
 
 			as.Require().NoError(as.RemoveNodeAnnotations(as.nodes[0].GetId(), annotationName, subtest.values...))
 
-			values := []string{}
+			annotations := as.getTestResult(annotationName)
+			values := make([]string, 0, len(annotations))
 
-			for _, annotation := range as.getTestResult(annotationName) {
+			for _, annotation := range annotations {
 				values = append(values, annotation.Value)
 			}
 
@@ -501,7 +503,7 @@ func (as *annotationsSuite) TestBackend_SetDocumentAnnotations() {
 
 	validateResults := func(name string, expected []string) {
 		annotations := as.getTestResult(name)
-		values := []string{}
+		values := make([]string, 0, len(annotations))
 
 		for _, annotation := range annotations {
 			values = append(values, annotation.Value)
@@ -534,7 +536,7 @@ func (as *annotationsSuite) TestBackend_SetNodeAnnotations() {
 
 	validateResults := func(name string, expected []string) {
 		annotations := as.getTestResult(name)
-		values := []string{}
+		values := make([]string, 0, len(annotations))
 
 		for _, annotation := range annotations {
 			values = append(values, annotation.Value)

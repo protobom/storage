@@ -53,7 +53,7 @@ func (ss *storeSuite) AfterTest(_suiteName, _testName string) {
 }
 
 func (ss *storeSuite) TestBackend_Store() {
-	messages := [][]byte{}
+	messages := make([][]byte, 0, len(ss.documents))
 
 	for _, document := range ss.documents {
 		msg, err := proto.MarshalOptions{Deterministic: true}.Marshal(document)
