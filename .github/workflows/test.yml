@@ -19,6 +19,27 @@ on:
 permissions: {}
 
 jobs:
+  go-versions:
+    name: resolve go versions
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    outputs:
+      stable: ${{ steps.versions.outputs.GO_MINOR_VERSION_STABLE }}
+      previous: ${{ steps.versions.outputs.GO_MINOR_VERSION_PREVIOUS }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Determine Go versions
+        id: versions
+        uses: carabiner-dev/actions/go/versions@32587e82f960d49b36101e8c45d1956e511965d3 # v1.2.9
+
   changes:
     name: detect changes
     runs-on: ubuntu-latest
@@ -70,9 +91,19 @@ jobs:
           echo "clickhouse=${clickhouse}" >> "${GITHUB_OUTPUT}"
 
   test:
-    needs: changes
+    name: unit (go ${{ matrix.go-version }})
+    needs:
+      - changes
+      - go-versions
     if: ${{ needs.changes.outputs.ent == 'true' }}
     runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        go-version:
+          - ${{ needs.go-versions.outputs.previous }}
+          - ${{ needs.go-versions.outputs.stable }}
 
     permissions:
       contents: read
@@ -86,7 +117,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version: '1.25'
+          go-version: ${{ matrix.go-version }}
           check-latest: true
           cache: false
 
@@ -94,10 +125,19 @@ jobs:
         run: make test-unit
 
   gcs:
-    name: gcs integration
-    needs: changes
+    name: gcs integration (go ${{ matrix.go-version }})
+    needs:
+      - changes
+      - go-versions
     if: ${{ needs.changes.outputs.gcs == 'true' }}
     runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        go-version:
+          - ${{ needs.go-versions.outputs.previous }}
+          - ${{ needs.go-versions.outputs.stable }}
 
     permissions:
       contents: read
@@ -111,7 +151,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version: '1.25'
+          go-version: ${{ matrix.go-version }}
           check-latest: true
           cache: false
 
@@ -134,10 +174,19 @@ jobs:
         run: make test-gcs
 
   clickhouse:
-    name: clickhouse integration
-    needs: changes
+    name: clickhouse integration (go ${{ matrix.go-version }})
+    needs:
+      - changes
+      - go-versions
     if: ${{ needs.changes.outputs.clickhouse == 'true' }}
     runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        go-version:
+          - ${{ needs.go-versions.outputs.previous }}
+          - ${{ needs.go-versions.outputs.stable }}
 
     permissions:
       contents: read
@@ -165,7 +214,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version: '1.25'
+          go-version: ${{ matrix.go-version }}
           check-latest: true
           cache: false
 
