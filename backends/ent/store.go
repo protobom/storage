@@ -156,10 +156,11 @@ func (backend *Backend) saveEdges(edges []*sbom.Edge, opts ...func(*ent.EdgeType
 					fn(newEdgeType)
 				}
 
-				if err := newEdgeType.
+				err := newEdgeType.
 					OnConflict().
 					Ignore().
-					Exec(backend.ctx); err != nil && !ent.IsConstraintError(err) {
+					Exec(backend.ctx)
+				if err != nil && !ent.IsConstraintError(err) {
 					return fmt.Errorf("saving edge: %w", err)
 				}
 			}
@@ -235,10 +236,11 @@ func (backend *Backend) saveHashes(hashes map[int32]string, opts ...func(*ent.Ha
 			builders = append(builders, hashesEntry)
 		}
 
-		if err := tx.HashesEntry.CreateBulk(builders...).
+		err := tx.HashesEntry.CreateBulk(builders...).
 			OnConflict().
 			Ignore().
-			Exec(backend.ctx); err != nil && !ent.IsConstraintError(err) {
+			Exec(backend.ctx)
+		if err != nil && !ent.IsConstraintError(err) {
 			return fmt.Errorf("saving hashes: %w", err)
 		}
 
@@ -264,10 +266,11 @@ func (backend *Backend) saveIdentifiers(idents map[int32]string, opts ...func(*e
 			builders = append(builders, identEntry)
 		}
 
-		if err := tx.IdentifiersEntry.CreateBulk(builders...).
+		err := tx.IdentifiersEntry.CreateBulk(builders...).
 			OnConflict().
 			Ignore().
-			Exec(backend.ctx); err != nil && !ent.IsConstraintError(err) {
+			Exec(backend.ctx)
+		if err != nil && !ent.IsConstraintError(err) {
 			return fmt.Errorf("saving identifiers: %w", err)
 		}
 
@@ -478,18 +481,20 @@ func (backend *Backend) savePersons(persons []*sbom.Person, opts ...func(*ent.Pe
 
 			builders = append(builders, newPerson)
 
-			if err := backend.savePersons(person.GetContacts(), func(pc *ent.PersonCreate) {
+			saveContacts := backend.savePersons(person.GetContacts(), func(pc *ent.PersonCreate) {
 				pc.AddContactOwnerIDs(id)
 				addDocumentIDs(backend.ctx, pc)
-			})(tx); err != nil {
+			})
+			if err := saveContacts(tx); err != nil {
 				return err
 			}
 		}
 
-		if err := tx.Person.CreateBulk(builders...).
+		err := tx.Person.CreateBulk(builders...).
 			OnConflict().
 			Ignore().
-			Exec(backend.ctx); err != nil && !ent.IsConstraintError(err) {
+			Exec(backend.ctx)
+		if err != nil && !ent.IsConstraintError(err) {
 			return fmt.Errorf("saving persons: %w", err)
 		}
 
