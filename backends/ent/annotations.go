@@ -141,9 +141,10 @@ func (backend *Backend) ClearDocumentAnnotations(documentIDs ...string) error {
 	}
 
 	return backend.withTx(func(tx *ent.Tx) error {
-		if _, err := tx.Annotation.Delete().
+		_, err := tx.Annotation.Delete().
 			Where(annotation.HasDocumentWith(document.IDIn(docUUIDs...))).
-			Exec(backend.ctx); err != nil {
+			Exec(backend.ctx)
+		if err != nil {
 			return fmt.Errorf("clearing annotations: %w", err)
 		}
 
@@ -165,9 +166,10 @@ func (backend *Backend) ClearNodeAnnotations(nodeIDs ...string) error {
 	}
 
 	return backend.withTx(func(tx *ent.Tx) error {
-		if _, err := tx.Annotation.Delete().
+		_, err := tx.Annotation.Delete().
 			Where(annotation.HasNodeWith(node.IDIn(nodeUUIDS...))).
-			Exec(backend.ctx); err != nil {
+			Exec(backend.ctx)
+		if err != nil {
 			return fmt.Errorf("clearing annotations: %w", err)
 		}
 
