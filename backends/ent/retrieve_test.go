@@ -70,14 +70,18 @@ func (rs *retrieveSuite) TestBackend_GetExternalReferencesByDocumentID() {
 			expected: 730,
 		},
 		{
+			// Since protobom v0.7.0, the CycloneDX reader folds a component's
+			// first plain website reference into the node's url_home field,
+			// so none of the test document's website references are stored
+			// as external references.
 			name:     "website",
 			types:    []string{"WEBSITE"},
-			expected: 714,
+			expected: 0,
 		},
 		{
 			name:     "all types",
 			types:    []string{},
-			expected: 2155,
+			expected: 1441,
 		},
 		{
 			name:     "invalid-type",
