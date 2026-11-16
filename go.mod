@@ -5,7 +5,7 @@ go 1.26.0
 require (
 	cloud.google.com/go/storage v1.70.0
 	entgo.io/ent v0.14.6
-	github.com/ClickHouse/clickhouse-go/v2 v2.50.0
+	github.com/ClickHouse/clickhouse-go/v2 v2.51.0
 	github.com/glebarez/go-sqlite v1.23.0
 	github.com/google/uuid v1.6.0
 	github.com/protobom/protobom v0.7.0
@@ -23,14 +23,14 @@ require (
 	cloud.google.com/go/compute/metadata v0.10.0 // indirect
 	cloud.google.com/go/iam v1.14.0 // indirect
 	cloud.google.com/go/monitoring v1.30.0 // indirect
-	github.com/ClickHouse/ch-go v0.74.0 // indirect
+	github.com/ClickHouse/ch-go v0.75.0 // indirect
 	github.com/CycloneDX/cyclonedx-go v0.12.0 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.35.0 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.57.0 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.57.0 // indirect
 	github.com/agext/levenshtein v1.2.3 // indirect
 	github.com/anchore/go-struct-converter v0.1.0 // indirect
-	github.com/andybalholm/brotli v1.2.6 // indirect
+	github.com/andybalholm/brotli v1.2.7 // indirect
 	github.com/apparentlymart/go-textseg/v15 v15.0.0 // indirect
 	github.com/blang/semver/v4 v4.0.0 // indirect
 	github.com/bmatcuk/doublestar v1.3.4 // indirect
@@ -39,13 +39,13 @@ require (
 	github.com/clipperhouse/displaywidth v0.10.0 // indirect
 	github.com/clipperhouse/uax29/v2 v2.6.0 // indirect
 	github.com/cncf/xds/go v0.0.0-20260202195803-dba9d589def2 // indirect
-	github.com/dustin/go-humanize v1.0.1 // indirect
+	github.com/dustin/go-humanize v1.1.0 // indirect
 	github.com/envoyproxy/go-control-plane/envoy v1.39.1-0.20260819172001-e6e3fd93e4be // indirect
 	github.com/envoyproxy/protoc-gen-validate v1.3.3 // indirect
 	github.com/fatih/color v1.18.0 // indirect
 	github.com/felixge/httpsnoop v1.1.0 // indirect
 	github.com/go-faster/city v1.0.1 // indirect
-	github.com/go-faster/errors v0.7.1 // indirect
+	github.com/go-faster/errors v0.8.0 // indirect
 	github.com/go-jose/go-jose/v4 v4.1.4 // indirect
 	github.com/go-logr/logr v1.4.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
@@ -55,7 +55,7 @@ require (
 	github.com/googleapis/enterprise-certificate-proxy v0.3.24 // indirect
 	github.com/googleapis/gax-go/v2 v2.27.0 // indirect
 	github.com/hashicorp/hcl/v2 v2.23.0 // indirect
-	github.com/klauspost/compress v1.19.1 // indirect
+	github.com/klauspost/compress v1.20.3 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-runewidth v0.0.19 // indirect
@@ -65,12 +65,12 @@ require (
 	github.com/olekukonko/errors v1.2.0 // indirect
 	github.com/olekukonko/ll v0.1.6 // indirect
 	github.com/olekukonko/tablewriter v1.1.5 // indirect
-	github.com/paulmach/orb v0.13.0 // indirect
-	github.com/pierrec/lz4/v4 v4.1.27 // indirect
+	github.com/paulmach/orb v0.14.0 // indirect
+	github.com/pierrec/lz4/v4 v4.1.33 // indirect
 	github.com/planetscale/vtprotobuf v0.6.1-0.20240319094008-0393e58bdf10 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	github.com/segmentio/asm v1.2.1 // indirect
-	github.com/shopspring/decimal v1.5.0 // indirect
+	github.com/shopspring/decimal v1.6.0 // indirect
 	github.com/sirupsen/logrus v1.10.2 // indirect
 	github.com/spdx/tools-golang v0.5.7 // indirect
 	github.com/spiffe/go-spiffe/v2 v2.8.1 // indirect
