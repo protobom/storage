@@ -10,7 +10,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/protobom/protobom v0.7.0
 	github.com/stretchr/testify v1.12.1
-	google.golang.org/api v0.315.0
+	google.golang.org/api v0.316.0
 	google.golang.org/protobuf v1.36.12
 )
 
